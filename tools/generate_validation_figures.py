@@ -5,11 +5,13 @@ from __future__ import annotations
 import argparse
 import json
 from pathlib import Path
+import tempfile
 
 import jax
 import jax.numpy as jnp
 import numpy as np
 
+from fax.config import EquilibriumConfig, FaxConfig, GridConfig, RunConfig
 from fax.continuum import continuum_branch_matrix
 from fax.equilibrium import analytic_circular_tokamak, from_vmec_wout
 from fax.gaps import minimum_gap_summary, sorted_branch_gaps
@@ -21,7 +23,9 @@ from fax.metric import (
     metric_from_equilibrium,
 )
 from fax.modes import stellarator_mode_family
+from fax.plotting import plot_continuum_artifacts
 from fax.reference_cases import landreman_paul_qa_lowres
+from fax.workflows import run_continuum
 from fax.validation import registered_validation_gates, run_validation_suite
 
 
@@ -206,6 +210,33 @@ def generate_gap_sensitivity_dashboard(output_dir: Path) -> list[Path]:
     paths = _save_figure(fig, output_dir, "gap_sensitivity_dashboard")
     plt.close(fig)
     return paths
+
+
+def generate_continuum_artifact_dashboard(output_dir: Path) -> list[Path]:
+    """Generate a dashboard from files written by the continuum workflow."""
+    case = landreman_paul_qa_lowres()
+    if case.wout is None or not case.wout.exists():
+        raise FileNotFoundError(f"Landreman-Paul QA wout not found: {case.wout}")
+
+    with tempfile.TemporaryDirectory(prefix="fax-continuum-artifacts-") as tmp:
+        config = FaxConfig(
+            run=RunConfig(case=case.case_id, model="continuum", output_dir=tmp),
+            equilibrium=EquilibriumConfig(
+                source="wout",
+                vmec_input=str(case.vmec_input) if case.vmec_input is not None else None,
+                wout=str(case.wout),
+            ),
+            grid=GridConfig(radial_points=50, m_max=4, n_max=4, field_periods=2),
+        )
+        run_continuum(config, progress=False)
+        return list(
+            plot_continuum_artifacts(
+                tmp,
+                output_dir=output_dir,
+                stem="continuum_artifact_dashboard",
+                max_branches=9,
+            )
+        )
 
 
 def generate_workflow_diagram(output_dir: Path) -> list[Path]:
@@ -401,6 +432,7 @@ def main(argv: list[str] | None = None) -> int:
         generate_cylinder_scaling(output_dir),
         generate_landreman_reference(output_dir),
         generate_gap_sensitivity_dashboard(output_dir),
+        generate_continuum_artifact_dashboard(output_dir),
         generate_metric_residual_convergence(output_dir),
         generate_validation_gate_summary(output_dir),
     ]:

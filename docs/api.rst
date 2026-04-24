@@ -28,6 +28,9 @@ API
 .. automodule:: fax.gaps
    :members:
 
+.. automodule:: fax.plotting
+   :members:
+
 .. automodule:: fax.validation
    :members:
 

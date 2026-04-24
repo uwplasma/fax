@@ -35,5 +35,9 @@ The CLI uses ``[run] output_dir`` for durable local artifacts:
    Writes ``continuum_summary.json``, ``continuum_metrics.json``, and
    ``continuum_branches.csv``.
 
+``fax plot-continuum artifact_dir``
+   Reads the continuum JSON/CSV artifacts and writes publication-draft SVG/PNG
+   dashboard figures.
+
 The JSON summaries are intended for scripts and regression checks. The
 Markdown validation report is intended for review packets and handoff notes.

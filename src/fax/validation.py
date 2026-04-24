@@ -165,6 +165,22 @@ def _gate_metric_angular_convergence() -> GateResult:
     return _pass_fail(gate_id, metric, tolerance, "uniform metric fixture is insensitive to angular grid refinement")
 
 
+def _gate_analytic_radial_integral_convergence() -> GateResult:
+    gate_id = "analytic_radial_integral_convergence"
+    tolerance = 5.0e-4
+    harmonics = jnp.asarray([[2, 1]], dtype=float)
+
+    def branch_integral(radial_points: int) -> jnp.ndarray:
+        geometry = analytic_circular_tokamak(radial_points=radial_points, iota_axis=0.24, iota_edge=0.72)
+        branch = continuum_branch_matrix(geometry, harmonics)[:, 0]
+        return jnp.sum(0.5 * (branch[1:] + branch[:-1]) * (geometry.s[1:] - geometry.s[:-1]))
+
+    reference = branch_integral(256)
+    fine = branch_integral(64)
+    metric = jnp.abs(fine - reference) / jnp.maximum(jnp.abs(reference), 1.0e-30)
+    return _pass_fail(gate_id, float(metric), tolerance, "radial quadrature of smooth analytic branch converges")
+
+
 def _gate_landreman_paul_adapter_smoke() -> GateResult:
     gate_id = "landreman_paul_adapter_smoke"
     tolerance = 0.0
@@ -191,6 +207,44 @@ def _gate_landreman_paul_adapter_smoke() -> GateResult:
         metric=0.0 if passed else 1.0,
         tolerance=tolerance,
         message="Landreman-Paul QA wout profile and metric adapters produce finite positive fields",
+    )
+
+
+def _gate_landreman_paul_continuum_finite() -> GateResult:
+    gate_id = "landreman_paul_continuum_finite"
+    tolerance = 1.0e-8
+    case = landreman_paul_qa_lowres()
+    if not case.is_available():
+        return GateResult(
+            gate_id=gate_id,
+            status="skipped",
+            metric=float("nan"),
+            tolerance=tolerance,
+            message=f"missing local paths: {case.missing_paths()}",
+        )
+
+    geometry = from_vmec_wout(case.wout, name=case.case_id)  # type: ignore[arg-type]
+    family = stellarator_mode_family(
+        poloidal_modes=(1, 2, 3),
+        base_n=1,
+        field_periods=geometry.field_periods,
+        sidebands=(-1, 0, 1),
+    )
+    profile_branches = continuum_branch_matrix(geometry, family.as_array())
+    metric_geometry = metric_from_vmec_wout(case.wout, theta_points=16, zeta_points=16, name=case.case_id)  # type: ignore[arg-type]
+    matrices = metric_continuum_matrices(metric_geometry, family.as_array())
+    eigensystem = generalized_hermitian_eigensystem(matrices.stiffness, matrices.mass)
+    frequencies = jnp.sqrt(jnp.maximum(jnp.real(eigensystem.eigenvalues), 0.0)) / (2.0 * jnp.pi)
+    residuals = generalized_eigen_residual_norms(matrices.stiffness, matrices.mass, eigensystem)
+    finite = bool(jnp.all(jnp.isfinite(profile_branches))) and bool(jnp.all(jnp.isfinite(frequencies)))
+    non_negative = bool(jnp.all(profile_branches >= 0.0)) and bool(jnp.all(frequencies >= 0.0))
+    residual_p95 = float(jnp.percentile(residuals, 95.0))
+    metric = residual_p95 if finite and non_negative else 1.0
+    return _pass_fail(
+        gate_id,
+        metric,
+        tolerance,
+        "Landreman-Paul QA profile and metric continuum branches are finite with small residuals",
     )
 
 
@@ -264,6 +318,17 @@ def registered_validation_gates() -> tuple[ValidationGate, ...]:
             _runner=_gate_metric_angular_convergence,
         ),
         ValidationGate(
+            gate_id="analytic_radial_integral_convergence",
+            title="Analytic radial integral convergence",
+            layer="convergence",
+            quantity="relative branch-integral error",
+            tolerance=5.0e-4,
+            citation="Smooth radial quadrature check for local shear-Alfven continuum branch integrals",
+            command="python -m pytest tests/test_validation_registry.py",
+            tags=("analytic", "continuum", "convergence"),
+            _runner=_gate_analytic_radial_integral_convergence,
+        ),
+        ValidationGate(
             gate_id="landreman_paul_adapter_smoke",
             title="Landreman-Paul QA VMEC adapter smoke test",
             layer="adapter",
@@ -273,6 +338,17 @@ def registered_validation_gates() -> tuple[ValidationGate, ...]:
             command="python -m pytest -m requires_vmec_jax tests/test_metric.py tests/test_validation_registry.py",
             tags=("vmec", "landreman-paul", "adapter"),
             _runner=_gate_landreman_paul_adapter_smoke,
+        ),
+        ValidationGate(
+            gate_id="landreman_paul_continuum_finite",
+            title="Landreman-Paul QA continuum finite-output check",
+            layer="adapter",
+            quantity="p95 generalized-eigen residual",
+            tolerance=1.0e-8,
+            citation="Landreman & Paul, Phys. Rev. Lett. 128, 035001 (2022), arXiv:2108.03711",
+            command="python -m pytest -m requires_vmec_jax tests/test_validation_registry.py",
+            tags=("vmec", "landreman-paul", "adapter", "continuum"),
+            _runner=_gate_landreman_paul_continuum_finite,
         ),
     )
 

@@ -36,8 +36,12 @@ tags, and command. The current gates are:
   ``rho^(-1/2)`` density scaling.
 * ``metric_angular_convergence``: checks that the analytic metric fixture is
   insensitive to angular-grid refinement.
+* ``analytic_radial_integral_convergence``: checks radial quadrature convergence
+  for a smooth analytic continuum branch.
 * ``landreman_paul_adapter_smoke``: checks the Landreman-Paul QA VMEC ``wout``
   profile and metric adapters when local data are available.
+* ``landreman_paul_continuum_finite``: checks that the Landreman-Paul profile
+  and metric continuum branches are finite and have small eigensolve residuals.
 
 Run them from Python:
 

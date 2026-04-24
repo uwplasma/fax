@@ -82,6 +82,20 @@
       ]
     },
     {
+      "id": "analytic_radial_integral_convergence",
+      "title": "Analytic radial integral convergence",
+      "layer": "convergence",
+      "quantity": "relative branch-integral error",
+      "tolerance": 0.0005,
+      "citation": "Smooth radial quadrature check for local shear-Alfven continuum branch integrals",
+      "command": "python -m pytest tests/test_validation_registry.py",
+      "tags": [
+        "analytic",
+        "continuum",
+        "convergence"
+      ]
+    },
+    {
       "id": "landreman_paul_adapter_smoke",
       "title": "Landreman-Paul QA VMEC adapter smoke test",
       "layer": "adapter",
@@ -93,6 +107,21 @@
         "vmec",
         "landreman-paul",
         "adapter"
+      ]
+    },
+    {
+      "id": "landreman_paul_continuum_finite",
+      "title": "Landreman-Paul QA continuum finite-output check",
+      "layer": "adapter",
+      "quantity": "p95 generalized-eigen residual",
+      "tolerance": 1e-08,
+      "citation": "Landreman & Paul, Phys. Rev. Lett. 128, 035001 (2022), arXiv:2108.03711",
+      "command": "python -m pytest -m requires_vmec_jax tests/test_validation_registry.py",
+      "tags": [
+        "vmec",
+        "landreman-paul",
+        "adapter",
+        "continuum"
       ]
     }
   ],
@@ -153,6 +182,18 @@
     },
     {
       "file": "gap_sensitivity_dashboard.png",
+      "format": "png",
+      "status": "smoke-test",
+      "claim": "Development figure generated from analytic/local continuum formulas; not a full 3-D stellarator Alfvén-continuum validation."
+    },
+    {
+      "file": "continuum_artifact_dashboard.svg",
+      "format": "svg",
+      "status": "smoke-test",
+      "claim": "Development figure generated from analytic/local continuum formulas; not a full 3-D stellarator Alfvén-continuum validation."
+    },
+    {
+      "file": "continuum_artifact_dashboard.png",
       "format": "png",
       "status": "smoke-test",
       "claim": "Development figure generated from analytic/local continuum formulas; not a full 3-D stellarator Alfvén-continuum validation."

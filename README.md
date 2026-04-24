@@ -96,6 +96,12 @@ This dashboard shows a stellarator sideband family, nearest-branch separation,
 and autodiff sensitivities to density, rotational-transform shift, and magnetic
 field scale. It is a design-facing diagnostic prototype.
 
+![Continuum artifact dashboard](docs/_static/continuum_artifact_dashboard.png)
+
+This figure is generated from files written by `fax continuum`: the branch CSV,
+summary JSON, and metrics JSON. It checks that user-facing artifacts are
+plot-ready and carry the same branch/gap information used by the docs.
+
 ![Metric residual and convergence checks](docs/_static/metric_residual_convergence.png)
 
 This figure checks the first metric-matrix scaffold: diagonal frequencies
@@ -120,6 +126,12 @@ For development:
 python -m pip install -e ".[dev]"
 ```
 
+For artifact plotting without the full development toolchain:
+
+```bash
+python -m pip install -e ".[plots]"
+```
+
 The package supports Python 3.10 and newer. On Python 3.10 it uses `tomli` as
 the TOML parser fallback; on Python 3.11+ it uses the standard-library
 `tomllib`.
@@ -131,6 +143,7 @@ fax examples/minimal.toml --dry-run
 fax examples/landreman_paul_qa_lowres.toml --dry-run
 fax validate examples/minimal.toml --tag analytic
 fax continuum examples/landreman_paul_qa_lowres.toml
+fax plot-continuum outputs/landreman_paul_qa_lowres --output-dir outputs/landreman_paul_qa_lowres/figures
 ```
 
 `fax` reads TOML configuration files. The normal CLI path is intentionally
@@ -142,7 +155,8 @@ silent.
 `validation_summary.json` plus `validation_report.md` in the configured
 `run.output_dir`. `fax continuum` computes the current profile and metric-matrix
 continuum scaffold, then writes `continuum_summary.json`,
-`continuum_metrics.json`, and `continuum_branches.csv`.
+`continuum_metrics.json`, and `continuum_branches.csv`. `fax plot-continuum`
+turns those continuum artifacts into SVG/PNG dashboard figures.
 
 For machine-readable output:
 
@@ -150,6 +164,7 @@ For machine-readable output:
 fax examples/minimal.toml --dry-run --json
 fax validate examples/minimal.toml --tag metric --json
 fax continuum examples/minimal.toml --json
+fax plot-continuum outputs --json
 fax examples/minimal.toml --dump-config
 fax examples/minimal.toml --quiet
 ```
@@ -189,6 +204,7 @@ Current figures:
 - `workflow_io_diagram.svg`: input/operator/output workflow diagram.
 - `landreman_paul_qa_lowres_profiles.svg`: first VMEC-backed profile/adapter target.
 - `gap_sensitivity_dashboard.svg`: mode-family, gap-proxy, and autodiff sensitivity dashboard.
+- `continuum_artifact_dashboard.svg`: dashboard generated from `fax continuum` artifacts.
 - `metric_residual_convergence.svg`: metric-matrix residual and angular-grid check.
 - `validation_gate_summary.svg`: current validation-gate status plot.
 
@@ -215,7 +231,8 @@ fax validate examples/minimal.toml --tag metric --json
 The first gates cover analytic continuum scaling, reduction of the metric
 matrix to the profile limit, Hermiticity of the generalized continuum matrices,
 generalized eigensolve residuals, density-gradient consistency, angular-grid
-consistency, and the Landreman-Paul QA VMEC adapter smoke test. These are
+consistency, radial quadrature convergence, and Landreman-Paul QA VMEC adapter
+plus continuum finite-output smoke tests. These are
 acceptance gates for the scaffold, not yet full STELLGAP/AE3D stellarator
 validation.
 

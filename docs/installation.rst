@@ -13,6 +13,12 @@ For development:
 
    python -m pip install -e ".[dev]"
 
+For artifact plotting without the full development toolchain:
+
+.. code-block:: bash
+
+   python -m pip install -e ".[plots]"
+
 Python 3.10 and newer are supported. On Python 3.10, ``fax`` uses ``tomli`` as
 the TOML parser fallback. On Python 3.11 and newer, it uses ``tomllib`` from the
 standard library.
@@ -27,4 +33,3 @@ tests are needed:
 
    python -m pip install -e /Users/rogerio/local/vmec_jax
    python -m pip install -e /Users/rogerio/local/booz_xform_jax
-

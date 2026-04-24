@@ -8,6 +8,7 @@ import sys
 
 from . import __version__
 from .config import ConfigError, FaxConfig, load_config
+from .plotting import plot_continuum_artifacts
 from .runner import run
 from .workflows import ContinuumRunSummary, ValidationRunSummary, run_continuum, run_validation
 
@@ -48,7 +49,7 @@ def build_parser() -> argparse.ArgumentParser:
         prog="fax",
         description=(
             "Run or inspect differentiable Alfvén eigenmode calculations from a TOML file. "
-            "Subcommands: validate, continuum."
+            "Subcommands: validate, continuum, plot-continuum."
         ),
     )
     parser.add_argument("config", nargs="?", help="Path to a fax TOML configuration file.")
@@ -82,13 +83,27 @@ def build_command_parser() -> argparse.ArgumentParser:
     continuum.add_argument("--json", action="store_true", help="Print only summary JSON; disables rich progress output.")
     continuum.add_argument("--quiet", action="store_true", help="Suppress rich progress output and print only summary JSON.")
     continuum.add_argument("--no-artifacts", action="store_true", help="Do not write continuum artifact files.")
+
+    plot = subparsers.add_parser("plot-continuum", help="Plot artifacts written by fax continuum.")
+    plot.add_argument("artifact_dir", help="Directory containing continuum_summary.json and continuum_branches.csv.")
+    plot.add_argument("--output-dir", help="Directory for generated figures; defaults to artifact_dir.")
+    plot.add_argument("--stem", default="continuum_artifact_dashboard", help="Output figure filename stem.")
+    plot.add_argument(
+        "--format",
+        action="append",
+        default=[],
+        choices=("svg", "png", "pdf"),
+        help="Output format; may be repeated. Defaults to svg and png.",
+    )
+    plot.add_argument("--json", action="store_true", help="Print generated paths as JSON.")
+    plot.add_argument("--quiet", action="store_true", help="Suppress plain progress output and print generated paths as JSON.")
     return parser
 
 
 def main(argv: list[str] | None = None) -> int:
     """CLI entry point."""
     argv_list = list(sys.argv[1:] if argv is None else argv)
-    if argv_list and argv_list[0] in {"validate", "continuum"}:
+    if argv_list and argv_list[0] in {"validate", "continuum", "plot-continuum"}:
         return _main_command(argv_list)
 
     parser = build_parser()
@@ -126,6 +141,9 @@ def main(argv: list[str] | None = None) -> int:
 def _main_command(argv: list[str]) -> int:
     parser = build_command_parser()
     args = parser.parse_args(argv)
+    if args.command == "plot-continuum":
+        return _main_plot_continuum(args)
+
     try:
         config = load_config(args.config)
     except ConfigError as exc:
@@ -157,6 +175,30 @@ def _main_command(argv: list[str]) -> int:
     if machine_readable:
         print(json.dumps(summary.to_dict(), indent=2, sort_keys=True))
     return 1 if summary.status == "failed" else 0
+
+
+def _main_plot_continuum(args: argparse.Namespace) -> int:
+    machine_readable = bool(args.json or args.quiet)
+    formats = tuple(args.format) if args.format else ("svg", "png")
+    try:
+        paths = plot_continuum_artifacts(
+            args.artifact_dir,
+            output_dir=args.output_dir,
+            stem=args.stem,
+            formats=formats,
+        )
+    except (ImportError, FileNotFoundError, OSError, ValueError) as exc:
+        print(f"fax: {exc}", file=sys.stderr)
+        return 2
+
+    payload = {"status": "completed", "figures": [str(path) for path in paths]}
+    if machine_readable:
+        print(json.dumps(payload, indent=2, sort_keys=True))
+    else:
+        print("FAX continuum artifact figures:")
+        for path in paths:
+            print(f"  {path}")
+    return 0
 
 
 def parse_config_from_mapping(mapping: dict[str, object]) -> FaxConfig:

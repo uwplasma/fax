@@ -11,7 +11,7 @@ def test_validation_registry_has_unique_gate_ids_and_metadata():
     gates = registered_validation_gates()
     gate_ids = [gate.gate_id for gate in gates]
 
-    assert len(gates) >= 7
+    assert len(gates) >= 9
     assert len(gate_ids) == len(set(gate_ids))
     for gate in gates:
         assert gate.title
@@ -29,6 +29,7 @@ def test_core_validation_gates_pass():
         "metric_eigensolve_residual",
         "density_scale_gradient",
         "metric_angular_convergence",
+        "analytic_radial_integral_convergence",
     ]
 
     for gate_id in gate_ids:
@@ -40,10 +41,11 @@ def test_core_validation_gates_pass():
 
 @pytest.mark.requires_vmec_jax
 def test_landreman_paul_validation_gate_passes_or_skips_cleanly():
-    result = run_validation_gate("landreman_paul_adapter_smoke")
+    for gate_id in ("landreman_paul_adapter_smoke", "landreman_paul_continuum_finite"):
+        result = run_validation_gate(gate_id)
 
-    assert result.status in {"passed", "skipped"}
-    assert result.message
+        assert result.status in {"passed", "skipped"}
+        assert result.message
 
 
 def test_validation_suite_tag_filter():

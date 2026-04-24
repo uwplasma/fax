@@ -41,6 +41,12 @@ Current Figures
    Prototype dashboard for README/docs: mode-family branches, nearest-branch
    separation, and autodiff sensitivities.
 
+.. figure:: _static/continuum_artifact_dashboard.svg
+   :alt: Dashboard generated from fax continuum artifacts.
+
+   Dashboard generated from files written by ``fax continuum``. This checks the
+   public artifact path used by users and downstream plotting scripts.
+
 .. figure:: _static/metric_residual_convergence.svg
    :alt: Metric residual and angular-grid convergence checks.
 

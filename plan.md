@@ -1020,6 +1020,9 @@ Needed docs:
 - Added CLI tests for validation artifacts, continuum artifacts, JSON output, and rich progress output.
 - Updated README and ReadTheDocs quickstart/configuration/validation pages with the new workflow commands and artifact contracts.
 - Made validation-figure SVG generation deterministic by fixing the Matplotlib SVG hash salt and removing save-time dates from SVG metadata; repeated regeneration now leaves identical file hashes.
+- Added `fax.plotting` and `fax plot-continuum artifact_dir` to generate SVG/PNG dashboards directly from `fax continuum` artifacts rather than private plotting-only arrays.
+- Added `docs/_static/continuum_artifact_dashboard.*`, generated from a temporary `fax continuum` run and the public artifact plotting path.
+- Added `analytic_radial_integral_convergence` and `landreman_paul_continuum_finite` validation gates for radial quadrature convergence and VMEC-backed finite continuum outputs.
 
 ### Local Testing Policy Until GitHub Actions Resume
 
@@ -1070,7 +1073,7 @@ Sources:
 Implement the first metric-aware stellarator continuum milestone:
 
 1. Add radial resolution-convergence gates for the analytic metric fixture and the Landreman-Paul QA adapter.
-2. Add an adapter/figure gate that checks VMEC-derived continuum branches are finite before plotting.
+2. Add a Landreman-Paul adapter radial/angular convergence report that sweeps `theta_points`, `zeta_points`, `m_max`, and `n_max`.
 3. Add an optional Boozer path through `booz_xform_jax` for models that need straight-field-line harmonics, while keeping analytic and VMEC-coordinate fixtures runnable without Boozer.
-4. Add a figure-generation workflow that can turn `fax continuum` artifacts into README/docs plots without duplicating plotting logic.
+4. Add a `fax benchmark` command that records compile time, warm runtime, memory, and artifact sizes for analytic and Landreman-Paul cases.
 5. Start the first literature/cross-code comparison gate: STELLGAP-style continuum gaps for a documented quasi-symmetric or axisymmetric reference case.

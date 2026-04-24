@@ -31,6 +31,7 @@ Compute the current continuum scaffold and write branch/metric artifacts:
 .. code-block:: bash
 
    fax continuum examples/landreman_paul_qa_lowres.toml
+   fax plot-continuum outputs/landreman_paul_qa_lowres --output-dir outputs/landreman_paul_qa_lowres/figures
 
 The normal CLI prints rich progress output: solve parameters, phase status,
 elapsed time, estimated remaining time, and what the code is doing.
@@ -42,6 +43,7 @@ For machine-readable output:
    fax examples/minimal.toml --dry-run --json
    fax validate examples/minimal.toml --tag analytic --json
    fax continuum examples/minimal.toml --json
+   fax plot-continuum outputs --json
    fax examples/minimal.toml --dump-config
    fax examples/minimal.toml --quiet
 
