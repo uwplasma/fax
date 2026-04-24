@@ -12,6 +12,11 @@ Accuracy
    Reproduce analytic cylinder/tokamak limits and selected STELLGAP, AE3D,
    CAS3D, and FAR3D benchmarks with documented tolerances.
 
+Current generated figures
+   ``tools/generate_validation_figures.py`` creates the first analytic
+   continuum scaling figure and the LandremanPaul2021 QA lowres smoke-test
+   profile figure used in the validation docs.
+
 Runtime
    Report compile time, warmed runtime, memory, and scaling with radial and
    Fourier resolution on CPU and GPU.
@@ -27,4 +32,3 @@ Uncertainty quantification
 Inverse design
    Optimize a small set of VMEC boundary/profile parameters to move a dangerous
    mode away from a resonance window while preserving equilibrium constraints.
-

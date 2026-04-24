@@ -10,3 +10,17 @@ API
 .. automodule:: fax.runner
    :members:
 
+.. automodule:: fax.equilibrium
+   :members:
+
+.. automodule:: fax.continuum
+   :members:
+
+.. automodule:: fax.validation
+   :members:
+
+.. automodule:: fax.benchmarks
+   :members:
+
+.. automodule:: fax.reference_cases
+   :members:

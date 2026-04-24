@@ -43,8 +43,9 @@ fax = "fax.cli:main"
 [project.optional-dependencies]
 test = ["pytest"]
 docs = ["sphinx", "furo"]
+plots = ["matplotlib"]
 ecosystem = ["diffrax", "equinox", "jaxopt", "lineax", "optimistix", "optax"]
-dev = ["build", "pytest", "ruff", "mypy", "sphinx", "furo"]
+dev = ["build", "pytest", "ruff", "mypy", "sphinx", "furo", "matplotlib"]
 
 [tool.setuptools.packages.find]
 where = ["src"]

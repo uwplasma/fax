@@ -990,6 +990,13 @@ Needed docs:
 - Added `examples/landreman_paul_qa_lowres.toml` pointing at the neighboring `vmec_jax` input and `wout`.
 - Verified the reference helper resolves the local VMEC input and `wout` on this machine.
 - Re-verified after the reference-case update with `python -m ruff check .`, `python -m pytest` (9 passed), `sphinx-build -W -b html docs docs/_build/html`, `fax examples/landreman_paul_qa_lowres.toml --dry-run`, and `python -m build`.
+- Added the first executable physics foundation: `EquilibriumGeometry`, analytic cylinder/tokamak fixtures, a minimal VMEC `wout` profile adapter, local large-aspect-ratio Alfvén-continuum formulas, validation metrics, and a lightweight local benchmark helper.
+- Added reviewer-style tests for units, JAX pytree/JIT compatibility, density scaling, local continuum formulas, finite-difference versus autodiff gradients, Hermiticity metrics, benchmark timing, and LandremanPaul2021 QA `wout` adapter smoke coverage.
+- Added `tools/generate_validation_figures.py` and generated the first docs figures:
+  - `docs/_static/analytic_continuum_scaling.svg`
+  - `docs/_static/landreman_paul_qa_lowres_profiles.svg`
+- These figures are explicitly labeled as smoke-test/development figures, not full 3-D stellarator continuum validation.
+- Final local gate for this implementation pass: `python -m ruff check .`, `python -m mypy src/fax`, `python -m pytest` (24 passed), `sphinx-build -W -b html docs docs/_build/html`, `fax examples/landreman_paul_qa_lowres.toml --dry-run`, and `python -m build`.
 
 ### Local Testing Policy Until GitHub Actions Resume
 
