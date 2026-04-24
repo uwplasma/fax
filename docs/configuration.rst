@@ -46,6 +46,10 @@ The CLI uses ``[run] output_dir`` for durable local artifacts:
    ``--radial-points``, ``--angular-points``, and ``--mode-max`` values define
    the resolution sweep.
 
+``fax plot-convergence artifact_dir``
+   Reads the convergence JSON/CSV artifacts and writes publication-draft
+   SVG/PNG dashboard figures.
+
 ``fax benchmark case.toml``
    Writes ``benchmark/benchmark_summary.json`` and
    ``benchmark/benchmark_metrics.csv`` under ``run.output_dir`` while also

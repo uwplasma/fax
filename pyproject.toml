@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "fax"
-version = "0.1.0"
+version = "0.0.1"
 description = "Differentiable JAX code for Alfvén eigenmodes and fast-ion physics in stellarators."
 readme = "README.md"
 requires-python = ">=3.10"
@@ -46,7 +46,7 @@ test = ["pytest"]
 docs = ["sphinx", "furo"]
 plots = ["matplotlib", "pillow"]
 ecosystem = ["diffrax", "equinox", "jaxopt", "lineax", "optimistix", "optax"]
-dev = ["build", "pytest", "ruff", "mypy", "sphinx", "furo", "matplotlib", "pillow"]
+dev = ["build", "pytest", "ruff", "mypy", "sphinx", "furo", "matplotlib", "pillow", "twine"]
 
 [tool.setuptools.packages.find]
 where = ["src"]

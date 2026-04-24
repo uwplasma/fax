@@ -6,7 +6,14 @@ from .config import FaxConfig, load_config
 from .equilibrium import EquilibriumGeometry
 from .metric import MetricGeometry
 from .modes import ModeFamily
-from .plotting import ContinuumArtifacts, load_continuum_artifacts, plot_continuum_artifacts
+from .plotting import (
+    ContinuumArtifacts,
+    ConvergenceArtifacts,
+    load_continuum_artifacts,
+    load_convergence_artifacts,
+    plot_continuum_artifacts,
+    plot_convergence_artifacts,
+)
 from .reference_cases import ReferenceCase, landreman_paul_qa_lowres
 from .runner import RunSummary, run
 from .workflows import (
@@ -25,6 +32,7 @@ __all__ = [
     "ContinuumArtifacts",
     "BenchmarkRunSummary",
     "ConvergenceRunSummary",
+    "ConvergenceArtifacts",
     "EquilibriumGeometry",
     "FaxConfig",
     "MetricGeometry",
@@ -34,8 +42,10 @@ __all__ = [
     "ValidationRunSummary",
     "landreman_paul_qa_lowres",
     "load_continuum_artifacts",
+    "load_convergence_artifacts",
     "load_config",
     "plot_continuum_artifacts",
+    "plot_convergence_artifacts",
     "run",
     "run_benchmark",
     "run_continuum",
@@ -43,4 +53,4 @@ __all__ = [
     "run_validation",
 ]
 
-__version__ = "0.1.0"
+__version__ = "0.0.1"

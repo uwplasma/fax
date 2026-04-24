@@ -1029,6 +1029,15 @@ Needed docs:
 - Extended `fax convergence` to sweep radial resolution as well as angular resolution and Fourier truncation. Coarse branch matrices are interpolated onto the reference radial grid before relative L2 errors are reported.
 - Added `metric_radial_convergence` and `landreman_paul_radial_sampling_convergence` validation gates.
 - Added a generated Landreman-Paul QA convergence dashboard for README/docs that visualizes radial refinement, angular refinement, mode truncation, and eigensolve residuals from the VMEC-backed adapter path.
+- Added `fax plot-convergence` and `fax.plotting.plot_convergence_artifacts()` so users can generate radial/angular/Fourier convergence dashboards from public convergence artifacts.
+- Added research examples:
+  - `examples/analytic_circular_tokamak.toml`
+  - `examples/analytic_convergence.toml`
+  - `examples/research/validation_packet.py`
+  - `examples/research/density_sensitivity.py`
+  - `examples/research/inverse_iota_shift.py`
+- Added `docs/research_examples.rst`, release documentation, `CHANGELOG.md`, `MANIFEST.in`, and GitHub release notes for `v0.0.1`.
+- Set package metadata and `fax.__version__` to `0.0.1` for the first release candidate.
 
 ### Local Testing Policy Until GitHub Actions Resume
 
@@ -1078,8 +1087,8 @@ Sources:
 
 Implement the first metric-aware stellarator continuum milestone:
 
-1. Add an optional Boozer path through `booz_xform_jax` for models that need straight-field-line harmonics, while keeping analytic and VMEC-coordinate fixtures runnable without Boozer.
-2. Extend `fax benchmark` with memory/process telemetry and separate compile/warm kernel timing once matrix-free kernels are introduced.
-3. Start the first literature/cross-code comparison gate: STELLGAP-style continuum gaps for a documented quasi-symmetric or axisymmetric reference case.
-4. Add a reusable `fax plot-convergence` command that plots any convergence artifact directory, matching the existing `fax plot-continuum` user path.
+1. Publish the staged `v0.0.1` GitHub release when GitHub Actions are available so the PyPI trusted-publishing workflow can complete.
+2. Add an optional Boozer path through `booz_xform_jax` for models that need straight-field-line harmonics, while keeping analytic and VMEC-coordinate fixtures runnable without Boozer.
+3. Extend `fax benchmark` with memory/process telemetry and separate compile/warm kernel timing once matrix-free kernels are introduced.
+4. Start the first literature/cross-code comparison gate: STELLGAP-style continuum gaps for a documented quasi-symmetric or axisymmetric reference case.
 5. Begin global radial/eigenmode operator scaffolding with analytic TAE-gap fixtures before fast-ion drive is coupled.

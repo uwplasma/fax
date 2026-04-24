@@ -122,6 +122,14 @@ claims still require the planned STELLGAP/AE3D/literature comparison gates.
 
 ## Install
 
+After the v0.0.1 release is published to PyPI:
+
+```bash
+python -m pip install fax
+```
+
+From a local checkout:
+
 ```bash
 python -m pip install -e .
 ```
@@ -151,6 +159,7 @@ fax validate examples/minimal.toml --tag analytic
 fax continuum examples/landreman_paul_qa_lowres.toml
 fax plot-continuum outputs/landreman_paul_qa_lowres --output-dir outputs/landreman_paul_qa_lowres/figures
 fax convergence examples/landreman_paul_qa_lowres.toml --radial-points 24 --radial-points 40
+fax plot-convergence outputs/landreman_paul_qa_lowres/convergence --output-dir outputs/landreman_paul_qa_lowres/figures
 fax benchmark examples/landreman_paul_qa_lowres.toml --repeats 3
 ```
 
@@ -166,9 +175,10 @@ continuum scaffold, then writes `continuum_summary.json`,
 `continuum_metrics.json`, and `continuum_branches.csv`. `fax plot-continuum`
 turns those continuum artifacts into SVG/PNG dashboard figures.
 `fax convergence` sweeps radial resolution, angular resolution, and Fourier
-truncation, then writes a CSV/Markdown/JSON convergence report. `fax benchmark`
-records cold runtime, warm runtime, and artifact size for local performance
-tracking.
+truncation, then writes a CSV/Markdown/JSON convergence report.
+`fax plot-convergence` turns those reports into radial/angular/Fourier
+convergence dashboards. `fax benchmark` records cold runtime, warm runtime, and
+artifact size for local performance tracking.
 
 For machine-readable output:
 
@@ -178,6 +188,7 @@ fax validate examples/minimal.toml --tag metric --json
 fax continuum examples/minimal.toml --json
 fax plot-continuum outputs --json
 fax convergence examples/minimal.toml --radial-points 32 --radial-points 64 --json
+fax plot-convergence outputs/convergence --json
 fax benchmark examples/minimal.toml --repeats 1 --warmups 0 --json
 fax examples/minimal.toml --dump-config
 fax examples/minimal.toml --quiet
@@ -198,6 +209,22 @@ The continuum command is still the scaffold model described above: local
 profile branches plus the first metric-matrix generalized eigenproblem. It is
 useful for adapter checks, diagnostics, and figure generation, while full 3-D
 stellarator continuum validation remains planned work.
+
+## Research Examples
+
+Runnable examples are in `examples/`:
+
+```bash
+fax continuum examples/analytic_circular_tokamak.toml
+fax convergence examples/analytic_convergence.toml --radial-points 16 --radial-points 32 --radial-points 48
+python examples/research/validation_packet.py
+python examples/research/density_sensitivity.py
+python examples/research/inverse_iota_shift.py
+```
+
+These generate validation packets, continuum artifacts, convergence dashboards,
+JAX sensitivity output, and a small inverse-design trace using the current
+validated scaffold.
 
 ## Figures
 
@@ -261,6 +288,8 @@ validation.
 - `examples`: runnable TOML examples.
 - `tests`: unit tests for the scaffold.
 - `.github/workflows`: tests, docs, and PyPI publishing workflows.
+- `CHANGELOG.md`: release history.
+- `.github/release_notes`: GitHub release notes used for tagged releases.
 
 ## Current Scope
 

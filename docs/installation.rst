@@ -1,6 +1,12 @@
 Installation
 ============
 
+After the v0.0.1 GitHub release is published to PyPI:
+
+.. code-block:: bash
+
+   python -m pip install fax
+
 Install from a local checkout:
 
 .. code-block:: bash

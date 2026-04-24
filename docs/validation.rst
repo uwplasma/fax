@@ -74,6 +74,7 @@ Resolution sweeps are available through the convergence workflow:
 
    fax convergence examples/landreman_paul_qa_lowres.toml
    fax convergence examples/minimal.toml --radial-points 16 --radial-points 32 --angular-points 8 --angular-points 12 --mode-max 1 --mode-max 2 --json
+   fax plot-convergence outputs/convergence --output-dir outputs/figures
 
 This writes a CSV table, JSON summary, and Markdown report comparing each
 radial/angular/Fourier truncation against the highest-resolution entry in the

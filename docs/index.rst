@@ -20,8 +20,10 @@ model.
    differentiability
    optimization
    demonstrations
+   research_examples
    figures
    validation
    literature
+   release
    development
    api

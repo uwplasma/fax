@@ -21,6 +21,15 @@ class ContinuumArtifacts:
     branches: dict[str, np.ndarray]
 
 
+@dataclass(frozen=True)
+class ConvergenceArtifacts:
+    """Loaded files produced by ``fax convergence``."""
+
+    artifact_dir: Path
+    summary: dict[str, Any]
+    metrics: dict[str, np.ndarray]
+
+
 def load_continuum_artifacts(artifact_dir: str | Path) -> ContinuumArtifacts:
     """Load ``fax continuum`` JSON/CSV artifacts from a directory."""
     root = Path(artifact_dir).expanduser().resolve()
@@ -35,6 +44,20 @@ def load_continuum_artifacts(artifact_dir: str | Path) -> ContinuumArtifacts:
     metrics = json.loads(metrics_path.read_text(encoding="utf-8"))
     branches = _read_numeric_csv(branches_path)
     return ContinuumArtifacts(artifact_dir=root, summary=summary, metrics=metrics, branches=branches)
+
+
+def load_convergence_artifacts(artifact_dir: str | Path) -> ConvergenceArtifacts:
+    """Load ``fax convergence`` JSON/CSV artifacts from a directory."""
+    root = Path(artifact_dir).expanduser().resolve()
+    summary_path = root / "convergence_summary.json"
+    metrics_path = root / "convergence_metrics.csv"
+    missing = [str(path) for path in (summary_path, metrics_path) if not path.exists()]
+    if missing:
+        raise FileNotFoundError(f"missing convergence artifact file(s): {', '.join(missing)}")
+
+    summary = json.loads(summary_path.read_text(encoding="utf-8"))
+    metrics = _read_numeric_csv(metrics_path)
+    return ConvergenceArtifacts(artifact_dir=root, summary=summary, metrics=metrics)
 
 
 def plot_continuum_artifacts(
@@ -101,6 +124,147 @@ def plot_continuum_artifacts(
     paths = _save_figure(fig, output_path, stem, formats=formats)
     plt.close(fig)
     return paths
+
+
+def plot_convergence_artifacts(
+    artifact_dir: str | Path,
+    *,
+    output_dir: str | Path | None = None,
+    stem: str = "convergence_artifact_dashboard",
+    formats: tuple[str, ...] = ("svg", "png"),
+) -> tuple[Path, ...]:
+    """Plot radial, angular, Fourier, and residual metrics from convergence artifacts."""
+    artifacts = load_convergence_artifacts(artifact_dir)
+    output_path = Path(output_dir).expanduser().resolve() if output_dir is not None else artifacts.artifact_dir
+    output_path.mkdir(parents=True, exist_ok=True)
+    plt = _setup_matplotlib()
+
+    records = _summary_records(artifacts.summary)
+    if not records:
+        raise ValueError("convergence_summary.json does not contain any records")
+    max_radial = max(int(record["radial_points"]) for record in records)
+    max_angular = max(int(record["theta_points"]) for record in records)
+    max_mode = max(int(record["m_max"]) for record in records)
+    radial_records = _select_records(records, theta_points=max_angular, m_max=max_mode)
+    angular_records = _select_records(records, radial_points=max_radial, m_max=max_mode)
+    mode_records = _select_records(records, radial_points=max_radial, theta_points=max_angular)
+
+    fig, axes = plt.subplots(1, 3, figsize=(10.8, 3.5), constrained_layout=True)
+    _plot_metric_curve(
+        axes[0],
+        records=radial_records,
+        x_key="radial_points",
+        y_key="frequency_l2_error_vs_reference",
+        title="Radial refinement",
+        xlabel="radial points",
+        color="#2458a6",
+        marker="o",
+    )
+    _plot_metric_curve(
+        axes[1],
+        records=angular_records,
+        x_key="theta_points",
+        y_key="frequency_l2_error_vs_reference",
+        title="Angular refinement",
+        xlabel="theta/zeta points",
+        color="#b13f2a",
+        marker="s",
+    )
+    _plot_metric_curve(
+        axes[2],
+        records=mode_records,
+        x_key="branch_count",
+        y_key="mode_truncation_l2_error_vs_global_reference",
+        title="Mode and residual checks",
+        xlabel="branch count",
+        color="#2e7d32",
+        marker="^",
+        label="mode truncation",
+    )
+    if mode_records:
+        axes[2].semilogy(
+            [float(record["branch_count"]) for record in mode_records],
+            [_positive_plot_value(record["residual_p95"]) for record in mode_records],
+            marker="d",
+            linewidth=1.4,
+            color="#6d3a9c",
+            label="residual p95",
+        )
+        axes[2].legend(loc="best")
+
+    case = artifacts.summary.get("case", "unknown case")
+    reference = artifacts.summary.get("reference", {})
+    reference_text = ""
+    if isinstance(reference, dict):
+        reference_text = (
+            f" | ref radial={reference.get('radial_points', '?')}, "
+            f"theta={reference.get('theta_points', '?')}, m_max={reference.get('m_max', '?')}"
+        )
+    fig.suptitle(f"{case}: convergence artifact dashboard{reference_text}", fontsize=12, weight="bold")
+
+    paths = _save_figure(fig, output_path, stem, formats=formats)
+    plt.close(fig)
+    return paths
+
+
+def _summary_records(summary: dict[str, Any]) -> list[dict[str, float]]:
+    raw_records = summary.get("records", [])
+    records: list[dict[str, float]] = []
+    for raw in raw_records:
+        if not isinstance(raw, dict):
+            continue
+        record: dict[str, float] = {}
+        for key, value in raw.items():
+            if isinstance(value, bool):
+                continue
+            if isinstance(value, (int, float)) and np.isfinite(value):
+                record[key] = float(value)
+        records.append(record)
+    return records
+
+
+def _select_records(records: list[dict[str, float]], **criteria: int) -> list[dict[str, float]]:
+    selected = []
+    for record in records:
+        if all(int(record.get(key, -1)) == int(value) for key, value in criteria.items()):
+            selected.append(record)
+    return sorted(
+        selected,
+        key=lambda item: (
+            int(item.get("radial_points", 0)),
+            int(item.get("theta_points", 0)),
+            int(item.get("m_max", 0)),
+            int(item.get("branch_count", 0)),
+        ),
+    )
+
+
+def _plot_metric_curve(
+    ax: Any,
+    *,
+    records: list[dict[str, float]],
+    x_key: str,
+    y_key: str,
+    title: str,
+    xlabel: str,
+    color: str,
+    marker: str,
+    label: str | None = None,
+) -> None:
+    ax.set_title(title)
+    ax.set_xlabel(xlabel)
+    ax.set_ylabel("relative metric")
+    if not records:
+        ax.text(0.5, 0.5, "not enough records", transform=ax.transAxes, ha="center", va="center")
+        return
+    x_values = [float(record[x_key]) for record in records if x_key in record and y_key in record]
+    y_values = [_positive_plot_value(record[y_key]) for record in records if x_key in record and y_key in record]
+    ax.semilogy(x_values, y_values, marker=marker, linewidth=1.8, color=color, label=label)
+
+
+def _positive_plot_value(value: float, *, floor: float = 1.0e-16) -> float:
+    value_float = float(value)
+    return value_float if np.isfinite(value_float) and value_float > floor else floor
 
 
 def _read_numeric_csv(path: Path) -> dict[str, np.ndarray]:

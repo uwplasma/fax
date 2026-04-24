@@ -33,6 +33,7 @@ Compute the current continuum scaffold and write branch/metric artifacts:
    fax continuum examples/landreman_paul_qa_lowres.toml
    fax plot-continuum outputs/landreman_paul_qa_lowres --output-dir outputs/landreman_paul_qa_lowres/figures
    fax convergence examples/landreman_paul_qa_lowres.toml --radial-points 24 --radial-points 40
+   fax plot-convergence outputs/landreman_paul_qa_lowres/convergence --output-dir outputs/landreman_paul_qa_lowres/figures
    fax benchmark examples/landreman_paul_qa_lowres.toml --repeats 3
 
 The normal CLI prints rich progress output: solve parameters, phase status,
@@ -47,6 +48,7 @@ For machine-readable output:
    fax continuum examples/minimal.toml --json
    fax plot-continuum outputs --json
    fax convergence examples/minimal.toml --radial-points 32 --radial-points 64 --json
+   fax plot-convergence outputs/convergence --json
    fax benchmark examples/minimal.toml --repeats 1 --warmups 0 --json
    fax examples/minimal.toml --dump-config
    fax examples/minimal.toml --quiet
