@@ -473,6 +473,8 @@ Needed docs:
 - Verified unit tests with `python -m pytest` on local Python 3.13: 7 passed.
 - Verified docs with `sphinx-build -W -b html docs docs/_build/html`.
 - Verified local packaging with `python -m build`.
+- Pushed initial commit `4facfaf` to `main`.
+- GitHub Actions workflows were created and triggered, but GitHub did not start jobs. Check-run annotations report: "The job was not started because recent account payments have failed or your spending limit needs to be increased." This is an account/billing or spending-limit blocker, not a workflow/test failure. Re-run `Tests` and `Docs` after the UWPlasma billing/spending limit is fixed.
 
 ### Next Recommended Step
 
