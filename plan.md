@@ -197,6 +197,484 @@ Candidate scope:
 
 This phase must not block the linear design tool.
 
+## Planning Milestone: Functionality, Equations, Differentiability, And Reactor Design
+
+Date added: 2026-04-24.
+
+This milestone expands the initial scaffold into a concrete product and science plan. It answers what `fax` should compute, what it should read and write, which equations are allowed into the code, how those equations are verified, how differentiability should work, and how the code can become credible for publications and future stellarator power-plant design.
+
+### License
+
+`fax` uses the MIT license. Keep the license permissive unless UWPlasma later decides a different policy is required for non-code reference data. Third-party validation data must retain its own license/provenance metadata and should not be treated as MIT-licensed unless that is explicitly true.
+
+### Planned User-Facing Functionality
+
+The code should eventually support these workflows:
+
+1. `fax continuum case.toml`: compute continuum branches, mode-family coupling, gaps, branch labels, and gap metrics.
+2. `fax eigenmodes case.toml`: compute global reduced-MHD or ideal-MHD eigenmodes, eigenfunctions, residuals, harmonic content, and localization metrics.
+3. `fax fast-ion case.toml`: estimate perturbative drive/damping or reduced fast-ion-fluid stability metrics for validated mode families.
+4. `fax optimize case.toml`: expose differentiable objectives for `vmec_jax`/shape/profile optimization.
+5. `fax validate case.toml`: run a registered validation case and compare with analytic, literature, or cross-code references.
+6. `fax benchmark case.toml`: separate compile time, warm runtime, memory, and scaling metrics.
+7. Python API workflows: call pure functions from optimization loops, notebooks, scripts, or other UWPlasma tools.
+
+The CLI should remain TOML-driven, but every CLI mode should call a documented Python API so research users can script, batch, differentiate, and debug without shell parsing.
+
+### Inputs
+
+Required input classes:
+
+- `run`: case name, model, output directory, random seeds for stochastic/UQ demos, and provenance settings.
+- `equilibrium`: one of `vmec_jax` object, VMEC input, VMEC `wout`, analytic equilibrium, or a stored geometry artifact.
+- `coordinates`: VMEC coordinates by default; `booz_xform_jax` object or `boozmn` file for Boozer-dependent models.
+- `profiles`: mass density, electron/ion temperature, pressure, current/iota controls, impurity/effective mass assumptions, and uncertainty models.
+- `mode_family`: base toroidal/poloidal labels, field-period coupling family, parity/symmetry choices, and truncation.
+- `fast_ions`: distribution family, density/beta, gradients, birth energy, pitch-angle model, species mass/charge, source localization, and uncertainty.
+- `numerics`: radial basis, quadrature, Fourier truncation, precision, eigensolver, differentiation mode, tolerances, and checkpointing.
+- `validation`: reference case identifiers, tolerances, source citations, and regeneration commands.
+- `optimization`: design variables, bounds, regularization, constraints, objective weights, and optimizer settings.
+
+Input parsing must produce typed dataclasses before numerical work starts. No physics kernel should parse files directly.
+
+### Outputs
+
+Required output classes:
+
+- `summary.json`: version, commit, environment, config hash, run status, timings, and key scalar metrics.
+- `results.nc` or `results.zarr`: coordinates, profiles, continuum branches, eigenvalues, eigenvectors, growth rates, mode-family metadata, and derivatives when requested.
+- `metrics.csv` or `metrics.parquet`: scalar metrics for scans and optimization loops.
+- `validation_report.md`: reference values, errors, tolerances, pass/fail status, and source citations.
+- `figures/`: continuum maps, gap maps, mode structures, sensitivity bars, UQ bands, and performance plots.
+- Python return objects: JAX pytrees suitable for `jit`, `vmap`, `grad`, and downstream optimization.
+
+All outputs must include enough provenance to reproduce the result: package version, git commit, platform/backend, precision, input hash, source files, and reference data versions.
+
+### Equations And Model Ladder
+
+`fax` should implement equations in a ladder. A higher rung cannot be used for a publication claim until the lower rungs have tests and validation.
+
+#### Local shear-Alfven continuum
+
+Start with the local continuum limit:
+
+```text
+omega_A,mn(s) = v_A(s) |k_parallel,mn(s)|,
+v_A = B / sqrt(mu0 rho).
+```
+
+In a large-aspect-ratio straight-field-line limit, `k_parallel` must reduce to a form proportional to `n - m*iota(s)`. The production implementation must use the full metric/Jacobian/operator representation from VMEC or Boozer coordinates, and the simple formula should be treated as a limiting test, not the whole model.
+
+#### Fourier-coupled continuum operator
+
+Build a Galerkin/Fourier operator for each mode family:
+
+```text
+K_A(s; q) a = omega^2 M_A(s; q) a,
+```
+
+where `a` is the harmonic amplitude vector and `q` includes geometry, density, iota, and model parameters. For accepted Hermitian reduced-MHD cases, require:
+
+```text
+K_A = K_A^H, M_A = M_A^H, M_A > 0.
+```
+
+Sound coupling, compressibility, and geodesic acoustic coupling should enter only after the incompressible operator reproduces analytic and STELLGAP-style tests.
+
+#### Radially global eigenmodes
+
+The global reduced-MHD eigenproblem should use a radial Galerkin/FEM/spectral or finite-difference basis:
+
+```text
+K(q) x = lambda M(q) x,  lambda = omega^2.
+```
+
+Accepted eigenpairs must report residuals:
+
+```text
+||K x - lambda M x|| / (||K x|| + |lambda| ||M x||).
+```
+
+Eigenfunctions must have a deterministic normalization and phase/gauge convention before derivatives are exposed.
+
+#### Ideal-MHD energy-principle bridge
+
+Before full ideal-MHD claims, document the relation between the reduced operator and the linearized ideal-MHD energy principle. Track which terms are retained or dropped:
+
+- field-line bending,
+- pressure-gradient/interchange terms,
+- compressibility/sound coupling,
+- equilibrium current terms,
+- curvature terms,
+- boundary conditions.
+
+This bridge is necessary for reviewer-proof comparison with CAS3D/CAS3D-K and full-MHD literature.
+
+#### Fast-ion perturbative drive
+
+The first fast-ion stability path should use a fixed validated eigenfunction:
+
+```text
+gamma_f ~= - Im(delta W_f) / (2 omega W_MHD).
+```
+
+The drift-kinetic resonance operator must expose the resonant phase-space denominator and sign convention, with tests in transit, bounce, and precession limits:
+
+```text
+omega - n omega_phi - m omega_theta - l omega_b - omega_d.
+```
+
+FAR3D-style energetic-particle moment/Landau closures should be added as a separate reduced model, not mixed silently with perturbative kinetic estimates.
+
+#### Reduced nonlinear extensions
+
+Nonlinear amplitude, saturation, and transport models should be downstream of linear validation. They should not be used to tune or hide errors in the linear continuum/global-mode/drive pipeline.
+
+### Physics Gates
+
+Each physics capability must pass gates before being presented as mature:
+
+- `G0 dimensions`: units, normalization, species conventions, and coordinate conventions tested.
+- `G1 analytic`: cylinder, slab, or large-aspect-ratio tokamak limit reproduced.
+- `G2 algebraic`: Hermiticity, positive mass matrix, symmetry/parity, and residual identities tested.
+- `G3 convergence`: radial, angular, Fourier, quadrature, and precision convergence demonstrated.
+- `G4 cross-code`: matched against STELLGAP, AE3D, CAS3D/CONTI, FAR3D, or another appropriate code.
+- `G5 experiment/literature`: selected experimental or literature figure/metric reproduced within stated uncertainty.
+- `G6 differentiability`: gradients pass finite-difference, tangent-linear, and adjoint consistency checks.
+- `G7 design`: objective is smooth, robust under uncertainty, and meaningful under reactor-relevant constraints.
+
+Gate status should be machine-readable in validation reports.
+
+### Correct Implementation Of Equations
+
+Every equation should be implemented by a documented process:
+
+1. Create an equation note in `docs/equations.rst` or a dedicated derivation page with symbols, assumptions, units, and source references.
+2. Create a minimal analytic/reference implementation, even if slow and dense.
+3. Add a low-resolution JAX implementation.
+4. Check dimensions and limiting behavior.
+5. Check algebraic properties: Hermiticity, symmetry, positive definiteness, conservation, and coordinate invariance where applicable.
+6. Compare direct matrix application against operator/matrix-free application.
+7. Verify residuals for eigenpairs.
+8. Verify derivatives against finite differences over a controlled step-size sweep.
+9. Run convergence tests in resolution and precision.
+10. Freeze a regression artifact only after the reference source and tolerance are recorded.
+
+Docstrings for physics kernels should include:
+
+- equation name or identifier,
+- source or derivation page,
+- coordinate convention,
+- units/normalization,
+- input/output shapes,
+- differentiability status,
+- test names that cover the function.
+
+Comments should explain non-obvious numerical choices, not restate assignments.
+
+### Differentiability Plan
+
+Differentiate at the mathematical level appropriate to each solver:
+
+#### Direct autodiff through dense references
+
+Use JAX direct autodiff for small dense operators and eigensolvers. This provides the baseline for correctness and makes failures in custom adjoints visible.
+
+#### Generalized Hermitian eigenvalue adjoint
+
+For isolated eigenvalues with
+
+```text
+K x = lambda M x,   x^H M x = 1,
+```
+
+the first-order sensitivity is:
+
+```text
+d lambda = x^H (dK - lambda dM) x.
+```
+
+Implement this as a custom JVP/VJP after dense direct autodiff tests exist. Treat repeated/near-crossing eigenvalues as a separate subspace problem; do not present single-mode gradients through crossings as physical sensitivities.
+
+#### Non-Hermitian and growth-rate adjoints
+
+For non-Hermitian reduced fast-ion operators, use left/right eigenvectors:
+
+```text
+d lambda = y^H (dA) x / (y^H x),
+```
+
+with conditioning diagnostics and warnings near defective spectra.
+
+#### Implicit differentiation for solves
+
+Large eigenvalue, shift-invert, equilibrium, Boozer, or nonlinear solves should not rely on backpropagating through arbitrary iteration histories. Use `jax.custom_vjp`, `jax.custom_jvp`, `jax.lax.custom_linear_solve`, JAXopt-style implicit differentiation, or Lineax-backed transposed solves when this is clearer and faster.
+
+#### Discretize-then-optimize vs optimize-then-discretize
+
+Both approaches should be tested:
+
+- direct AD of the discrete algorithm for dense reference problems,
+- discrete adjoints/custom VJPs for production solvers,
+- continuous/physics adjoint formulas where they are known and reviewable.
+
+Recent spectral-adjoint work in Dedalus shows a useful pattern: build adjoint solvers from symbolic sparse-spectral operator graphs so gradient solves retain sparse/spectral efficiency. `fax` should not copy Dedalus, but it should adopt the lesson: represent operators with enough structure that transposes/adjoints are explicit and testable.
+
+Sources:
+
+- JAX custom derivatives: <https://docs.jax.dev/en/latest/jep/2026-custom-derivatives.html>
+- JAX key transforms and tracing: <https://docs.jax.dev/en/latest/key-concepts.html>
+- JAX sparse warning/BCOO reference: <https://docs.jax.dev/en/latest/jax.experimental.sparse.html>
+- JAX-FEM implicit differentiation pattern: <https://deepmodeling.github.io/jax-fem/learn/compute_gradients/example.html>
+- Fast automated adjoints for spectral PDE solvers: <https://arxiv.org/abs/2506.14792>
+
+### JAX Ecosystem Evaluation
+
+Keep base dependencies lean and unpinned. Add optional extras for ecosystem experiments. No external JAX ecosystem library becomes required until it beats or clarifies a native-JAX reference implementation.
+
+#### Lineax
+
+Reason to test: Lineax provides differentiable linear solves and matrix-free/structured linear operators in the JAX+Equinox ecosystem. Its API includes transposed solver state and iterative solvers such as CG, BiCGStab, and GMRES. This is directly relevant to adjoint linear solves and shift-invert prototypes.
+
+Planned trials:
+
+- dense `K - sigma M` solve versus `jax.scipy.linalg`,
+- matrix-free operator for radial-Fourier global modes,
+- transpose/adjoint solve equality tests,
+- gradient correctness and runtime versus `jax.lax.custom_linear_solve`.
+
+Adopt only if it reduces custom code without hiding physics/operator structure.
+
+Source: <https://docs.kidger.site/lineax/api/solvers/>
+
+#### Equinox
+
+Reason to test: Equinox represents models as PyTrees and provides filtered transforms. This may make model/operator objects easier to manage while preserving JAX transformations.
+
+Planned trials:
+
+- define `EquilibriumGeometry`, `ModeFamily`, and `OperatorSpec` as Equinox modules,
+- compare compile cache behavior versus dataclass/NamedTuple pytrees,
+- verify docstring/type clarity for non-ML scientific users.
+
+Adopt only if it improves ergonomics and does not make simple pure functions harder to inspect.
+
+Source: <https://docs.kidger.site/equinox/all-of-equinox/>
+
+#### Diffrax
+
+Reason to test: Diffrax offers JAX-native ODE/SDE solvers with multiple adjoint modes. It is relevant for FAR3D-like time evolution, nonlinear reduced models, marker/phase-space characteristic tests, and quasilinear transport demonstrations.
+
+Planned trials:
+
+- reduced two-field Alfven wave time integration,
+- energetic-particle moment closure time evolution,
+- comparison of recursive checkpoint, direct, forward-mode, and backsolve adjoints,
+- energy conservation and gradient checks.
+
+Do not use Diffrax for the primary eigenvalue workflow unless a time-domain validation requires it.
+
+Source: <https://docs.kidger.site/diffrax/api/adjoints/>
+
+#### JAXopt, Optimistix, Optax
+
+Reason to test: these may simplify optimization, root-solving, least-squares, and implicit-differentiation workflows.
+
+Planned trials:
+
+- JAXopt implicit root differentiation for branch tracking and nonlinear closures,
+- Optimistix least-squares/root solvers for inverse problems,
+- Optax for first-order stochastic UQ/inverse-design demonstrations.
+
+Adopt only after examples show clear maintenance value.
+
+#### JAX sparse
+
+JAX BCOO is transform-compatible but the docs describe the sparse module as experimental and not recommended for performance-critical use. `fax` should use dense references first, then matrix-free/block-structured operators. BCOO can be a prototype or storage format but should not be the performance plan by itself.
+
+### Source Code Management Plan
+
+Target package layout:
+
+```text
+src/fax/
+  config.py
+  cli.py
+  constants.py
+  units.py
+  coordinates/
+    vmec.py
+    boozer.py
+    analytic.py
+  equilibrium/
+    adapters.py
+    geometry.py
+    profiles.py
+  modes/
+    families.py
+    labels.py
+    tracking.py
+  operators/
+    continuum.py
+    global_modes.py
+    sound.py
+    fast_ion.py
+    matrix_free.py
+  solvers/
+    dense.py
+    krylov.py
+    eig.py
+    adjoints.py
+  fast_ions/
+    distributions.py
+    resonances.py
+    moments.py
+    drive.py
+  objectives/
+    gaps.py
+    growth.py
+    reactor.py
+    regularization.py
+  validation/
+    registry.py
+    metrics.py
+    reports.py
+  demos/
+    sensitivity.py
+    uncertainty.py
+    inverse_design.py
+```
+
+Management rules:
+
+- all hot kernels pure and side-effect free,
+- no file I/O inside JIT-transformed functions,
+- all static choices explicit in config/spec objects,
+- public APIs typed and documented,
+- tests colocated by behavior, not by implementation accident,
+- reference datasets tracked with provenance and checksums,
+- examples kept small enough to run in CI unless marked slow,
+- larger validation cases separated from unit tests.
+
+### Demonstration Plan
+
+Build demonstrations as scripts with saved outputs and docs pages:
+
+1. `examples/continuum_cylinder`: analytic continuum and derivative with respect to density.
+2. `examples/tokamak_tae_gap`: TAE gap scaling and convergence.
+3. `examples/stellarator_gap_vmec_jax`: VMEC/`vmec_jax` to continuum map.
+4. `examples/booz_xform_pipeline`: `vmec_jax` to `booz_xform_jax` to Boozer-harmonic continuum.
+5. `examples/eigenmode_dense_vs_matrix_free`: dense reference versus production solver.
+6. `examples/gradient_gap_sensitivity`: JAX gradient versus finite difference over density/iota/shape.
+7. `examples/uq_profile_uncertainty`: batched UQ for density and fast-ion profile uncertainty.
+8. `examples/inverse_design_gap_placement`: move a gap away from an alpha resonance window.
+9. `examples/fast_ion_threshold`: perturbative growth threshold with uncertainty bars.
+10. `examples/reactor_assessment_dashboard`: risk ranking for candidate reactor-scale equilibria.
+
+Each demo should state expected runtime and whether it is CI, slow-CI, or manual/GPU.
+
+### Metrics
+
+Numerical metrics:
+
+- eigenpair residual,
+- Hermiticity error,
+- mass-matrix positive-definiteness margin,
+- grid convergence slope,
+- Fourier convergence slope,
+- branch tracking continuity,
+- mode-label purity/mixing,
+- gap center/width error,
+- growth-rate error,
+- gradient finite-difference relative error,
+- adjoint consistency inner-product error.
+
+Performance metrics:
+
+- compile time,
+- warmed runtime,
+- memory peak,
+- FLOP proxy or operator applications,
+- scaling with radial points and harmonic count,
+- CPU/GPU speedup,
+- batched scan throughput.
+
+Design metrics:
+
+- distance from continuum resonance windows,
+- minimum damping/growth margin under uncertainty,
+- alpha-particle resonance overlap score,
+- sensitivity to density/iota/shape,
+- robustness across operating scenarios,
+- compatibility with quasisymmetry, coil, volume, aspect-ratio, beta, and confinement objectives.
+
+### Stellarator Optimization And Power-Plant Assessment
+
+`fax` should become an objective-provider for stellarator design, not an isolated post-processor.
+
+Candidate design variables:
+
+- VMEC boundary Fourier coefficients through `vmec_jax`,
+- current/iota and pressure-profile parameters,
+- density and temperature profiles,
+- fast-ion source/distribution parameters,
+- Boozer harmonic targets,
+- later, coil-proxy parameters when a differentiable coil/equilibrium bridge is reliable.
+
+Candidate objectives:
+
+- maximize separation between predicted dangerous eigenmodes and alpha-particle resonance windows,
+- maximize robust gap/damping margin under profile uncertainty,
+- minimize fast-ion growth-rate proxies,
+- penalize low-order core continuum resonances,
+- penalize sensitivity to uncertain profiles,
+- preserve quasisymmetry, coil feasibility, MHD equilibrium quality, aspect ratio, volume, beta, and alpha confinement objectives supplied by other design tools.
+
+Candidate reactor dashboard:
+
+- continuum/gap map by radius and mode family,
+- eigenmode risk ranking,
+- alpha and auxiliary-heating resonance overlays,
+- UQ bands for density/temperature/EP profiles,
+- design-gradient arrows or ranked Fourier-shape sensitivities,
+- "do not trust" flags when a model gate is not passed.
+
+Optimization demonstrations should start with a small number of shape/profile parameters and explicit constraints. A reactor-scale example should be treated as an assessment workflow until enough validation cases pass.
+
+Sources:
+
+- Stellarator shape adjoints and optimization overview: <https://terpconnect.umd.edu/~mattland/projects/6_optimization/>
+- DESC optimization discussion and AD motivation: <https://www.cambridge.org/core/journals/journal-of-plasma-physics/article/desc-stellarator-code-suite-part-3-quasisymmetry-optimization/0B262B685969D2F5697BEE28C8A78DB1>
+- SIMSOPT documentation: <https://simsopt.readthedocs.io/stable/>
+- STELLOPT documentation: <https://princetonuniversity.github.io/STELLOPT/STELLOPT.html>
+- TORAX as a JAX differentiable plasma-simulation precedent: <https://arxiv.org/abs/2406.06718>
+
+### JCP-Grade Publication Plan
+
+A credible JCP or similar methods publication should be scoped around the first validated differentiable continuum/global-mode capability, not the entire future roadmap.
+
+Minimum paper package:
+
+- method derivation and discretization,
+- open source code under MIT license,
+- reproducible validation inputs,
+- analytic continuum and gap tests,
+- STELLGAP/AE3D or equivalent cross-code comparisons,
+- gradient correctness section with finite-difference and adjoint tests,
+- performance/scaling section with CPU/GPU results,
+- design demonstration with `vmec_jax` gradients,
+- limitations and model validity boundaries,
+- archived release tag and documentation snapshot.
+
+Reviewer-proof standard:
+
+- no hidden empirical tuning in validation metrics,
+- every sign convention documented,
+- every benchmark tolerance justified,
+- figures regenerated by scripts,
+- failed or out-of-scope cases documented rather than omitted,
+- uncertainty in experimental/literature comparisons reported.
+
 ## Software Architecture
 
 ### Package Layers
@@ -403,6 +881,26 @@ Status: complete in initial commit.
 - Generate validation report figures from CI or reproducible scripts.
 - Tag release, publish docs, and optionally publish package to PyPI.
 
+### M10: Ecosystem And Differentiability Prototype Review
+
+- Prototype Lineax, Equinox, Diffrax, JAXopt, Optimistix, and Optax on small controlled problems.
+- Compare against native-JAX references for clarity, runtime, memory, and gradient correctness.
+- Decide which libraries remain optional, which become development extras, and which, if any, become required dependencies.
+- Document the decision in `docs/differentiability.rst`.
+
+### M11: Demonstration And Reactor Assessment Gallery
+
+- Add the demonstration scripts listed in the 2026-04-24 milestone.
+- Add CI-sized examples plus slow/manual validation examples.
+- Add a reactor assessment dashboard example with explicit model-gate warnings.
+- Add sensitivity, uncertainty quantification, and inverse-design showcases.
+
+### M12: JCP-Ready Methods Release
+
+- Scope a paper around the validated differentiable continuum/global eigenmode capability.
+- Freeze validation artifacts, benchmark scripts, and documentation.
+- Release an archival version and prepare the manuscript checklist.
+
 ## CI/CD Plan
 
 Current workflows:
@@ -451,6 +949,9 @@ Needed docs:
 4. Fast-ion model priority: FAR3D-style moment closure is the likely first differentiable reduced model; perturbative drift-kinetic response should follow.
 5. Reference data licensing: confirm which code outputs and literature-derived datasets can be committed to a private repo and later redistributed.
 6. Package name on PyPI: `fax` may be unavailable or ambiguous; confirm before first public release.
+7. Which optional JAX ecosystem libraries should be adopted after prototypes: Lineax, Equinox, Diffrax, JAXopt, Optimistix, and Optax remain candidates, not required dependencies.
+8. Whether production large-scale operators should use custom matrix-free objects, JAX sparse BCOO prototypes, Lineax operators, or a hybrid. Dense references remain mandatory either way.
+9. Which first publication target is safest: continuum/gap differentiability, global eigenmodes, or fast-ion reduced stability. Current recommendation is continuum/gap plus differentiable design metrics.
 
 ## Handoff Log
 
@@ -475,6 +976,14 @@ Needed docs:
 - Verified local packaging with `python -m build`.
 - Pushed initial commit `4facfaf` to `main`.
 - GitHub Actions workflows were created and triggered, but GitHub did not start jobs. Check-run annotations report: "The job was not started because recent account payments have failed or your spending limit needs to be increased." This is an account/billing or spending-limit blocker, not a workflow/test failure. Re-run `Tests` and `Docs` after the UWPlasma billing/spending limit is fixed.
+
+### 2026-04-24 America/Chicago
+
+- Added the second planning milestone covering functionality, inputs/outputs, equations, physics gates, equation-correctness workflow, differentiability methods, JAX ecosystem trials, source-code management, demonstrations, optimization, reactor assessment, and JCP-grade publication requirements.
+- Added docs pages for equations, differentiability, optimization, and demonstrations.
+- Added an optional `ecosystem` dependency extra for future prototypes using Diffrax, Equinox, JAXopt, Lineax, Optimistix, and Optax. These remain optional and unpinned.
+- Surveyed additional sources on custom derivatives, implicit differentiation, spectral adjoint solvers, Lineax, Equinox, Diffrax, stellarator adjoints/optimization, SIMSOPT/STELLOPT, DESC, and TORAX.
+- Verified after the milestone update with `python -m ruff check .`, `python -m pytest`, `sphinx-build -W -b html docs docs/_build/html`, and `python -m build`.
 
 ### Next Recommended Step
 

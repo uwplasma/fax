@@ -14,7 +14,12 @@ The initial survey anchors the code plan in the following families:
   references for selected cases.
 * BOOZ_XFORM and ``booz_xform_jax``: Boozer-coordinate transforms for
   straight-field-line representations.
+* JAX differentiable-solver practice: direct autodiff through small dense
+  references, custom JVP/VJP rules for eigenvalues and implicit solves, and
+  adjoint methods for scalable PDE-constrained optimization.
+* JAX ecosystem candidates: ``lineax`` for linear solves, ``equinox`` for
+  PyTree model organization, ``diffrax`` for time-dependent reduced models,
+  and ``jaxopt``/``optimistix`` for implicit optimization prototypes.
 
 See ``plan.md`` for source URLs, validation targets, and implementation
 priorities.
-

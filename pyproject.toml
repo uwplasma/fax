@@ -43,6 +43,7 @@ fax = "fax.cli:main"
 [project.optional-dependencies]
 test = ["pytest"]
 docs = ["sphinx", "furo"]
+ecosystem = ["diffrax", "equinox", "jaxopt", "lineax", "optimistix", "optax"]
 dev = ["build", "pytest", "ruff", "mypy", "sphinx", "furo"]
 
 [tool.setuptools.packages.find]

@@ -16,8 +16,11 @@ model.
    quickstart
    configuration
    architecture
+   equations
+   differentiability
+   optimization
+   demonstrations
    validation
    literature
    development
    api
-
