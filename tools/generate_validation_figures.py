@@ -14,6 +14,8 @@ import numpy as np
 from fax.boozer import (
     BoozerSpectrum,
     boozer_angle_grid,
+    boozer_continuum_frequencies_hz,
+    boozer_continuum_matrices,
     boozer_harmonic_orthogonality_error,
     boozer_projection_error,
     normalized_nonaxisymmetric_boozer_energy,
@@ -428,6 +430,117 @@ def generate_boozer_harmonic_validation(output_dir: Path) -> list[Path]:
     return paths
 
 
+def generate_boozer_continuum_coupling(output_dir: Path) -> list[Path]:
+    """Generate a reduced Boozer continuum coupling validation figure."""
+    plt = _setup_matplotlib()
+    magnetic_field = 2.7
+    mass_density = 3.4e-8
+    major_radius = 5.5
+    iota = 0.61
+    constant_spectrum = BoozerSpectrum(
+        source="constant_boozer_figure",
+        s=jnp.asarray([0.5]),
+        xm=jnp.asarray([0.0]),
+        xn=jnp.asarray([0.0]),
+        bmnc=jnp.asarray([[magnetic_field]]),
+        bmns=None,
+        field_periods=1,
+    )
+    harmonics = jnp.asarray([[1.0, 0.0], [2.0, 1.0], [3.0, 2.0]])
+    matrix_frequency = np.asarray(
+        boozer_continuum_frequencies_hz(
+            constant_spectrum,
+            harmonics,
+            iota=iota,
+            major_radius=major_radius,
+            mass_density=mass_density,
+        )[0]
+    )
+    k_parallel = (np.asarray(harmonics)[:, 1] - np.asarray(harmonics)[:, 0] * iota) / major_radius
+    analytic_frequency = np.sort(magnetic_field / np.sqrt(4.0e-7 * np.pi * mass_density) * np.abs(k_parallel) / (2.0 * np.pi))
+
+    coupled_harmonics = jnp.asarray([[1.0, 0.0], [2.0, 1.0]])
+    coupled_spectrum = BoozerSpectrum(
+        source="coupled_boozer_figure",
+        s=jnp.asarray([0.5]),
+        xm=jnp.asarray([0.0, 1.0]),
+        xn=jnp.asarray([0.0, 1.0]),
+        bmnc=jnp.asarray([[2.8, 0.08]]),
+        bmns=None,
+        field_periods=1,
+    )
+    matrices = boozer_continuum_matrices(
+        coupled_spectrum,
+        coupled_harmonics,
+        iota=1.0 / 3.0,
+        major_radius=5.2,
+        mass_density=4.1e-8,
+        theta_points=96,
+        zeta_points=96,
+    )
+    normalized_stiffness = np.abs(np.asarray(matrices.stiffness[0]))
+    normalized_stiffness = normalized_stiffness / np.maximum(np.max(np.abs(np.diag(normalized_stiffness))), 1.0e-30)
+
+    amplitudes = np.linspace(0.0, 0.16, 20)
+    lower = []
+    upper = []
+    for amplitude in amplitudes:
+        spectrum = BoozerSpectrum(
+            source="amplitude_scan",
+            s=jnp.asarray([0.5]),
+            xm=jnp.asarray([0.0, 1.0]),
+            xn=jnp.asarray([0.0, 1.0]),
+            bmnc=jnp.asarray([[2.8, float(amplitude)]]),
+            bmns=None,
+            field_periods=1,
+        )
+        frequencies = np.asarray(
+            boozer_continuum_frequencies_hz(
+                spectrum,
+                coupled_harmonics,
+                iota=1.0 / 3.0,
+                major_radius=5.2,
+                mass_density=4.1e-8,
+                theta_points=96,
+                zeta_points=96,
+            )[0]
+        )
+        lower.append(float(frequencies[0] / 1.0e3))
+        upper.append(float(frequencies[1] / 1.0e3))
+
+    fig, axes = plt.subplots(1, 3, figsize=(11.0, 3.4), constrained_layout=True)
+
+    ax = axes[0]
+    x = np.arange(1, len(analytic_frequency) + 1)
+    ax.plot(x, analytic_frequency / 1.0e3, marker="o", linewidth=1.6, label="analytic profile")
+    ax.plot(x, matrix_frequency / 1.0e3, marker="s", linestyle="--", linewidth=1.3, label="Boozer matrix")
+    ax.set_title("Constant-field Boozer limit")
+    ax.set_xlabel("sorted branch")
+    ax.set_ylabel("frequency [kHz]")
+    ax.legend(fontsize=8)
+
+    ax = axes[1]
+    image = ax.imshow(normalized_stiffness, origin="lower", cmap="magma", vmin=0.0)
+    ax.set_title(r"$|K_{ij}|$ with $(m,n)=(1,1)$ in $B$")
+    ax.set_xticks([0, 1], ["(1,0)", "(2,1)"])
+    ax.set_yticks([0, 1], ["(1,0)", "(2,1)"])
+    fig.colorbar(image, ax=ax, fraction=0.046, pad=0.04, label="normalized")
+
+    ax = axes[2]
+    ax.plot(amplitudes / 2.8, lower, marker="o", linewidth=1.4, label="lower")
+    ax.plot(amplitudes / 2.8, upper, marker="s", linewidth=1.4, label="upper")
+    ax.fill_between(amplitudes / 2.8, lower, upper, color="#4c78a8", alpha=0.14)
+    ax.set_title("Coupling opens a reduced gap")
+    ax.set_xlabel(r"$B_{1,1}/B_{0,0}$")
+    ax.set_ylabel("frequency [kHz]")
+    ax.legend(fontsize=8)
+
+    fig.suptitle("Reduced Boozer continuum coupling validation", fontsize=12, weight="bold")
+    paths = _save_figure(fig, output_dir, "boozer_continuum_coupling")
+    plt.close(fig)
+    return paths
+
+
 def generate_continuum_artifact_dashboard(output_dir: Path) -> list[Path]:
     """Generate a dashboard from files written by the continuum workflow."""
     case = landreman_paul_qa_lowres()
@@ -699,6 +812,7 @@ def main(argv: list[str] | None = None) -> int:
         generate_gap_sensitivity_dashboard(output_dir),
         generate_global_gap_fastion_dashboard(output_dir),
         generate_boozer_harmonic_validation(output_dir),
+        generate_boozer_continuum_coupling(output_dir),
         generate_continuum_artifact_dashboard(output_dir),
         generate_metric_residual_convergence(output_dir),
         generate_landreman_convergence_dashboard(output_dir),

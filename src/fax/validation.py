@@ -11,6 +11,8 @@ import numpy as np
 
 from .boozer import (
     BoozerSpectrum,
+    boozer_continuum_frequencies_hz,
+    boozer_continuum_matrices,
     boozer_harmonic_orthogonality_error,
     boozer_projection_error,
     straight_field_line_phase_error,
@@ -37,6 +39,7 @@ from .metric import (
 )
 from .modes import stellarator_mode_family
 from .reference_cases import landreman_paul_qa_lowres
+from .units import MU0
 
 
 def relative_l2_error(actual: Any, expected: Any, *, floor: float = 1.0e-30) -> jnp.ndarray:
@@ -372,6 +375,76 @@ def _gate_boozer_straight_field_line_phase() -> GateResult:
     )
 
 
+def _gate_boozer_constant_field_continuum() -> GateResult:
+    gate_id = "boozer_constant_field_continuum"
+    tolerance = 1.0e-5
+    magnetic_field = 2.7
+    mass_density = 3.4e-8
+    major_radius = 5.5
+    iota = 0.61
+    spectrum = BoozerSpectrum(
+        source="constant_boozer_validation",
+        s=jnp.asarray([0.2, 0.8]),
+        xm=jnp.asarray([0.0]),
+        xn=jnp.asarray([0.0]),
+        bmnc=jnp.asarray([[magnetic_field], [magnetic_field]]),
+        bmns=None,
+        field_periods=1,
+    )
+    harmonics = jnp.asarray([[1.0, 0.0], [2.0, 1.0], [3.0, 2.0]])
+    frequencies = boozer_continuum_frequencies_hz(
+        spectrum,
+        harmonics,
+        iota=iota,
+        major_radius=major_radius,
+        mass_density=mass_density,
+    )
+    k_parallel = (harmonics[:, 1] - harmonics[:, 0] * iota) / major_radius
+    expected = magnetic_field / jnp.sqrt(MU0 * mass_density) * jnp.abs(k_parallel) / (2.0 * jnp.pi)
+    metric = relative_l2_error(frequencies[0], jnp.sort(expected))
+    return _pass_fail(
+        gate_id,
+        float(metric),
+        tolerance,
+        "constant-field Boozer continuum matrix reduces to the analytic profile-limit frequencies",
+    )
+
+
+def _gate_boozer_sideband_coupling_hermitian() -> GateResult:
+    gate_id = "boozer_sideband_coupling_hermitian"
+    tolerance = 1.0e-6
+    spectrum = BoozerSpectrum(
+        source="coupled_boozer_validation",
+        s=jnp.asarray([0.5]),
+        xm=jnp.asarray([0.0, 1.0]),
+        xn=jnp.asarray([0.0, 1.0]),
+        bmnc=jnp.asarray([[2.8, 0.08]]),
+        bmns=None,
+        field_periods=1,
+    )
+    harmonics = jnp.asarray([[1.0, 0.0], [2.0, 1.0]])
+    matrices = boozer_continuum_matrices(
+        spectrum,
+        harmonics,
+        iota=0.43,
+        major_radius=5.2,
+        mass_density=4.1e-8,
+        theta_points=96,
+        zeta_points=96,
+    )
+    stiffness = matrices.stiffness[0]
+    hermitian_error = hermitian_relative_error(stiffness)
+    coupling_ratio = jnp.abs(stiffness[0, 1]) / jnp.maximum(jnp.max(jnp.abs(jnp.diag(stiffness))), 1.0e-30)
+    coupling_failure = jnp.maximum(1.0e-3 - coupling_ratio, 0.0)
+    metric = float(jnp.maximum(hermitian_error, coupling_failure))
+    return _pass_fail(
+        gate_id,
+        metric,
+        tolerance,
+        "Boozer B^2 sideband coupling is nonzero and the reduced continuum matrix is Hermitian",
+    )
+
+
 def _gate_landreman_paul_adapter_smoke() -> GateResult:
     gate_id = "landreman_paul_adapter_smoke"
     tolerance = 0.0
@@ -648,6 +721,28 @@ def registered_validation_gates() -> tuple[ValidationGate, ...]:
             command="python -m pytest tests/test_boozer.py tests/test_validation_registry.py",
             tags=("boozer", "straight-field-line", "analytic"),
             _runner=_gate_boozer_straight_field_line_phase,
+        ),
+        ValidationGate(
+            gate_id="boozer_constant_field_continuum",
+            title="Boozer constant-field continuum limit",
+            layer="boozer",
+            quantity="relative frequency error",
+            tolerance=1.0e-5,
+            citation="Boozer-space reduced continuum matrix must recover omega=vA|n-m*iota|/R in the constant-field limit",
+            command="python -m pytest tests/test_boozer.py tests/test_validation_registry.py",
+            tags=("boozer", "continuum", "analytic"),
+            _runner=_gate_boozer_constant_field_continuum,
+        ),
+        ValidationGate(
+            gate_id="boozer_sideband_coupling_hermitian",
+            title="Boozer sideband coupling Hermiticity",
+            layer="boozer",
+            quantity="Hermitian error and sideband-coupling threshold",
+            tolerance=1.0e-6,
+            citation="Boozer B^2 Fourier harmonics couple shear-Alfven sidebands through the Hermitian energy principle",
+            command="python -m pytest tests/test_boozer.py tests/test_validation_registry.py",
+            tags=("boozer", "continuum", "coupling"),
+            _runner=_gate_boozer_sideband_coupling_hermitian,
         ),
         ValidationGate(
             gate_id="landreman_paul_adapter_smoke",

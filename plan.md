@@ -1068,6 +1068,12 @@ Needed docs:
   - Added `examples/research/boozer_harmonic_validation.py` and the generated `boozer_harmonic_validation` README/docs figure.
   - Direct `run_validation_suite()` now has 17 registered gates passing on this machine.
   - Verified after this Boozer step with `python -m ruff check .`, `python -m mypy src/fax`, `python -m pytest -q` (82 passed), `python tools/generate_validation_figures.py && python tools/qa_figures.py`, `sphinx-build -W -b html docs docs/_build/html`, `python -m build`, and `python -m twine check dist/*`.
+- Added the first reduced Boozer continuum coupling operator:
+  - `boozer_continuum_matrices` assembles a Hermitian reduced continuum matrix from verified Boozer ``|B|`` harmonics, straight-field-line ``k_parallel=(n-m*iota)/R``, and uniform Boozer-angle quadrature.
+  - Added `boozer_constant_field_continuum` and `boozer_sideband_coupling_hermitian` validation gates.
+  - Added `boozer_continuum_coupling` README/docs figure showing constant-field profile recovery, Hermitian sideband coupling, and reduced gap opening under controlled harmonic amplitude.
+  - Direct `run_validation_suite()` now has 19 registered gates passing on this machine.
+  - Verified after this Boozer-continuum step with `python -m ruff check .`, `python -m mypy src/fax`, `python -m pytest -q` (85 passed), `python tools/generate_validation_figures.py`, `python tools/qa_figures.py`, `sphinx-build -W -b html docs docs/_build/html`, `python -m build`, and `python -m twine check dist/*`.
 
 ### Local Testing Policy Until GitHub Actions Resume
 

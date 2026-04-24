@@ -13,6 +13,7 @@ Initial research scaffold release for FAX.
 - Analytic TAE/EAE/HAE gap estimates and reduced fast-ion transit/precession resonance diagnostics.
 - Optional Boozer-spectrum reader and local `booz_xform_jax` coupling smoke path.
 - Boozer harmonic reconstruction/projection, Fourier orthogonality, and straight-field-line phase validation.
+- Reduced Boozer continuum matrix with constant-field profile-limit and sideband-coupling gates.
 - Differentiable radial-mode avoidance objective for early design-screen demonstrations.
 - VMEC `wout` adapter smoke path for the Landreman-Paul QA low-resolution reference case.
 - Validation registry with named gates, tolerances, citations, commands, tags, and JSON/Markdown reports.

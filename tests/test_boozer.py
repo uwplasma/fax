@@ -8,7 +8,10 @@ import pytest
 from fax.boozer import (
     BoozerSpectrum,
     boozer_angle_grid,
+    boozer_continuum_frequencies_hz,
+    boozer_continuum_matrices,
     boozer_harmonic_orthogonality_error,
+    boozer_parallel_wavenumber,
     boozer_projection_error,
     dominant_boozer_modes,
     normalized_nonaxisymmetric_boozer_energy,
@@ -18,6 +21,7 @@ from fax.boozer import (
     run_booz_xform_jax_from_wout,
     straight_field_line_phase_error,
 )
+from fax.units import MU0
 
 
 BOOZ_XFORM_TEST_FILES = Path("/Users/rogerio/local/booz_xform_jax/tests/test_files")
@@ -71,6 +75,95 @@ def test_normalized_nonaxisymmetric_boozer_energy_is_jittable():
     energy = jax.jit(normalized_nonaxisymmetric_boozer_energy)(spectrum)
 
     assert 0.0 < float(energy) < 1.0
+
+
+def test_constant_boozer_continuum_matches_profile_limit():
+    magnetic_field = 2.7
+    mass_density = 3.4e-8
+    major_radius = 5.5
+    iota = 0.61
+    spectrum = BoozerSpectrum(
+        source="constant_boozer",
+        s=np.asarray([0.2, 0.8]),
+        xm=np.asarray([0.0]),
+        xn=np.asarray([0.0]),
+        bmnc=np.asarray([[magnetic_field], [magnetic_field]]),
+        bmns=None,
+        field_periods=1,
+    )
+    harmonics = np.asarray([[1.0, 0.0], [2.0, 1.0], [3.0, 2.0]])
+
+    matrices = boozer_continuum_matrices(
+        spectrum,
+        harmonics,
+        iota=iota,
+        major_radius=major_radius,
+        mass_density=mass_density,
+    )
+    frequencies = boozer_continuum_frequencies_hz(
+        spectrum,
+        harmonics,
+        iota=iota,
+        major_radius=major_radius,
+        mass_density=mass_density,
+    )
+    k_parallel = (harmonics[:, 1] - harmonics[:, 0] * iota) / major_radius
+    expected_frequency = magnetic_field / np.sqrt(MU0 * mass_density) * np.abs(k_parallel) / (2.0 * np.pi)
+
+    np.testing.assert_allclose(np.asarray(frequencies[0]), np.sort(expected_frequency), rtol=1.0e-5)
+    np.testing.assert_allclose(np.asarray(matrices.mass[0]), np.eye(3) * mass_density, rtol=3.0e-6, atol=1.0e-12)
+    stiffness = np.asarray(matrices.stiffness[0])
+    off_diagonal = stiffness - np.diag(np.diag(stiffness))
+    assert np.max(np.abs(off_diagonal)) / np.max(np.abs(np.diag(stiffness))) < 1.0e-8
+
+
+def test_boozer_continuum_sideband_coupling_is_hermitian_and_jittable():
+    spectrum = BoozerSpectrum(
+        source="coupled_boozer",
+        s=np.asarray([0.5]),
+        xm=np.asarray([0.0, 1.0]),
+        xn=np.asarray([0.0, 1.0]),
+        bmnc=np.asarray([[2.8, 0.08]]),
+        bmns=None,
+        field_periods=1,
+    )
+    harmonics = np.asarray([[1.0, 0.0], [2.0, 1.0]])
+
+    matrices = boozer_continuum_matrices(
+        spectrum,
+        harmonics,
+        iota=0.43,
+        major_radius=5.2,
+        mass_density=4.1e-8,
+        theta_points=96,
+        zeta_points=96,
+    )
+    stiffness = np.asarray(matrices.stiffness[0])
+
+    np.testing.assert_allclose(stiffness, np.conjugate(stiffness.T), rtol=1.0e-6, atol=1.0e-6)
+    assert abs(stiffness[0, 1]) / max(abs(stiffness[0, 0]), abs(stiffness[1, 1])) > 1.0e-3
+
+    import jax
+
+    jitted = jax.jit(
+        lambda spec: boozer_continuum_matrices(
+            spec,
+            harmonics,
+            iota=0.43,
+            major_radius=5.2,
+            mass_density=4.1e-8,
+            theta_points=32,
+            zeta_points=32,
+        ).stiffness
+    )(spectrum)
+    assert jitted.shape == (1, 2, 2)
+
+
+def test_boozer_parallel_wavenumber_shape():
+    harmonics = np.asarray([[1.0, 0.0], [2.0, 1.0]])
+    values = boozer_parallel_wavenumber(harmonics, iota=np.asarray([0.4, 0.5]), major_radius=5.0)
+
+    assert values.shape == (2, 2)
 
 
 @pytest.mark.requires_booz_xform_jax

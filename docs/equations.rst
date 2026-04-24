@@ -173,6 +173,25 @@ straight-field-line convention is
 A dedicated Boozer metric/operator assembly is still an open validation lane
 before Boozer spectra become the default stellarator continuum path.
 
+The first reduced Boozer continuum matrix now uses this scalar representation
+in the field-line-bending weight:
+
+.. math::
+
+   K_{ij}^{B} =
+   \left\langle
+   \frac{|B|^2}{\mu_0} k_{\parallel i} k_{\parallel j}
+   \phi_i^* \phi_j
+   \right\rangle_{\theta_B,\zeta_B},
+   \qquad
+   M_{ij}^{B} =
+   \rho \left\langle \phi_i^* \phi_j\right\rangle_{\theta_B,\zeta_B}.
+
+It recovers the analytic profile frequency in the constant-field limit and
+opens controlled sideband coupling when a known Boozer harmonic is added to
+``|B|``. The remaining open work is to replace the uniform quadrature and
+large-aspect-ratio ``k_parallel`` with the full Boozer metric/Jacobian terms.
+
 Equation Acceptance
 -------------------
 

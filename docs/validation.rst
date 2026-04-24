@@ -53,6 +53,10 @@ tags, and command. The current gates are:
   reconstruction/projection and Fourier orthogonality on a synthetic spectrum.
 * ``boozer_straight_field_line_phase``: checks that Boozer harmonic phases have
   slope ``m*iota-n`` along a straight field line.
+* ``boozer_constant_field_continuum``: checks that the reduced Boozer continuum
+  matrix recovers ``omega=v_A |n-m*iota|/R`` for constant ``|B|``.
+* ``boozer_sideband_coupling_hermitian``: checks that a known Boozer harmonic
+  produces nonzero sideband coupling while keeping the matrix Hermitian.
 * ``landreman_paul_adapter_smoke``: checks the Landreman-Paul QA VMEC ``wout``
   profile and metric adapters when local data are available.
 * ``landreman_paul_continuum_finite``: checks that the Landreman-Paul profile
@@ -152,7 +156,15 @@ yet full 3-D Alfvén-continuum validation.
 
    Boozer harmonic reconstruction/projection, Fourier orthogonality, and
    straight-field-line phase checks. These validate representation conventions
-   before Boozer metric operators are used for continuum claims.
+   before Boozer metric operators are used for continuum claims. The plotted
+   spectrum is synthetic and is not intended to be quasisymmetric.
+
+.. figure:: _static/boozer_continuum_coupling.svg
+   :alt: Reduced Boozer continuum coupling validation dashboard.
+
+   Reduced Boozer continuum matrix checks: constant-field reduction to the
+   analytic profile limit, Hermitian sideband coupling from a known Boozer
+   harmonic, and gap opening as the harmonic amplitude increases.
 
 .. figure:: _static/landreman_paul_convergence_dashboard.svg
    :alt: LandremanPaul2021 QA radial, angular, and Fourier convergence dashboard.

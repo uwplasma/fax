@@ -17,6 +17,9 @@ import jax
 import jax.numpy as jnp
 import numpy as np
 
+from .metric import ContinuumMatrices, generalized_hermitian_eigenvalues
+from .units import MU0
+
 
 @jax.tree_util.register_pytree_node_class
 @dataclass(frozen=True)
@@ -265,6 +268,100 @@ def straight_field_line_phase_error(
     numerator = jnp.linalg.norm(observed - expected[None, :])
     denominator = jnp.maximum(jnp.linalg.norm(expected), float(floor))
     return numerator / denominator
+
+
+def boozer_parallel_wavenumber(harmonics: Any, *, iota: Any, major_radius: float) -> jax.Array:
+    """Return large-aspect-ratio ``k_parallel=(n-m*iota)/R`` for Boozer harmonics."""
+    harmonic_array = jnp.asarray(harmonics)
+    if harmonic_array.ndim != 2 or harmonic_array.shape[1] != 2:
+        raise ValueError("harmonics must have shape (count, 2) with columns (m, n)")
+    m = harmonic_array[:, 0]
+    n = harmonic_array[:, 1]
+    iota_array = jnp.asarray(iota)
+    return (n[None, :] - m[None, :] * iota_array[:, None]) / float(major_radius) if iota_array.ndim == 1 else (n - m * iota_array) / float(major_radius)
+
+
+def _surface_parameter(value: Any, surface_count: int, *, name: str) -> jax.Array:
+    array = jnp.asarray(value)
+    if array.ndim == 0:
+        return jnp.full((int(surface_count),), array)
+    if array.shape != (int(surface_count),):
+        raise ValueError(f"{name} must be a scalar or have shape ({surface_count},)")
+    return array
+
+
+def boozer_continuum_matrices(
+    spectrum: BoozerSpectrum,
+    harmonics: Any,
+    *,
+    iota: Any,
+    major_radius: float,
+    mass_density: Any,
+    theta_points: int = 64,
+    zeta_points: int = 64,
+) -> ContinuumMatrices:
+    """Assemble a reduced Boozer-space shear-Alfven continuum matrix.
+
+    This is the first Boozer coupling operator in FAX. It uses the verified
+    Boozer scalar-field representation for ``|B|`` and the large-aspect-ratio
+    straight-field-line expression ``k_parallel=(n-m*iota)/R``. It is a
+    validation bridge toward full Boozer metric operators, not the final 3-D
+    stellarator continuum model.
+    """
+    harmonic_array = jnp.asarray(harmonics)
+    if harmonic_array.ndim != 2 or harmonic_array.shape[1] != 2:
+        raise ValueError("harmonics must have shape (count, 2) with columns (m, n)")
+
+    theta, zeta = boozer_angle_grid(theta_points=theta_points, zeta_points=zeta_points)
+    boozer_phase = boozer_harmonic_phase(theta, zeta, spectrum.xm, spectrum.xn)
+    field = jnp.einsum("sm,tzm->stz", spectrum.bmnc, jnp.cos(boozer_phase))
+    if spectrum.bmns is not None:
+        field = field + jnp.einsum("sm,tzm->stz", spectrum.bmns, jnp.sin(boozer_phase))
+
+    m = harmonic_array[:, 0]
+    n = harmonic_array[:, 1]
+    delta_m = m[None, :] - m[:, None]
+    delta_n = n[None, :] - n[:, None]
+    pair_phase = delta_m[:, :, None, None] * theta[None, None, :, :] - delta_n[:, :, None, None] * zeta[None, None, :, :]
+    phase_factor = jnp.exp(1j * pair_phase)
+
+    surface_count = int(spectrum.s.shape[0])
+    iota_array = _surface_parameter(iota, surface_count, name="iota")
+    density_array = _surface_parameter(mass_density, surface_count, name="mass_density")
+    k_parallel = boozer_parallel_wavenumber(harmonic_array, iota=iota_array, major_radius=float(major_radius))
+    if k_parallel.ndim == 1:
+        k_parallel = jnp.broadcast_to(k_parallel[None, :], (surface_count, harmonic_array.shape[0]))
+    k_pair = k_parallel[:, :, None, None, None] * k_parallel[:, None, :, None, None]
+
+    stiffness = jnp.mean((field[:, None, None, :, :] ** 2 / MU0) * k_pair * phase_factor[None, :, :, :, :], axis=(-2, -1))
+    mass = density_array[:, None, None] * jnp.mean(phase_factor, axis=(-2, -1))[None, :, :]
+    stiffness = 0.5 * (stiffness + jnp.conjugate(jnp.swapaxes(stiffness, -1, -2)))
+    mass = 0.5 * (mass + jnp.conjugate(jnp.swapaxes(mass, -1, -2)))
+    return ContinuumMatrices(stiffness=stiffness, mass=mass)
+
+
+def boozer_continuum_frequencies_hz(
+    spectrum: BoozerSpectrum,
+    harmonics: Any,
+    *,
+    iota: Any,
+    major_radius: float,
+    mass_density: Any,
+    theta_points: int = 64,
+    zeta_points: int = 64,
+) -> jax.Array:
+    """Return coupled reduced Boozer-continuum frequencies in hertz."""
+    matrices = boozer_continuum_matrices(
+        spectrum,
+        harmonics,
+        iota=iota,
+        major_radius=major_radius,
+        mass_density=mass_density,
+        theta_points=theta_points,
+        zeta_points=zeta_points,
+    )
+    omega2 = generalized_hermitian_eigenvalues(matrices.stiffness, matrices.mass)
+    return jnp.sqrt(jnp.maximum(jnp.real(omega2), 0.0)) / (2.0 * jnp.pi)
 
 
 def dominant_boozer_modes(spectrum: BoozerSpectrum, *, count: int = 8) -> tuple[tuple[int, int, float], ...]:

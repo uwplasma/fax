@@ -52,7 +52,15 @@ Current Figures
    :alt: Boozer harmonic reconstruction and straight-field-line validation.
 
    Boozer ``|B|`` harmonic map, coefficient bars, projection/orthogonality
-   gates, and straight-field-line phase-slope gate.
+   gates, and straight-field-line phase-slope gate. This is a synthetic
+   convention stress test, not a quasisymmetric equilibrium boundary.
+
+.. figure:: _static/boozer_continuum_coupling.svg
+   :alt: Reduced Boozer continuum coupling validation.
+
+   Reduced Boozer continuum matrix dashboard: constant-field profile-limit
+   recovery, sideband-coupling matrix, and controlled gap opening with
+   increasing Boozer harmonic amplitude.
 
 .. figure:: _static/continuum_artifact_dashboard.svg
    :alt: Dashboard generated from fax continuum artifacts.

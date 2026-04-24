@@ -133,6 +133,17 @@ reconstructing `|B|(theta_B,zeta_B)` from harmonics, projecting the sampled
 field back to coefficients, checking Fourier orthogonality, and checking the
 straight-field-line phase slope `m*iota-n`.
 
+The plotted `|B|` is a synthetic convention stress test, not a
+Landreman-Paul QA or quasisymmetric boundary. It is intentionally simple and
+non-physical so sign, projection, and phase errors are obvious.
+
+![Reduced Boozer continuum coupling](docs/_static/boozer_continuum_coupling.png)
+
+This figure validates the first reduced Boozer continuum matrix: constant
+`|B|` recovers the analytic profile limit, a known Boozer harmonic produces
+Hermitian sideband coupling, and increasing harmonic amplitude opens a reduced
+gap.
+
 ![Continuum artifact dashboard](docs/_static/continuum_artifact_dashboard.png)
 
 This figure is generated from files written by `fax continuum`: the branch CSV,
@@ -291,6 +302,7 @@ Current figures:
 - `gap_sensitivity_dashboard.svg`: mode-family, gap-proxy, and autodiff sensitivity dashboard.
 - `global_gap_fastion_dashboard.svg`: reduced radial mode, gap, fast-ion, and optimization dashboard.
 - `boozer_harmonic_validation.svg`: Boozer harmonic reconstruction/projection and straight-field-line phase dashboard.
+- `boozer_continuum_coupling.svg`: reduced Boozer continuum matrix and controlled sideband-coupling dashboard.
 - `continuum_artifact_dashboard.svg`: dashboard generated from `fax continuum` artifacts.
 - `metric_residual_convergence.svg`: metric-matrix residual and angular-grid check.
 - `landreman_paul_convergence_dashboard.svg`: VMEC-backed radial/angular/Fourier convergence smoke-test dashboard.
@@ -322,8 +334,9 @@ generalized eigensolve residuals, density-gradient consistency,
 angular/radial-grid consistency, radial quadrature convergence, reduced global
 radial spectrum residuals, radial-mode gradient consistency, analytic TAE
 gap-center checks, reduced fast-ion resonance ordering, Boozer harmonic
-projection/phase convention checks, and Landreman-Paul QA VMEC adapter plus
-continuum finite-output/radial-sampling smoke tests. These are
+projection/phase convention checks, reduced Boozer continuum matrix checks,
+and Landreman-Paul QA VMEC adapter plus continuum finite-output/radial-sampling
+smoke tests. These are
 acceptance gates for the scaffold, not yet full STELLGAP/AE3D stellarator
 validation.
 

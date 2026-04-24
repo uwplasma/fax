@@ -193,6 +193,34 @@
       ]
     },
     {
+      "id": "boozer_constant_field_continuum",
+      "title": "Boozer constant-field continuum limit",
+      "layer": "boozer",
+      "quantity": "relative frequency error",
+      "tolerance": 1e-05,
+      "citation": "Boozer-space reduced continuum matrix must recover omega=vA|n-m*iota|/R in the constant-field limit",
+      "command": "python -m pytest tests/test_boozer.py tests/test_validation_registry.py",
+      "tags": [
+        "boozer",
+        "continuum",
+        "analytic"
+      ]
+    },
+    {
+      "id": "boozer_sideband_coupling_hermitian",
+      "title": "Boozer sideband coupling Hermiticity",
+      "layer": "boozer",
+      "quantity": "Hermitian error and sideband-coupling threshold",
+      "tolerance": 1e-06,
+      "citation": "Boozer B^2 Fourier harmonics couple shear-Alfven sidebands through the Hermitian energy principle",
+      "command": "python -m pytest tests/test_boozer.py tests/test_validation_registry.py",
+      "tags": [
+        "boozer",
+        "continuum",
+        "coupling"
+      ]
+    },
+    {
       "id": "landreman_paul_adapter_smoke",
       "title": "Landreman-Paul QA VMEC adapter smoke test",
       "layer": "adapter",
@@ -318,6 +346,18 @@
     },
     {
       "file": "boozer_harmonic_validation.png",
+      "format": "png",
+      "status": "smoke-test",
+      "claim": "Development figure generated from analytic/local continuum formulas; not a full 3-D stellarator Alfvén-continuum validation."
+    },
+    {
+      "file": "boozer_continuum_coupling.svg",
+      "format": "svg",
+      "status": "smoke-test",
+      "claim": "Development figure generated from analytic/local continuum formulas; not a full 3-D stellarator Alfvén-continuum validation."
+    },
+    {
+      "file": "boozer_continuum_coupling.png",
       "format": "png",
       "status": "smoke-test",
       "claim": "Development figure generated from analytic/local continuum formulas; not a full 3-D stellarator Alfvén-continuum validation."
