@@ -93,8 +93,15 @@ def build_command_parser() -> argparse.ArgumentParser:
     continuum.add_argument("--quiet", action="store_true", help="Suppress rich progress output and print only summary JSON.")
     continuum.add_argument("--no-artifacts", action="store_true", help="Do not write continuum artifact files.")
 
-    convergence = subparsers.add_parser("convergence", help="Run angular/Fourier convergence sweeps.")
+    convergence = subparsers.add_parser("convergence", help="Run radial/angular/Fourier convergence sweeps.")
     convergence.add_argument("config", help="Path to a fax TOML configuration file.")
+    convergence.add_argument(
+        "--radial-points",
+        type=int,
+        action="append",
+        default=[],
+        help="Radial grid point count; may be repeated. Defaults to grid.radial_points from the TOML file.",
+    )
     convergence.add_argument(
         "--angular-points",
         type=int,
@@ -207,6 +214,7 @@ def _main_command(argv: list[str]) -> int:
             summary = run_convergence(
                 config,
                 progress=not machine_readable,
+                radial_points=tuple(args.radial_points) if args.radial_points else None,
                 angular_points=tuple(args.angular_points) if args.angular_points else (12, 16, 24),
                 mode_max_values=tuple(args.mode_max) if args.mode_max else (2, 3, 4),
                 write_artifacts=not args.no_artifacts,

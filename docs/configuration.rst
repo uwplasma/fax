@@ -42,7 +42,9 @@ The CLI uses ``[run] output_dir`` for durable local artifacts:
 ``fax convergence case.toml``
    Writes ``convergence/convergence_summary.json``,
    ``convergence/convergence_metrics.csv``, and
-   ``convergence/convergence_report.md`` under ``run.output_dir``.
+   ``convergence/convergence_report.md`` under ``run.output_dir``. Repeated
+   ``--radial-points``, ``--angular-points``, and ``--mode-max`` values define
+   the resolution sweep.
 
 ``fax benchmark case.toml``
    Writes ``benchmark/benchmark_summary.json`` and

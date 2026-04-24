@@ -181,11 +181,64 @@ field_periods = 1
     payload = json.loads(capsys.readouterr().out)
     assert payload["case"] == "convergence_cli"
     assert payload["status"] == "completed"
+    assert payload["radial_points"] == [10]
     assert len(payload["records"]) == 4
     assert payload["reference"]["theta_points"] == 12
+    assert payload["reference"]["radial_points"] == 10
     assert (output_dir / "convergence" / "convergence_summary.json").exists()
     assert (output_dir / "convergence" / "convergence_metrics.csv").exists()
     assert (output_dir / "convergence" / "convergence_report.md").exists()
+
+
+def test_cli_convergence_radial_sweep_json(tmp_path, capsys):
+    output_dir = tmp_path / "convergence_radial_outputs"
+    config_path = tmp_path / "case.toml"
+    config_path.write_text(
+        f"""
+[run]
+case = "convergence_radial_cli"
+model = "continuum"
+output_dir = "{output_dir}"
+
+[equilibrium]
+source = "analytic"
+
+[grid]
+radial_points = 10
+m_max = 1
+n_max = 1
+field_periods = 1
+""",
+        encoding="utf-8",
+    )
+
+    assert (
+        main(
+            [
+                "convergence",
+                str(config_path),
+                "--radial-points",
+                "8",
+                "--radial-points",
+                "12",
+                "--angular-points",
+                "8",
+                "--mode-max",
+                "1",
+                "--json",
+                "--no-artifacts",
+            ]
+        )
+        == 0
+    )
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["case"] == "convergence_radial_cli"
+    assert payload["status"] == "completed"
+    assert payload["radial_points"] == [8, 12]
+    assert payload["reference"]["radial_points"] == 12
+    assert len(payload["records"]) == 2
+    assert {record["radial_points"] for record in payload["records"]} == {8, 12}
+    assert all(record["reference_radial_points_used"] == 12 for record in payload["records"])
 
 
 def test_cli_benchmark_json_writes_artifacts(tmp_path, capsys):

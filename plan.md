@@ -1026,6 +1026,9 @@ Needed docs:
 - Added `fax convergence case.toml` to sweep angular resolution and Fourier truncation, writing `convergence_summary.json`, `convergence_metrics.csv`, and `convergence_report.md`.
 - Added `fax benchmark case.toml` to measure cold continuum workflow time, warm no-artifact repeats, and generated continuum artifact size for local performance tracking.
 - Added CLI tests for the convergence and benchmark workflows, using small analytic fixtures so the local gate remains fast.
+- Extended `fax convergence` to sweep radial resolution as well as angular resolution and Fourier truncation. Coarse branch matrices are interpolated onto the reference radial grid before relative L2 errors are reported.
+- Added `metric_radial_convergence` and `landreman_paul_radial_sampling_convergence` validation gates.
+- Added a generated Landreman-Paul QA convergence dashboard for README/docs that visualizes radial refinement, angular refinement, mode truncation, and eigensolve residuals from the VMEC-backed adapter path.
 
 ### Local Testing Policy Until GitHub Actions Resume
 
@@ -1075,8 +1078,8 @@ Sources:
 
 Implement the first metric-aware stellarator continuum milestone:
 
-1. Add radial resolution-convergence gates for the analytic metric fixture and the Landreman-Paul QA adapter.
-2. Promote the convergence workflow into a plotted Landreman-Paul adapter convergence figure for README/docs.
-3. Add an optional Boozer path through `booz_xform_jax` for models that need straight-field-line harmonics, while keeping analytic and VMEC-coordinate fixtures runnable without Boozer.
-4. Extend `fax benchmark` with memory/process telemetry and separate compile/warm kernel timing once matrix-free kernels are introduced.
-5. Start the first literature/cross-code comparison gate: STELLGAP-style continuum gaps for a documented quasi-symmetric or axisymmetric reference case.
+1. Add an optional Boozer path through `booz_xform_jax` for models that need straight-field-line harmonics, while keeping analytic and VMEC-coordinate fixtures runnable without Boozer.
+2. Extend `fax benchmark` with memory/process telemetry and separate compile/warm kernel timing once matrix-free kernels are introduced.
+3. Start the first literature/cross-code comparison gate: STELLGAP-style continuum gaps for a documented quasi-symmetric or axisymmetric reference case.
+4. Add a reusable `fax plot-convergence` command that plots any convergence artifact directory, matching the existing `fax plot-continuum` user path.
+5. Begin global radial/eigenmode operator scaffolding with analytic TAE-gap fixtures before fast-ion drive is coupled.

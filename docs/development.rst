@@ -45,7 +45,7 @@ Local workflow smoke checks:
 
 .. code-block:: bash
 
-   fax convergence examples/minimal.toml --angular-points 8 --angular-points 12 --mode-max 1 --mode-max 2
+   fax convergence examples/minimal.toml --radial-points 16 --radial-points 32 --angular-points 8 --angular-points 12 --mode-max 1 --mode-max 2
    fax benchmark examples/minimal.toml --repeats 1 --warmups 0
 
 Progress Output

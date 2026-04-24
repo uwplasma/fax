@@ -29,6 +29,7 @@ def test_core_validation_gates_pass():
         "metric_eigensolve_residual",
         "density_scale_gradient",
         "metric_angular_convergence",
+        "metric_radial_convergence",
         "analytic_radial_integral_convergence",
     ]
 
@@ -41,7 +42,11 @@ def test_core_validation_gates_pass():
 
 @pytest.mark.requires_vmec_jax
 def test_landreman_paul_validation_gate_passes_or_skips_cleanly():
-    for gate_id in ("landreman_paul_adapter_smoke", "landreman_paul_continuum_finite"):
+    for gate_id in (
+        "landreman_paul_adapter_smoke",
+        "landreman_paul_continuum_finite",
+        "landreman_paul_radial_sampling_convergence",
+    ):
         result = run_validation_gate(gate_id)
 
         assert result.status in {"passed", "skipped"}

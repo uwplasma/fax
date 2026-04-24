@@ -25,7 +25,7 @@ from fax.metric import (
 from fax.modes import stellarator_mode_family
 from fax.plotting import plot_continuum_artifacts
 from fax.reference_cases import landreman_paul_qa_lowres
-from fax.workflows import run_continuum
+from fax.workflows import run_continuum, run_convergence
 from fax.validation import registered_validation_gates, run_validation_suite
 
 
@@ -382,6 +382,101 @@ def generate_metric_residual_convergence(output_dir: Path) -> list[Path]:
     return paths
 
 
+def generate_landreman_convergence_dashboard(output_dir: Path) -> list[Path]:
+    """Generate a Landreman-Paul adapter convergence dashboard."""
+    plt = _setup_matplotlib()
+    case = landreman_paul_qa_lowres()
+    if case.wout is None or not case.wout.exists():
+        raise FileNotFoundError(f"Landreman-Paul QA wout not found: {case.wout}")
+
+    config = FaxConfig(
+        run=RunConfig(case=case.case_id, model="continuum", output_dir=str(output_dir)),
+        equilibrium=EquilibriumConfig(
+            source="wout",
+            vmec_input=str(case.vmec_input) if case.vmec_input is not None else None,
+            wout=str(case.wout),
+        ),
+        grid=GridConfig(radial_points=50, m_max=2, n_max=2, field_periods=2),
+    )
+    summary = run_convergence(
+        config,
+        progress=False,
+        radial_points=(24, 40, 50),
+        angular_points=(8, 12),
+        mode_max_values=(1, 2),
+        write_artifacts=False,
+    )
+    records = summary.records
+    radial_values = np.asarray(summary.radial_points)
+    max_radial = int(np.max(radial_values))
+    max_angular = int(np.max(summary.angular_points))
+    max_mode = int(np.max(summary.mode_max_values))
+
+    def _select(**criteria):
+        selected = []
+        for record in records:
+            if all(int(record[key]) == int(value) for key, value in criteria.items()):
+                selected.append(record)
+        return sorted(selected, key=lambda item: (int(item["radial_points"]), int(item["theta_points"]), int(item["m_max"])))
+
+    radial_records = _select(theta_points=max_angular, m_max=max_mode)
+    angular_records = _select(radial_points=max_radial, m_max=max_mode)
+    mode_records = _select(radial_points=max_radial, theta_points=max_angular)
+
+    fig, axes = plt.subplots(1, 3, figsize=(10.2, 3.4), constrained_layout=True)
+
+    ax = axes[0]
+    ax.semilogy(
+        [record["radial_points"] for record in radial_records],
+        [max(record["frequency_l2_error_vs_reference"], 1.0e-16) for record in radial_records],
+        marker="o",
+        linewidth=1.8,
+        color="#2458a6",
+    )
+    ax.set_title("Radial refinement")
+    ax.set_xlabel("radial points")
+    ax.set_ylabel("relative L2 branch error")
+
+    ax = axes[1]
+    ax.semilogy(
+        [record["theta_points"] for record in angular_records],
+        [max(record["frequency_l2_error_vs_reference"], 1.0e-16) for record in angular_records],
+        marker="s",
+        linewidth=1.8,
+        color="#b13f2a",
+    )
+    ax.set_title("Angular refinement")
+    ax.set_xlabel("theta/zeta points")
+    ax.set_ylabel("relative L2 branch error")
+
+    ax = axes[2]
+    ax.semilogy(
+        [record["branch_count"] for record in mode_records],
+        [max(record["mode_truncation_l2_error_vs_global_reference"], 1.0e-16) for record in mode_records],
+        marker="^",
+        linewidth=1.8,
+        color="#2e7d32",
+        label="mode truncation",
+    )
+    ax.semilogy(
+        [record["branch_count"] for record in mode_records],
+        [max(record["residual_p95"], 1.0e-16) for record in mode_records],
+        marker="d",
+        linewidth=1.4,
+        color="#6d3a9c",
+        label="residual p95",
+    )
+    ax.set_title("Mode/residual checks")
+    ax.set_xlabel("branch count")
+    ax.set_ylabel("relative metric")
+    ax.legend(loc="best")
+
+    fig.suptitle("LandremanPaul2021 QA adapter convergence smoke test", fontsize=12, weight="bold")
+    paths = _save_figure(fig, output_dir, "landreman_paul_convergence_dashboard")
+    plt.close(fig)
+    return paths
+
+
 def write_figure_manifest(output_dir: Path, paths: list[Path]) -> Path:
     """Write a JSON manifest describing generated figures and their claims."""
     manifest = {
@@ -434,6 +529,7 @@ def main(argv: list[str] | None = None) -> int:
         generate_gap_sensitivity_dashboard(output_dir),
         generate_continuum_artifact_dashboard(output_dir),
         generate_metric_residual_convergence(output_dir),
+        generate_landreman_convergence_dashboard(output_dir),
         generate_validation_gate_summary(output_dir),
     ]:
         paths.extend(generated)

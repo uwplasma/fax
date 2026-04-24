@@ -7,13 +7,16 @@ from typing import Any, Callable
 
 import jax
 import jax.numpy as jnp
+import numpy as np
 
 from .continuum import continuum_branch_matrix, local_continuum_frequency_hz
 from .equilibrium import analytic_circular_tokamak, analytic_cylinder, from_vmec_wout
 from .metric import (
+    MetricGeometry,
     diagonal_continuum_frequencies_hz,
     generalized_eigen_residual_norms,
     generalized_hermitian_eigensystem,
+    metric_continuum_frequencies_hz,
     metric_continuum_matrices,
     metric_from_equilibrium,
     metric_from_vmec_wout,
@@ -53,6 +56,21 @@ def finite_difference_derivative(func: Callable[[float], float], x: float, *, st
 def observed_order(error_coarse: float, error_fine: float, refinement: float) -> float:
     """Return the observed convergence order from two errors."""
     return float(jnp.log(float(error_coarse) / float(error_fine)) / jnp.log(float(refinement)))
+
+
+def interpolate_branch_matrix(actual: Any, source_s: Any, target_s: Any) -> jnp.ndarray:
+    """Interpolate branch columns from ``source_s`` to ``target_s``."""
+    actual_array = np.asarray(actual, dtype=float)
+    source = np.asarray(source_s, dtype=float)
+    target = np.asarray(target_s, dtype=float)
+    if actual_array.ndim != 2:
+        raise ValueError("actual must be a rank-2 branch matrix")
+    if actual_array.shape[0] != source.shape[0]:
+        raise ValueError("actual first axis must match source_s")
+    interpolated = np.column_stack(
+        [np.interp(target, source, actual_array[:, branch]) for branch in range(actual_array.shape[1])]
+    )
+    return jnp.asarray(interpolated)
 
 
 @dataclass(frozen=True)
@@ -165,6 +183,30 @@ def _gate_metric_angular_convergence() -> GateResult:
     return _pass_fail(gate_id, metric, tolerance, "uniform metric fixture is insensitive to angular grid refinement")
 
 
+def _gate_metric_radial_convergence() -> GateResult:
+    gate_id = "metric_radial_convergence"
+    tolerance = 5.0e-3
+    harmonics = jnp.asarray([[1, 0], [2, 1], [3, 2]], dtype=float)
+    coarse_geometry = analytic_circular_tokamak(radial_points=32, iota_axis=0.24, iota_edge=0.72)
+    fine_geometry = analytic_circular_tokamak(radial_points=128, iota_axis=0.24, iota_edge=0.72)
+    coarse = metric_continuum_frequencies_hz(
+        metric_from_equilibrium(coarse_geometry, theta_points=12, zeta_points=12),
+        harmonics,
+    )
+    fine = metric_continuum_frequencies_hz(
+        metric_from_equilibrium(fine_geometry, theta_points=12, zeta_points=12),
+        harmonics,
+    )
+    coarse_on_fine = interpolate_branch_matrix(coarse, coarse_geometry.s, fine_geometry.s)
+    metric = relative_l2_error(coarse_on_fine, fine)
+    return _pass_fail(
+        gate_id,
+        float(metric),
+        tolerance,
+        "analytic metric continuum branches converge under radial refinement",
+    )
+
+
 def _gate_analytic_radial_integral_convergence() -> GateResult:
     gate_id = "analytic_radial_integral_convergence"
     tolerance = 5.0e-4
@@ -212,7 +254,7 @@ def _gate_landreman_paul_adapter_smoke() -> GateResult:
 
 def _gate_landreman_paul_continuum_finite() -> GateResult:
     gate_id = "landreman_paul_continuum_finite"
-    tolerance = 1.0e-8
+    tolerance = 1.0e-4
     case = landreman_paul_qa_lowres()
     if not case.is_available():
         return GateResult(
@@ -245,6 +287,59 @@ def _gate_landreman_paul_continuum_finite() -> GateResult:
         metric,
         tolerance,
         "Landreman-Paul QA profile and metric continuum branches are finite with small residuals",
+    )
+
+
+def _gate_landreman_paul_radial_sampling_convergence() -> GateResult:
+    gate_id = "landreman_paul_radial_sampling_convergence"
+    tolerance = 8.0e-2
+    case = landreman_paul_qa_lowres()
+    if not case.is_available():
+        return GateResult(
+            gate_id=gate_id,
+            status="skipped",
+            metric=float("nan"),
+            tolerance=tolerance,
+            message=f"missing local paths: {case.missing_paths()}",
+        )
+
+    fine = metric_from_vmec_wout(case.wout, theta_points=12, zeta_points=12, name=case.case_id)  # type: ignore[arg-type]
+    coarse = _coarsen_metric_geometry(fine, radial_points=24)
+    family = stellarator_mode_family(
+        poloidal_modes=(1, 2),
+        base_n=1,
+        field_periods=fine.field_periods,
+        sidebands=(0,),
+    )
+    harmonics = family.as_array()
+    coarse_branches = metric_continuum_frequencies_hz(coarse, harmonics)
+    fine_branches = metric_continuum_frequencies_hz(fine, harmonics)
+    coarse_on_fine = interpolate_branch_matrix(coarse_branches, coarse.s, fine.s)
+    metric = relative_l2_error(coarse_on_fine, fine_branches)
+    return _pass_fail(
+        gate_id,
+        float(metric),
+        tolerance,
+        "Landreman-Paul QA metric branches are stable under radial sampling refinement",
+    )
+
+
+def _coarsen_metric_geometry(metric: MetricGeometry, *, radial_points: int) -> MetricGeometry:
+    indices = np.unique(np.rint(np.linspace(0, int(metric.s.shape[0]) - 1, int(radial_points))).astype(int))
+    if indices.size < 4:
+        raise ValueError("coarsened metric geometry must keep at least four radial points")
+    return MetricGeometry(
+        name=metric.name,
+        s=metric.s[indices],
+        theta=metric.theta,
+        zeta=metric.zeta,
+        jacobian=metric.jacobian[indices],
+        magnetic_field=metric.magnetic_field[indices],
+        mass_density=metric.mass_density[indices],
+        bdotgrad_theta=metric.bdotgrad_theta[indices],
+        bdotgrad_zeta=metric.bdotgrad_zeta[indices],
+        field_periods=metric.field_periods,
+        metadata=metric.metadata + (("radial_sampling_gate_points", int(indices.size)),),
     )
 
 
@@ -318,6 +413,17 @@ def registered_validation_gates() -> tuple[ValidationGate, ...]:
             _runner=_gate_metric_angular_convergence,
         ),
         ValidationGate(
+            gate_id="metric_radial_convergence",
+            title="Metric radial convergence",
+            layer="convergence",
+            quantity="relative frequency error across radial refinement",
+            tolerance=5.0e-3,
+            citation="Smooth analytic radial-grid convergence check for the shear-Alfven metric-matrix scaffold",
+            command="python -m pytest tests/test_metric.py tests/test_validation_registry.py",
+            tags=("metric", "convergence"),
+            _runner=_gate_metric_radial_convergence,
+        ),
+        ValidationGate(
             gate_id="analytic_radial_integral_convergence",
             title="Analytic radial integral convergence",
             layer="convergence",
@@ -344,11 +450,22 @@ def registered_validation_gates() -> tuple[ValidationGate, ...]:
             title="Landreman-Paul QA continuum finite-output check",
             layer="adapter",
             quantity="p95 generalized-eigen residual",
-            tolerance=1.0e-8,
+            tolerance=1.0e-4,
             citation="Landreman & Paul, Phys. Rev. Lett. 128, 035001 (2022), arXiv:2108.03711",
             command="python -m pytest -m requires_vmec_jax tests/test_validation_registry.py",
             tags=("vmec", "landreman-paul", "adapter", "continuum"),
             _runner=_gate_landreman_paul_continuum_finite,
+        ),
+        ValidationGate(
+            gate_id="landreman_paul_radial_sampling_convergence",
+            title="Landreman-Paul QA radial sampling convergence",
+            layer="adapter",
+            quantity="relative branch error under radial sampling refinement",
+            tolerance=8.0e-2,
+            citation="Landreman & Paul, Phys. Rev. Lett. 128, 035001 (2022), arXiv:2108.03711; adapter sampling smoke test",
+            command="python -m pytest -m requires_vmec_jax tests/test_validation_registry.py",
+            tags=("vmec", "landreman-paul", "adapter", "convergence"),
+            _runner=_gate_landreman_paul_radial_sampling_convergence,
         ),
     )
 

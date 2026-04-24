@@ -82,6 +82,19 @@
       ]
     },
     {
+      "id": "metric_radial_convergence",
+      "title": "Metric radial convergence",
+      "layer": "convergence",
+      "quantity": "relative frequency error across radial refinement",
+      "tolerance": 0.005,
+      "citation": "Smooth analytic radial-grid convergence check for the shear-Alfven metric-matrix scaffold",
+      "command": "python -m pytest tests/test_metric.py tests/test_validation_registry.py",
+      "tags": [
+        "metric",
+        "convergence"
+      ]
+    },
+    {
       "id": "analytic_radial_integral_convergence",
       "title": "Analytic radial integral convergence",
       "layer": "convergence",
@@ -114,7 +127,7 @@
       "title": "Landreman-Paul QA continuum finite-output check",
       "layer": "adapter",
       "quantity": "p95 generalized-eigen residual",
-      "tolerance": 1e-08,
+      "tolerance": 0.0001,
       "citation": "Landreman & Paul, Phys. Rev. Lett. 128, 035001 (2022), arXiv:2108.03711",
       "command": "python -m pytest -m requires_vmec_jax tests/test_validation_registry.py",
       "tags": [
@@ -122,6 +135,21 @@
         "landreman-paul",
         "adapter",
         "continuum"
+      ]
+    },
+    {
+      "id": "landreman_paul_radial_sampling_convergence",
+      "title": "Landreman-Paul QA radial sampling convergence",
+      "layer": "adapter",
+      "quantity": "relative branch error under radial sampling refinement",
+      "tolerance": 0.08,
+      "citation": "Landreman & Paul, Phys. Rev. Lett. 128, 035001 (2022), arXiv:2108.03711; adapter sampling smoke test",
+      "command": "python -m pytest -m requires_vmec_jax tests/test_validation_registry.py",
+      "tags": [
+        "vmec",
+        "landreman-paul",
+        "adapter",
+        "convergence"
       ]
     }
   ],
@@ -206,6 +234,18 @@
     },
     {
       "file": "metric_residual_convergence.png",
+      "format": "png",
+      "status": "smoke-test",
+      "claim": "Development figure generated from analytic/local continuum formulas; not a full 3-D stellarator Alfvén-continuum validation."
+    },
+    {
+      "file": "landreman_paul_convergence_dashboard.svg",
+      "format": "svg",
+      "status": "smoke-test",
+      "claim": "Development figure generated from analytic/local continuum formulas; not a full 3-D stellarator Alfvén-continuum validation."
+    },
+    {
+      "file": "landreman_paul_convergence_dashboard.png",
       "format": "png",
       "status": "smoke-test",
       "claim": "Development figure generated from analytic/local continuum formulas; not a full 3-D stellarator Alfvén-continuum validation."

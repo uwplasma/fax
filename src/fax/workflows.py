@@ -103,6 +103,7 @@ class ConvergenceRunSummary:
     output_dir: str | None
     artifacts: dict[str, str]
     geometry: dict[str, Any]
+    radial_points: list[int]
     angular_points: list[int]
     mode_max_values: list[int]
     reference: dict[str, Any]
@@ -238,19 +239,23 @@ def run_convergence(
     *,
     progress: bool = True,
     stream: TextIO | None = None,
+    radial_points: tuple[int, ...] | None = None,
     angular_points: tuple[int, ...] = (12, 16, 24),
     mode_max_values: tuple[int, ...] = (2, 3, 4),
     write_artifacts: bool = True,
 ) -> ConvergenceRunSummary:
-    """Run angular/Fourier convergence sweeps for the continuum scaffold."""
+    """Run radial, angular, and Fourier convergence sweeps for the continuum scaffold."""
     config = config.validated()
     _apply_precision(config)
+    radial_values = _positive_unique_ints(radial_points or (config.grid.radial_points,), name="radial_points")
+    if any(value < 4 for value in radial_values):
+        raise ValueError("radial_points values must be at least 4")
     angular_values = _positive_unique_ints(angular_points, name="angular_points")
     mode_values = _positive_unique_ints(mode_max_values, name="mode_max_values")
     phase_specs = [
         ("Validate convergence sweep", "check sweep grids and TOML controls", 0.1),
         ("Resolve equilibrium geometry", f"source={config.equilibrium.source}", 0.4),
-        ("Run convergence matrix", "sweep angular grid and Fourier truncation", 1.0),
+        ("Run convergence matrix", "sweep radial grid, angular grid, and Fourier truncation", 1.0),
         ("Write convergence artifacts", f"output_dir={config.run.output_dir}", 0.2),
     ]
     reporter = ProgressReporter(
@@ -262,12 +267,14 @@ def run_convergence(
     reporter.banner(config)
 
     _start_phase(reporter, phase_specs[0])
+    reporter.log(f"radial points: {radial_values}")
     reporter.log(f"angular points: {angular_values}")
     reporter.log(f"mode maxima: {mode_values}")
     reporter.phase_done(status="done")
 
     _start_phase(reporter, phase_specs[1])
-    profile_geometry, geometry_source = _load_profile_geometry(config, reporter=reporter)
+    reference_config = replace(config, grid=replace(config.grid, radial_points=max(radial_values)))
+    profile_geometry, geometry_source = _load_profile_geometry(reference_config, reporter=reporter)
     reporter.log(
         "geometry resolved: "
         f"name={profile_geometry.name}, radial_points={profile_geometry.s.shape[0]}, "
@@ -277,81 +284,105 @@ def run_convergence(
 
     _start_phase(reporter, phase_specs[2])
     raw_records: list[dict[str, Any]] = []
-    for mode_max in mode_values:
-        for angular in angular_values:
-            record_start = time.perf_counter()
-            family = _mode_family_for_limits(
-                field_periods=profile_geometry.field_periods,
-                m_max=mode_max,
-                n_max=mode_max,
-            )
-            metric_geometry = _metric_geometry_for_resolution(
-                config,
-                profile_geometry,
-                theta_points=angular,
-                zeta_points=angular,
-            )
-            metric_branches, residuals = _metric_branches_and_residuals(metric_geometry, family.as_array())
-            gap_summary = _minimum_gap_or_nan(metric_branches, metric_geometry.s)
-            raw_records.append(
-                {
-                    "theta_points": angular,
-                    "zeta_points": angular,
-                    "m_max": mode_max,
-                    "n_max": mode_max,
-                    "harmonic_count": len(family.harmonics),
-                    "branch_count": int(metric_branches.shape[1]),
-                    "metric_min_frequency_hz": _finite_min(metric_branches),
-                    "metric_max_frequency_hz": _finite_max(metric_branches),
-                    "min_gap_hz": gap_summary.min_gap_hz,
-                    "min_gap_surface": gap_summary.surface,
-                    "residual_max": float(jnp.max(residuals)),
-                    "residual_p95": _percentile(residuals, 95.0),
-                    "runtime_seconds": time.perf_counter() - record_start,
-                    "_frequencies": np.asarray(metric_branches),
-                }
-            )
-            reporter.log(
-                f"theta=zeta={angular}, m_max=n_max={mode_max}: "
-                f"branches={metric_branches.shape[1]}, residual_p95={raw_records[-1]['residual_p95']:.3e}"
-            )
+    for radial in radial_values:
+        radial_config = replace(config, grid=replace(config.grid, radial_points=radial))
+        radial_profile, _ = _load_profile_geometry(radial_config, reporter=reporter)
+        for mode_max in mode_values:
+            for angular in angular_values:
+                record_start = time.perf_counter()
+                family = _mode_family_for_limits(
+                    field_periods=radial_profile.field_periods,
+                    m_max=mode_max,
+                    n_max=mode_max,
+                )
+                metric_geometry = _metric_geometry_for_resolution(
+                    radial_config,
+                    radial_profile,
+                    theta_points=angular,
+                    zeta_points=angular,
+                )
+                metric_branches, residuals = _metric_branches_and_residuals(metric_geometry, family.as_array())
+                gap_summary = _minimum_gap_or_nan(metric_branches, metric_geometry.s)
+                raw_records.append(
+                    {
+                        "radial_points": int(metric_geometry.s.shape[0]),
+                        "theta_points": angular,
+                        "zeta_points": angular,
+                        "m_max": mode_max,
+                        "n_max": mode_max,
+                        "harmonic_count": len(family.harmonics),
+                        "branch_count": int(metric_branches.shape[1]),
+                        "metric_min_frequency_hz": _finite_min(metric_branches),
+                        "metric_max_frequency_hz": _finite_max(metric_branches),
+                        "min_gap_hz": gap_summary.min_gap_hz,
+                        "min_gap_surface": gap_summary.surface,
+                        "residual_max": float(jnp.max(residuals)),
+                        "residual_p95": _percentile(residuals, 95.0),
+                        "runtime_seconds": time.perf_counter() - record_start,
+                        "_s": np.asarray(metric_geometry.s),
+                        "_frequencies": np.asarray(metric_branches),
+                    }
+                )
+                reporter.log(
+                    f"radial={metric_geometry.s.shape[0]}, theta=zeta={angular}, m_max=n_max={mode_max}: "
+                    f"branches={metric_branches.shape[1]}, residual_p95={raw_records[-1]['residual_p95']:.3e}"
+                )
 
     reference_record = max(
         raw_records,
-        key=lambda item: (int(item["m_max"]), int(item["theta_points"])),
+        key=lambda item: (int(item["m_max"]), int(item["theta_points"]), int(item["radial_points"])),
     )
     global_reference_frequencies = np.asarray(reference_record["_frequencies"])
+    global_reference_s = np.asarray(reference_record["_s"])
     reference_by_mode = {
         mode_max: max(
             (record for record in raw_records if int(record["m_max"]) == mode_max),
-            key=lambda item: int(item["theta_points"]),
+            key=lambda item: (int(item["theta_points"]), int(item["radial_points"])),
         )
         for mode_max in mode_values
     }
     records: list[dict[str, Any]] = []
     for record in raw_records:
         frequencies = np.asarray(record["_frequencies"])
+        surfaces = np.asarray(record["_s"])
         mode_reference = np.asarray(reference_by_mode[int(record["m_max"])]["_frequencies"])
+        mode_reference_s = np.asarray(reference_by_mode[int(record["m_max"])]["_s"])
         branch_count = min(frequencies.shape[1], mode_reference.shape[1])
-        frequency_error = _relative_l2_np(
+        frequencies_on_mode_reference = _interpolate_branch_matrix_np(
             frequencies[:, :branch_count],
+            surfaces,
+            mode_reference_s,
+        )
+        frequency_error = _relative_l2_np(
+            frequencies_on_mode_reference,
             mode_reference[:, :branch_count],
         )
         global_branch_count = min(frequencies.shape[1], global_reference_frequencies.shape[1])
-        mode_truncation_error = _relative_l2_np(
+        frequencies_on_global_reference = _interpolate_branch_matrix_np(
             frequencies[:, :global_branch_count],
+            surfaces,
+            global_reference_s,
+        )
+        mode_truncation_error = _relative_l2_np(
+            frequencies_on_global_reference,
             global_reference_frequencies[:, :global_branch_count],
         )
-        public_record = {key: value for key, value in record.items() if key != "_frequencies"}
+        public_record = {key: value for key, value in record.items() if key not in {"_s", "_frequencies"}}
         public_record["frequency_l2_error_vs_reference"] = frequency_error
         public_record["mode_truncation_l2_error_vs_global_reference"] = mode_truncation_error
         public_record["reference_branch_count_used"] = branch_count
         public_record["global_reference_branch_count_used"] = global_branch_count
+        public_record["reference_radial_points_used"] = int(mode_reference_s.shape[0])
+        public_record["global_reference_radial_points_used"] = int(global_reference_s.shape[0])
         records.append(public_record)
 
     max_frequency_l2_error = max(float(record["frequency_l2_error_vs_reference"]) for record in records)
     max_residual_p95 = max(float(record["residual_p95"]) for record in records)
-    reporter.log(f"reference: theta=zeta={reference_record['theta_points']}, m_max=n_max={reference_record['m_max']}")
+    reporter.log(
+        "reference: "
+        f"radial={reference_record['radial_points']}, theta=zeta={reference_record['theta_points']}, "
+        f"m_max=n_max={reference_record['m_max']}"
+    )
     reporter.log(f"max frequency L2 error against reference: {max_frequency_l2_error:.3e}")
     reporter.log(f"max p95 residual across sweep: {max_residual_p95:.3e}")
     reporter.phase_done(status="done")
@@ -382,6 +413,7 @@ def run_convergence(
         in {
             "theta_points",
             "zeta_points",
+            "radial_points",
             "m_max",
             "n_max",
             "harmonic_count",
@@ -395,7 +427,7 @@ def run_convergence(
         }
     }
     metric_geometry = _metric_geometry_for_resolution(
-        config,
+        reference_config,
         profile_geometry,
         theta_points=max(angular_values),
         zeta_points=max(angular_values),
@@ -404,13 +436,14 @@ def run_convergence(
         case=config.run.case,
         model=config.run.model,
         status="completed",
-        message="Completed continuum angular/Fourier convergence sweep.",
+        message="Completed continuum radial/angular/Fourier convergence sweep.",
         config=config.to_dict(),
         elapsed_seconds=time.perf_counter() - start,
         phases=_phase_dicts(reporter.records),
         output_dir=output_dir,
         artifacts=artifacts,
         geometry=_geometry_dict(profile_geometry, metric_geometry, source=geometry_source),
+        radial_points=list(radial_values),
         angular_points=list(angular_values),
         mode_max_values=list(mode_values),
         reference=reference,
@@ -675,6 +708,7 @@ def _load_profile_geometry(
         reporter.log(f"reading VMEC wout: {config.equilibrium.wout}")
         profile = from_vmec_wout(config.equilibrium.wout, name=config.run.case)
         source = "vmec_wout"
+        profile = _resample_profile_geometry(profile, config.grid.radial_points)
     elif config.equilibrium.source == "analytic":
         reporter.log("using analytic circular-tokamak fixture")
         profile = analytic_circular_tokamak(radial_points=config.grid.radial_points)
@@ -705,10 +739,87 @@ def _metric_geometry_for_resolution(
             zeta_points=zeta_points,
             name=config.run.case,
         )
+        metric = _resample_metric_geometry(metric, config.grid.radial_points)
         if config.physics.density_scale != 1.0:
             metric = metric.with_density_scale(config.physics.density_scale)
         return metric
     return metric_from_equilibrium(profile, theta_points=theta_points, zeta_points=zeta_points)
+
+
+def _resample_profile_geometry(profile: EquilibriumGeometry, radial_points: int) -> EquilibriumGeometry:
+    target_count = int(radial_points)
+    if int(profile.s.shape[0]) == target_count:
+        return profile
+    target_s = _uniform_radial_grid(profile.s, target_count)
+    metadata = profile.metadata + (
+        ("radial_adapter", "linear_s_interpolation"),
+        ("radial_points", target_count),
+    )
+    return EquilibriumGeometry(
+        name=profile.name,
+        s=jnp.asarray(target_s),
+        iota=jnp.asarray(_interpolate_radial_array_np(profile.iota, profile.s, target_s)),
+        magnetic_field=jnp.asarray(_interpolate_radial_array_np(profile.magnetic_field, profile.s, target_s)),
+        mass_density=jnp.asarray(_interpolate_radial_array_np(profile.mass_density, profile.s, target_s)),
+        major_radius=profile.major_radius,
+        minor_radius=profile.minor_radius,
+        field_periods=profile.field_periods,
+        metadata=metadata,
+    )
+
+
+def _resample_metric_geometry(metric: MetricGeometry, radial_points: int) -> MetricGeometry:
+    target_count = int(radial_points)
+    if int(metric.s.shape[0]) == target_count:
+        return metric
+    target_s = _uniform_radial_grid(metric.s, target_count)
+    metadata = metric.metadata + (
+        ("radial_adapter", "linear_s_interpolation"),
+        ("radial_points", target_count),
+    )
+    return MetricGeometry(
+        name=metric.name,
+        s=jnp.asarray(target_s),
+        theta=metric.theta,
+        zeta=metric.zeta,
+        jacobian=jnp.asarray(_interpolate_radial_array_np(metric.jacobian, metric.s, target_s)),
+        magnetic_field=jnp.asarray(_interpolate_radial_array_np(metric.magnetic_field, metric.s, target_s)),
+        mass_density=jnp.asarray(_interpolate_radial_array_np(metric.mass_density, metric.s, target_s)),
+        bdotgrad_theta=jnp.asarray(_interpolate_radial_array_np(metric.bdotgrad_theta, metric.s, target_s)),
+        bdotgrad_zeta=jnp.asarray(_interpolate_radial_array_np(metric.bdotgrad_zeta, metric.s, target_s)),
+        field_periods=metric.field_periods,
+        metadata=metadata,
+    )
+
+
+def _uniform_radial_grid(source_s: Any, radial_points: int) -> np.ndarray:
+    source = np.asarray(source_s, dtype=float)
+    if source.ndim != 1 or source.size < 2:
+        raise ValueError("source radial grid must be one-dimensional with at least two points")
+    if int(radial_points) < 4:
+        raise ValueError("radial_points must be at least 4")
+    return np.linspace(float(source[0]), float(source[-1]), int(radial_points))
+
+
+def _interpolate_radial_array_np(values: Any, source_s: Any, target_s: Any) -> np.ndarray:
+    array = np.asarray(values)
+    source = np.asarray(source_s, dtype=float)
+    target = np.asarray(target_s, dtype=float)
+    if array.shape[0] != source.shape[0]:
+        raise ValueError("radial array first axis must match source_s")
+    if array.shape[0] == target.shape[0] and np.allclose(source, target):
+        return np.array(array, copy=True)
+
+    flat = array.reshape(array.shape[0], -1)
+    interpolated = np.empty((target.shape[0], flat.shape[1]), dtype=flat.dtype)
+    for column in range(flat.shape[1]):
+        if np.iscomplexobj(flat):
+            real = np.interp(target, source, np.real(flat[:, column]))
+            imag = np.interp(target, source, np.imag(flat[:, column]))
+            interpolated[:, column] = real + 1j * imag
+        else:
+            interpolated[:, column] = np.interp(target, source, flat[:, column])
+    return interpolated.reshape((target.shape[0],) + array.shape[1:])
 
 
 def _with_config_field_periods(geometry: EquilibriumGeometry, config: FaxConfig) -> EquilibriumGeometry:
@@ -819,19 +930,21 @@ def _convergence_report_markdown(summary: ConvergenceRunSummary) -> str:
         "",
         f"- Status: `{summary.status}`",
         f"- Message: {summary.message}",
+        f"- Radial points: {summary.radial_points}",
         f"- Angular points: {summary.angular_points}",
         f"- Mode maxima: {summary.mode_max_values}",
-        f"- Reference: theta=zeta={summary.reference['theta_points']}, "
+        f"- Reference: radial={summary.reference['radial_points']}, "
+        f"theta=zeta={summary.reference['theta_points']}, "
         f"m_max=n_max={summary.reference['m_max']}",
         f"- Max frequency L2 error: {summary.max_frequency_l2_error:.6g}",
         f"- Max residual p95: {summary.max_residual_p95:.6g}",
         "",
-        "| theta | m_max | branches | freq L2 error | residual p95 | min gap [Hz] | runtime [s] |",
-        "| ---: | ---: | ---: | ---: | ---: | ---: | ---: |",
+        "| radial | theta | m_max | branches | freq L2 error | residual p95 | min gap [Hz] | runtime [s] |",
+        "| ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |",
     ]
     for record in summary.records:
         lines.append(
-            "| {theta_points} | {m_max} | {branch_count} | "
+            "| {radial_points} | {theta_points} | {m_max} | {branch_count} | "
             "{frequency_l2_error_vs_reference:.6g} | {residual_p95:.6g} | "
             "{min_gap_hz:.6g} | {runtime_seconds:.4g} |".format(**record)
         )
@@ -1049,6 +1162,10 @@ def _minimum_gap_or_nan(branches_hz: Any, surfaces: Any) -> ContinuumGapSummary:
 def _relative_l2_np(actual: np.ndarray, expected: np.ndarray, *, floor: float = 1.0e-30) -> float:
     denominator = max(float(np.linalg.norm(expected)), float(floor))
     return float(np.linalg.norm(actual - expected) / denominator)
+
+
+def _interpolate_branch_matrix_np(matrix: np.ndarray, source_s: np.ndarray, target_s: np.ndarray) -> np.ndarray:
+    return _interpolate_radial_array_np(matrix, source_s, target_s)
 
 
 def _directory_size_bytes(path: Path) -> int:

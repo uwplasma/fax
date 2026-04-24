@@ -108,6 +108,12 @@ This figure checks the first metric-matrix scaffold: diagonal frequencies
 reduce to the profile formula and generalized eigenpairs satisfy
 `Kx = lambda Mx` below the residual gate for the tested nonresonant fixture.
 
+![Landreman-Paul convergence dashboard](docs/_static/landreman_paul_convergence_dashboard.png)
+
+This dashboard is generated from `fax convergence` on the Landreman-Paul QA
+lowres adapter path. It shows radial refinement, angular refinement, mode
+truncation, and eigensolve residuals for a small VMEC-backed smoke sweep.
+
 ![Registered validation gates](docs/_static/validation_gate_summary.png)
 
 The validation-gate plot summarizes scaffold acceptance gates. A gate below the
@@ -144,7 +150,7 @@ fax examples/landreman_paul_qa_lowres.toml --dry-run
 fax validate examples/minimal.toml --tag analytic
 fax continuum examples/landreman_paul_qa_lowres.toml
 fax plot-continuum outputs/landreman_paul_qa_lowres --output-dir outputs/landreman_paul_qa_lowres/figures
-fax convergence examples/landreman_paul_qa_lowres.toml
+fax convergence examples/landreman_paul_qa_lowres.toml --radial-points 24 --radial-points 40
 fax benchmark examples/landreman_paul_qa_lowres.toml --repeats 3
 ```
 
@@ -159,9 +165,10 @@ silent.
 continuum scaffold, then writes `continuum_summary.json`,
 `continuum_metrics.json`, and `continuum_branches.csv`. `fax plot-continuum`
 turns those continuum artifacts into SVG/PNG dashboard figures.
-`fax convergence` sweeps angular resolution and Fourier truncation and writes a
-CSV/Markdown/JSON convergence report. `fax benchmark` records cold runtime, warm
-runtime, and artifact size for local performance tracking.
+`fax convergence` sweeps radial resolution, angular resolution, and Fourier
+truncation, then writes a CSV/Markdown/JSON convergence report. `fax benchmark`
+records cold runtime, warm runtime, and artifact size for local performance
+tracking.
 
 For machine-readable output:
 
@@ -170,7 +177,7 @@ fax examples/minimal.toml --dry-run --json
 fax validate examples/minimal.toml --tag metric --json
 fax continuum examples/minimal.toml --json
 fax plot-continuum outputs --json
-fax convergence examples/minimal.toml --json
+fax convergence examples/minimal.toml --radial-points 32 --radial-points 64 --json
 fax benchmark examples/minimal.toml --repeats 1 --warmups 0 --json
 fax examples/minimal.toml --dump-config
 fax examples/minimal.toml --quiet
@@ -213,6 +220,7 @@ Current figures:
 - `gap_sensitivity_dashboard.svg`: mode-family, gap-proxy, and autodiff sensitivity dashboard.
 - `continuum_artifact_dashboard.svg`: dashboard generated from `fax continuum` artifacts.
 - `metric_residual_convergence.svg`: metric-matrix residual and angular-grid check.
+- `landreman_paul_convergence_dashboard.svg`: VMEC-backed radial/angular/Fourier convergence smoke-test dashboard.
 - `validation_gate_summary.svg`: current validation-gate status plot.
 
 ## Validation Gates
@@ -237,9 +245,10 @@ fax validate examples/minimal.toml --tag metric --json
 
 The first gates cover analytic continuum scaling, reduction of the metric
 matrix to the profile limit, Hermiticity of the generalized continuum matrices,
-generalized eigensolve residuals, density-gradient consistency, angular-grid
-consistency, radial quadrature convergence, and Landreman-Paul QA VMEC adapter
-plus continuum finite-output smoke tests. These are
+generalized eigensolve residuals, density-gradient consistency,
+angular/radial-grid consistency, radial quadrature convergence, and
+Landreman-Paul QA VMEC adapter plus continuum finite-output/radial-sampling
+smoke tests. These are
 acceptance gates for the scaffold, not yet full STELLGAP/AE3D stellarator
 validation.
 
