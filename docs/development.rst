@@ -19,6 +19,17 @@ Regenerate validation figures:
 
    python tools/generate_validation_figures.py
 
+Local quality gate while GitHub Actions is unavailable:
+
+.. code-block:: bash
+
+   python -m ruff check .
+   python -m mypy src/fax
+   python -m pytest
+   sphinx-build -W -b html docs docs/_build/html
+   python tools/generate_validation_figures.py
+   python -m build
+
 Before physics kernels are merged, each new operator should include:
 
 * an analytic unit test,

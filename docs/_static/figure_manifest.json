@@ -1,0 +1,20 @@
+{
+  "generator": "tools/generate_validation_figures.py",
+  "figures": [
+    {
+      "file": "analytic_continuum_scaling.svg",
+      "status": "smoke-test",
+      "claim": "Development figure generated from analytic/local continuum formulas; not a full 3-D stellarator Alfvén-continuum validation."
+    },
+    {
+      "file": "landreman_paul_qa_lowres_profiles.svg",
+      "status": "smoke-test",
+      "claim": "Development figure generated from analytic/local continuum formulas; not a full 3-D stellarator Alfvén-continuum validation."
+    },
+    {
+      "file": "gap_sensitivity_dashboard.svg",
+      "status": "smoke-test",
+      "claim": "Development figure generated from analytic/local continuum formulas; not a full 3-D stellarator Alfvén-continuum validation."
+    }
+  ]
+}

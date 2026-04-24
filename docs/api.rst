@@ -16,6 +16,12 @@ API
 .. automodule:: fax.continuum
    :members:
 
+.. automodule:: fax.modes
+   :members:
+
+.. automodule:: fax.gaps
+   :members:
+
 .. automodule:: fax.validation
    :members:
 

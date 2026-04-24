@@ -997,6 +997,11 @@ Needed docs:
   - `docs/_static/landreman_paul_qa_lowres_profiles.svg`
 - These figures are explicitly labeled as smoke-test/development figures, not full 3-D stellarator continuum validation.
 - Final local gate for this implementation pass: `python -m ruff check .`, `python -m mypy src/fax`, `python -m pytest` (24 passed), `sphinx-build -W -b html docs docs/_build/html`, `fax examples/landreman_paul_qa_lowres.toml --dry-run`, and `python -m build`.
+- Added mode-family helpers for stellarator sideband coupling, gap/separation diagnostics, and tests for both.
+- Added `docs/figures.rst`, a figure manifest, and the first README-ready dashboard:
+  - `docs/_static/gap_sensitivity_dashboard.svg`
+  - `docs/_static/figure_manifest.json`
+- Updated the README to show the generated dashboard and list the local quality gate.
 
 ### Local Testing Policy Until GitHub Actions Resume
 

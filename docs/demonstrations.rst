@@ -15,7 +15,9 @@ Accuracy
 Current generated figures
    ``tools/generate_validation_figures.py`` creates the first analytic
    continuum scaling figure and the LandremanPaul2021 QA lowres smoke-test
-   profile figure used in the validation docs.
+   profile figure used in the validation docs. It also creates the first
+   README dashboard combining mode-family branches, a gap proxy, and autodiff
+   sensitivities.
 
 Runtime
    Report compile time, warmed runtime, memory, and scaling with radial and

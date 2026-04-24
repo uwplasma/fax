@@ -20,6 +20,7 @@ model.
    differentiability
    optimization
    demonstrations
+   figures
    validation
    literature
    development

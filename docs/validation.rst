@@ -49,3 +49,10 @@ yet full 3-D Alfvén-continuum validation.
    First VMEC-backed stellarator reference target. The right panel uses the
    local large-aspect-ratio smoke-test formula, so it is a development check
    rather than a validated stellarator continuum calculation.
+
+.. figure:: _static/gap_sensitivity_dashboard.svg
+   :alt: Gap and sensitivity dashboard for the LandremanPaul2021 QA lowres smoke test.
+
+   Prototype dashboard combining a mode-family branch map, nearest-branch
+   separation, and autodiff sensitivities. This is a figure-design and
+   differentiability smoke test.

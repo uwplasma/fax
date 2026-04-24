@@ -4,12 +4,14 @@ from __future__ import annotations
 
 from .config import FaxConfig, load_config
 from .equilibrium import EquilibriumGeometry
+from .modes import ModeFamily
 from .reference_cases import ReferenceCase, landreman_paul_qa_lowres
 from .runner import RunSummary, run
 
 __all__ = [
     "EquilibriumGeometry",
     "FaxConfig",
+    "ModeFamily",
     "ReferenceCase",
     "RunSummary",
     "landreman_paul_qa_lowres",
