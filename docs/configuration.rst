@@ -39,5 +39,15 @@ The CLI uses ``[run] output_dir`` for durable local artifacts:
    Reads the continuum JSON/CSV artifacts and writes publication-draft SVG/PNG
    dashboard figures.
 
+``fax convergence case.toml``
+   Writes ``convergence/convergence_summary.json``,
+   ``convergence/convergence_metrics.csv``, and
+   ``convergence/convergence_report.md`` under ``run.output_dir``.
+
+``fax benchmark case.toml``
+   Writes ``benchmark/benchmark_summary.json`` and
+   ``benchmark/benchmark_metrics.csv`` under ``run.output_dir`` while also
+   recording the size of the generated continuum artifacts.
+
 The JSON summaries are intended for scripts and regression checks. The
 Markdown validation report is intended for review packets and handoff notes.

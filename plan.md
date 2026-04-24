@@ -1023,6 +1023,9 @@ Needed docs:
 - Added `fax.plotting` and `fax plot-continuum artifact_dir` to generate SVG/PNG dashboards directly from `fax continuum` artifacts rather than private plotting-only arrays.
 - Added `docs/_static/continuum_artifact_dashboard.*`, generated from a temporary `fax continuum` run and the public artifact plotting path.
 - Added `analytic_radial_integral_convergence` and `landreman_paul_continuum_finite` validation gates for radial quadrature convergence and VMEC-backed finite continuum outputs.
+- Added `fax convergence case.toml` to sweep angular resolution and Fourier truncation, writing `convergence_summary.json`, `convergence_metrics.csv`, and `convergence_report.md`.
+- Added `fax benchmark case.toml` to measure cold continuum workflow time, warm no-artifact repeats, and generated continuum artifact size for local performance tracking.
+- Added CLI tests for the convergence and benchmark workflows, using small analytic fixtures so the local gate remains fast.
 
 ### Local Testing Policy Until GitHub Actions Resume
 
@@ -1073,7 +1076,7 @@ Sources:
 Implement the first metric-aware stellarator continuum milestone:
 
 1. Add radial resolution-convergence gates for the analytic metric fixture and the Landreman-Paul QA adapter.
-2. Add a Landreman-Paul adapter radial/angular convergence report that sweeps `theta_points`, `zeta_points`, `m_max`, and `n_max`.
+2. Promote the convergence workflow into a plotted Landreman-Paul adapter convergence figure for README/docs.
 3. Add an optional Boozer path through `booz_xform_jax` for models that need straight-field-line harmonics, while keeping analytic and VMEC-coordinate fixtures runnable without Boozer.
-4. Add a `fax benchmark` command that records compile time, warm runtime, memory, and artifact sizes for analytic and Landreman-Paul cases.
+4. Extend `fax benchmark` with memory/process telemetry and separate compile/warm kernel timing once matrix-free kernels are introduced.
 5. Start the first literature/cross-code comparison gate: STELLGAP-style continuum gaps for a documented quasi-symmetric or axisymmetric reference case.

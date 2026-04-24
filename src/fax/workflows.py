@@ -14,6 +14,7 @@ import jax
 import jax.numpy as jnp
 import numpy as np
 
+from .benchmarks import time_callable
 from .config import FaxConfig
 from .continuum import continuum_branch_matrix
 from .equilibrium import EquilibriumGeometry, analytic_circular_tokamak, from_vmec_wout
@@ -82,6 +83,55 @@ class ContinuumRunSummary:
     min_gap_surface: float
     metric_residual_max: float
     metric_residual_p95: float
+
+    def to_dict(self) -> dict[str, Any]:
+        """Return a strict JSON-serializable representation."""
+        return _json_safe(asdict(self))
+
+
+@dataclass(frozen=True)
+class ConvergenceRunSummary:
+    """Serializable summary for ``fax convergence`` sweeps."""
+
+    case: str
+    model: str
+    status: str
+    message: str
+    config: dict[str, Any]
+    elapsed_seconds: float
+    phases: list[dict[str, Any]]
+    output_dir: str | None
+    artifacts: dict[str, str]
+    geometry: dict[str, Any]
+    angular_points: list[int]
+    mode_max_values: list[int]
+    reference: dict[str, Any]
+    max_frequency_l2_error: float
+    max_residual_p95: float
+    records: list[dict[str, Any]]
+
+    def to_dict(self) -> dict[str, Any]:
+        """Return a strict JSON-serializable representation."""
+        return _json_safe(asdict(self))
+
+
+@dataclass(frozen=True)
+class BenchmarkRunSummary:
+    """Serializable summary for ``fax benchmark`` runs."""
+
+    case: str
+    model: str
+    status: str
+    message: str
+    config: dict[str, Any]
+    elapsed_seconds: float
+    phases: list[dict[str, Any]]
+    output_dir: str | None
+    artifacts: dict[str, str]
+    cold_seconds: float
+    warm_result: dict[str, Any]
+    artifact_size_bytes: int
+    continuum_summary: dict[str, Any]
 
     def to_dict(self) -> dict[str, Any]:
         """Return a strict JSON-serializable representation."""
@@ -183,6 +233,298 @@ def run_validation(
     return summary
 
 
+def run_convergence(
+    config: FaxConfig,
+    *,
+    progress: bool = True,
+    stream: TextIO | None = None,
+    angular_points: tuple[int, ...] = (12, 16, 24),
+    mode_max_values: tuple[int, ...] = (2, 3, 4),
+    write_artifacts: bool = True,
+) -> ConvergenceRunSummary:
+    """Run angular/Fourier convergence sweeps for the continuum scaffold."""
+    config = config.validated()
+    _apply_precision(config)
+    angular_values = _positive_unique_ints(angular_points, name="angular_points")
+    mode_values = _positive_unique_ints(mode_max_values, name="mode_max_values")
+    phase_specs = [
+        ("Validate convergence sweep", "check sweep grids and TOML controls", 0.1),
+        ("Resolve equilibrium geometry", f"source={config.equilibrium.source}", 0.4),
+        ("Run convergence matrix", "sweep angular grid and Fourier truncation", 1.0),
+        ("Write convergence artifacts", f"output_dir={config.run.output_dir}", 0.2),
+    ]
+    reporter = ProgressReporter(
+        enabled=progress,
+        stream=stream,
+        total_estimate_seconds=sum(phase[2] for phase in phase_specs),
+    )
+    start = time.perf_counter()
+    reporter.banner(config)
+
+    _start_phase(reporter, phase_specs[0])
+    reporter.log(f"angular points: {angular_values}")
+    reporter.log(f"mode maxima: {mode_values}")
+    reporter.phase_done(status="done")
+
+    _start_phase(reporter, phase_specs[1])
+    profile_geometry, geometry_source = _load_profile_geometry(config, reporter=reporter)
+    reporter.log(
+        "geometry resolved: "
+        f"name={profile_geometry.name}, radial_points={profile_geometry.s.shape[0]}, "
+        f"field_periods={profile_geometry.field_periods}"
+    )
+    reporter.phase_done(status="done")
+
+    _start_phase(reporter, phase_specs[2])
+    raw_records: list[dict[str, Any]] = []
+    for mode_max in mode_values:
+        for angular in angular_values:
+            record_start = time.perf_counter()
+            family = _mode_family_for_limits(
+                field_periods=profile_geometry.field_periods,
+                m_max=mode_max,
+                n_max=mode_max,
+            )
+            metric_geometry = _metric_geometry_for_resolution(
+                config,
+                profile_geometry,
+                theta_points=angular,
+                zeta_points=angular,
+            )
+            metric_branches, residuals = _metric_branches_and_residuals(metric_geometry, family.as_array())
+            gap_summary = _minimum_gap_or_nan(metric_branches, metric_geometry.s)
+            raw_records.append(
+                {
+                    "theta_points": angular,
+                    "zeta_points": angular,
+                    "m_max": mode_max,
+                    "n_max": mode_max,
+                    "harmonic_count": len(family.harmonics),
+                    "branch_count": int(metric_branches.shape[1]),
+                    "metric_min_frequency_hz": _finite_min(metric_branches),
+                    "metric_max_frequency_hz": _finite_max(metric_branches),
+                    "min_gap_hz": gap_summary.min_gap_hz,
+                    "min_gap_surface": gap_summary.surface,
+                    "residual_max": float(jnp.max(residuals)),
+                    "residual_p95": _percentile(residuals, 95.0),
+                    "runtime_seconds": time.perf_counter() - record_start,
+                    "_frequencies": np.asarray(metric_branches),
+                }
+            )
+            reporter.log(
+                f"theta=zeta={angular}, m_max=n_max={mode_max}: "
+                f"branches={metric_branches.shape[1]}, residual_p95={raw_records[-1]['residual_p95']:.3e}"
+            )
+
+    reference_record = max(
+        raw_records,
+        key=lambda item: (int(item["m_max"]), int(item["theta_points"])),
+    )
+    global_reference_frequencies = np.asarray(reference_record["_frequencies"])
+    reference_by_mode = {
+        mode_max: max(
+            (record for record in raw_records if int(record["m_max"]) == mode_max),
+            key=lambda item: int(item["theta_points"]),
+        )
+        for mode_max in mode_values
+    }
+    records: list[dict[str, Any]] = []
+    for record in raw_records:
+        frequencies = np.asarray(record["_frequencies"])
+        mode_reference = np.asarray(reference_by_mode[int(record["m_max"])]["_frequencies"])
+        branch_count = min(frequencies.shape[1], mode_reference.shape[1])
+        frequency_error = _relative_l2_np(
+            frequencies[:, :branch_count],
+            mode_reference[:, :branch_count],
+        )
+        global_branch_count = min(frequencies.shape[1], global_reference_frequencies.shape[1])
+        mode_truncation_error = _relative_l2_np(
+            frequencies[:, :global_branch_count],
+            global_reference_frequencies[:, :global_branch_count],
+        )
+        public_record = {key: value for key, value in record.items() if key != "_frequencies"}
+        public_record["frequency_l2_error_vs_reference"] = frequency_error
+        public_record["mode_truncation_l2_error_vs_global_reference"] = mode_truncation_error
+        public_record["reference_branch_count_used"] = branch_count
+        public_record["global_reference_branch_count_used"] = global_branch_count
+        records.append(public_record)
+
+    max_frequency_l2_error = max(float(record["frequency_l2_error_vs_reference"]) for record in records)
+    max_residual_p95 = max(float(record["residual_p95"]) for record in records)
+    reporter.log(f"reference: theta=zeta={reference_record['theta_points']}, m_max=n_max={reference_record['m_max']}")
+    reporter.log(f"max frequency L2 error against reference: {max_frequency_l2_error:.3e}")
+    reporter.log(f"max p95 residual across sweep: {max_residual_p95:.3e}")
+    reporter.phase_done(status="done")
+
+    artifacts: dict[str, str] = {}
+    output_dir: str | None = None
+    _start_phase(reporter, phase_specs[3])
+    if write_artifacts:
+        output_path = _output_dir(config) / "convergence"
+        output_path.mkdir(parents=True, exist_ok=True)
+        output_dir = str(output_path)
+        artifacts = {
+            "summary_json": str(output_path / "convergence_summary.json"),
+            "metrics_csv": str(output_path / "convergence_metrics.csv"),
+            "report_markdown": str(output_path / "convergence_report.md"),
+        }
+        reporter.log(f"writing {artifacts['metrics_csv']}")
+        reporter.log(f"writing {artifacts['summary_json']}")
+        reporter.log(f"writing {artifacts['report_markdown']}")
+    else:
+        reporter.log("artifact writing disabled")
+    reporter.phase_done(status="done")
+
+    reference = {
+        key: value
+        for key, value in reference_record.items()
+        if key
+        in {
+            "theta_points",
+            "zeta_points",
+            "m_max",
+            "n_max",
+            "harmonic_count",
+            "branch_count",
+            "metric_min_frequency_hz",
+            "metric_max_frequency_hz",
+            "min_gap_hz",
+            "min_gap_surface",
+            "residual_max",
+            "residual_p95",
+        }
+    }
+    metric_geometry = _metric_geometry_for_resolution(
+        config,
+        profile_geometry,
+        theta_points=max(angular_values),
+        zeta_points=max(angular_values),
+    )
+    summary = ConvergenceRunSummary(
+        case=config.run.case,
+        model=config.run.model,
+        status="completed",
+        message="Completed continuum angular/Fourier convergence sweep.",
+        config=config.to_dict(),
+        elapsed_seconds=time.perf_counter() - start,
+        phases=_phase_dicts(reporter.records),
+        output_dir=output_dir,
+        artifacts=artifacts,
+        geometry=_geometry_dict(profile_geometry, metric_geometry, source=geometry_source),
+        angular_points=list(angular_values),
+        mode_max_values=list(mode_values),
+        reference=reference,
+        max_frequency_l2_error=max_frequency_l2_error,
+        max_residual_p95=max_residual_p95,
+        records=records,
+    )
+    if write_artifacts:
+        _write_convergence_csv(Path(artifacts["metrics_csv"]), records)
+        _write_json(Path(artifacts["summary_json"]), summary.to_dict())
+        Path(artifacts["report_markdown"]).write_text(_convergence_report_markdown(summary), encoding="utf-8")
+    reporter.summary(summary)
+    return summary
+
+
+def run_benchmark(
+    config: FaxConfig,
+    *,
+    progress: bool = True,
+    stream: TextIO | None = None,
+    repeats: int = 3,
+    warmups: int = 1,
+    write_artifacts: bool = True,
+) -> BenchmarkRunSummary:
+    """Benchmark the current continuum workflow and record artifact sizes."""
+    config = config.validated()
+    _apply_precision(config)
+    repeats = int(repeats)
+    warmups = int(warmups)
+    if repeats < 1:
+        raise ValueError("repeats must be at least 1")
+    if warmups < 0:
+        raise ValueError("warmups must be non-negative")
+
+    phase_specs = [
+        ("Validate benchmark", f"repeats={repeats}, warmups={warmups}", 0.1),
+        ("Cold continuum run", "measure first full workflow and write continuum artifacts", 0.8),
+        ("Warm continuum repeats", "repeat continuum workflow without artifact writes", 1.0),
+        ("Write benchmark artifacts", f"output_dir={config.run.output_dir}", 0.2),
+    ]
+    reporter = ProgressReporter(
+        enabled=progress,
+        stream=stream,
+        total_estimate_seconds=sum(phase[2] for phase in phase_specs),
+    )
+    start = time.perf_counter()
+    reporter.banner(config)
+
+    _start_phase(reporter, phase_specs[0])
+    reporter.log(f"benchmark repeats: {repeats}")
+    reporter.log(f"benchmark warmups: {warmups}")
+    reporter.phase_done(status="done")
+
+    benchmark_root = _output_dir(config) / "benchmark"
+    continuum_artifact_dir = benchmark_root / "continuum_artifacts"
+    continuum_config = replace(config, run=replace(config.run, output_dir=str(continuum_artifact_dir)))
+
+    _start_phase(reporter, phase_specs[1])
+    cold_start = time.perf_counter()
+    continuum_summary = run_continuum(continuum_config, progress=False, write_artifacts=True)
+    cold_seconds = time.perf_counter() - cold_start
+    artifact_size_bytes = _directory_size_bytes(continuum_artifact_dir)
+    reporter.log(f"cold continuum workflow: {cold_seconds:.3f}s")
+    reporter.log(f"continuum artifact size: {artifact_size_bytes} bytes")
+    reporter.phase_done(status="done")
+
+    _start_phase(reporter, phase_specs[2])
+    warm_result = time_callable(
+        "continuum_warm_no_artifacts",
+        lambda: run_continuum(continuum_config, progress=False, write_artifacts=False),
+        warmups=warmups,
+        repeats=repeats,
+    )
+    reporter.log(f"warm median runtime: {warm_result.median_seconds:.3f}s")
+    reporter.phase_done(status="done")
+
+    artifacts: dict[str, str] = {}
+    output_dir: str | None = None
+    _start_phase(reporter, phase_specs[3])
+    if write_artifacts:
+        benchmark_root.mkdir(parents=True, exist_ok=True)
+        output_dir = str(benchmark_root)
+        artifacts = {
+            "summary_json": str(benchmark_root / "benchmark_summary.json"),
+            "metrics_csv": str(benchmark_root / "benchmark_metrics.csv"),
+        }
+        reporter.log(f"writing {artifacts['summary_json']}")
+        reporter.log(f"writing {artifacts['metrics_csv']}")
+    else:
+        reporter.log("artifact writing disabled")
+    reporter.phase_done(status="done")
+
+    summary = BenchmarkRunSummary(
+        case=config.run.case,
+        model=config.run.model,
+        status="completed",
+        message="Completed continuum workflow benchmark.",
+        config=config.to_dict(),
+        elapsed_seconds=time.perf_counter() - start,
+        phases=_phase_dicts(reporter.records),
+        output_dir=output_dir,
+        artifacts=artifacts,
+        cold_seconds=cold_seconds,
+        warm_result=asdict(warm_result),
+        artifact_size_bytes=artifact_size_bytes,
+        continuum_summary=continuum_summary.to_dict(),
+    )
+    if write_artifacts:
+        _write_json(Path(artifacts["summary_json"]), summary.to_dict())
+        _write_benchmark_csv(Path(artifacts["metrics_csv"]), summary)
+    reporter.summary(summary)
+    return summary
+
+
 def run_continuum(
     config: FaxConfig,
     *,
@@ -236,7 +578,7 @@ def run_continuum(
     eigensystem = generalized_hermitian_eigensystem(matrices.stiffness, matrices.mass)
     residuals = generalized_eigen_residual_norms(matrices.stiffness, matrices.mass, eigensystem)
     metric_branches = jnp.sqrt(jnp.maximum(jnp.real(eigensystem.eigenvalues), 0.0)) / (2.0 * jnp.pi)
-    gap_summary = minimum_gap_summary(metric_branches, metric_geometry.s)
+    gap_summary = _minimum_gap_or_nan(metric_branches, metric_geometry.s)
     metric_residual_max = float(jnp.max(residuals))
     metric_residual_p95 = _percentile(residuals, 95.0)
     reporter.log(f"profile frequency range: {_frequency_range_text(profile_branches)}")
@@ -319,33 +661,54 @@ def _load_geometries(
 ) -> tuple[EquilibriumGeometry, MetricGeometry, str]:
     theta_points = _angular_points(config.grid.m_max)
     zeta_points = _angular_points(config.grid.n_max)
+    profile, source = _load_profile_geometry(config, reporter=reporter)
+    metric = _metric_geometry_for_resolution(config, profile, theta_points=theta_points, zeta_points=zeta_points)
+    return profile, metric, source
+
+
+def _load_profile_geometry(
+    config: FaxConfig,
+    *,
+    reporter: ProgressReporter,
+) -> tuple[EquilibriumGeometry, str]:
     if config.equilibrium.wout:
         reporter.log(f"reading VMEC wout: {config.equilibrium.wout}")
         profile = from_vmec_wout(config.equilibrium.wout, name=config.run.case)
+        source = "vmec_wout"
+    elif config.equilibrium.source == "analytic":
+        reporter.log("using analytic circular-tokamak fixture")
+        profile = analytic_circular_tokamak(radial_points=config.grid.radial_points)
+        profile = _with_config_field_periods(profile, config)
+        source = "analytic_circular_tokamak"
+    else:
+        reporter.log("direct vmec_jax execution is planned; using analytic fixture until that adapter is implemented")
+        profile = analytic_circular_tokamak(radial_points=config.grid.radial_points)
+        profile = _with_config_field_periods(profile, config)
+        source = "analytic_placeholder_for_vmec_jax"
+
+    if config.physics.density_scale != 1.0:
+        profile = profile.with_density_scale(config.physics.density_scale)
+    return profile, source
+
+
+def _metric_geometry_for_resolution(
+    config: FaxConfig,
+    profile: EquilibriumGeometry,
+    *,
+    theta_points: int,
+    zeta_points: int,
+) -> MetricGeometry:
+    if config.equilibrium.wout:
         metric = metric_from_vmec_wout(
             config.equilibrium.wout,
             theta_points=theta_points,
             zeta_points=zeta_points,
             name=config.run.case,
         )
-        source = "vmec_wout"
-    elif config.equilibrium.source == "analytic":
-        reporter.log("using analytic circular-tokamak fixture")
-        profile = analytic_circular_tokamak(radial_points=config.grid.radial_points)
-        profile = _with_config_field_periods(profile, config)
-        metric = metric_from_equilibrium(profile, theta_points=theta_points, zeta_points=zeta_points)
-        source = "analytic_circular_tokamak"
-    else:
-        reporter.log("direct vmec_jax execution is planned; using analytic fixture until that adapter is implemented")
-        profile = analytic_circular_tokamak(radial_points=config.grid.radial_points)
-        profile = _with_config_field_periods(profile, config)
-        metric = metric_from_equilibrium(profile, theta_points=theta_points, zeta_points=zeta_points)
-        source = "analytic_placeholder_for_vmec_jax"
-
-    if config.physics.density_scale != 1.0:
-        profile = profile.with_density_scale(config.physics.density_scale)
-        metric = metric.with_density_scale(config.physics.density_scale)
-    return profile, metric, source
+        if config.physics.density_scale != 1.0:
+            metric = metric.with_density_scale(config.physics.density_scale)
+        return metric
+    return metric_from_equilibrium(profile, theta_points=theta_points, zeta_points=zeta_points)
 
 
 def _with_config_field_periods(geometry: EquilibriumGeometry, config: FaxConfig) -> EquilibriumGeometry:
@@ -361,6 +724,12 @@ def _apply_precision(config: FaxConfig) -> None:
 def _mode_family_from_config(config: FaxConfig, *, field_periods: int) -> ModeFamily:
     m_ceiling = max(1, int(config.grid.m_max))
     n_ceiling = max(0, int(config.grid.n_max))
+    return _mode_family_for_limits(field_periods=field_periods, m_max=m_ceiling, n_max=n_ceiling)
+
+
+def _mode_family_for_limits(*, field_periods: int, m_max: int, n_max: int) -> ModeFamily:
+    m_ceiling = max(1, int(m_max))
+    n_ceiling = max(0, int(n_max))
     base_n = 1 if n_ceiling >= 1 else 0
     sidebands = tuple(
         k for k in (-1, 0, 1) if abs(base_n + k * int(field_periods)) <= n_ceiling
@@ -388,12 +757,46 @@ def _phase_dicts(records: list[PhaseRecord]) -> list[dict[str, Any]]:
     return [asdict(record) for record in records]
 
 
+def _positive_unique_ints(values: tuple[int, ...], *, name: str) -> tuple[int, ...]:
+    parsed = tuple(sorted(set(int(value) for value in values)))
+    if not parsed:
+        raise ValueError(f"{name} must contain at least one value")
+    if any(value <= 0 for value in parsed):
+        raise ValueError(f"{name} values must be positive")
+    return parsed
+
+
 def _output_dir(config: FaxConfig) -> Path:
     return Path(config.run.output_dir).expanduser()
 
 
 def _write_json(path: Path, payload: dict[str, Any]) -> None:
     path.write_text(json.dumps(_json_safe(payload), indent=2, sort_keys=True, allow_nan=False), encoding="utf-8")
+
+
+def _write_convergence_csv(path: Path, records: list[dict[str, Any]]) -> None:
+    if not records:
+        raise ValueError("cannot write empty convergence records")
+    headers = tuple(records[0])
+    with path.open("w", newline="", encoding="utf-8") as stream:
+        writer = csv.DictWriter(stream, fieldnames=headers)
+        writer.writeheader()
+        for record in records:
+            writer.writerow(record)
+
+
+def _write_benchmark_csv(path: Path, summary: BenchmarkRunSummary) -> None:
+    warm = summary.warm_result
+    with path.open("w", newline="", encoding="utf-8") as stream:
+        writer = csv.writer(stream)
+        writer.writerow(["metric", "value"])
+        writer.writerow(["cold_seconds", summary.cold_seconds])
+        writer.writerow(["warm_min_seconds", warm["min_seconds"]])
+        writer.writerow(["warm_median_seconds", warm["median_seconds"]])
+        writer.writerow(["warm_max_seconds", warm["max_seconds"]])
+        writer.writerow(["warm_repeats", warm["repeats"]])
+        writer.writerow(["warmups", warm["warmups"]])
+        writer.writerow(["artifact_size_bytes", summary.artifact_size_bytes])
 
 
 def _json_safe(value: Any) -> Any:
@@ -408,6 +811,32 @@ def _json_safe(value: Any) -> Any:
     if isinstance(value, float):
         return value if math.isfinite(value) else None
     return value
+
+
+def _convergence_report_markdown(summary: ConvergenceRunSummary) -> str:
+    lines = [
+        f"# FAX Convergence Report: {summary.case}",
+        "",
+        f"- Status: `{summary.status}`",
+        f"- Message: {summary.message}",
+        f"- Angular points: {summary.angular_points}",
+        f"- Mode maxima: {summary.mode_max_values}",
+        f"- Reference: theta=zeta={summary.reference['theta_points']}, "
+        f"m_max=n_max={summary.reference['m_max']}",
+        f"- Max frequency L2 error: {summary.max_frequency_l2_error:.6g}",
+        f"- Max residual p95: {summary.max_residual_p95:.6g}",
+        "",
+        "| theta | m_max | branches | freq L2 error | residual p95 | min gap [Hz] | runtime [s] |",
+        "| ---: | ---: | ---: | ---: | ---: | ---: | ---: |",
+    ]
+    for record in summary.records:
+        lines.append(
+            "| {theta_points} | {m_max} | {branch_count} | "
+            "{frequency_l2_error_vs_reference:.6g} | {residual_p95:.6g} | "
+            "{min_gap_hz:.6g} | {runtime_seconds:.4g} |".format(**record)
+        )
+    lines.append("")
+    return "\n".join(lines)
 
 
 def _gate_result_dict(result: GateResult, registry: dict[str, Any]) -> dict[str, Any]:
@@ -593,6 +1022,43 @@ def _continuum_metrics_dict(
         "metric_residual_mean": float(jnp.mean(residuals)),
         "metric_residual_p95": _percentile(residuals, 95.0),
     }
+
+
+def _metric_branches_and_residuals(metric: MetricGeometry, harmonics: Any) -> tuple[jax.Array, jax.Array]:
+    matrices = metric_continuum_matrices(metric, harmonics)
+    eigensystem = generalized_hermitian_eigensystem(matrices.stiffness, matrices.mass)
+    residuals = generalized_eigen_residual_norms(matrices.stiffness, matrices.mass, eigensystem)
+    branches = jnp.sqrt(jnp.maximum(jnp.real(eigensystem.eigenvalues), 0.0)) / (2.0 * jnp.pi)
+    return branches, residuals
+
+
+def _minimum_gap_or_nan(branches_hz: Any, surfaces: Any) -> ContinuumGapSummary:
+    branches = jnp.asarray(branches_hz)
+    if branches.ndim != 2 or branches.shape[1] < 2:
+        return ContinuumGapSummary(
+            min_gap_hz=float("nan"),
+            surface=float("nan"),
+            lower_frequency_hz=float("nan"),
+            upper_frequency_hz=float("nan"),
+            radial_index=-1,
+            sorted_branch_index=-1,
+        )
+    return minimum_gap_summary(branches, surfaces)
+
+
+def _relative_l2_np(actual: np.ndarray, expected: np.ndarray, *, floor: float = 1.0e-30) -> float:
+    denominator = max(float(np.linalg.norm(expected)), float(floor))
+    return float(np.linalg.norm(actual - expected) / denominator)
+
+
+def _directory_size_bytes(path: Path) -> int:
+    if not path.exists():
+        return 0
+    total = 0
+    for item in path.rglob("*"):
+        if item.is_file():
+            total += item.stat().st_size
+    return int(total)
 
 
 def _finite_min(values: Any) -> float:

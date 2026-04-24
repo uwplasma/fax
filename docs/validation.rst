@@ -64,6 +64,16 @@ Run the same gates from the CLI, with rich phase-by-phase output and artifacts:
 The CLI writes ``validation_summary.json`` and ``validation_report.md`` to
 ``run.output_dir`` unless ``--no-artifacts`` is used.
 
+Resolution sweeps are available through the convergence workflow:
+
+.. code-block:: bash
+
+   fax convergence examples/landreman_paul_qa_lowres.toml
+   fax convergence examples/minimal.toml --angular-points 8 --angular-points 12 --mode-max 1 --mode-max 2 --json
+
+This writes a CSV table, JSON summary, and Markdown report comparing each
+angular/Fourier truncation against the highest-resolution entry in the sweep.
+
 These are scaffold acceptance gates. Publication claims about 3-D stellarator
 continuum gaps still require the planned STELLGAP/AE3D/literature comparison
 gates and resolution-convergence reports.

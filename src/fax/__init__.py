@@ -9,11 +9,22 @@ from .modes import ModeFamily
 from .plotting import ContinuumArtifacts, load_continuum_artifacts, plot_continuum_artifacts
 from .reference_cases import ReferenceCase, landreman_paul_qa_lowres
 from .runner import RunSummary, run
-from .workflows import ContinuumRunSummary, ValidationRunSummary, run_continuum, run_validation
+from .workflows import (
+    BenchmarkRunSummary,
+    ContinuumRunSummary,
+    ConvergenceRunSummary,
+    ValidationRunSummary,
+    run_benchmark,
+    run_continuum,
+    run_convergence,
+    run_validation,
+)
 
 __all__ = [
     "ContinuumRunSummary",
     "ContinuumArtifacts",
+    "BenchmarkRunSummary",
+    "ConvergenceRunSummary",
     "EquilibriumGeometry",
     "FaxConfig",
     "MetricGeometry",
@@ -26,7 +37,9 @@ __all__ = [
     "load_config",
     "plot_continuum_artifacts",
     "run",
+    "run_benchmark",
     "run_continuum",
+    "run_convergence",
     "run_validation",
 ]
 

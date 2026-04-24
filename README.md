@@ -144,6 +144,8 @@ fax examples/landreman_paul_qa_lowres.toml --dry-run
 fax validate examples/minimal.toml --tag analytic
 fax continuum examples/landreman_paul_qa_lowres.toml
 fax plot-continuum outputs/landreman_paul_qa_lowres --output-dir outputs/landreman_paul_qa_lowres/figures
+fax convergence examples/landreman_paul_qa_lowres.toml
+fax benchmark examples/landreman_paul_qa_lowres.toml --repeats 3
 ```
 
 `fax` reads TOML configuration files. The normal CLI path is intentionally
@@ -157,6 +159,9 @@ silent.
 continuum scaffold, then writes `continuum_summary.json`,
 `continuum_metrics.json`, and `continuum_branches.csv`. `fax plot-continuum`
 turns those continuum artifacts into SVG/PNG dashboard figures.
+`fax convergence` sweeps angular resolution and Fourier truncation and writes a
+CSV/Markdown/JSON convergence report. `fax benchmark` records cold runtime, warm
+runtime, and artifact size for local performance tracking.
 
 For machine-readable output:
 
@@ -165,6 +170,8 @@ fax examples/minimal.toml --dry-run --json
 fax validate examples/minimal.toml --tag metric --json
 fax continuum examples/minimal.toml --json
 fax plot-continuum outputs --json
+fax convergence examples/minimal.toml --json
+fax benchmark examples/minimal.toml --repeats 1 --warmups 0 --json
 fax examples/minimal.toml --dump-config
 fax examples/minimal.toml --quiet
 ```

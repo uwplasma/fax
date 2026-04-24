@@ -10,7 +10,16 @@ from . import __version__
 from .config import ConfigError, FaxConfig, load_config
 from .plotting import plot_continuum_artifacts
 from .runner import run
-from .workflows import ContinuumRunSummary, ValidationRunSummary, run_continuum, run_validation
+from .workflows import (
+    BenchmarkRunSummary,
+    ContinuumRunSummary,
+    ConvergenceRunSummary,
+    ValidationRunSummary,
+    run_benchmark,
+    run_continuum,
+    run_convergence,
+    run_validation,
+)
 
 
 EXAMPLE_CONFIG = """[run]
@@ -49,7 +58,7 @@ def build_parser() -> argparse.ArgumentParser:
         prog="fax",
         description=(
             "Run or inspect differentiable Alfvén eigenmode calculations from a TOML file. "
-            "Subcommands: validate, continuum, plot-continuum."
+            "Subcommands: validate, continuum, convergence, benchmark, plot-continuum."
         ),
     )
     parser.add_argument("config", nargs="?", help="Path to a fax TOML configuration file.")
@@ -84,6 +93,34 @@ def build_command_parser() -> argparse.ArgumentParser:
     continuum.add_argument("--quiet", action="store_true", help="Suppress rich progress output and print only summary JSON.")
     continuum.add_argument("--no-artifacts", action="store_true", help="Do not write continuum artifact files.")
 
+    convergence = subparsers.add_parser("convergence", help="Run angular/Fourier convergence sweeps.")
+    convergence.add_argument("config", help="Path to a fax TOML configuration file.")
+    convergence.add_argument(
+        "--angular-points",
+        type=int,
+        action="append",
+        default=[],
+        help="Theta/zeta grid point count; may be repeated. Defaults to 12, 16, 24.",
+    )
+    convergence.add_argument(
+        "--mode-max",
+        type=int,
+        action="append",
+        default=[],
+        help="Use m_max=n_max for one sweep level; may be repeated. Defaults to 2, 3, 4.",
+    )
+    convergence.add_argument("--json", action="store_true", help="Print only summary JSON; disables rich progress output.")
+    convergence.add_argument("--quiet", action="store_true", help="Suppress rich progress output and print only summary JSON.")
+    convergence.add_argument("--no-artifacts", action="store_true", help="Do not write convergence artifact files.")
+
+    benchmark = subparsers.add_parser("benchmark", help="Benchmark the current continuum workflow.")
+    benchmark.add_argument("config", help="Path to a fax TOML configuration file.")
+    benchmark.add_argument("--repeats", type=int, default=3, help="Number of warm repeats.")
+    benchmark.add_argument("--warmups", type=int, default=1, help="Number of warmup runs before timing repeats.")
+    benchmark.add_argument("--json", action="store_true", help="Print only summary JSON; disables rich progress output.")
+    benchmark.add_argument("--quiet", action="store_true", help="Suppress rich progress output and print only summary JSON.")
+    benchmark.add_argument("--no-artifacts", action="store_true", help="Do not write benchmark artifact files.")
+
     plot = subparsers.add_parser("plot-continuum", help="Plot artifacts written by fax continuum.")
     plot.add_argument("artifact_dir", help="Directory containing continuum_summary.json and continuum_branches.csv.")
     plot.add_argument("--output-dir", help="Directory for generated figures; defaults to artifact_dir.")
@@ -103,7 +140,7 @@ def build_command_parser() -> argparse.ArgumentParser:
 def main(argv: list[str] | None = None) -> int:
     """CLI entry point."""
     argv_list = list(sys.argv[1:] if argv is None else argv)
-    if argv_list and argv_list[0] in {"validate", "continuum", "plot-continuum"}:
+    if argv_list and argv_list[0] in {"validate", "continuum", "convergence", "benchmark", "plot-continuum"}:
         return _main_command(argv_list)
 
     parser = build_parser()
@@ -152,7 +189,7 @@ def _main_command(argv: list[str]) -> int:
 
     machine_readable = bool(args.json or args.quiet)
     try:
-        summary: ValidationRunSummary | ContinuumRunSummary
+        summary: ValidationRunSummary | ContinuumRunSummary | ConvergenceRunSummary | BenchmarkRunSummary
         if args.command == "validate":
             summary = run_validation(
                 config,
@@ -164,6 +201,22 @@ def _main_command(argv: list[str]) -> int:
             summary = run_continuum(
                 config,
                 progress=not machine_readable,
+                write_artifacts=not args.no_artifacts,
+            )
+        elif args.command == "convergence":
+            summary = run_convergence(
+                config,
+                progress=not machine_readable,
+                angular_points=tuple(args.angular_points) if args.angular_points else (12, 16, 24),
+                mode_max_values=tuple(args.mode_max) if args.mode_max else (2, 3, 4),
+                write_artifacts=not args.no_artifacts,
+            )
+        elif args.command == "benchmark":
+            summary = run_benchmark(
+                config,
+                progress=not machine_readable,
+                repeats=args.repeats,
+                warmups=args.warmups,
                 write_artifacts=not args.no_artifacts,
             )
         else:  # pragma: no cover - argparse prevents this branch

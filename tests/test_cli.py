@@ -136,3 +136,85 @@ field_periods = 1
     branches = output_dir / "continuum_branches.csv"
     assert branches.exists()
     assert len(branches.read_text(encoding="utf-8").splitlines()) == 13
+
+
+def test_cli_convergence_json_writes_artifacts(tmp_path, capsys):
+    output_dir = tmp_path / "convergence_outputs"
+    config_path = tmp_path / "case.toml"
+    config_path.write_text(
+        f"""
+[run]
+case = "convergence_cli"
+model = "continuum"
+output_dir = "{output_dir}"
+
+[equilibrium]
+source = "analytic"
+
+[grid]
+radial_points = 10
+m_max = 2
+n_max = 2
+field_periods = 1
+""",
+        encoding="utf-8",
+    )
+
+    assert (
+        main(
+            [
+                "convergence",
+                str(config_path),
+                "--angular-points",
+                "8",
+                "--angular-points",
+                "12",
+                "--mode-max",
+                "1",
+                "--mode-max",
+                "2",
+                "--json",
+            ]
+        )
+        == 0
+    )
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["case"] == "convergence_cli"
+    assert payload["status"] == "completed"
+    assert len(payload["records"]) == 4
+    assert payload["reference"]["theta_points"] == 12
+    assert (output_dir / "convergence" / "convergence_summary.json").exists()
+    assert (output_dir / "convergence" / "convergence_metrics.csv").exists()
+    assert (output_dir / "convergence" / "convergence_report.md").exists()
+
+
+def test_cli_benchmark_json_writes_artifacts(tmp_path, capsys):
+    output_dir = tmp_path / "benchmark_outputs"
+    config_path = tmp_path / "case.toml"
+    config_path.write_text(
+        f"""
+[run]
+case = "benchmark_cli"
+model = "continuum"
+output_dir = "{output_dir}"
+
+[equilibrium]
+source = "analytic"
+
+[grid]
+radial_points = 8
+m_max = 1
+n_max = 1
+field_periods = 1
+""",
+        encoding="utf-8",
+    )
+
+    assert main(["benchmark", str(config_path), "--repeats", "1", "--warmups", "0", "--json"]) == 0
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["case"] == "benchmark_cli"
+    assert payload["status"] == "completed"
+    assert payload["warm_result"]["repeats"] == 1
+    assert payload["artifact_size_bytes"] > 0
+    assert (output_dir / "benchmark" / "benchmark_summary.json").exists()
+    assert (output_dir / "benchmark" / "benchmark_metrics.csv").exists()
