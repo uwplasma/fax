@@ -14,6 +14,9 @@ from .boozer import (
     boozer_continuum_frequencies_hz,
     boozer_continuum_matrices,
     boozer_harmonic_orthogonality_error,
+    boozer_jacobian_identity_error,
+    boozer_metric_continuum_frequencies_hz,
+    boozer_metric_continuum_matrices,
     boozer_projection_error,
     straight_field_line_phase_error,
 )
@@ -480,6 +483,97 @@ def _gate_boozer_sideband_coupling_hermitian() -> GateResult:
     )
 
 
+def _gate_boozer_jacobian_identity() -> GateResult:
+    gate_id = "boozer_jacobian_identity"
+    tolerance = 2.0e-6
+    spectrum = _synthetic_boozer_spectrum()
+    metric = boozer_jacobian_identity_error(
+        spectrum,
+        jacobian_numerator=jnp.asarray([1.3, 1.7]),
+        theta_points=64,
+        zeta_points=64,
+    )
+    return _pass_fail(
+        gate_id,
+        float(metric),
+        tolerance,
+        "Boozer Jacobian weight satisfies J_B |B|^2 = G + iota I on each surface",
+    )
+
+
+def _gate_boozer_metric_constant_field_continuum() -> GateResult:
+    gate_id = "boozer_metric_constant_field_continuum"
+    tolerance = 1.0e-5
+    magnetic_field = 2.7
+    mass_density = 3.4e-8
+    major_radius = 5.5
+    iota = 0.61
+    spectrum = BoozerSpectrum(
+        source="constant_boozer_metric_validation",
+        s=jnp.asarray([0.2]),
+        xm=jnp.asarray([0.0]),
+        xn=jnp.asarray([0.0]),
+        bmnc=jnp.asarray([[magnetic_field]]),
+        bmns=None,
+        field_periods=1,
+    )
+    harmonics = jnp.asarray([[1.0, 0.0], [2.0, 1.0], [3.0, 2.0]])
+    frequencies = boozer_metric_continuum_frequencies_hz(
+        spectrum,
+        harmonics,
+        iota=iota,
+        major_radius=major_radius,
+        mass_density=mass_density,
+        jacobian_numerator=1.4,
+    )
+    k_parallel = (harmonics[:, 1] - harmonics[:, 0] * iota) / major_radius
+    expected = magnetic_field / jnp.sqrt(MU0 * mass_density) * jnp.abs(k_parallel) / (2.0 * jnp.pi)
+    metric = relative_l2_error(frequencies[0], jnp.sort(expected))
+    return _pass_fail(
+        gate_id,
+        float(metric),
+        tolerance,
+        "Boozer-Jacobian weighted continuum matrix recovers the constant-field profile-limit frequencies",
+    )
+
+
+def _gate_boozer_metric_mass_coupling() -> GateResult:
+    gate_id = "boozer_metric_mass_coupling"
+    tolerance = 1.0e-5
+    spectrum = BoozerSpectrum(
+        source="jacobian_weighted_boozer_validation",
+        s=jnp.asarray([0.5]),
+        xm=jnp.asarray([0.0, 1.0]),
+        xn=jnp.asarray([0.0, 1.0]),
+        bmnc=jnp.asarray([[2.8, 0.10]]),
+        bmns=None,
+        field_periods=1,
+    )
+    harmonics = jnp.asarray([[1.0, 0.0], [2.0, 1.0]])
+    matrices = boozer_metric_continuum_matrices(
+        spectrum,
+        harmonics,
+        iota=0.43,
+        major_radius=5.2,
+        mass_density=4.1e-8,
+        jacobian_numerator=1.6,
+        theta_points=96,
+        zeta_points=96,
+    )
+    mass = matrices.mass[0]
+    stiffness = matrices.stiffness[0]
+    mass_coupling = jnp.abs(mass[0, 1]) / jnp.maximum(jnp.max(jnp.abs(jnp.diag(mass))), 1.0e-30)
+    stiffness_coupling = jnp.abs(stiffness[0, 1]) / jnp.maximum(jnp.max(jnp.abs(jnp.diag(stiffness))), 1.0e-30)
+    failure = jnp.maximum(1.0e-3 - mass_coupling, 0.0) + jnp.maximum(stiffness_coupling - 1.0e-5, 0.0)
+    metric = jnp.maximum(jnp.maximum(hermitian_relative_error(mass), hermitian_relative_error(stiffness)), failure)
+    return _pass_fail(
+        gate_id,
+        float(metric),
+        tolerance,
+        "Boozer Jacobian weighting gives nonzero mass coupling while preserving J_B |B|^2 stiffness cancellation",
+    )
+
+
 def _gate_landreman_paul_adapter_smoke() -> GateResult:
     gate_id = "landreman_paul_adapter_smoke"
     tolerance = 0.0
@@ -800,6 +894,39 @@ def registered_validation_gates() -> tuple[ValidationGate, ...]:
             command="python -m pytest tests/test_boozer.py tests/test_validation_registry.py",
             tags=("boozer", "continuum", "coupling"),
             _runner=_gate_boozer_sideband_coupling_hermitian,
+        ),
+        ValidationGate(
+            gate_id="boozer_jacobian_identity",
+            title="Boozer Jacobian identity",
+            layer="boozer",
+            quantity="relative J_B |B|^2 flux-function error",
+            tolerance=2.0e-6,
+            citation="Boozer-coordinate Jacobian identity sqrt(g)=(G+iota*I)/B^2",
+            command="python -m pytest tests/test_boozer.py tests/test_validation_registry.py",
+            tags=("boozer", "jacobian", "metric"),
+            _runner=_gate_boozer_jacobian_identity,
+        ),
+        ValidationGate(
+            gate_id="boozer_metric_constant_field_continuum",
+            title="Boozer metric constant-field continuum limit",
+            layer="boozer",
+            quantity="relative frequency error",
+            tolerance=1.0e-5,
+            citation="Boozer-Jacobian weighted reduced continuum matrix must recover omega=vA|n-m*iota|/R",
+            command="python -m pytest tests/test_boozer.py tests/test_validation_registry.py",
+            tags=("boozer", "jacobian", "continuum", "analytic"),
+            _runner=_gate_boozer_metric_constant_field_continuum,
+        ),
+        ValidationGate(
+            gate_id="boozer_metric_mass_coupling",
+            title="Boozer Jacobian mass coupling",
+            layer="boozer",
+            quantity="Hermitian error and weighted-coupling thresholds",
+            tolerance=1.0e-5,
+            citation="Boozer Jacobian weighting puts |B| variation into the mass weight while J_B B^2 is a flux function",
+            command="python -m pytest tests/test_boozer.py tests/test_validation_registry.py",
+            tags=("boozer", "jacobian", "continuum", "coupling"),
+            _runner=_gate_boozer_metric_mass_coupling,
         ),
         ValidationGate(
             gate_id="landreman_paul_adapter_smoke",

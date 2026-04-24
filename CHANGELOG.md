@@ -15,6 +15,8 @@ Initial research scaffold release for FAX.
 - Optional Boozer-spectrum reader and local `booz_xform_jax` coupling smoke path.
 - Boozer harmonic reconstruction/projection, Fourier orthogonality, and straight-field-line phase validation.
 - Reduced Boozer continuum matrix with constant-field profile-limit and sideband-coupling gates.
+- Boozer-Jacobian identity and Jacobian-weighted reduced continuum gates.
+- README status badges for tests, docs, publish, ReadTheDocs, coverage, PyPI, Python versions, license, Ruff, and JAX.
 - Differentiable radial-mode avoidance objective for early design-screen demonstrations.
 - VMEC `wout` adapter smoke path for the Landreman-Paul QA low-resolution reference case.
 - Validation registry with named gates, tolerances, citations, commands, tags, and JSON/Markdown reports.
@@ -40,8 +42,9 @@ This release is a validated scaffold, not a final 3-D stellarator eigenmode solv
 Current gates cover analytic continuum limits, metric reduction to the profile
 limit, Hermiticity, generalized-eigensolve residuals, JAX density-gradient
 consistency, radial/angular convergence, reduced radial eigenmode spectra,
-analytic gap centers, BAE/TAE/EAE reference ordering, reduced fast-ion
-resonance ordering, and VMEC/Boozer adapter smoke tests.
+analytic gap centers, BAE/TAE/EAE reference ordering, Boozer-Jacobian metric
+identity checks, reduced fast-ion resonance ordering, and VMEC/Boozer adapter
+smoke tests.
 
 ### Local Release Gate
 

@@ -1,5 +1,20 @@
 # fax
 
+[![Tests](https://github.com/uwplasma/fax/actions/workflows/tests.yml/badge.svg?branch=main)](https://github.com/uwplasma/fax/actions/workflows/tests.yml)
+[![Docs](https://github.com/uwplasma/fax/actions/workflows/docs.yml/badge.svg?branch=main)](https://github.com/uwplasma/fax/actions/workflows/docs.yml)
+[![Publish](https://github.com/uwplasma/fax/actions/workflows/publish.yml/badge.svg)](https://github.com/uwplasma/fax/actions/workflows/publish.yml)
+[![Read the Docs](https://readthedocs.org/projects/fax/badge/?version=latest)](https://fax.readthedocs.io/en/latest/?badge=latest)
+[![Coverage](docs/_static/coverage.svg)](docs/_static/coverage.svg)
+[![PyPI](https://img.shields.io/pypi/v/uwplasma-fax.svg)](https://pypi.org/project/uwplasma-fax/)
+[![Python](https://img.shields.io/pypi/pyversions/uwplasma-fax.svg)](https://pypi.org/project/uwplasma-fax/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Ruff](https://img.shields.io/badge/lint-ruff-46aef7.svg)](https://docs.astral.sh/ruff/)
+[![JAX](https://img.shields.io/badge/JAX-differentiable-orange.svg)](https://github.com/jax-ml/jax)
+
+The GitHub, ReadTheDocs, PyPI, and coverage badges update from the repository
+workflows. The coverage badge is regenerated on `main` pushes by the test
+workflow and committed back to `docs/_static/coverage.svg`.
+
 `fax` is a planned end-to-end differentiable JAX code for Alfvén eigenmodes,
 fast-ion drive, continuum gaps, and toroidal/helical coupling in stellarators.
 
@@ -151,6 +166,12 @@ This figure validates the first reduced Boozer continuum matrix: constant
 `|B|` recovers the analytic profile limit, a known Boozer harmonic produces
 Hermitian sideband coupling, and increasing harmonic amplitude opens a reduced
 gap.
+
+![Boozer-Jacobian identity](docs/_static/boozer_jacobian_identity.png)
+
+This figure validates the next Boozer metric step: the Boozer-Jacobian identity
+`J_B=(G+iota I)/B^2`, the flux-function product `J_B |B|^2`, and the resulting
+Jacobian-weighted mass coupling used by the reduced metric bridge.
 
 ![Continuum artifact dashboard](docs/_static/continuum_artifact_dashboard.png)
 
@@ -313,6 +334,7 @@ Current figures:
 - `global_gap_fastion_dashboard.svg`: reduced radial mode, gap, fast-ion, and optimization dashboard.
 - `boozer_harmonic_validation.svg`: Boozer harmonic reconstruction/projection and straight-field-line phase dashboard.
 - `boozer_continuum_coupling.svg`: reduced Boozer continuum matrix and controlled sideband-coupling dashboard.
+- `boozer_jacobian_identity.svg`: Boozer-Jacobian identity and weighted mass-coupling dashboard.
 - `continuum_artifact_dashboard.svg`: dashboard generated from `fax continuum` artifacts.
 - `metric_residual_convergence.svg`: metric-matrix residual and angular-grid check.
 - `landreman_paul_convergence_dashboard.svg`: VMEC-backed radial/angular/Fourier convergence smoke-test dashboard.

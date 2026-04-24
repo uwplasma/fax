@@ -70,6 +70,13 @@ Current Figures
    recovery, sideband-coupling matrix, and controlled gap opening with
    increasing Boozer harmonic amplitude.
 
+.. figure:: _static/boozer_jacobian_identity.svg
+   :alt: Boozer-Jacobian identity validation dashboard.
+
+   Boozer-Jacobian metric identity dashboard: sampled ``|B|``,
+   ``J_B=(G+iota I)/B^2``, the flux-function product ``J_B |B|^2``, and
+   weighted mass coupling.
+
 .. figure:: _static/continuum_artifact_dashboard.svg
    :alt: Dashboard generated from fax continuum artifacts.
 

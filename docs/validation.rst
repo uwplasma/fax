@@ -62,6 +62,13 @@ tags, and command. The current gates are:
   matrix recovers ``omega=v_A |n-m*iota|/R`` for constant ``|B|``.
 * ``boozer_sideband_coupling_hermitian``: checks that a known Boozer harmonic
   produces nonzero sideband coupling while keeping the matrix Hermitian.
+* ``boozer_jacobian_identity``: checks the Boozer-coordinate identity
+  ``J_B |B|^2 = G + iota I`` for a synthetic harmonic spectrum.
+* ``boozer_metric_constant_field_continuum``: checks that the
+  Boozer-Jacobian weighted matrix recovers the constant-field profile limit.
+* ``boozer_metric_mass_coupling``: checks that nonuniform ``J_B`` produces
+  mass-matrix coupling while ``J_B |B|^2`` cancels sideband stiffness coupling
+  in the reduced bridge.
 * ``landreman_paul_adapter_smoke``: checks the Landreman-Paul QA VMEC ``wout``
   profile and metric adapters when local data are available.
 * ``landreman_paul_continuum_finite``: checks that the Landreman-Paul profile
@@ -178,6 +185,13 @@ yet full 3-D Alfvén-continuum validation.
    Reduced Boozer continuum matrix checks: constant-field reduction to the
    analytic profile limit, Hermitian sideband coupling from a known Boozer
    harmonic, and gap opening as the harmonic amplitude increases.
+
+.. figure:: _static/boozer_jacobian_identity.svg
+   :alt: Boozer-Jacobian identity validation dashboard.
+
+   Boozer-Jacobian metric identity checks: sampled ``|B|``, the corresponding
+   ``J_B=(G+iota I)/B^2`` weight, the flux-function product ``J_B |B|^2``,
+   and the weighted mass-matrix coupling used by the reduced bridge.
 
 .. figure:: _static/landreman_paul_convergence_dashboard.svg
    :alt: LandremanPaul2021 QA radial, angular, and Fourier convergence dashboard.

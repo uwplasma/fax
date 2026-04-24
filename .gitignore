@@ -6,10 +6,10 @@ __pycache__/
 .ruff_cache/
 .mypy_cache/
 .coverage
+coverage.json
 htmlcov/
 build/
 dist/
 docs/_build/
 outputs/
 *.nc
-

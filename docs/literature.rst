@@ -45,7 +45,10 @@ reproduce a quantitative comparison. Current priority targets are:
   https://doi.org/10.1017/S0022377825100524
 * Boozer-coordinate transformation references and implementation conventions:
   https://princetonuniversity.github.io/STELLOPT/BOOZ_XFORM.html and
-  https://github.com/hiddenSymmetries/booz_xform
+  https://github.com/hiddenSymmetries/booz_xform. The Boozer-Jacobian bridge
+  uses the standard ``sqrt(g)=(G+iota I)/B^2`` identity also documented in the
+  GVEC theory notes:
+  https://gvec.readthedocs.io/v1.3.x/user/theory.html.
 * Basic large-aspect-ratio gap references for the user-facing BAE/TAE/EAE
   example:
   Fu & Cheng, "Theory of a high-n toroidicity-induced shear Alfven eigenmode in

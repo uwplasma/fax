@@ -41,6 +41,9 @@ def test_core_validation_gates_pass():
         "boozer_straight_field_line_phase",
         "boozer_constant_field_continuum",
         "boozer_sideband_coupling_hermitian",
+        "boozer_jacobian_identity",
+        "boozer_metric_constant_field_continuum",
+        "boozer_metric_mass_coupling",
     ]
 
     for gate_id in gate_ids:

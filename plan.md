@@ -1081,6 +1081,17 @@ Needed docs:
   - Added `examples/research/basic_alfven_gap_map.py`, README/docs explanations, and generated `basic_alfven_gap_map` figure showing the TAE, EAE, and BAE gaps clearly.
   - Added validation gates `basic_gap_map_ordering` and `bae_temperature_scaling`; direct `run_validation_suite()` now has 21 registered gates passing on this machine.
   - Verified after this gap-map step with `python -m ruff check .`, `python -m mypy src/fax`, `python -m pytest -q` (89 passed), `python tools/generate_validation_figures.py`, `python tools/qa_figures.py`, `sphinx-build -W -b html docs docs/_build/html`, `python -m build`, and `python -m twine check dist/*`.
+- Added the next Boozer metric/Jacobian bridge:
+  - `boozer_jacobian_weight` and `boozer_jacobian_identity_error` validate the Boozer-coordinate identity ``J_B=(G+iota I)/B^2`` and ``J_B |B|^2=G+iota I`` on sampled Boozer grids.
+  - `boozer_metric_continuum_matrices` and `boozer_metric_continuum_frequencies_hz` use ``J_B`` in reduced matrix weights while keeping the full perpendicular metric/radial operator explicitly out of scope.
+  - Added validation gates `boozer_jacobian_identity`, `boozer_metric_constant_field_continuum`, and `boozer_metric_mass_coupling`.
+  - Added generated `boozer_jacobian_identity` README/docs figure showing sampled ``|B|``, ``J_B``, the flux-function identity product, and weighted mass coupling.
+- Added repository status badge infrastructure:
+  - README badges now cover Tests, Docs, Publish, ReadTheDocs, coverage, PyPI version, Python versions, MIT license, Ruff, and JAX.
+  - `tools/write_coverage_badge.py` writes `docs/_static/coverage.svg` from `coverage json`.
+  - `.github/workflows/tests.yml` now regenerates and commits the coverage badge on `main` pushes when GitHub Actions are available again.
+  - Direct `run_validation_suite()` now has 24 registered gates passing on this machine.
+  - Verified after this badge/Jacobian step with `python -m coverage run --source=src/fax -m pytest` (94 passed, 90.0% coverage), `python -m ruff check .`, `python -m mypy src/fax`, `python -m pytest -q` (94 passed), `python tools/generate_validation_figures.py`, `python tools/qa_figures.py`, `sphinx-build -W -b html docs docs/_build/html`, `python -m build`, and `python -m twine check dist/*`.
 
 ### Local Testing Policy Until GitHub Actions Resume
 

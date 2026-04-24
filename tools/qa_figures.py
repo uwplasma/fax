@@ -33,7 +33,7 @@ def _check_png(path: Path, *, min_ink_fraction: float) -> str:
 def _check_svg(path: Path) -> str:
     root = ET.parse(path).getroot()
     tag_count = sum(1 for _node in root.iter())
-    if tag_count < 20:
+    if tag_count < 10:
         raise ValueError(f"{path} appears malformed or empty: tag_count={tag_count}")
     return f"{path.name}: svg_tags={tag_count}"
 

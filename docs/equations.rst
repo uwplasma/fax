@@ -207,6 +207,19 @@ straight-field-line convention is
 A dedicated Boozer metric/operator assembly is still an open validation lane
 before Boozer spectra become the default stellarator continuum path.
 
+The next Boozer metric bridge uses the standard Boozer-Jacobian identity
+
+.. math::
+
+   J_B \equiv \sqrt{g}_B = \frac{G(\psi)+\iota(\psi)I(\psi)}{|B|^2},
+   \qquad
+   J_B |B|^2 = G+\iota I,
+
+where ``G`` and ``I`` are flux functions in the covariant Boozer
+representation. FAX currently accepts the numerator ``G+iota I`` as a
+surface-wise input or normalization constant and validates the flux-function
+identity before using the weight in reduced matrices.
+
 The first reduced Boozer continuum matrix now uses this scalar representation
 in the field-line-bending weight:
 
@@ -225,6 +238,25 @@ It recovers the analytic profile frequency in the constant-field limit and
 opens controlled sideband coupling when a known Boozer harmonic is added to
 ``|B|``. The remaining open work is to replace the uniform quadrature and
 large-aspect-ratio ``k_parallel`` with the full Boozer metric/Jacobian terms.
+
+With the Boozer-Jacobian bridge enabled, the reduced weights become
+
+.. math::
+
+   K_{ij}^{J_B} =
+   \left\langle
+   J_B \frac{|B|^2}{\mu_0} k_{\parallel i} k_{\parallel j}
+   \phi_i^* \phi_j
+   \right\rangle_{\theta_B,\zeta_B},
+   \qquad
+   M_{ij}^{J_B} =
+   \rho \left\langle J_B \phi_i^* \phi_j\right\rangle_{\theta_B,\zeta_B}.
+
+This separates a Boozer-coordinate identity gate from the later full-operator
+work: ``J_B |B|^2`` must be a flux function, while nonuniform ``J_B`` can
+couple the mass matrix. The missing publication-grade terms are the full
+perpendicular metric tensor, radial derivatives, boundary conditions, and
+cross-code comparisons.
 
 Equation Acceptance
 -------------------

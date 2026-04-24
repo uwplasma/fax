@@ -17,6 +17,9 @@ from fax.boozer import (
     boozer_continuum_frequencies_hz,
     boozer_continuum_matrices,
     boozer_harmonic_orthogonality_error,
+    boozer_jacobian_identity_error,
+    boozer_jacobian_weight,
+    boozer_metric_continuum_matrices,
     boozer_projection_error,
     normalized_nonaxisymmetric_boozer_energy,
     reconstruct_boozer_field,
@@ -541,6 +544,78 @@ def generate_boozer_continuum_coupling(output_dir: Path) -> list[Path]:
     return paths
 
 
+def generate_boozer_jacobian_identity(output_dir: Path) -> list[Path]:
+    """Generate a Boozer-Jacobian metric identity validation figure."""
+    plt = _setup_matplotlib()
+    spectrum = BoozerSpectrum(
+        source="jacobian_identity_figure",
+        s=jnp.asarray([0.5]),
+        xm=jnp.asarray([0.0, 1.0, 2.0]),
+        xn=jnp.asarray([0.0, 1.0, 2.0]),
+        bmnc=jnp.asarray([[2.8, 0.12, -0.035]]),
+        bmns=None,
+        field_periods=1,
+    )
+    theta, zeta = boozer_angle_grid(theta_points=96, zeta_points=96)
+    field = reconstruct_boozer_field(spectrum, surface_index=0, theta=theta, zeta=zeta)
+    jacobian = boozer_jacobian_weight(
+        spectrum,
+        jacobian_numerator=1.6,
+        theta_points=96,
+        zeta_points=96,
+    )[0]
+    identity = jacobian * field**2
+    identity_residual = identity - 1.6
+    identity_error = float(boozer_jacobian_identity_error(spectrum, jacobian_numerator=1.6, theta_points=96, zeta_points=96))
+    harmonics = jnp.asarray([[1.0, 0.0], [2.0, 1.0]])
+    matrices = boozer_metric_continuum_matrices(
+        spectrum,
+        harmonics,
+        iota=0.43,
+        major_radius=5.2,
+        mass_density=4.1e-8,
+        jacobian_numerator=1.6,
+        theta_points=96,
+        zeta_points=96,
+    )
+    mass = np.abs(np.asarray(matrices.mass[0]))
+    mass = mass / np.maximum(np.max(np.abs(np.diag(mass))), 1.0e-30)
+
+    fig, axes = plt.subplots(1, 4, figsize=(13.0, 3.3), constrained_layout=True)
+
+    panels = [
+        (axes[0], np.asarray(field), r"$|B|$", "T", "viridis"),
+        (axes[1], np.asarray(jacobian), r"$J_B=(G+\iota I)/B^2$", "normalized", "magma"),
+        (axes[2], np.asarray(identity_residual), r"$J_B |B|^2-(G+\iota I)$", "residual", "coolwarm"),
+    ]
+    for ax, values, title, label, cmap in panels:
+        image = ax.imshow(values, origin="lower", extent=(0.0, 2.0 * np.pi, 0.0, 2.0 * np.pi), aspect="auto", cmap=cmap)
+        ax.set_title(title)
+        ax.set_xlabel(r"$\zeta_B$")
+        ax.set_ylabel(r"$\theta_B$")
+        fig.colorbar(image, ax=ax, fraction=0.046, pad=0.04, label=label)
+
+    ax = axes[3]
+    image = ax.imshow(mass, origin="lower", cmap="magma", vmin=0.0)
+    ax.set_title("Weighted mass coupling")
+    ax.set_xticks([0, 1], ["(1,0)", "(2,1)"])
+    ax.set_yticks([0, 1], ["(1,0)", "(2,1)"])
+    fig.colorbar(image, ax=ax, fraction=0.046, pad=0.04, label="normalized")
+    ax.text(
+        0.04,
+        0.90,
+        f"identity error={identity_error:.1e}",
+        transform=ax.transAxes,
+        fontsize=8,
+        bbox={"facecolor": "white", "edgecolor": "#bbbbbb", "boxstyle": "round,pad=0.25"},
+    )
+
+    fig.suptitle("Boozer-Jacobian metric identity validation", fontsize=12, weight="bold")
+    paths = _save_figure(fig, output_dir, "boozer_jacobian_identity")
+    plt.close(fig)
+    return paths
+
+
 def generate_continuum_artifact_dashboard(output_dir: Path) -> list[Path]:
     """Generate a dashboard from files written by the continuum workflow."""
     case = landreman_paul_qa_lowres()
@@ -814,6 +889,7 @@ def main(argv: list[str] | None = None) -> int:
         generate_global_gap_fastion_dashboard(output_dir),
         generate_boozer_harmonic_validation(output_dir),
         generate_boozer_continuum_coupling(output_dir),
+        generate_boozer_jacobian_identity(output_dir),
         generate_continuum_artifact_dashboard(output_dir),
         generate_metric_residual_convergence(output_dir),
         generate_landreman_convergence_dashboard(output_dir),

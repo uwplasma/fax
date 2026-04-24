@@ -290,6 +290,52 @@ def _surface_parameter(value: Any, surface_count: int, *, name: str) -> jax.Arra
     return array
 
 
+def boozer_jacobian_weight(
+    spectrum: BoozerSpectrum,
+    *,
+    jacobian_numerator: Any = 1.0,
+    theta_points: int = 64,
+    zeta_points: int = 64,
+    floor: float = 1.0e-30,
+) -> jax.Array:
+    """Return the reduced Boozer Jacobian weight ``J_B=(G+iota*I)/B^2``.
+
+    ``jacobian_numerator`` represents the flux-function numerator
+    ``G+iota*I`` on each surface. When only a ``boozmn`` ``|B|`` spectrum is
+    available, callers can pass a normalized positive numerator to validate the
+    Boozer ``J_B B^2`` identity before full metric data are available.
+    """
+    theta, zeta = boozer_angle_grid(theta_points=theta_points, zeta_points=zeta_points)
+    phase = boozer_harmonic_phase(theta, zeta, spectrum.xm, spectrum.xn)
+    field = jnp.einsum("sm,tzm->stz", spectrum.bmnc, jnp.cos(phase))
+    if spectrum.bmns is not None:
+        field = field + jnp.einsum("sm,tzm->stz", spectrum.bmns, jnp.sin(phase))
+    numerator = _surface_parameter(jacobian_numerator, int(spectrum.s.shape[0]), name="jacobian_numerator")
+    return numerator[:, None, None] / jnp.maximum(field**2, float(floor))
+
+
+def boozer_jacobian_identity_error(
+    spectrum: BoozerSpectrum,
+    *,
+    jacobian_numerator: Any = 1.0,
+    theta_points: int = 64,
+    zeta_points: int = 64,
+    floor: float = 1.0e-30,
+) -> jax.Array:
+    """Return relative error in the Boozer identity ``J_B B^2=G+iota*I``."""
+    theta, zeta = boozer_angle_grid(theta_points=theta_points, zeta_points=zeta_points)
+    field = jnp.stack(
+        [
+            reconstruct_boozer_field(spectrum, surface_index=surface_index, theta=theta, zeta=zeta)
+            for surface_index in range(int(spectrum.s.shape[0]))
+        ]
+    )
+    numerator = _surface_parameter(jacobian_numerator, int(spectrum.s.shape[0]), name="jacobian_numerator")
+    jacobian = numerator[:, None, None] / jnp.maximum(field**2, float(floor))
+    residual = jacobian * field**2 - numerator[:, None, None]
+    return jnp.linalg.norm(residual) / jnp.maximum(jnp.linalg.norm(numerator), float(floor))
+
+
 def boozer_continuum_matrices(
     spectrum: BoozerSpectrum,
     harmonics: Any,
@@ -338,6 +384,93 @@ def boozer_continuum_matrices(
     stiffness = 0.5 * (stiffness + jnp.conjugate(jnp.swapaxes(stiffness, -1, -2)))
     mass = 0.5 * (mass + jnp.conjugate(jnp.swapaxes(mass, -1, -2)))
     return ContinuumMatrices(stiffness=stiffness, mass=mass)
+
+
+def boozer_metric_continuum_matrices(
+    spectrum: BoozerSpectrum,
+    harmonics: Any,
+    *,
+    iota: Any,
+    major_radius: float,
+    mass_density: Any,
+    jacobian_numerator: Any = 1.0,
+    theta_points: int = 64,
+    zeta_points: int = 64,
+) -> ContinuumMatrices:
+    """Assemble a reduced Boozer-continuum matrix with Boozer-Jacobian weights.
+
+    This uses ``J_B=(G+iota*I)/B^2`` in the energy weights,
+    ``K=<J_B B^2 k_i k_j phi_i^* phi_j>/mu0`` and
+    ``M=<J_B rho phi_i^* phi_j>``. It is a metric/Jacobian validation bridge:
+    full stellarator continuum work still needs the complete perpendicular
+    metric tensor and radial terms from VMEC/Boozer geometry.
+    """
+    harmonic_array = jnp.asarray(harmonics)
+    if harmonic_array.ndim != 2 or harmonic_array.shape[1] != 2:
+        raise ValueError("harmonics must have shape (count, 2) with columns (m, n)")
+
+    theta, zeta = boozer_angle_grid(theta_points=theta_points, zeta_points=zeta_points)
+    boozer_phase = boozer_harmonic_phase(theta, zeta, spectrum.xm, spectrum.xn)
+    field = jnp.einsum("sm,tzm->stz", spectrum.bmnc, jnp.cos(boozer_phase))
+    if spectrum.bmns is not None:
+        field = field + jnp.einsum("sm,tzm->stz", spectrum.bmns, jnp.sin(boozer_phase))
+    numerator = _surface_parameter(jacobian_numerator, int(spectrum.s.shape[0]), name="jacobian_numerator")
+    jacobian = numerator[:, None, None] / jnp.maximum(field**2, 1.0e-30)
+
+    m = harmonic_array[:, 0]
+    n = harmonic_array[:, 1]
+    delta_m = m[None, :] - m[:, None]
+    delta_n = n[None, :] - n[:, None]
+    pair_phase = delta_m[:, :, None, None] * theta[None, None, :, :] - delta_n[:, :, None, None] * zeta[None, None, :, :]
+    phase_factor = jnp.exp(1j * pair_phase)
+
+    surface_count = int(spectrum.s.shape[0])
+    iota_array = _surface_parameter(iota, surface_count, name="iota")
+    density_array = _surface_parameter(mass_density, surface_count, name="mass_density")
+    k_parallel = boozer_parallel_wavenumber(harmonic_array, iota=iota_array, major_radius=float(major_radius))
+    if k_parallel.ndim == 1:
+        k_parallel = jnp.broadcast_to(k_parallel[None, :], (surface_count, harmonic_array.shape[0]))
+    k_pair = k_parallel[:, :, None, None, None] * k_parallel[:, None, :, None, None]
+
+    stiffness = jnp.mean(
+        (jacobian[:, None, None, :, :] * field[:, None, None, :, :] ** 2 / MU0)
+        * k_pair
+        * phase_factor[None, :, :, :, :],
+        axis=(-2, -1),
+    )
+    mass = density_array[:, None, None] * jnp.mean(
+        jacobian[:, None, None, :, :] * phase_factor[None, :, :, :, :],
+        axis=(-2, -1),
+    )
+    stiffness = 0.5 * (stiffness + jnp.conjugate(jnp.swapaxes(stiffness, -1, -2)))
+    mass = 0.5 * (mass + jnp.conjugate(jnp.swapaxes(mass, -1, -2)))
+    return ContinuumMatrices(stiffness=stiffness, mass=mass)
+
+
+def boozer_metric_continuum_frequencies_hz(
+    spectrum: BoozerSpectrum,
+    harmonics: Any,
+    *,
+    iota: Any,
+    major_radius: float,
+    mass_density: Any,
+    jacobian_numerator: Any = 1.0,
+    theta_points: int = 64,
+    zeta_points: int = 64,
+) -> jax.Array:
+    """Return reduced Boozer-Jacobian weighted continuum frequencies in hertz."""
+    matrices = boozer_metric_continuum_matrices(
+        spectrum,
+        harmonics,
+        iota=iota,
+        major_radius=major_radius,
+        mass_density=mass_density,
+        jacobian_numerator=jacobian_numerator,
+        theta_points=theta_points,
+        zeta_points=zeta_points,
+    )
+    omega2 = generalized_hermitian_eigenvalues(matrices.stiffness, matrices.mass)
+    return jnp.sqrt(jnp.maximum(jnp.real(omega2), 0.0)) / (2.0 * jnp.pi)
 
 
 def boozer_continuum_frequencies_hz(

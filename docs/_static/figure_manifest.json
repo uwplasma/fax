@@ -251,6 +251,50 @@
       ]
     },
     {
+      "id": "boozer_jacobian_identity",
+      "title": "Boozer Jacobian identity",
+      "layer": "boozer",
+      "quantity": "relative J_B |B|^2 flux-function error",
+      "tolerance": 2e-06,
+      "citation": "Boozer-coordinate Jacobian identity sqrt(g)=(G+iota*I)/B^2",
+      "command": "python -m pytest tests/test_boozer.py tests/test_validation_registry.py",
+      "tags": [
+        "boozer",
+        "jacobian",
+        "metric"
+      ]
+    },
+    {
+      "id": "boozer_metric_constant_field_continuum",
+      "title": "Boozer metric constant-field continuum limit",
+      "layer": "boozer",
+      "quantity": "relative frequency error",
+      "tolerance": 1e-05,
+      "citation": "Boozer-Jacobian weighted reduced continuum matrix must recover omega=vA|n-m*iota|/R",
+      "command": "python -m pytest tests/test_boozer.py tests/test_validation_registry.py",
+      "tags": [
+        "boozer",
+        "jacobian",
+        "continuum",
+        "analytic"
+      ]
+    },
+    {
+      "id": "boozer_metric_mass_coupling",
+      "title": "Boozer Jacobian mass coupling",
+      "layer": "boozer",
+      "quantity": "Hermitian error and weighted-coupling thresholds",
+      "tolerance": 1e-05,
+      "citation": "Boozer Jacobian weighting puts |B| variation into the mass weight while J_B B^2 is a flux function",
+      "command": "python -m pytest tests/test_boozer.py tests/test_validation_registry.py",
+      "tags": [
+        "boozer",
+        "jacobian",
+        "continuum",
+        "coupling"
+      ]
+    },
+    {
       "id": "landreman_paul_adapter_smoke",
       "title": "Landreman-Paul QA VMEC adapter smoke test",
       "layer": "adapter",
@@ -400,6 +444,18 @@
     },
     {
       "file": "boozer_continuum_coupling.png",
+      "format": "png",
+      "status": "smoke-test",
+      "claim": "Development figure generated from analytic/local continuum formulas; not a full 3-D stellarator Alfvén-continuum validation."
+    },
+    {
+      "file": "boozer_jacobian_identity.svg",
+      "format": "svg",
+      "status": "smoke-test",
+      "claim": "Development figure generated from analytic/local continuum formulas; not a full 3-D stellarator Alfvén-continuum validation."
+    },
+    {
+      "file": "boozer_jacobian_identity.png",
       "format": "png",
       "status": "smoke-test",
       "claim": "Development figure generated from analytic/local continuum formulas; not a full 3-D stellarator Alfvén-continuum validation."

@@ -42,11 +42,11 @@ Issues = "https://github.com/uwplasma/fax/issues"
 fax = "fax.cli:main"
 
 [project.optional-dependencies]
-test = ["pytest"]
+test = ["coverage", "pytest"]
 docs = ["sphinx", "furo"]
 plots = ["matplotlib", "pillow"]
 ecosystem = ["diffrax", "equinox", "jaxopt", "lineax", "optimistix", "optax"]
-dev = ["build", "pytest", "ruff", "mypy", "sphinx", "furo", "matplotlib", "pillow", "twine"]
+dev = ["build", "coverage", "pytest", "ruff", "mypy", "sphinx", "furo", "matplotlib", "pillow", "twine"]
 
 [tool.setuptools.packages.find]
 where = ["src"]
