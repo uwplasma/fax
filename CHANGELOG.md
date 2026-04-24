@@ -16,6 +16,8 @@ Initial research scaffold release for FAX.
 - Boozer harmonic reconstruction/projection, Fourier orthogonality, and straight-field-line phase validation.
 - Reduced Boozer continuum matrix with constant-field profile-limit and sideband-coupling gates.
 - Boozer-Jacobian identity and Jacobian-weighted reduced continuum gates.
+- Real `boozmn` geometry reader for Boozer embedding and Jacobian harmonics, with local 3-D Boozer continuum matrices.
+- Real-file Boozer validation gates for `sqrt(g)|B|^2=G+iota I`, embedding-Jacobian shape, and finite Hermitian local 3-D continuum output.
 - README status badges for tests, docs, publish, ReadTheDocs, coverage, PyPI, Python versions, license, Ruff, and JAX.
 - Differentiable radial-mode avoidance objective for early design-screen demonstrations.
 - VMEC `wout` adapter smoke path for the Landreman-Paul QA low-resolution reference case.
@@ -31,6 +33,7 @@ Initial research scaffold release for FAX.
 - Generated README/docs figures with automated nonblank figure QA.
 - Research examples for validation packets, differentiability sensitivity, a small inverse-design toy problem, a basic BAE/TAE/EAE gap map, and a reduced global/gap/fast-ion screening packet.
 - Research example for Boozer harmonic convention validation.
+- Research example for applying the local 3-D Boozer continuum operator to a real `boozmn` file and generating a plot/JSON packet.
 - ReadTheDocs/Sphinx docs, GitHub Actions definitions for tests/docs/publish, and PyPI trusted-publishing workflow.
 
 The PyPI distribution name is `uwplasma-fax`; the import package and CLI remain
@@ -43,8 +46,8 @@ Current gates cover analytic continuum limits, metric reduction to the profile
 limit, Hermiticity, generalized-eigensolve residuals, JAX density-gradient
 consistency, radial/angular convergence, reduced radial eigenmode spectra,
 analytic gap centers, BAE/TAE/EAE reference ordering, Boozer-Jacobian metric
-identity checks, reduced fast-ion resonance ordering, and VMEC/Boozer adapter
-smoke tests.
+identity checks, real `boozmn` local 3-D Boozer geometry/operator checks,
+reduced fast-ion resonance ordering, and VMEC/Boozer adapter smoke tests.
 
 ### Local Release Gate
 

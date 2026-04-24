@@ -44,6 +44,7 @@ def test_core_validation_gates_pass():
         "boozer_jacobian_identity",
         "boozer_metric_constant_field_continuum",
         "boozer_metric_mass_coupling",
+        "boozer_3d_constant_field_continuum",
     ]
 
     for gate_id in gate_ids:
@@ -51,6 +52,19 @@ def test_core_validation_gates_pass():
         assert result.status == "passed"
         assert math.isfinite(result.metric)
         assert result.metric <= result.tolerance
+
+
+@pytest.mark.requires_booz_xform_jax
+def test_boozmn_validation_gates_pass_or_skip_cleanly():
+    for gate_id in (
+        "boozmn_geometry_jacobian_identity",
+        "boozmn_embedding_jacobian_shape",
+        "boozmn_3d_continuum_finite",
+    ):
+        result = run_validation_gate(gate_id)
+
+        assert result.status in {"passed", "skipped"}
+        assert result.message
 
 
 @pytest.mark.requires_vmec_jax

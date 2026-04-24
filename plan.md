@@ -1092,6 +1092,18 @@ Needed docs:
   - `.github/workflows/tests.yml` now regenerates and commits the coverage badge on `main` pushes when GitHub Actions are available again.
   - Direct `run_validation_suite()` now has 24 registered gates passing on this machine.
   - Verified after this badge/Jacobian step with `python -m coverage run --source=src/fax -m pytest` (94 passed, 90.0% coverage), `python -m ruff check .`, `python -m mypy src/fax`, `python -m pytest -q` (94 passed), `python tools/generate_validation_figures.py`, `python tools/qa_figures.py`, `sphinx-build -W -b html docs docs/_build/html`, `python -m build`, and `python -m twine check dist/*`.
+- Added the first real `boozmn` geometry/operator milestone:
+  - `BoozerGeometry` reads `|B|`, embedding `R/Z/p`, Boozer-Jacobian harmonics, `iota`, `I`, and `G` from `boozmn` files.
+  - `boozer_geometry_grid` reconstructs real Boozer-angle maps and derives the embedding-based normalized-radial metric `|\nabla s|^2`.
+  - `boozer_geometry_jacobian_identity_error` validates the file-level identity `sqrt(g)|B|^2=G+iota I`.
+  - `boozer_embedding_jacobian_shape_error` compares the embedding Jacobian shape against `boozmn` Jacobian harmonics up to one surface-wise scale/orientation.
+  - `boozer_3d_continuum_matrices` and `boozer_3d_continuum_frequencies_hz` assemble a local surface-by-surface 3-D Boozer continuum matrix using `k_parallel=(n-m*iota)|B|/(G+iota I)`.
+  - Added validation gates `boozer_3d_constant_field_continuum`, `boozmn_geometry_jacobian_identity`, `boozmn_embedding_jacobian_shape`, and `boozmn_3d_continuum_finite`.
+  - Added `examples/research/boozmn_3d_continuum.py` so users can apply the real-geometry local operator to a new `boozmn` file and get a JSON/figure packet.
+  - Added generated `boozmn_3d_geometry_operator` README/docs figure showing sampled real `|B|`, the Boozer identity residual, embedding `|\nabla s|^2`, and local 3-D Boozer continuum branches.
+  - Important scope note: this is the first true `boozmn` local-operator layer, not yet a global radial eigenmode operator or STELLGAP/AE3D cross-code validation.
+  - Direct `run_validation_suite()` now has 28 registered gates passing on this machine.
+  - Verified after this real-`boozmn` step with `python -m ruff check .`, `python -m mypy src/fax`, `python -m pytest -q` (100 passed), `python -m coverage run --source=src/fax -m pytest -q` (100 passed, 89.9% coverage badge), `python tools/generate_validation_figures.py`, `python tools/qa_figures.py`, `sphinx-build -W -b html docs docs/_build/html`, `python -m build`, and `python -m twine check dist/*`.
 
 ### Local Testing Policy Until GitHub Actions Resume
 
@@ -1141,9 +1153,9 @@ Sources:
 
 Turn the reduced physics layers into publication-grade stellarator validation:
 
-1. Build the Boozer metric/operator assembly layer from `boozmn` harmonics and validate straight-field-line identities, harmonic normalization, and convergence against `booz_xform_jax`.
+1. Promote the local `boozmn` surface operator into a radial/global Boozer operator with boundary conditions, radial metric terms, and eigenfunctions.
 2. Start the first cross-code/literature comparison gate: STELLGAP-style continuum/gap data for a documented quasi-symmetric or axisymmetric reference case, then extend to AE3D/CAS3D/FAR3D where data are available.
-3. Replace the scalar radial coupling in `fax.global_modes` with metric/Boozer-derived radial energy terms and boundary-condition variants.
+3. Add convergence gates for real `boozmn` harmonic truncation, Boozer angular grids, radial surface sampling, and local branch/gap sensitivity.
 4. Add perturbative fast-ion drive/damping terms tied to validated eigenfunctions, with sign and resonance gates before FAR3D/CAS3D-K comparisons.
 5. Connect `fax.optimization` to real `vmec_jax` differentiable design variables and add finite-difference/adjoint consistency plots for VMEC-to-stability gradients.
 6. Publish the staged `v0.0.1` GitHub release when GitHub Actions are available so the PyPI trusted-publishing workflow can complete.

@@ -13,15 +13,21 @@ import numpy as np
 
 from fax.boozer import (
     BoozerSpectrum,
+    boozer_3d_continuum_frequencies_hz,
+    boozer_3d_continuum_matrices,
     boozer_angle_grid,
     boozer_continuum_frequencies_hz,
     boozer_continuum_matrices,
+    boozer_embedding_jacobian_shape_error,
+    boozer_geometry_grid,
+    boozer_geometry_jacobian_identity_error,
     boozer_harmonic_orthogonality_error,
     boozer_jacobian_identity_error,
     boozer_jacobian_weight,
     boozer_metric_continuum_matrices,
     boozer_projection_error,
     normalized_nonaxisymmetric_boozer_energy,
+    read_boozmn_geometry,
     reconstruct_boozer_field,
     straight_field_line_phase_error,
 )
@@ -616,6 +622,93 @@ def generate_boozer_jacobian_identity(output_dir: Path) -> list[Path]:
     return paths
 
 
+def generate_boozmn_3d_geometry_operator(output_dir: Path) -> list[Path]:
+    """Generate a real-boozmn geometry and local 3-D continuum figure."""
+    plt = _setup_matplotlib()
+    path = Path("/Users/rogerio/local/booz_xform_jax/tests/test_files/boozmn_LandremanSenguptaPlunk_section5p3.nc")
+    if not path.exists():
+        raise FileNotFoundError(f"booz_xform_jax boozmn fixture not found: {path}")
+
+    geometry = read_boozmn_geometry(path)
+    grid = boozer_geometry_grid(geometry, theta_points=64, zeta_points=64)
+    harmonics = jnp.asarray([[1.0, 0.0], [2.0, 1.0], [3.0, 2.0], [4.0, 3.0]])
+    matrices = boozer_3d_continuum_matrices(
+        geometry,
+        harmonics,
+        mass_density=3.4e-8,
+        theta_points=32,
+        zeta_points=32,
+    )
+    frequencies = np.asarray(
+        boozer_3d_continuum_frequencies_hz(
+            geometry,
+            harmonics,
+            mass_density=3.4e-8,
+            theta_points=32,
+            zeta_points=32,
+        )
+    )
+    surface_index = int(np.argmin(np.abs(np.asarray(geometry.s) - 0.5)))
+    numerator = geometry.boozer_g + geometry.iota * geometry.boozer_i
+    identity_residual = grid.signed_jacobian * grid.magnetic_field**2 - numerator[:, None, None]
+    identity_error = float(boozer_geometry_jacobian_identity_error(geometry, theta_points=64, zeta_points=64))
+    shape_error = float(boozer_embedding_jacobian_shape_error(geometry, theta_points=48, zeta_points=48))
+    hermitian_error = float(
+        np.linalg.norm(np.asarray(matrices.stiffness[0]) - np.conjugate(np.asarray(matrices.stiffness[0]).T))
+        / max(np.linalg.norm(np.asarray(matrices.stiffness[0])), 1.0e-30)
+    )
+
+    fig, axes = plt.subplots(2, 2, figsize=(10.4, 7.0), constrained_layout=True)
+
+    panels = [
+        (axes[0, 0], np.asarray(grid.magnetic_field[surface_index]), r"real $|B|(\theta_B,\zeta_B)$", "T", "viridis"),
+        (
+            axes[0, 1],
+            np.asarray(identity_residual[surface_index]),
+            r"$\sqrt{g}|B|^2-(G+\iota I)$",
+            "identity residual",
+            "coolwarm",
+        ),
+        (
+            axes[1, 0],
+            np.asarray(np.log10(np.maximum(np.asarray(grid.grad_s_squared[surface_index]), 1.0e-30))),
+            r"embedding $\log_{10}|\nabla s|^2$",
+            "normalized-s metric",
+            "magma",
+        ),
+    ]
+    for ax, values, title, label, cmap in panels:
+        image = ax.imshow(values, origin="lower", extent=(0.0, 2.0 * np.pi, 0.0, 2.0 * np.pi), aspect="auto", cmap=cmap)
+        ax.set_title(title)
+        ax.set_xlabel(r"$\zeta_B$")
+        ax.set_ylabel(r"$\theta_B$")
+        fig.colorbar(image, ax=ax, fraction=0.046, pad=0.04, label=label)
+
+    ax = axes[1, 1]
+    for index in range(frequencies.shape[1]):
+        ax.plot(np.asarray(geometry.s), frequencies[:, index] / 1.0e3, linewidth=1.4, label=f"branch {index + 1}")
+    ax.set_title("local 3-D Boozer continuum")
+    ax.set_xlabel("normalized toroidal flux s")
+    ax.set_ylabel("frequency [kHz]")
+    ax.set_xlim(float(np.min(np.asarray(geometry.s))), float(np.max(np.asarray(geometry.s))))
+    ax.set_ylim(bottom=0.0)
+    ax.legend(fontsize=8, ncol=2)
+    ax.text(
+        0.03,
+        0.95,
+        f"identity={identity_error:.1e}\nshape={shape_error:.2e}\nHermitian={hermitian_error:.1e}",
+        transform=ax.transAxes,
+        fontsize=8,
+        va="top",
+        bbox={"facecolor": "white", "edgecolor": "#bbbbbb", "boxstyle": "round,pad=0.25"},
+    )
+
+    fig.suptitle("Real boozmn geometry: Boozer identity, embedding metric, and local 3-D continuum", fontsize=12, weight="bold")
+    paths = _save_figure(fig, output_dir, "boozmn_3d_geometry_operator")
+    plt.close(fig)
+    return paths
+
+
 def generate_continuum_artifact_dashboard(output_dir: Path) -> list[Path]:
     """Generate a dashboard from files written by the continuum workflow."""
     case = landreman_paul_qa_lowres()
@@ -890,6 +983,7 @@ def main(argv: list[str] | None = None) -> int:
         generate_boozer_harmonic_validation(output_dir),
         generate_boozer_continuum_coupling(output_dir),
         generate_boozer_jacobian_identity(output_dir),
+        generate_boozmn_3d_geometry_operator(output_dir),
         generate_continuum_artifact_dashboard(output_dir),
         generate_metric_residual_convergence(output_dir),
         generate_landreman_convergence_dashboard(output_dir),

@@ -101,3 +101,34 @@ def test_boozer_harmonic_validation_example_runs():
     assert payload["orthogonality_error"] < 2.0e-6
     assert payload["straight_field_line_phase_error"] < 1.0e-4
     assert 0.0 < payload["normalized_nonaxisymmetric_energy"] < 1.0
+
+
+def test_boozmn_3d_continuum_example_runs(tmp_path):
+    fixture = Path("/Users/rogerio/local/booz_xform_jax/tests/test_files/boozmn_LandremanSenguptaPlunk_section5p3.nc")
+    if not fixture.exists():
+        return
+
+    result = subprocess.run(
+        [
+            sys.executable,
+            "examples/research/boozmn_3d_continuum.py",
+            "--boozmn",
+            str(fixture),
+            "--output-dir",
+            str(tmp_path),
+            "--theta-points",
+            "24",
+            "--zeta-points",
+            "24",
+        ],
+        cwd=REPO_ROOT,
+        check=True,
+        text=True,
+        capture_output=True,
+    )
+    payload = json.loads(result.stdout)
+    assert payload["jacobian_identity_error"] < 2.0e-5
+    assert payload["embedding_jacobian_shape_error"] < 5.0e-2
+    assert payload["min_frequency_hz"] >= 0.0
+    assert payload["max_frequency_hz"] > payload["min_frequency_hz"]
+    assert all(Path(path).exists() for path in payload["figure_files"])

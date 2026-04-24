@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from .boozer import BoozerSpectrum
+from .boozer import BoozerGeometry, BoozerGeometryGrid, BoozerSpectrum
 from .config import FaxConfig, load_config
 from .equilibrium import EquilibriumGeometry
 from .fast_ions import FastIonPopulation
@@ -35,6 +35,8 @@ __all__ = [
     "ContinuumRunSummary",
     "ContinuumArtifacts",
     "BenchmarkRunSummary",
+    "BoozerGeometry",
+    "BoozerGeometryGrid",
     "BoozerSpectrum",
     "ConvergenceRunSummary",
     "ConvergenceArtifacts",

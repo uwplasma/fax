@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Any, Callable
 
 import jax
@@ -10,14 +11,20 @@ import jax.numpy as jnp
 import numpy as np
 
 from .boozer import (
+    BoozerGeometry,
     BoozerSpectrum,
+    boozer_3d_continuum_frequencies_hz,
+    boozer_3d_continuum_matrices,
     boozer_continuum_frequencies_hz,
     boozer_continuum_matrices,
+    boozer_embedding_jacobian_shape_error,
+    boozer_geometry_jacobian_identity_error,
     boozer_harmonic_orthogonality_error,
     boozer_jacobian_identity_error,
     boozer_metric_continuum_frequencies_hz,
     boozer_metric_continuum_matrices,
     boozer_projection_error,
+    read_boozmn_geometry,
     straight_field_line_phase_error,
 )
 from .continuum import continuum_branch_matrix, local_continuum_frequency_hz
@@ -384,6 +391,38 @@ def _synthetic_boozer_spectrum() -> BoozerSpectrum:
     )
 
 
+def _constant_boozer_geometry() -> BoozerGeometry:
+    magnetic_field = 2.7
+    major_radius = 5.5
+    iota = 0.61
+    numerator = magnetic_field * major_radius
+    return BoozerGeometry(
+        source="constant_boozer_geometry_validation",
+        s=jnp.asarray([0.2, 0.8]),
+        xm=jnp.asarray([0.0]),
+        xn=jnp.asarray([0.0]),
+        bmnc=jnp.asarray([[magnetic_field], [magnetic_field]]),
+        bmns=None,
+        rmnc=None,
+        rmns=None,
+        zmns=None,
+        zmnc=None,
+        pmns=None,
+        pmnc=None,
+        gmnc=jnp.asarray([[numerator / magnetic_field**2], [numerator / magnetic_field**2]]),
+        gmns=None,
+        iota=jnp.asarray([iota, iota]),
+        boozer_i=jnp.asarray([0.0, 0.0]),
+        boozer_g=jnp.asarray([numerator, numerator]),
+        field_periods=1,
+    )
+
+
+def _booz_xform_fixture(name: str) -> Path | None:
+    path = Path("/Users/rogerio/local/booz_xform_jax/tests/test_files") / name
+    return path if path.exists() else None
+
+
 def _gate_boozer_harmonic_projection() -> GateResult:
     gate_id = "boozer_harmonic_projection"
     tolerance = 2.0e-6
@@ -571,6 +610,120 @@ def _gate_boozer_metric_mass_coupling() -> GateResult:
         float(metric),
         tolerance,
         "Boozer Jacobian weighting gives nonzero mass coupling while preserving J_B |B|^2 stiffness cancellation",
+    )
+
+
+def _gate_boozer_3d_constant_field_continuum() -> GateResult:
+    gate_id = "boozer_3d_constant_field_continuum"
+    tolerance = 1.0e-5
+    magnetic_field = 2.7
+    mass_density = 3.4e-8
+    major_radius = 5.5
+    iota = 0.61
+    geometry = _constant_boozer_geometry()
+    harmonics = jnp.asarray([[1.0, 0.0], [2.0, 1.0], [3.0, 2.0]])
+    frequencies = boozer_3d_continuum_frequencies_hz(
+        geometry,
+        harmonics,
+        mass_density=mass_density,
+        radial_metric=1.0,
+        theta_points=32,
+        zeta_points=32,
+    )
+    k_parallel = (harmonics[:, 1] - harmonics[:, 0] * iota) / major_radius
+    expected = magnetic_field / jnp.sqrt(MU0 * mass_density) * jnp.abs(k_parallel) / (2.0 * jnp.pi)
+    metric = relative_l2_error(frequencies[0], jnp.sort(expected))
+    return _pass_fail(
+        gate_id,
+        float(metric),
+        tolerance,
+        "3-D Boozer local operator recovers omega=vA|n-m*iota|/R in the constant-field limit",
+    )
+
+
+def _gate_boozmn_geometry_jacobian_identity() -> GateResult:
+    gate_id = "boozmn_geometry_jacobian_identity"
+    tolerance = 2.0e-5
+    fixture = _booz_xform_fixture("boozmn_circular_tokamak.nc")
+    if fixture is None:
+        return GateResult(
+            gate_id=gate_id,
+            status="skipped",
+            metric=float("nan"),
+            tolerance=tolerance,
+            message="missing local booz_xform_jax boozmn_circular_tokamak.nc fixture",
+        )
+    geometry = read_boozmn_geometry(fixture)
+    metric = boozer_geometry_jacobian_identity_error(geometry, theta_points=48, zeta_points=48)
+    return _pass_fail(
+        gate_id,
+        float(metric),
+        tolerance,
+        "real boozmn harmonics satisfy sqrt(g)|B|^2=G+iota I on the sampled surfaces",
+    )
+
+
+def _gate_boozmn_embedding_jacobian_shape() -> GateResult:
+    gate_id = "boozmn_embedding_jacobian_shape"
+    tolerance = 4.0e-2
+    fixture = _booz_xform_fixture("boozmn_LandremanSenguptaPlunk_section5p3.nc")
+    if fixture is None:
+        return GateResult(
+            gate_id=gate_id,
+            status="skipped",
+            metric=float("nan"),
+            tolerance=tolerance,
+            message="missing local booz_xform_jax boozmn_LandremanSenguptaPlunk_section5p3.nc fixture",
+        )
+    geometry = read_boozmn_geometry(fixture)
+    metric = boozer_embedding_jacobian_shape_error(geometry, theta_points=32, zeta_points=32)
+    return _pass_fail(
+        gate_id,
+        float(metric),
+        tolerance,
+        "embedding-derived Jacobian angular shape matches booz_xform_jax Jacobian harmonics up to one radial scale",
+    )
+
+
+def _gate_boozmn_3d_continuum_finite() -> GateResult:
+    gate_id = "boozmn_3d_continuum_finite"
+    tolerance = 2.0e-5
+    fixture = _booz_xform_fixture("boozmn_LandremanSenguptaPlunk_section5p3.nc")
+    if fixture is None:
+        return GateResult(
+            gate_id=gate_id,
+            status="skipped",
+            metric=float("nan"),
+            tolerance=tolerance,
+            message="missing local booz_xform_jax boozmn_LandremanSenguptaPlunk_section5p3.nc fixture",
+        )
+    geometry = read_boozmn_geometry(fixture)
+    harmonics = jnp.asarray([[1.0, 0.0], [2.0, 1.0], [3.0, 2.0]])
+    matrices = boozer_3d_continuum_matrices(
+        geometry,
+        harmonics,
+        mass_density=3.4e-8,
+        theta_points=24,
+        zeta_points=24,
+    )
+    frequencies = boozer_3d_continuum_frequencies_hz(
+        geometry,
+        harmonics,
+        mass_density=3.4e-8,
+        theta_points=24,
+        zeta_points=24,
+    )
+    finite_failure = 0.0 if bool(jnp.all(jnp.isfinite(frequencies))) and bool(jnp.all(frequencies >= 0.0)) else 1.0
+    metric = max(
+        float(hermitian_relative_error(matrices.stiffness[0])),
+        float(hermitian_relative_error(matrices.mass[0])),
+        finite_failure,
+    )
+    return _pass_fail(
+        gate_id,
+        metric,
+        tolerance,
+        "real Boozer geometry produces finite non-negative local 3-D continuum branches and Hermitian matrices",
     )
 
 
@@ -927,6 +1080,50 @@ def registered_validation_gates() -> tuple[ValidationGate, ...]:
             command="python -m pytest tests/test_boozer.py tests/test_validation_registry.py",
             tags=("boozer", "jacobian", "continuum", "coupling"),
             _runner=_gate_boozer_metric_mass_coupling,
+        ),
+        ValidationGate(
+            gate_id="boozer_3d_constant_field_continuum",
+            title="3-D Boozer constant-field continuum limit",
+            layer="boozer",
+            quantity="relative frequency error",
+            tolerance=1.0e-5,
+            citation="Boozer straight-field-line derivative k_parallel=(n-m*iota)|B|/(G+iota I) recovers the large-aspect-ratio analytic limit",
+            command="python -m pytest tests/test_boozer.py tests/test_validation_registry.py",
+            tags=("boozer", "continuum", "analytic", "3d"),
+            _runner=_gate_boozer_3d_constant_field_continuum,
+        ),
+        ValidationGate(
+            gate_id="boozmn_geometry_jacobian_identity",
+            title="Real boozmn Jacobian identity",
+            layer="boozer",
+            quantity="relative sqrt(g)|B|^2 flux-function error",
+            tolerance=2.0e-5,
+            citation="Boozer-coordinate Jacobian identity sqrt(g)=(G+iota I)/B^2; checked against booz_xform_jax boozmn fixtures",
+            command="python -m pytest -m requires_booz_xform_jax tests/test_boozer.py tests/test_validation_registry.py",
+            tags=("boozer", "jacobian", "boozmn", "fixture"),
+            _runner=_gate_boozmn_geometry_jacobian_identity,
+        ),
+        ValidationGate(
+            gate_id="boozmn_embedding_jacobian_shape",
+            title="Real boozmn embedding-Jacobian shape",
+            layer="boozer",
+            quantity="relative shape error after per-surface scaling",
+            tolerance=4.0e-2,
+            citation="Boozer embedding and Jacobian harmonics from booz_xform_jax/BOOZ_XFORM must agree up to normalized-radial-coordinate scaling",
+            command="python -m pytest -m requires_booz_xform_jax tests/test_boozer.py tests/test_validation_registry.py",
+            tags=("boozer", "metric", "boozmn", "fixture"),
+            _runner=_gate_boozmn_embedding_jacobian_shape,
+        ),
+        ValidationGate(
+            gate_id="boozmn_3d_continuum_finite",
+            title="Real boozmn 3-D local continuum smoke test",
+            layer="boozer",
+            quantity="Hermitian error and finite-output check",
+            tolerance=2.0e-5,
+            citation="Local 3-D Boozer shear-Alfven Galerkin matrix with real booz_xform_jax geometry harmonics",
+            command="python -m pytest -m requires_booz_xform_jax tests/test_boozer.py tests/test_validation_registry.py",
+            tags=("boozer", "continuum", "boozmn", "fixture", "3d"),
+            _runner=_gate_boozmn_3d_continuum_finite,
         ),
         ValidationGate(
             gate_id="landreman_paul_adapter_smoke",

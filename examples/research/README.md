@@ -13,6 +13,7 @@ python examples/research/inverse_iota_shift.py
 python examples/research/basic_alfven_gap_map.py
 python examples/research/global_gap_fastion_screen.py
 python examples/research/boozer_harmonic_validation.py
+python examples/research/boozmn_3d_continuum.py
 ```
 
 The examples intentionally use the analytic and Landreman-Paul low-resolution
@@ -30,3 +31,14 @@ It is the shortest visual introduction to the current gap model: cylindrical
 continuum branches, a TAE avoided crossing, an EAE avoided crossing, and a
 low-frequency BAE accumulation marker. The JSON output reports the reference
 `q`, radial surface, center frequency, and width/accumulation frequency.
+
+## Real `boozmn` Local 3-D Continuum
+
+```bash
+python examples/research/boozmn_3d_continuum.py --boozmn /path/to/boozmn.nc
+```
+
+This reads Boozer harmonics, checks `sqrt(g)|B|^2=G+iota I`, compares the
+embedding-derived Jacobian shape, solves the local 3-D Boozer continuum matrix,
+and writes a compact figure. It is a local surface-by-surface geometry/operator
+example, not a global radial eigenmode or STELLGAP cross-code benchmark.

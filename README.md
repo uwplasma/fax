@@ -31,9 +31,10 @@ packaging, CLI, docs, local tests, analytic equilibrium fixtures, a minimal VMEC
 `wout` profile adapter, local Alfvén-continuum smoke-test formulas, mode-family
 helpers, gap/sensitivity diagnostics, a first metric-matrix continuum scaffold,
 a reduced radial global-eigenmode operator, reduced fast-ion resonance screens,
-an optional Boozer-spectrum adapter, a registered validation-gate inventory,
-and generated documentation figures. Full 3-D VMEC/Boozer continuum
-validation, 3-D global eigenmodes, and perturbative kinetic fast-ion drive
+an optional Boozer adapter, real `boozmn` geometry/Jacobian readers, a local
+3-D Boozer continuum operator, a registered validation-gate inventory, and
+generated documentation figures. Full radial 3-D VMEC/Boozer eigenmodes,
+cross-code STELLGAP/AE3D validation, and perturbative kinetic fast-ion drive
 models are still planned work.
 
 ![FAX input/operator/output workflow](docs/_static/workflow_io_diagram.png)
@@ -73,6 +74,28 @@ M_{ij} =
 
 ```math
 K(s)x = \omega^2(s) M(s)x.
+```
+
+The newest Boozer path reads real `boozmn` geometry harmonics and uses the
+straight-field-line derivative
+
+```math
+k_{\parallel,mn}(s,\theta_B,\zeta_B)=
+\frac{[n-m\iota(s)]\,|B|(s,\theta_B,\zeta_B)}{G(s)+\iota(s)I(s)}.
+```
+
+It forms a local 3-D surface matrix with the Boozer Jacobian and
+embedding-derived radial metric,
+
+```math
+K_{ij}^{3D} =
+\left\langle |\sqrt{g}_B|\,|\nabla s|^2
+\frac{|B|^2}{\mu_0} k_{\parallel i} k_{\parallel j}
+\phi_i^*\phi_j\right\rangle,
+\qquad
+M_{ij}^{3D} =
+\left\langle |\sqrt{g}_B|\,|\nabla s|^2\rho
+\phi_i^*\phi_j\right\rangle.
 ```
 
 The first reduced global layer solves a radial generalized eigenproblem with
@@ -173,6 +196,14 @@ This figure validates the next Boozer metric step: the Boozer-Jacobian identity
 `J_B=(G+iota I)/B^2`, the flux-function product `J_B |B|^2`, and the resulting
 Jacobian-weighted mass coupling used by the reduced metric bridge.
 
+![Real boozmn geometry and local 3-D continuum](docs/_static/boozmn_3d_geometry_operator.png)
+
+This figure is the first real `boozmn` geometry/operator dashboard: sampled
+`|B|`, the file-level Boozer-Jacobian identity residual, the embedding-derived
+`|\nabla s|^2` shape, and local 3-D Boozer continuum branches. The fixture is
+used to validate asymmetric Boozer harmonic handling and is not a
+Landreman-Paul QA quasisymmetry claim.
+
 ![Continuum artifact dashboard](docs/_static/continuum_artifact_dashboard.png)
 
 This figure is generated from files written by `fax continuum`: the branch CSV,
@@ -244,6 +275,7 @@ fax benchmark examples/landreman_paul_qa_lowres.toml --repeats 3
 python examples/research/basic_alfven_gap_map.py
 python examples/research/global_gap_fastion_screen.py
 python examples/research/boozer_harmonic_validation.py
+python examples/research/boozmn_3d_continuum.py
 ```
 
 `fax` reads TOML configuration files. The normal CLI path is intentionally
@@ -305,11 +337,12 @@ python examples/research/density_sensitivity.py
 python examples/research/inverse_iota_shift.py
 python examples/research/global_gap_fastion_screen.py
 python examples/research/boozer_harmonic_validation.py
+python examples/research/boozmn_3d_continuum.py --boozmn /path/to/boozmn.nc
 ```
 
 These generate validation packets, continuum artifacts, convergence dashboards,
-JAX sensitivity output, and a small inverse-design trace using the current
-validated scaffold.
+JAX sensitivity output, a small inverse-design trace, and real `boozmn` local
+3-D Boozer continuum plots using the current validated local operators.
 
 ## Figures
 
@@ -335,6 +368,7 @@ Current figures:
 - `boozer_harmonic_validation.svg`: Boozer harmonic reconstruction/projection and straight-field-line phase dashboard.
 - `boozer_continuum_coupling.svg`: reduced Boozer continuum matrix and controlled sideband-coupling dashboard.
 - `boozer_jacobian_identity.svg`: Boozer-Jacobian identity and weighted mass-coupling dashboard.
+- `boozmn_3d_geometry_operator.svg`: real `boozmn` geometry, Jacobian, embedding metric, and local 3-D Boozer continuum dashboard.
 - `continuum_artifact_dashboard.svg`: dashboard generated from `fax continuum` artifacts.
 - `metric_residual_convergence.svg`: metric-matrix residual and angular-grid check.
 - `landreman_paul_convergence_dashboard.svg`: VMEC-backed radial/angular/Fourier convergence smoke-test dashboard.
@@ -367,10 +401,10 @@ angular/radial-grid consistency, radial quadrature convergence, reduced global
 radial spectrum residuals, radial-mode gradient consistency, analytic TAE
 gap-center checks, reduced fast-ion resonance ordering, Boozer harmonic
 projection/phase convention checks, reduced Boozer continuum matrix checks,
-and Landreman-Paul QA VMEC adapter plus continuum finite-output/radial-sampling
-smoke tests. These are
-acceptance gates for the scaffold, not yet full STELLGAP/AE3D stellarator
-validation.
+real `boozmn` Jacobian/embedding/local-3-D gates, and Landreman-Paul QA VMEC
+adapter plus continuum finite-output/radial-sampling smoke tests. These are
+acceptance gates for the current local operators, not yet full STELLGAP/AE3D
+stellarator validation.
 
 ## Repository Layout
 
@@ -397,6 +431,8 @@ It currently establishes:
 - unit tests for configuration, CLI, reference cases, continuum formulas,
   metric matrices, gradients, validation gates, and benchmark helpers,
 - a LandremanPaul2021 QA lowres local reference target,
+- real `boozmn` geometry gates for Boozer Jacobian identity, embedding
+  Jacobian shape, and local 3-D surface continuum matrices,
 - generated smoke-test figures for docs and README,
 - a reduced radial global eigenmode operator, analytic gap estimates, reduced
   fast-ion resonance screens, and differentiable design objective,

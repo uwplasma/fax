@@ -204,9 +204,6 @@ straight-field-line convention is
    \qquad
    \frac{d}{d\zeta_B}\left(m\theta_B-n\zeta_B\right)=m\iota-n.
 
-A dedicated Boozer metric/operator assembly is still an open validation lane
-before Boozer spectra become the default stellarator continuum path.
-
 The next Boozer metric bridge uses the standard Boozer-Jacobian identity
 
 .. math::
@@ -236,8 +233,41 @@ in the field-line-bending weight:
 
 It recovers the analytic profile frequency in the constant-field limit and
 opens controlled sideband coupling when a known Boozer harmonic is added to
-``|B|``. The remaining open work is to replace the uniform quadrature and
-large-aspect-ratio ``k_parallel`` with the full Boozer metric/Jacobian terms.
+``|B|``.
+
+FAX now also reads real ``boozmn`` geometry harmonics ``R``, ``Z``, ``p``, and
+``sqrt(g)_B`` and assembles a local 3-D Boozer continuum matrix. The
+straight-field-line derivative is
+
+.. math::
+
+   k_{\parallel,mn}(s,\theta_B,\zeta_B) =
+   \frac{\left[n-m\iota(s)\right]|B|(s,\theta_B,\zeta_B)}
+        {G(s)+\iota(s)I(s)}.
+
+Using the normalized-radial embedding metric
+``A = |\nabla s|^2`` reconstructed from ``R(theta_B,zeta_B,s)``,
+``Z(theta_B,zeta_B,s)``, and ``phi=zeta_B+p``, FAX forms
+
+.. math::
+
+   K_{ij}^{3D} =
+   \left\langle
+   |\sqrt{g}_B| A \frac{|B|^2}{\mu_0}
+   k_{\parallel i} k_{\parallel j}\phi_i^*\phi_j
+   \right\rangle_{\theta_B,\zeta_B},
+   \qquad
+   M_{ij}^{3D} =
+   \left\langle
+   |\sqrt{g}_B| A \rho
+   \phi_i^*\phi_j
+   \right\rangle_{\theta_B,\zeta_B}.
+
+This is the first true ``boozmn`` geometry operator. It has analytic
+constant-field, Hermiticity, real-Jacobian-identity, and embedding-Jacobian
+shape gates. It remains a local surface-by-surface model; global radial
+boundary conditions, full cross-code STELLGAP/AE3D comparison, and
+kinetic/fast-ion drive validation are separate publication milestones.
 
 With the Boozer-Jacobian bridge enabled, the reduced weights become
 

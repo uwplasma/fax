@@ -295,6 +295,67 @@
       ]
     },
     {
+      "id": "boozer_3d_constant_field_continuum",
+      "title": "3-D Boozer constant-field continuum limit",
+      "layer": "boozer",
+      "quantity": "relative frequency error",
+      "tolerance": 1e-05,
+      "citation": "Boozer straight-field-line derivative k_parallel=(n-m*iota)|B|/(G+iota I) recovers the large-aspect-ratio analytic limit",
+      "command": "python -m pytest tests/test_boozer.py tests/test_validation_registry.py",
+      "tags": [
+        "boozer",
+        "continuum",
+        "analytic",
+        "3d"
+      ]
+    },
+    {
+      "id": "boozmn_geometry_jacobian_identity",
+      "title": "Real boozmn Jacobian identity",
+      "layer": "boozer",
+      "quantity": "relative sqrt(g)|B|^2 flux-function error",
+      "tolerance": 2e-05,
+      "citation": "Boozer-coordinate Jacobian identity sqrt(g)=(G+iota I)/B^2; checked against booz_xform_jax boozmn fixtures",
+      "command": "python -m pytest -m requires_booz_xform_jax tests/test_boozer.py tests/test_validation_registry.py",
+      "tags": [
+        "boozer",
+        "jacobian",
+        "boozmn",
+        "fixture"
+      ]
+    },
+    {
+      "id": "boozmn_embedding_jacobian_shape",
+      "title": "Real boozmn embedding-Jacobian shape",
+      "layer": "boozer",
+      "quantity": "relative shape error after per-surface scaling",
+      "tolerance": 0.04,
+      "citation": "Boozer embedding and Jacobian harmonics from booz_xform_jax/BOOZ_XFORM must agree up to normalized-radial-coordinate scaling",
+      "command": "python -m pytest -m requires_booz_xform_jax tests/test_boozer.py tests/test_validation_registry.py",
+      "tags": [
+        "boozer",
+        "metric",
+        "boozmn",
+        "fixture"
+      ]
+    },
+    {
+      "id": "boozmn_3d_continuum_finite",
+      "title": "Real boozmn 3-D local continuum smoke test",
+      "layer": "boozer",
+      "quantity": "Hermitian error and finite-output check",
+      "tolerance": 2e-05,
+      "citation": "Local 3-D Boozer shear-Alfven Galerkin matrix with real booz_xform_jax geometry harmonics",
+      "command": "python -m pytest -m requires_booz_xform_jax tests/test_boozer.py tests/test_validation_registry.py",
+      "tags": [
+        "boozer",
+        "continuum",
+        "boozmn",
+        "fixture",
+        "3d"
+      ]
+    },
+    {
       "id": "landreman_paul_adapter_smoke",
       "title": "Landreman-Paul QA VMEC adapter smoke test",
       "layer": "adapter",
@@ -456,6 +517,18 @@
     },
     {
       "file": "boozer_jacobian_identity.png",
+      "format": "png",
+      "status": "smoke-test",
+      "claim": "Development figure generated from analytic/local continuum formulas; not a full 3-D stellarator Alfvén-continuum validation."
+    },
+    {
+      "file": "boozmn_3d_geometry_operator.svg",
+      "format": "svg",
+      "status": "smoke-test",
+      "claim": "Development figure generated from analytic/local continuum formulas; not a full 3-D stellarator Alfvén-continuum validation."
+    },
+    {
+      "file": "boozmn_3d_geometry_operator.png",
       "format": "png",
       "status": "smoke-test",
       "claim": "Development figure generated from analytic/local continuum formulas; not a full 3-D stellarator Alfvén-continuum validation."

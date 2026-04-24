@@ -77,6 +77,14 @@ Current Figures
    ``J_B=(G+iota I)/B^2``, the flux-function product ``J_B |B|^2``, and
    weighted mass coupling.
 
+.. figure:: _static/boozmn_3d_geometry_operator.svg
+   :alt: Real boozmn geometry and local 3-D Boozer continuum dashboard.
+
+   Real ``boozmn`` geometry dashboard: sampled ``|B|``, the file-level
+   Boozer-Jacobian identity residual, embedding-derived ``|\\nabla s|^2``,
+   and local 3-D Boozer continuum branches. The fixture is a geometry/operator
+   validation target, not a Landreman-Paul QA quasisymmetry claim.
+
 .. figure:: _static/continuum_artifact_dashboard.svg
    :alt: Dashboard generated from fax continuum artifacts.
 
@@ -115,9 +123,10 @@ Planned Publication Figures
 1. Analytic cylinder and tokamak continuum validation with convergence.
 2. LandremanPaul2021 QA full VMEC/Boozer metric continuum map.
 3. STELLGAP or AE3D cross-code comparison with branch/gap error bars.
-4. Gradient correctness figure: finite difference, direct AD, and custom adjoint.
-5. Runtime scaling figure: compile time, warm runtime, memory, and resolution.
-6. Inverse-design demonstration with before/after continuum-risk dashboard.
+4. Global radial 3-D eigenfunction and boundary-condition validation figure.
+5. Gradient correctness figure: finite difference, direct AD, and custom adjoint.
+6. Runtime scaling figure: compile time, warm runtime, memory, and resolution.
+7. Inverse-design demonstration with before/after continuum-risk dashboard.
 
 Every publication figure must have a source command, input hash, tolerance, and
 claim statement.

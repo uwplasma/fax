@@ -120,6 +120,21 @@ This prints a JSON packet with Boozer ``|B|`` reconstruction/projection error,
 harmonic orthogonality error, straight-field-line phase-slope error, and
 normalized non-axisymmetric spectral energy for a synthetic spectrum.
 
+Real ``boozmn`` Local 3-D Continuum
+-----------------------------------
+
+Run:
+
+.. code-block:: bash
+
+   python examples/research/boozmn_3d_continuum.py
+
+This reads a real ``boozmn`` file from the neighboring ``booz_xform_jax``
+checkout by default, checks the file-level Boozer-Jacobian identity, compares
+the embedding-derived Jacobian shape, solves the local 3-D Boozer continuum
+matrix, writes SVG/PNG figures, and prints a JSON summary. Use
+``--boozmn path/to/boozmn.nc`` for a new Boozer geometry.
+
 Regenerating Documentation Figures
 ----------------------------------
 

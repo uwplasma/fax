@@ -69,6 +69,15 @@ tags, and command. The current gates are:
 * ``boozer_metric_mass_coupling``: checks that nonuniform ``J_B`` produces
   mass-matrix coupling while ``J_B |B|^2`` cancels sideband stiffness coupling
   in the reduced bridge.
+* ``boozer_3d_constant_field_continuum``: checks that the local 3-D Boozer
+  operator recovers ``omega=v_A |n-m*iota|/R`` in the constant-field limit.
+* ``boozmn_geometry_jacobian_identity``: reads a real ``boozmn`` fixture and
+  checks ``sqrt(g)|B|^2 = G + iota I`` from file harmonics.
+* ``boozmn_embedding_jacobian_shape``: compares the physical embedding
+  Jacobian shape reconstructed from ``R``, ``Z``, and ``p`` against the
+  ``boozmn`` Jacobian harmonics up to one surface-wise radial-coordinate scale.
+* ``boozmn_3d_continuum_finite``: checks that a real ``boozmn`` local 3-D
+  continuum matrix is Hermitian and produces finite non-negative branches.
 * ``landreman_paul_adapter_smoke``: checks the Landreman-Paul QA VMEC ``wout``
   profile and metric adapters when local data are available.
 * ``landreman_paul_continuum_finite``: checks that the Landreman-Paul profile
@@ -192,6 +201,15 @@ yet full 3-D Alfvén-continuum validation.
    Boozer-Jacobian metric identity checks: sampled ``|B|``, the corresponding
    ``J_B=(G+iota I)/B^2`` weight, the flux-function product ``J_B |B|^2``,
    and the weighted mass-matrix coupling used by the reduced bridge.
+
+.. figure:: _static/boozmn_3d_geometry_operator.svg
+   :alt: Real boozmn geometry, Boozer identity, embedding metric, and local 3-D continuum dashboard.
+
+   Real ``boozmn`` geometry gate using the local ``booz_xform_jax`` fixtures:
+   sampled ``|B|``, the file-level Boozer-Jacobian identity residual, the
+   embedding-derived ``|\\nabla s|^2`` shape, and the first local 3-D Boozer
+   continuum branches. This fixture is used to exercise asymmetric Boozer
+   harmonics; it is not a Landreman-Paul QA quasisymmetry claim.
 
 .. figure:: _static/landreman_paul_convergence_dashboard.svg
    :alt: LandremanPaul2021 QA radial, angular, and Fourier convergence dashboard.

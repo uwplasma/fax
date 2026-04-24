@@ -6,10 +6,15 @@ import numpy as np
 import pytest
 
 from fax.boozer import (
+    BoozerGeometry,
     BoozerSpectrum,
+    boozer_3d_continuum_frequencies_hz,
+    boozer_3d_continuum_matrices,
     boozer_angle_grid,
     boozer_continuum_frequencies_hz,
     boozer_continuum_matrices,
+    boozer_embedding_jacobian_shape_error,
+    boozer_geometry_jacobian_identity_error,
     boozer_harmonic_orthogonality_error,
     boozer_jacobian_identity_error,
     boozer_jacobian_weight,
@@ -21,6 +26,7 @@ from fax.boozer import (
     normalized_nonaxisymmetric_boozer_energy,
     project_boozer_field_to_modes,
     read_boozmn,
+    read_boozmn_geometry,
     reconstruct_boozer_field,
     run_booz_xform_jax_from_wout,
     straight_field_line_phase_error,
@@ -50,6 +56,33 @@ def _synthetic_spectrum() -> BoozerSpectrum:
             ]
         ),
         field_periods=2,
+    )
+
+
+def _constant_boozer_geometry() -> BoozerGeometry:
+    magnetic_field = 2.7
+    major_radius = 5.5
+    iota = 0.61
+    numerator = magnetic_field * major_radius
+    return BoozerGeometry(
+        source="constant_boozer_geometry",
+        s=np.asarray([0.2, 0.8]),
+        xm=np.asarray([0.0]),
+        xn=np.asarray([0.0]),
+        bmnc=np.asarray([[magnetic_field], [magnetic_field]]),
+        bmns=None,
+        rmnc=None,
+        rmns=None,
+        zmns=None,
+        zmnc=None,
+        pmns=None,
+        pmnc=None,
+        gmnc=np.asarray([[numerator / magnetic_field**2], [numerator / magnetic_field**2]]),
+        gmns=None,
+        iota=np.asarray([iota, iota]),
+        boozer_i=np.asarray([0.0, 0.0]),
+        boozer_g=np.asarray([numerator, numerator]),
+        field_periods=1,
     )
 
 
@@ -256,6 +289,37 @@ def test_boozer_metric_continuum_uses_jacobian_weighting_and_is_jittable():
     assert jitted.shape == (1, 2, 2)
 
 
+def test_boozer_3d_continuum_constant_field_matches_profile_limit():
+    geometry = _constant_boozer_geometry()
+    harmonics = np.asarray([[1.0, 0.0], [2.0, 1.0], [3.0, 2.0]])
+    mass_density = 3.4e-8
+
+    matrices = boozer_3d_continuum_matrices(
+        geometry,
+        harmonics,
+        mass_density=mass_density,
+        radial_metric=1.0,
+        theta_points=32,
+        zeta_points=32,
+    )
+    frequencies = boozer_3d_continuum_frequencies_hz(
+        geometry,
+        harmonics,
+        mass_density=mass_density,
+        radial_metric=1.0,
+        theta_points=32,
+        zeta_points=32,
+    )
+    k_parallel = (harmonics[:, 1] - harmonics[:, 0] * float(geometry.iota[0])) / 5.5
+    expected_frequency = 2.7 / np.sqrt(MU0 * mass_density) * np.abs(k_parallel) / (2.0 * np.pi)
+
+    np.testing.assert_allclose(np.asarray(frequencies[0]), np.sort(expected_frequency), rtol=1.0e-5)
+    np.testing.assert_allclose(np.asarray(matrices.mass[0]), np.eye(3) * mass_density * 5.5 / 2.7, rtol=3.0e-6, atol=1.0e-12)
+    stiffness = np.asarray(matrices.stiffness[0])
+    off_diagonal = stiffness - np.diag(np.diag(stiffness))
+    assert np.max(np.abs(off_diagonal)) / np.max(np.abs(np.diag(stiffness))) < 3.0e-9
+
+
 @pytest.mark.requires_booz_xform_jax
 def test_read_boozmn_spectrum_and_dominant_modes():
     path = BOOZ_XFORM_TEST_FILES / "boozmn_circular_tokamak.nc"
@@ -270,6 +334,71 @@ def test_read_boozmn_spectrum_and_dominant_modes():
     modes = dominant_boozer_modes(spectrum, count=3)
     assert len(modes) == 3
     assert modes[0][2] > 0.0
+
+
+@pytest.mark.requires_booz_xform_jax
+def test_read_boozmn_geometry_and_file_jacobian_identity():
+    path = BOOZ_XFORM_TEST_FILES / "boozmn_circular_tokamak.nc"
+    if not path.exists():
+        pytest.skip(f"missing local booz_xform_jax fixture: {path}")
+
+    geometry = read_boozmn_geometry(path)
+
+    assert geometry.bmnc.shape == geometry.gmnc.shape
+    assert geometry.rmnc is not None and geometry.zmns is not None
+    assert geometry.field_periods >= 1
+    assert float(boozer_geometry_jacobian_identity_error(geometry, theta_points=48, zeta_points=48)) < 2.0e-5
+
+
+@pytest.mark.requires_booz_xform_jax
+def test_boozer_embedding_jacobian_matches_file_shape():
+    path = BOOZ_XFORM_TEST_FILES / "boozmn_LandremanSenguptaPlunk_section5p3.nc"
+    if not path.exists():
+        pytest.skip(f"missing local booz_xform_jax fixture: {path}")
+
+    geometry = read_boozmn_geometry(path)
+    shape_error = boozer_embedding_jacobian_shape_error(geometry, theta_points=32, zeta_points=32)
+
+    assert float(shape_error) < 4.0e-2
+
+
+@pytest.mark.requires_booz_xform_jax
+def test_boozer_3d_real_geometry_operator_is_hermitian_and_finite():
+    path = BOOZ_XFORM_TEST_FILES / "boozmn_LandremanSenguptaPlunk_section5p3.nc"
+    if not path.exists():
+        pytest.skip(f"missing local booz_xform_jax fixture: {path}")
+
+    geometry = read_boozmn_geometry(path)
+    harmonics = np.asarray([[1.0, 0.0], [2.0, 1.0], [3.0, 2.0]])
+    matrices = boozer_3d_continuum_matrices(
+        geometry,
+        harmonics,
+        mass_density=3.4e-8,
+        theta_points=24,
+        zeta_points=24,
+    )
+    frequencies = boozer_3d_continuum_frequencies_hz(
+        geometry,
+        harmonics,
+        mass_density=3.4e-8,
+        theta_points=24,
+        zeta_points=24,
+    )
+
+    np.testing.assert_allclose(
+        np.asarray(matrices.stiffness[0]),
+        np.conjugate(np.asarray(matrices.stiffness[0]).T),
+        rtol=2.0e-6,
+        atol=1.0e-5,
+    )
+    np.testing.assert_allclose(
+        np.asarray(matrices.mass[0]),
+        np.conjugate(np.asarray(matrices.mass[0]).T),
+        rtol=2.0e-6,
+        atol=1.0e-12,
+    )
+    assert np.all(np.isfinite(np.asarray(frequencies)))
+    assert np.all(np.asarray(frequencies) >= 0.0)
 
 
 @pytest.mark.requires_booz_xform_jax
