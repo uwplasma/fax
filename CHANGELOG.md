@@ -23,6 +23,9 @@ Initial research scaffold release for FAX.
 - Research examples for validation packets, differentiability sensitivity, and a small inverse-design toy problem.
 - ReadTheDocs/Sphinx docs, GitHub Actions definitions for tests/docs/publish, and PyPI trusted-publishing workflow.
 
+The PyPI distribution name is `uwplasma-fax`; the import package and CLI remain
+`fax`.
+
 ### Validation Status
 
 This release is a validated scaffold, not a final 3-D stellarator eigenmode solver.

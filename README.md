@@ -125,7 +125,7 @@ claims still require the planned STELLGAP/AE3D/literature comparison gates.
 After the v0.0.1 release is published to PyPI:
 
 ```bash
-python -m pip install fax
+python -m pip install uwplasma-fax
 ```
 
 From a local checkout:
@@ -149,6 +149,9 @@ python -m pip install -e ".[plots]"
 The package supports Python 3.10 and newer. On Python 3.10 it uses `tomli` as
 the TOML parser fallback; on Python 3.11+ it uses the standard-library
 `tomllib`.
+
+The PyPI distribution is `uwplasma-fax` because the `fax` package name is
+already occupied on PyPI. The import name and CLI remain `fax`.
 
 ## CLI
 

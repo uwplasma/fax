@@ -5,7 +5,10 @@ After the v0.0.1 GitHub release is published to PyPI:
 
 .. code-block:: bash
 
-   python -m pip install fax
+   python -m pip install uwplasma-fax
+
+The PyPI distribution is ``uwplasma-fax`` because the ``fax`` package name is
+already occupied on PyPI. The import name and CLI remain ``fax``.
 
 Install from a local checkout:
 

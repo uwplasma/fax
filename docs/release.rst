@@ -13,6 +13,9 @@ For a release, update both:
 
 The v0.0.1 release uses ``0.0.1`` in both locations.
 
+The PyPI distribution name is ``uwplasma-fax``. The import package and CLI are
+still ``fax``.
+
 Local Release Gate
 ------------------
 
