@@ -41,6 +41,7 @@ def _setup_matplotlib():
             "legend.frameon": False,
             "figure.dpi": 150,
             "savefig.dpi": 180,
+            "svg.hashsalt": "fax-validation-figures",
         }
     )
     return plt
@@ -59,7 +60,7 @@ def _save_figure(fig, output_dir: Path, stem: str) -> list[Path]:
     """Save SVG and PNG variants for docs and README rendering."""
     svg_path = output_dir / f"{stem}.svg"
     png_path = output_dir / f"{stem}.png"
-    fig.savefig(svg_path)
+    fig.savefig(svg_path, metadata={"Date": None})
     _normalize_svg(svg_path)
     fig.savefig(png_path, facecolor="white")
     return [svg_path, png_path]

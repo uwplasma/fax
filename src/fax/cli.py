@@ -9,6 +9,7 @@ import sys
 from . import __version__
 from .config import ConfigError, FaxConfig, load_config
 from .runner import run
+from .workflows import ContinuumRunSummary, ValidationRunSummary, run_continuum, run_validation
 
 
 EXAMPLE_CONFIG = """[run]
@@ -45,7 +46,10 @@ def build_parser() -> argparse.ArgumentParser:
     """Build the ``fax`` argument parser."""
     parser = argparse.ArgumentParser(
         prog="fax",
-        description="Run or inspect differentiable Alfvén eigenmode calculations from a TOML file.",
+        description=(
+            "Run or inspect differentiable Alfvén eigenmode calculations from a TOML file. "
+            "Subcommands: validate, continuum."
+        ),
     )
     parser.add_argument("config", nargs="?", help="Path to a fax TOML configuration file.")
     parser.add_argument("--dry-run", action="store_true", help="Validate input and print a planned-run summary.")
@@ -57,10 +61,38 @@ def build_parser() -> argparse.ArgumentParser:
     return parser
 
 
+def build_command_parser() -> argparse.ArgumentParser:
+    """Build the subcommand parser for executable workflows."""
+    parser = argparse.ArgumentParser(
+        prog="fax",
+        description="Run FAX validation and continuum workflows from TOML configuration files.",
+    )
+    parser.add_argument("--version", action="version", version=f"%(prog)s {__version__}")
+    subparsers = parser.add_subparsers(dest="command", required=True)
+
+    validate = subparsers.add_parser("validate", help="Run registered validation gates.")
+    validate.add_argument("config", help="Path to a fax TOML configuration file.")
+    validate.add_argument("--tag", action="append", default=[], help="Run only gates with this tag; may be repeated.")
+    validate.add_argument("--json", action="store_true", help="Print only summary JSON; disables rich progress output.")
+    validate.add_argument("--quiet", action="store_true", help="Suppress rich progress output and print only summary JSON.")
+    validate.add_argument("--no-artifacts", action="store_true", help="Do not write validation_summary.json/report files.")
+
+    continuum = subparsers.add_parser("continuum", help="Compute continuum branches and metric diagnostics.")
+    continuum.add_argument("config", help="Path to a fax TOML configuration file.")
+    continuum.add_argument("--json", action="store_true", help="Print only summary JSON; disables rich progress output.")
+    continuum.add_argument("--quiet", action="store_true", help="Suppress rich progress output and print only summary JSON.")
+    continuum.add_argument("--no-artifacts", action="store_true", help="Do not write continuum artifact files.")
+    return parser
+
+
 def main(argv: list[str] | None = None) -> int:
     """CLI entry point."""
+    argv_list = list(sys.argv[1:] if argv is None else argv)
+    if argv_list and argv_list[0] in {"validate", "continuum"}:
+        return _main_command(argv_list)
+
     parser = build_parser()
-    args = parser.parse_args(argv)
+    args = parser.parse_args(argv_list)
 
     if args.example:
         print(EXAMPLE_CONFIG, end="")
@@ -89,6 +121,42 @@ def main(argv: list[str] | None = None) -> int:
     if summary.status == "planned":
         return 0
     return 0
+
+
+def _main_command(argv: list[str]) -> int:
+    parser = build_command_parser()
+    args = parser.parse_args(argv)
+    try:
+        config = load_config(args.config)
+    except ConfigError as exc:
+        print(f"fax: {exc}", file=sys.stderr)
+        return 2
+
+    machine_readable = bool(args.json or args.quiet)
+    try:
+        summary: ValidationRunSummary | ContinuumRunSummary
+        if args.command == "validate":
+            summary = run_validation(
+                config,
+                progress=not machine_readable,
+                tags=tuple(args.tag),
+                write_artifacts=not args.no_artifacts,
+            )
+        elif args.command == "continuum":
+            summary = run_continuum(
+                config,
+                progress=not machine_readable,
+                write_artifacts=not args.no_artifacts,
+            )
+        else:  # pragma: no cover - argparse prevents this branch
+            parser.error(f"unknown command {args.command!r}")
+    except (ConfigError, FileNotFoundError, OSError, ValueError) as exc:
+        print(f"fax: {exc}", file=sys.stderr)
+        return 2
+
+    if machine_readable:
+        print(json.dumps(summary.to_dict(), indent=2, sort_keys=True))
+    return 1 if summary.status == "failed" else 0
 
 
 def parse_config_from_mapping(mapping: dict[str, object]) -> FaxConfig:

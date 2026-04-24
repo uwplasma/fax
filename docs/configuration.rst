@@ -23,3 +23,17 @@ Top-level sections:
 ``[numerics]``
    Precision, JIT/autodiff flags, and eigensolver choice.
 
+Workflow Artifacts
+------------------
+
+The CLI uses ``[run] output_dir`` for durable local artifacts:
+
+``fax validate case.toml``
+   Writes ``validation_summary.json`` and ``validation_report.md``.
+
+``fax continuum case.toml``
+   Writes ``continuum_summary.json``, ``continuum_metrics.json``, and
+   ``continuum_branches.csv``.
+
+The JSON summaries are intended for scripts and regression checks. The
+Markdown validation report is intended for review packets and handoff notes.

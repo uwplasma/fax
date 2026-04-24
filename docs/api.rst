@@ -10,6 +10,9 @@ API
 .. automodule:: fax.runner
    :members:
 
+.. automodule:: fax.workflows
+   :members:
+
 .. automodule:: fax.equilibrium
    :members:
 

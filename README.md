@@ -129,6 +129,8 @@ the TOML parser fallback; on Python 3.11+ it uses the standard-library
 ```bash
 fax examples/minimal.toml --dry-run
 fax examples/landreman_paul_qa_lowres.toml --dry-run
+fax validate examples/minimal.toml --tag analytic
+fax continuum examples/landreman_paul_qa_lowres.toml
 ```
 
 `fax` reads TOML configuration files. The normal CLI path is intentionally
@@ -136,10 +138,18 @@ verbose: it prints solve parameters, phase-by-phase status, elapsed time,
 estimated remaining time, and what the code is doing so long runs do not look
 silent.
 
+`fax validate` runs the registered validation gates and writes
+`validation_summary.json` plus `validation_report.md` in the configured
+`run.output_dir`. `fax continuum` computes the current profile and metric-matrix
+continuum scaffold, then writes `continuum_summary.json`,
+`continuum_metrics.json`, and `continuum_branches.csv`.
+
 For machine-readable output:
 
 ```bash
 fax examples/minimal.toml --dry-run --json
+fax validate examples/minimal.toml --tag metric --json
+fax continuum examples/minimal.toml --json
 fax examples/minimal.toml --dump-config
 fax examples/minimal.toml --quiet
 ```
@@ -147,14 +157,18 @@ fax examples/minimal.toml --quiet
 Python calls are also progress-aware:
 
 ```python
-from fax import load_config, run
+from fax import load_config, run, run_continuum, run_validation
 
 config = load_config("examples/landreman_paul_qa_lowres.toml")
 summary = run(config, progress=True, dry_run=True)
+validation = run_validation(config, tags=("metric",), progress=True)
+continuum = run_continuum(config, progress=True)
 ```
 
-Solver implementations will be added incrementally behind the same progress
-reporting interface.
+The continuum command is still the scaffold model described above: local
+profile branches plus the first metric-matrix generalized eigenproblem. It is
+useful for adapter checks, diagnostics, and figure generation, while full 3-D
+stellarator continuum validation remains planned work.
 
 ## Figures
 
@@ -189,6 +203,13 @@ for gate in registered_validation_gates():
     print(gate.gate_id, gate.tolerance, gate.citation)
 
 results = run_validation_suite(tags=("metric",))
+```
+
+The same registry is available from the CLI:
+
+```bash
+fax validate examples/minimal.toml
+fax validate examples/minimal.toml --tag metric --json
 ```
 
 The first gates cover analytic continuum scaling, reduction of the metric

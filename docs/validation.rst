@@ -50,6 +50,16 @@ Run them from Python:
 
    results = run_validation_suite()
 
+Run the same gates from the CLI, with rich phase-by-phase output and artifacts:
+
+.. code-block:: bash
+
+   fax validate examples/minimal.toml
+   fax validate examples/minimal.toml --tag metric --json
+
+The CLI writes ``validation_summary.json`` and ``validation_report.md`` to
+``run.output_dir`` unless ``--no-artifacts`` is used.
+
 These are scaffold acceptance gates. Publication claims about 3-D stellarator
 continuum gaps still require the planned STELLGAP/AE3D/literature comparison
 gates and resolution-convergence reports.
