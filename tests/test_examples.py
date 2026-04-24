@@ -48,3 +48,19 @@ def test_inverse_iota_shift_example_runs():
     assert payload["final_iota_shift"] < 0.0
     assert payload["final_mean_frequency_hz"] > payload["initial_mean_frequency_hz"]
     assert len(payload["history"]) == 40
+
+
+def test_global_gap_fastion_screen_example_runs():
+    result = subprocess.run(
+        [sys.executable, "examples/research/global_gap_fastion_screen.py"],
+        cwd=REPO_ROOT,
+        check=True,
+        text=True,
+        capture_output=True,
+    )
+    payload = json.loads(result.stdout)
+    assert payload["constant_fixture_relative_omega2_error"] < 3.0e-6
+    assert payload["constant_fixture_max_residual"] < 1.0e-5
+    assert payload["lowest_radial_mode_frequency_hz"] > 0.0
+    assert len(payload["gap_estimates"]) == 3
+    assert payload["fast_ion_peak"]["drive"] > 0.0

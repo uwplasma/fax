@@ -14,7 +14,10 @@ import numpy as np
 from fax.config import EquilibriumConfig, FaxConfig, GridConfig, RunConfig
 from fax.continuum import continuum_branch_matrix
 from fax.equilibrium import analytic_circular_tokamak, from_vmec_wout
+from fax.fast_ions import FastIonPopulation, resonance_scan
 from fax.gaps import minimum_gap_summary, sorted_branch_gaps
+from fax.gap_models import eae_gap_estimate, hae_gap_estimate, tae_gap_estimate
+from fax.global_modes import constant_problem_discrete_omega2, constant_radial_problem, solve_radial_eigenmodes
 from fax.metric import (
     diagonal_continuum_frequencies_hz,
     generalized_eigen_residual_norms,
@@ -23,6 +26,7 @@ from fax.metric import (
     metric_from_equilibrium,
 )
 from fax.modes import stellarator_mode_family
+from fax.optimization import radial_mode_avoidance_objective
 from fax.plotting import plot_continuum_artifacts, plot_convergence_artifacts
 from fax.reference_cases import landreman_paul_qa_lowres
 from fax.workflows import run_continuum, run_convergence
@@ -212,6 +216,120 @@ def generate_gap_sensitivity_dashboard(output_dir: Path) -> list[Path]:
     return paths
 
 
+def generate_global_gap_fastion_dashboard(output_dir: Path) -> list[Path]:
+    """Generate a dashboard for global modes, gap estimates, fast ions, and gradients."""
+    plt = _setup_matplotlib()
+    problem = constant_radial_problem(radial_points=64, continuum_frequency_hz=105_000.0, radial_coupling_omega2=3.0e9)
+    result = solve_radial_eigenmodes(problem)
+    exact_frequency_hz = np.sqrt(np.asarray(constant_problem_discrete_omega2(problem))) / (2.0 * np.pi)
+    numerical_frequency_hz = np.asarray(result.frequencies_hz)
+    interior_s = np.asarray(problem.s[1:-1])
+    mode_shapes = np.asarray(result.eigenvectors[:, :3])
+    mode_shapes = mode_shapes / np.maximum(np.max(np.abs(mode_shapes), axis=0, keepdims=True), 1.0e-30)
+
+    geometry = analytic_circular_tokamak(radial_points=256, iota_axis=0.42, iota_edge=0.86, major_radius=6.2)
+    gap_estimates = [
+        tae_gap_estimate(geometry, m=1, n=1, inverse_aspect_ratio=0.08),
+        eae_gap_estimate(geometry, m=1, n=1, ellipticity=0.055),
+        hae_gap_estimate(geometry, m=2, n=2, helical_coupling=0.07, delta_m=1),
+    ]
+
+    population = FastIonPopulation(
+        density_fraction=0.045,
+        pressure_gradient=-2.5,
+        transit_frequency_hz=32_000.0,
+        precession_frequency_hz=4_500.0,
+        resonance_width_hz=2_800.0,
+    )
+    frequency_grid = jnp.linspace(5_000.0, 105_000.0, 360)
+    harmonics = (-1, 0, 1, 2)
+    drive = resonance_scan(frequency_grid, toroidal_mode=2, transit_harmonics=harmonics, population=population)
+
+    design_geometry = analytic_circular_tokamak(radial_points=72, iota_axis=0.28, iota_edge=0.70)
+    parameters = jnp.asarray([0.0, 0.0, 0.0])
+
+    def objective(params):
+        return radial_mode_avoidance_objective(
+            params,
+            geometry=design_geometry,
+            harmonic=(2, 1),
+            avoid_window_hz=(115_000.0, 145_000.0),
+            softness_hz=4_000.0,
+        )
+
+    gradient = np.asarray(jax.grad(objective)(parameters))
+
+    fig, axes = plt.subplots(2, 2, figsize=(10.2, 6.6), constrained_layout=True)
+
+    ax = axes[0, 0]
+    mode_index = np.arange(1, 9)
+    ax.plot(mode_index, exact_frequency_hz[:8] / 1.0e3, marker="o", linewidth=1.7, label="exact FD spectrum")
+    ax.plot(mode_index, numerical_frequency_hz[:8] / 1.0e3, marker="s", linewidth=1.2, linestyle="--", label="FAX eigensolve")
+    ax.set_title("Global radial spectrum gate")
+    ax.set_xlabel("radial mode index")
+    ax.set_ylabel("frequency [kHz]")
+    ax.legend(fontsize=8)
+    ax.text(
+        0.04,
+        0.08,
+        f"max residual={float(jnp.max(result.residuals[:8])):.1e}",
+        transform=ax.transAxes,
+        fontsize=8,
+        bbox={"facecolor": "white", "edgecolor": "#bbbbbb", "boxstyle": "round,pad=0.25"},
+    )
+
+    ax = axes[0, 1]
+    for index in range(3):
+        ax.plot(interior_s, mode_shapes[:, index], linewidth=1.6, label=f"mode {index + 1}")
+    ax.set_title("Dirichlet radial eigenfunctions")
+    ax.set_xlabel("normalized toroidal flux s")
+    ax.set_ylabel("normalized envelope")
+    ax.set_xlim(0.0, 1.0)
+    ax.legend(fontsize=8)
+
+    ax = axes[1, 0]
+    labels = [estimate.family for estimate in gap_estimates]
+    centers = np.asarray([float(estimate.center_frequency_hz) for estimate in gap_estimates]) / 1.0e3
+    half_widths = np.asarray([float(estimate.width_frequency_hz) for estimate in gap_estimates]) / 2.0e3
+    x = np.arange(len(gap_estimates))
+    ax.errorbar(x, centers, yerr=half_widths, fmt="o", capsize=4, color="#2458a6", linewidth=1.5)
+    ax.set_xticks(x, labels)
+    ax.set_title("Analytic gap-center gates")
+    ax.set_ylabel("frequency [kHz]")
+    ax.set_xlim(-0.35, len(gap_estimates) - 0.65)
+    ax.set_ylim(bottom=max(0.0, float(np.min(centers - half_widths)) - 8.0), top=float(np.max(centers + half_widths)) + 12.0)
+    for x_index, estimate in enumerate(gap_estimates):
+        ax.annotate(
+            f"iota={float(estimate.iota):.3f}",
+            xy=(x_index, centers[x_index]),
+            xytext=(0, 11),
+            textcoords="offset points",
+            ha="center",
+            fontsize=8,
+        )
+
+    ax = axes[1, 1]
+    colors = ["#4c78a8", "#f58518", "#54a24b", "#b279a2"]
+    for index, harmonic in enumerate(harmonics):
+        ax.plot(np.asarray(frequency_grid) / 1.0e3, np.asarray(drive[index]), linewidth=1.5, color=colors[index], label=f"l={harmonic}")
+    ax.set_title("Fast-ion resonance screen")
+    ax.set_xlabel("mode frequency [kHz]")
+    ax.set_ylabel("reduced drive")
+    ax.legend(fontsize=8, ncol=2, loc="upper left")
+    inset = ax.inset_axes([0.58, 0.12, 0.36, 0.34])
+    inset_x = np.arange(3)
+    inset.bar(inset_x, gradient, color=["#4c78a8", "#f58518", "#54a24b"])
+    inset.set_xticks(inset_x, ["rho", "iota", "B"])
+    inset.axhline(0.0, color="#222222", linewidth=0.7)
+    inset.set_title("AD objective grad", fontsize=8)
+    inset.tick_params(axis="both", labelsize=7)
+
+    fig.suptitle("Reduced global-mode, gap, fast-ion, and optimization validation dashboard", fontsize=12, weight="bold")
+    paths = _save_figure(fig, output_dir, "global_gap_fastion_dashboard")
+    plt.close(fig)
+    return paths
+
+
 def generate_continuum_artifact_dashboard(output_dir: Path) -> list[Path]:
     """Generate a dashboard from files written by the continuum workflow."""
     case = landreman_paul_qa_lowres()
@@ -247,8 +365,8 @@ def generate_workflow_diagram(output_dir: Path) -> list[Path]:
 
     boxes = [
         ("Inputs", "TOML case\nVMEC wout / vmec_jax\nprofiles\nmode family", 0.04, 0.55, "#e8f1fb"),
-        ("Adapters", "EquilibriumGeometry\nMetricGeometry\nBoozer path planned", 0.28, 0.55, "#e9f7ef"),
-        ("Operators", "continuum branches\nK(s), M(s)\nvalidation gates", 0.52, 0.55, "#fff4df"),
+        ("Adapters", "EquilibriumGeometry\nMetricGeometry\nBoozer spectra", 0.28, 0.55, "#e9f7ef"),
+        ("Operators", "continuum branches\nK(s), M(s)\nradial modes", 0.52, 0.55, "#fff4df"),
         ("Outputs", "frequencies\nmode labels\ngaps, sensitivities\nfigures, metrics", 0.76, 0.55, "#f4ecfb"),
     ]
     for title, body, x, y, color in boxes:
@@ -260,7 +378,7 @@ def generate_workflow_diagram(output_dir: Path) -> list[Path]:
         ax.annotate("", xy=(x0 + 0.035, 0.55), xytext=(x0, 0.55), arrowprops={"arrowstyle": "->", "lw": 1.7})
 
     ax.text(0.5, 0.18, "JAX transformations: jit, vmap, grad over operators and diagnostics", ha="center", fontsize=10)
-    ax.text(0.5, 0.09, "Current scope: scaffold gates and metric-matrix checks; full 3-D STELLGAP/AE3D validation is planned.", ha="center", fontsize=9)
+    ax.text(0.5, 0.09, "Current scope: reduced/profile and metric gates; full 3-D STELLGAP/AE3D validation remains planned.", ha="center", fontsize=9)
 
     paths = _save_figure(fig, output_dir, "workflow_io_diagram")
     plt.close(fig)
@@ -270,7 +388,7 @@ def generate_workflow_diagram(output_dir: Path) -> list[Path]:
 def generate_equations_overview(output_dir: Path) -> list[Path]:
     """Generate a compact equation overview figure."""
     plt = _setup_matplotlib()
-    fig, axes = plt.subplots(1, 2, figsize=(9.4, 3.7), constrained_layout=True)
+    fig, axes = plt.subplots(1, 3, figsize=(11.8, 3.7), constrained_layout=True)
     for ax in axes:
         ax.axis("off")
 
@@ -305,6 +423,23 @@ def generate_equations_overview(output_dir: Path) -> list[Path]:
         0.02,
         0.21,
         "Used for Hermiticity, residual, angular-grid,\nand VMEC-adapter gates.",
+        fontsize=9,
+    )
+
+    axes[2].set_title("Radial and fast-ion diagnostics", fontsize=12, weight="bold")
+    axes[2].text(
+        0.02,
+        0.77,
+        r"$K_r \xi=\omega^2 M_r \xi$" "\n"
+        r"$\iota_{\rm gap}=2n/(2m+\Delta m)$" "\n"
+        r"$f_{\rm mode}=n f_\phi+\ell f_\theta$",
+        fontsize=12,
+        va="top",
+    )
+    axes[2].text(
+        0.02,
+        0.21,
+        "Used for radial spectrum, gap-center,\nresonance, and optimization-gradient gates.",
         fontsize=9,
     )
 
@@ -464,6 +599,7 @@ def main(argv: list[str] | None = None) -> int:
         generate_cylinder_scaling(output_dir),
         generate_landreman_reference(output_dir),
         generate_gap_sensitivity_dashboard(output_dir),
+        generate_global_gap_fastion_dashboard(output_dir),
         generate_continuum_artifact_dashboard(output_dir),
         generate_metric_residual_convergence(output_dir),
         generate_landreman_convergence_dashboard(output_dir),

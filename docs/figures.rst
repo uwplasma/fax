@@ -41,6 +41,13 @@ Current Figures
    Prototype dashboard for README/docs: mode-family branches, nearest-branch
    separation, and autodiff sensitivities.
 
+.. figure:: _static/global_gap_fastion_dashboard.svg
+   :alt: Reduced global-mode, gap, fast-ion, and optimization dashboard.
+
+   Reduced global-mode, gap-center, fast-ion resonance, and optimization
+   gradient dashboard. The top-left panel is tied to an exact finite-difference
+   spectrum gate; the bottom panels are analytic/reduced screening diagnostics.
+
 .. figure:: _static/continuum_artifact_dashboard.svg
    :alt: Dashboard generated from fax continuum artifacts.
 

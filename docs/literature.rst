@@ -23,3 +23,36 @@ The initial survey anchors the code plan in the following families:
 
 See ``plan.md`` for source URLs, validation targets, and implementation
 priorities.
+
+Current cross-code targets
+--------------------------
+
+The first external validation targets should be chosen from sources that expose
+enough input data, mode labels, and plotted or tabulated frequencies/gaps to
+reproduce a quantitative comparison. Current priority targets are:
+
+* Spong, Sanchez & Weller, "Shear Alfvén continua in stellarators",
+  Phys. Plasmas 10, 3217 (2003), and the STELLGAP software record:
+  https://www.osti.gov/biblio/code-4633
+* TJ-II Alfvén-cascade comparisons using STELLGAP and AE3D:
+  https://impact.ornl.gov/en/publications/modeling-of-alfven-cascades-in-the-tj-ii-stellarator-with-stellga/
+* FAR3D reduced-MHD/energetic-particle studies of CFQS and related
+  stellarator cases:
+  https://arxiv.org/abs/2104.07987
+* Landreman-Paul precise-quasisymmetry and the follow-on quasisymmetric
+  continuum analysis used for the first VMEC-backed target:
+  https://doi.org/10.1103/PhysRevLett.128.035001 and
+  https://doi.org/10.1017/S0022377825100524
+
+Differentiability references
+----------------------------
+
+The implemented dense JAX path is intentionally small and direct. Larger
+operators should follow the JAX custom-derivative guidance and recent
+spectral-adjoint literature: validate direct autodiff first, then introduce
+custom VJP/JVP or implicit-adjoint rules only when they reproduce the dense
+reference and improve memory/runtime. Useful implementation references include
+the JAX custom-derivative guide,
+https://docs.jax.dev/en/latest/notebooks/Custom_derivative_rules_for_Python_code.html,
+and recent spectral-adjoint preprints such as
+https://arxiv.org/abs/2506.14792.

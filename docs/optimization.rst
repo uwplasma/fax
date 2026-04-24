@@ -25,6 +25,16 @@ outputs:
   constraints supplied by other tools,
 * penalize objectives whose uncertainty intervals cross risk thresholds.
 
+Implemented reduced objective
+-----------------------------
+
+``fax.optimization.radial_mode_avoidance_objective`` is the first executable
+design objective. It maps
+``[log_density_scale, iota_shift, log_field_scale]`` to a smooth penalty on
+the lowest radial eigenmode frequencies entering a dangerous frequency window.
+This is a reduced profile fixture, but it is fully differentiable and gives the
+testbed for VMEC/vmec_jax shape and profile variables.
+
 Power-Plant Assessment
 ----------------------
 
@@ -36,4 +46,3 @@ For reactor design studies, ``fax`` should produce a risk dashboard:
 * sensitivity to density, iota, beta, and boundary-shape parameters,
 * uncertainty intervals and worst-case metrics,
 * recommended design changes expressed as gradients or shape sensitivities.
-

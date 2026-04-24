@@ -9,6 +9,9 @@ Dense reference path
 
 Small continuum and global-mode problems should differentiate directly through
 JAX operations. This path is the correctness reference for custom adjoints.
+The current gates differentiate profile continuum diagnostics and the reduced
+radial generalized eigenproblem with respect to density, rotational-transform,
+and magnetic-field profile parameters.
 
 Generalized eigenvalue path
 ---------------------------
@@ -21,7 +24,10 @@ sensitivity is
    d\lambda = x^\dagger (dK - \lambda dM) x.
 
 This formula should be implemented as a custom derivative rule and checked
-against direct autodiff and finite differences.
+against direct autodiff and finite differences. Until that custom rule is
+added, the dense JAX eigensolve path remains the correctness oracle for small
+matrices and the local test suite compares selected gradients with centered
+finite differences.
 
 Implicit and matrix-free path
 -----------------------------
@@ -52,3 +58,11 @@ JAX ecosystem trials
 No ecosystem dependency should become required until it passes a documented
 prototype against a native-JAX baseline.
 
+Current demonstrations
+----------------------
+
+``examples/research/global_gap_fastion_screen.py`` prints a compact JSON packet
+with a constant-profile radial spectrum residual, analytic gap estimates, a
+fast-ion resonance peak, and the gradient of a radial-mode avoidance objective.
+``tools/generate_validation_figures.py`` turns the same ingredients into the
+``global_gap_fastion_dashboard`` documentation figure.

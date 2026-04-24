@@ -1,0 +1,62 @@
+from __future__ import annotations
+
+import jax
+import jax.numpy as jnp
+import numpy as np
+
+from fax.equilibrium import analytic_circular_tokamak
+from fax.global_modes import (
+    constant_problem_discrete_omega2,
+    constant_radial_problem,
+    lowest_radial_frequency_hz,
+    radial_problem_from_equilibrium,
+    solve_radial_eigenmodes,
+)
+
+
+def test_constant_radial_problem_matches_exact_discrete_spectrum():
+    problem = constant_radial_problem(radial_points=48, continuum_frequency_hz=100_000.0, radial_coupling_omega2=3.0e9)
+
+    result = solve_radial_eigenmodes(problem)
+    expected = constant_problem_discrete_omega2(problem)
+
+    np.testing.assert_allclose(np.asarray(result.omega2[:10]), np.asarray(expected[:10]), rtol=2.0e-6)
+    assert float(jnp.max(result.residuals[:10])) < 1.0e-5
+
+
+def test_radial_problem_from_equilibrium_is_jittable():
+    geometry = analytic_circular_tokamak(radial_points=24, iota_axis=0.28, iota_edge=0.68)
+    problem = radial_problem_from_equilibrium(geometry, harmonic=(2, 1))
+
+    frequencies = jax.jit(lambda p: solve_radial_eigenmodes(p).frequencies_hz[:3])(problem)
+
+    assert frequencies.shape == (3,)
+    assert bool(jnp.all(jnp.isfinite(frequencies)))
+    assert bool(jnp.all(frequencies >= 0.0))
+
+
+def test_lowest_radial_frequency_density_gradient_matches_finite_difference():
+    problem = constant_radial_problem(radial_points=36, continuum_frequency_hz=110_000.0, radial_coupling_omega2=1.0e10)
+
+    def frequency(scale):
+        return lowest_radial_frequency_hz(scale, base_problem=problem)
+
+    scale0 = 1.3
+    autodiff = jax.grad(frequency)(scale0)
+    step = 1.0e-4
+    finite_difference = (frequency(scale0 + step) - frequency(scale0 - step)) / (2.0 * step)
+
+    np.testing.assert_allclose(float(autodiff), float(finite_difference), rtol=3.0e-3)
+
+
+def test_lowest_radial_frequency_density_gradient_matches_analytic_scaling():
+    problem = constant_radial_problem(radial_points=36, continuum_frequency_hz=110_000.0, radial_coupling_omega2=1.0e10)
+
+    def frequency(scale):
+        return lowest_radial_frequency_hz(scale, base_problem=problem)
+
+    scale0 = 1.3
+    autodiff = jax.grad(frequency)(scale0)
+    expected = -0.5 * frequency(scale0) / scale0
+
+    np.testing.assert_allclose(float(autodiff), float(expected), rtol=5.0e-5)

@@ -15,8 +15,10 @@ The current repository state has the first executable physics foundation:
 packaging, CLI, docs, local tests, analytic equilibrium fixtures, a minimal VMEC
 `wout` profile adapter, local Alfvén-continuum smoke-test formulas, mode-family
 helpers, gap/sensitivity diagnostics, a first metric-matrix continuum scaffold,
-a registered validation-gate inventory, and generated documentation figures.
-Full 3-D VMEC/Boozer continuum validation, global eigenmodes, and fast-ion drive
+a reduced radial global-eigenmode operator, reduced fast-ion resonance screens,
+an optional Boozer-spectrum adapter, a registered validation-gate inventory,
+and generated documentation figures. Full 3-D VMEC/Boozer continuum
+validation, 3-D global eigenmodes, and perturbative kinetic fast-ion drive
 models are still planned work.
 
 ![FAX input/operator/output workflow](docs/_static/workflow_io_diagram.png)
@@ -58,6 +60,27 @@ M_{ij} =
 K(s)x = \omega^2(s) M(s)x.
 ```
 
+The first reduced global layer solves a radial generalized eigenproblem with
+Dirichlet radial boundaries,
+
+```math
+K_r \xi = \omega^2 M_r \xi,
+```
+
+validated against the exact constant-coefficient finite-difference spectrum.
+Analytic gap screens use
+
+```math
+\iota_{\rm gap} = \frac{2n}{2m+\Delta m}
+```
+
+for coupled `m` and `m + Delta m` sidebands. The reduced fast-ion screen ranks
+resonance windows using
+
+```math
+f_{\rm mode} - n f_\phi - \ell f_\theta = 0.
+```
+
 These equations are the current tested scaffold. They are anchored in the
 standard shear-Alfvén continuum and energetic-particle literature, including
 Chen & Zonca's review of Alfvén waves and energetic particles, the STELLGAP
@@ -95,6 +118,13 @@ branches. It is not yet a full 3-D stellarator continuum validation.
 This dashboard shows a stellarator sideband family, nearest-branch separation,
 and autodiff sensitivities to density, rotational-transform shift, and magnetic
 field scale. It is a design-facing diagnostic prototype.
+
+![Reduced global-mode, gap, fast-ion, and optimization dashboard](docs/_static/global_gap_fastion_dashboard.png)
+
+This dashboard checks the reduced radial global-mode eigensolve against an
+exact finite-difference spectrum, plots radial eigenfunctions, reports analytic
+TAE/EAE/HAE gap-center estimates, scans reduced fast-ion resonance drive, and
+shows a JAX gradient of the radial-mode avoidance objective.
 
 ![Continuum artifact dashboard](docs/_static/continuum_artifact_dashboard.png)
 
@@ -164,6 +194,7 @@ fax plot-continuum outputs/landreman_paul_qa_lowres --output-dir outputs/landrem
 fax convergence examples/landreman_paul_qa_lowres.toml --radial-points 24 --radial-points 40
 fax plot-convergence outputs/landreman_paul_qa_lowres/convergence --output-dir outputs/landreman_paul_qa_lowres/figures
 fax benchmark examples/landreman_paul_qa_lowres.toml --repeats 3
+python examples/research/global_gap_fastion_screen.py
 ```
 
 `fax` reads TOML configuration files. The normal CLI path is intentionally
@@ -223,6 +254,7 @@ fax convergence examples/analytic_convergence.toml --radial-points 16 --radial-p
 python examples/research/validation_packet.py
 python examples/research/density_sensitivity.py
 python examples/research/inverse_iota_shift.py
+python examples/research/global_gap_fastion_screen.py
 ```
 
 These generate validation packets, continuum artifacts, convergence dashboards,
@@ -248,6 +280,7 @@ Current figures:
 - `workflow_io_diagram.svg`: input/operator/output workflow diagram.
 - `landreman_paul_qa_lowres_profiles.svg`: first VMEC-backed profile/adapter target.
 - `gap_sensitivity_dashboard.svg`: mode-family, gap-proxy, and autodiff sensitivity dashboard.
+- `global_gap_fastion_dashboard.svg`: reduced radial mode, gap, fast-ion, and optimization dashboard.
 - `continuum_artifact_dashboard.svg`: dashboard generated from `fax continuum` artifacts.
 - `metric_residual_convergence.svg`: metric-matrix residual and angular-grid check.
 - `landreman_paul_convergence_dashboard.svg`: VMEC-backed radial/angular/Fourier convergence smoke-test dashboard.
@@ -276,9 +309,10 @@ fax validate examples/minimal.toml --tag metric --json
 The first gates cover analytic continuum scaling, reduction of the metric
 matrix to the profile limit, Hermiticity of the generalized continuum matrices,
 generalized eigensolve residuals, density-gradient consistency,
-angular/radial-grid consistency, radial quadrature convergence, and
-Landreman-Paul QA VMEC adapter plus continuum finite-output/radial-sampling
-smoke tests. These are
+angular/radial-grid consistency, radial quadrature convergence, reduced global
+radial spectrum residuals, radial-mode gradient consistency, analytic TAE
+gap-center checks, reduced fast-ion resonance ordering, and Landreman-Paul QA
+VMEC adapter plus continuum finite-output/radial-sampling smoke tests. These are
 acceptance gates for the scaffold, not yet full STELLGAP/AE3D stellarator
 validation.
 
@@ -308,6 +342,8 @@ It currently establishes:
   metric matrices, gradients, validation gates, and benchmark helpers,
 - a LandremanPaul2021 QA lowres local reference target,
 - generated smoke-test figures for docs and README,
+- a reduced radial global eigenmode operator, analytic gap estimates, reduced
+  fast-ion resonance screens, and differentiable design objective,
 - a handoff plan grounded in the existing literature and comparison codes.
 
 ## Local Quality Gate

@@ -11,6 +11,14 @@ import numpy as np
 
 from .continuum import continuum_branch_matrix, local_continuum_frequency_hz
 from .equilibrium import analytic_circular_tokamak, analytic_cylinder, from_vmec_wout
+from .fast_ions import FastIonPopulation, reduced_fast_ion_drive
+from .gap_models import tae_gap_estimate
+from .global_modes import (
+    constant_problem_discrete_omega2,
+    constant_radial_problem,
+    lowest_radial_frequency_hz,
+    solve_radial_eigenmodes,
+)
 from .metric import (
     MetricGeometry,
     diagonal_continuum_frequencies_hz,
@@ -223,6 +231,90 @@ def _gate_analytic_radial_integral_convergence() -> GateResult:
     return _pass_fail(gate_id, float(metric), tolerance, "radial quadrature of smooth analytic branch converges")
 
 
+def _gate_global_mode_constant_profile() -> GateResult:
+    gate_id = "global_mode_constant_profile"
+    tolerance = 1.0e-5
+    problem = constant_radial_problem(radial_points=42, continuum_frequency_hz=90_000.0, radial_coupling_omega2=2.5e9)
+    result = solve_radial_eigenmodes(problem)
+    expected = constant_problem_discrete_omega2(problem)
+    metric = relative_l2_error(result.omega2[:8], expected[:8])
+    residual = float(jnp.max(result.residuals[:8]))
+    return _pass_fail(
+        gate_id,
+        max(float(metric), residual),
+        tolerance,
+        "global radial finite-difference eigenvalues match the exact constant-profile spectrum",
+    )
+
+
+def _gate_global_mode_density_gradient() -> GateResult:
+    gate_id = "global_mode_density_gradient"
+    tolerance = 3.0e-3
+    problem = constant_radial_problem(radial_points=34, continuum_frequency_hz=120_000.0, radial_coupling_omega2=1.5e10)
+
+    def frequency(scale: float) -> jnp.ndarray:
+        return lowest_radial_frequency_hz(scale, base_problem=problem)
+
+    scale0 = 1.25
+    autodiff = float(jax.grad(frequency)(scale0))
+    expected = float(-0.5 * frequency(scale0) / scale0)
+    metric = abs(autodiff - expected) / max(abs(expected), 1.0e-30)
+    return _pass_fail(
+        gate_id,
+        metric,
+        tolerance,
+        "global radial eigenmode density sensitivity matches analytic rho^(-1/2) scaling",
+    )
+
+
+def _gate_analytic_tae_gap_center() -> GateResult:
+    gate_id = "analytic_tae_gap_center"
+    tolerance = 2.0e-2
+    geometry = analytic_circular_tokamak(radial_points=256, iota_axis=0.45, iota_edge=0.85, major_radius=6.2)
+    estimate = tae_gap_estimate(geometry, m=1, n=1, inverse_aspect_ratio=0.08)
+    target_iota = 2.0 / 3.0
+    metric = abs(float(estimate.iota) - target_iota) / target_iota
+    return _pass_fail(
+        gate_id,
+        metric,
+        tolerance,
+        "TAE m/m+1 crossing occurs at the analytic iota=2n/(2m+1) resonance",
+    )
+
+
+def _gate_fast_ion_resonance_peak() -> GateResult:
+    gate_id = "fast_ion_resonance_peak"
+    tolerance = 1.0e-12
+    population = FastIonPopulation(
+        density_fraction=0.04,
+        pressure_gradient=-2.0,
+        transit_frequency_hz=35_000.0,
+        precession_frequency_hz=4_000.0,
+        resonance_width_hz=2_500.0,
+    )
+    resonant_frequency = 2.0 * population.precession_frequency_hz + population.transit_frequency_hz
+    off_resonant_frequency = resonant_frequency + 12.0 * population.resonance_width_hz
+    resonant_drive = reduced_fast_ion_drive(
+        resonant_frequency,
+        toroidal_mode=2,
+        transit_harmonic=1,
+        population=population,
+    )
+    off_resonant_drive = reduced_fast_ion_drive(
+        off_resonant_frequency,
+        toroidal_mode=2,
+        transit_harmonic=1,
+        population=population,
+    )
+    metric = 0.0 if float(resonant_drive) > float(off_resonant_drive) > 0.0 else 1.0
+    return _pass_fail(
+        gate_id,
+        metric,
+        tolerance,
+        "reduced fast-ion drive peaks at the transit/precession resonance",
+    )
+
+
 def _gate_landreman_paul_adapter_smoke() -> GateResult:
     gate_id = "landreman_paul_adapter_smoke"
     tolerance = 0.0
@@ -433,6 +525,50 @@ def registered_validation_gates() -> tuple[ValidationGate, ...]:
             command="python -m pytest tests/test_validation_registry.py",
             tags=("analytic", "continuum", "convergence"),
             _runner=_gate_analytic_radial_integral_convergence,
+        ),
+        ValidationGate(
+            gate_id="global_mode_constant_profile",
+            title="Global radial mode constant-profile spectrum",
+            layer="global-eigenmode",
+            quantity="relative omega^2 error and residual",
+            tolerance=1.0e-5,
+            citation="Dirichlet finite-difference Sturm-Liouville validation for the radial shear-Alfven envelope operator",
+            command="python -m pytest tests/test_global_modes.py tests/test_validation_registry.py",
+            tags=("global", "eigenmode", "analytic"),
+            _runner=_gate_global_mode_constant_profile,
+        ),
+        ValidationGate(
+            gate_id="global_mode_density_gradient",
+            title="Global radial mode density sensitivity",
+            layer="differentiability",
+            quantity="relative autodiff/analytic gradient error",
+            tolerance=3.0e-3,
+            citation="JAX autodiff consistency check for the radial shear-Alfven generalized eigenproblem rho^(-1/2) scaling",
+            command="python -m pytest tests/test_global_modes.py tests/test_validation_registry.py",
+            tags=("global", "eigenmode", "autodiff"),
+            _runner=_gate_global_mode_density_gradient,
+        ),
+        ValidationGate(
+            gate_id="analytic_tae_gap_center",
+            title="Analytic TAE gap-center crossing",
+            layer="gap-physics",
+            quantity="relative rotational-transform crossing error",
+            tolerance=2.0e-2,
+            citation="Large-aspect-ratio TAE m/m+1 crossing condition iota=2n/(2m+1)",
+            command="python -m pytest tests/test_gap_models.py tests/test_validation_registry.py",
+            tags=("gap", "tae", "analytic"),
+            _runner=_gate_analytic_tae_gap_center,
+        ),
+        ValidationGate(
+            gate_id="fast_ion_resonance_peak",
+            title="Reduced fast-ion resonance peak",
+            layer="fast-ion",
+            quantity="resonant drive ordering",
+            tolerance=1.0e-12,
+            citation="Energetic-particle wave-particle resonance condition omega=n omega_phi + l omega_theta",
+            command="python -m pytest tests/test_fast_ions.py tests/test_validation_registry.py",
+            tags=("fast-ion", "resonance", "analytic"),
+            _runner=_gate_fast_ion_resonance_peak,
         ),
         ValidationGate(
             gate_id="landreman_paul_adapter_smoke",

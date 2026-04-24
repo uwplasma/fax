@@ -31,6 +31,10 @@ def test_core_validation_gates_pass():
         "metric_angular_convergence",
         "metric_radial_convergence",
         "analytic_radial_integral_convergence",
+        "global_mode_constant_profile",
+        "global_mode_density_gradient",
+        "analytic_tae_gap_center",
+        "fast_ion_resonance_peak",
     ]
 
     for gate_id in gate_ids:

@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from .config import FaxConfig, load_config
 from .equilibrium import EquilibriumGeometry
+from .fast_ions import FastIonPopulation
+from .global_modes import RadialEigenmodeProblem, RadialEigenmodeResult
 from .metric import MetricGeometry
 from .modes import ModeFamily
 from .plotting import (
@@ -35,8 +37,11 @@ __all__ = [
     "ConvergenceArtifacts",
     "EquilibriumGeometry",
     "FaxConfig",
+    "FastIonPopulation",
     "MetricGeometry",
     "ModeFamily",
+    "RadialEigenmodeProblem",
+    "RadialEigenmodeResult",
     "ReferenceCase",
     "RunSummary",
     "ValidationRunSummary",

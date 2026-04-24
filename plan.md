@@ -1038,6 +1038,30 @@ Needed docs:
   - `examples/research/inverse_iota_shift.py`
 - Added `docs/research_examples.rst`, release documentation, `CHANGELOG.md`, `MANIFEST.in`, and GitHub release notes for `v0.0.1`.
 - Set package metadata and `fax.__version__` to `0.0.1` for the first release candidate.
+- Added the first pass on the remaining open physics lanes:
+  - `fax.global_modes`: a one-dimensional radial shear-Alfven generalized eigenproblem with Dirichlet radial boundaries, exact constant-profile finite-difference spectrum, residual diagnostics, JIT tests, and density-gradient autodiff tests.
+  - `fax.gap_models`: analytic TAE/EAE/HAE crossing and width estimates based on coupled `m`/`m + Delta m` sidebands.
+  - `fax.fast_ions`: reduced energetic-particle transit/precession resonance diagnostics and Lorentzian drive ranking.
+  - `fax.optimization`: smooth radial-mode avoidance objective for `[log density scale, iota shift, log field scale]`.
+  - `fax.boozer`: optional `boozmn` reader and `booz_xform_jax` runner, plus normalized non-axisymmetric Boozer spectral-energy diagnostics.
+- Added reviewer-facing gates for the reduced layers:
+  - `global_mode_constant_profile`
+  - `global_mode_density_gradient`
+  - `analytic_tae_gap_center`
+  - `fast_ion_resonance_peak`
+- Added tests for the Boozer adapter, reduced global modes, analytic gap models, reduced fast-ion diagnostics, differentiable optimization objective, and the expanded validation registry.
+- Added `examples/research/global_gap_fastion_screen.py`, which prints a reproducible JSON packet with radial eigensolve residuals, gap estimates, fast-ion resonance peak, and the radial-mode objective gradient.
+- Extended generated documentation figures with `global_gap_fastion_dashboard.*`, covering the exact radial spectrum gate, radial eigenfunctions, analytic gap centers, reduced fast-ion resonance scan, and autodiff objective gradient.
+- Updated README and docs to describe the implemented equations and to state explicitly that these are reduced/analytic validation layers, not yet full STELLGAP/AE3D/CAS3D/FAR3D-equivalent 3-D validation.
+- Verified this milestone locally with:
+  - `python -m ruff check .`
+  - `python -m mypy src/fax`
+  - `python -m pytest -q` (78 passed)
+  - `python tools/generate_validation_figures.py && python tools/qa_figures.py`
+  - direct `run_validation_suite()` check with all 15 registered gates passing on this machine
+  - `sphinx-build -W -b html docs docs/_build/html`
+  - `python -m build`
+  - `python -m twine check dist/*`
 
 ### Local Testing Policy Until GitHub Actions Resume
 
@@ -1085,10 +1109,12 @@ Sources:
 
 ### Next Recommended Step
 
-Implement the first metric-aware stellarator continuum milestone:
+Turn the reduced physics layers into publication-grade stellarator validation:
 
-1. Publish the staged `v0.0.1` GitHub release when GitHub Actions are available so the PyPI trusted-publishing workflow can complete.
-2. Add an optional Boozer path through `booz_xform_jax` for models that need straight-field-line harmonics, while keeping analytic and VMEC-coordinate fixtures runnable without Boozer.
-3. Extend `fax benchmark` with memory/process telemetry and separate compile/warm kernel timing once matrix-free kernels are introduced.
-4. Start the first literature/cross-code comparison gate: STELLGAP-style continuum gaps for a documented quasi-symmetric or axisymmetric reference case.
-5. Begin global radial/eigenmode operator scaffolding with analytic TAE-gap fixtures before fast-ion drive is coupled.
+1. Build the Boozer metric/operator assembly layer from `boozmn` harmonics and validate straight-field-line identities, harmonic normalization, and convergence against `booz_xform_jax`.
+2. Start the first cross-code/literature comparison gate: STELLGAP-style continuum/gap data for a documented quasi-symmetric or axisymmetric reference case, then extend to AE3D/CAS3D/FAR3D where data are available.
+3. Replace the scalar radial coupling in `fax.global_modes` with metric/Boozer-derived radial energy terms and boundary-condition variants.
+4. Add perturbative fast-ion drive/damping terms tied to validated eigenfunctions, with sign and resonance gates before FAR3D/CAS3D-K comparisons.
+5. Connect `fax.optimization` to real `vmec_jax` differentiable design variables and add finite-difference/adjoint consistency plots for VMEC-to-stability gradients.
+6. Publish the staged `v0.0.1` GitHub release when GitHub Actions are available so the PyPI trusted-publishing workflow can complete.
+7. Extend `fax benchmark` with memory/process telemetry and separate compile/warm kernel timing once matrix-free kernels are introduced.

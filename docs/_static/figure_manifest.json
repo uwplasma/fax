@@ -109,6 +109,62 @@
       ]
     },
     {
+      "id": "global_mode_constant_profile",
+      "title": "Global radial mode constant-profile spectrum",
+      "layer": "global-eigenmode",
+      "quantity": "relative omega^2 error and residual",
+      "tolerance": 1e-05,
+      "citation": "Dirichlet finite-difference Sturm-Liouville validation for the radial shear-Alfven envelope operator",
+      "command": "python -m pytest tests/test_global_modes.py tests/test_validation_registry.py",
+      "tags": [
+        "global",
+        "eigenmode",
+        "analytic"
+      ]
+    },
+    {
+      "id": "global_mode_density_gradient",
+      "title": "Global radial mode density sensitivity",
+      "layer": "differentiability",
+      "quantity": "relative autodiff/analytic gradient error",
+      "tolerance": 0.003,
+      "citation": "JAX autodiff consistency check for the radial shear-Alfven generalized eigenproblem rho^(-1/2) scaling",
+      "command": "python -m pytest tests/test_global_modes.py tests/test_validation_registry.py",
+      "tags": [
+        "global",
+        "eigenmode",
+        "autodiff"
+      ]
+    },
+    {
+      "id": "analytic_tae_gap_center",
+      "title": "Analytic TAE gap-center crossing",
+      "layer": "gap-physics",
+      "quantity": "relative rotational-transform crossing error",
+      "tolerance": 0.02,
+      "citation": "Large-aspect-ratio TAE m/m+1 crossing condition iota=2n/(2m+1)",
+      "command": "python -m pytest tests/test_gap_models.py tests/test_validation_registry.py",
+      "tags": [
+        "gap",
+        "tae",
+        "analytic"
+      ]
+    },
+    {
+      "id": "fast_ion_resonance_peak",
+      "title": "Reduced fast-ion resonance peak",
+      "layer": "fast-ion",
+      "quantity": "resonant drive ordering",
+      "tolerance": 1e-12,
+      "citation": "Energetic-particle wave-particle resonance condition omega=n omega_phi + l omega_theta",
+      "command": "python -m pytest tests/test_fast_ions.py tests/test_validation_registry.py",
+      "tags": [
+        "fast-ion",
+        "resonance",
+        "analytic"
+      ]
+    },
+    {
       "id": "landreman_paul_adapter_smoke",
       "title": "Landreman-Paul QA VMEC adapter smoke test",
       "layer": "adapter",
@@ -210,6 +266,18 @@
     },
     {
       "file": "gap_sensitivity_dashboard.png",
+      "format": "png",
+      "status": "smoke-test",
+      "claim": "Development figure generated from analytic/local continuum formulas; not a full 3-D stellarator Alfvén-continuum validation."
+    },
+    {
+      "file": "global_gap_fastion_dashboard.svg",
+      "format": "svg",
+      "status": "smoke-test",
+      "claim": "Development figure generated from analytic/local continuum formulas; not a full 3-D stellarator Alfvén-continuum validation."
+    },
+    {
+      "file": "global_gap_fastion_dashboard.png",
       "format": "png",
       "status": "smoke-test",
       "claim": "Development figure generated from analytic/local continuum formulas; not a full 3-D stellarator Alfvén-continuum validation."

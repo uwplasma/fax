@@ -28,6 +28,21 @@ API
 .. automodule:: fax.gaps
    :members:
 
+.. automodule:: fax.global_modes
+   :members:
+
+.. automodule:: fax.gap_models
+   :members:
+
+.. automodule:: fax.fast_ions
+   :members:
+
+.. automodule:: fax.optimization
+   :members:
+
+.. automodule:: fax.boozer
+   :members:
+
 .. automodule:: fax.plotting
    :members:
 

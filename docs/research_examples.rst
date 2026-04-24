@@ -77,6 +77,20 @@ rotational-transform shift to move a selected analytic continuum diagnostic
 toward a target frequency. It is deliberately simple so that users can inspect
 the objective, gradients, and iteration history.
 
+Reduced Global/Gaps/Fast Ions
+-----------------------------
+
+Run:
+
+.. code-block:: bash
+
+   python examples/research/global_gap_fastion_screen.py
+
+This prints a JSON packet containing a constant-profile radial spectrum gate,
+the lowest reduced radial eigenfrequency for an analytic equilibrium, TAE/EAE/
+HAE gap estimates, a reduced fast-ion resonance peak, and the gradient of the
+radial-mode avoidance objective.
+
 Regenerating Documentation Figures
 ----------------------------------
 

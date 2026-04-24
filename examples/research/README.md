@@ -10,6 +10,7 @@ python -m pip install -e ".[dev]"
 python examples/research/validation_packet.py
 python examples/research/density_sensitivity.py
 python examples/research/inverse_iota_shift.py
+python examples/research/global_gap_fastion_screen.py
 ```
 
 The examples intentionally use the analytic and Landreman-Paul low-resolution

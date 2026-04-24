@@ -32,6 +32,11 @@ Inverse design
    ``examples/research/inverse_iota_shift.py`` optimizes a bounded scalar
    rotational-transform shift in a transparent analytic fixture.
 
+Reduced global/gap/fast-ion screen
+   ``examples/research/global_gap_fastion_screen.py`` combines the radial
+   eigenmode gate, analytic gap estimates, reduced fast-ion resonance screen,
+   and radial-mode avoidance gradients.
+
 Planned demonstrations include:
 
 Runtime

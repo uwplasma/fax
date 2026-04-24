@@ -40,6 +40,15 @@ tags, and command. The current gates are:
   branches converge under radial-grid refinement.
 * ``analytic_radial_integral_convergence``: checks radial quadrature convergence
   for a smooth analytic continuum branch.
+* ``global_mode_constant_profile``: checks the reduced radial eigenmode
+  finite-difference spectrum against the exact constant-profile spectrum and
+  eigenpair residuals.
+* ``global_mode_density_gradient``: checks JAX autodiff through the radial
+  generalized eigenproblem against the analytic ``rho^(-1/2)`` scaling.
+* ``analytic_tae_gap_center``: checks the analytic TAE crossing condition
+  ``iota=2n/(2m+1)``.
+* ``fast_ion_resonance_peak``: checks that the reduced fast-ion drive peaks at
+  the transit/precession resonance.
 * ``landreman_paul_adapter_smoke``: checks the Landreman-Paul QA VMEC ``wout``
   profile and metric adapters when local data are available.
 * ``landreman_paul_continuum_finite``: checks that the Landreman-Paul profile
@@ -125,6 +134,14 @@ yet full 3-D Alfvén-continuum validation.
    Prototype dashboard combining a mode-family branch map, nearest-branch
    separation, and autodiff sensitivities. This is a figure-design and
    differentiability smoke test.
+
+.. figure:: _static/global_gap_fastion_dashboard.svg
+   :alt: Reduced global-mode, gap, fast-ion, and optimization validation dashboard.
+
+   Reduced global radial spectrum, radial eigenfunctions, analytic gap-center
+   estimates, fast-ion resonance screen, and optimization-gradient smoke test.
+   This exercises the new end-to-end differentiable reduced path without
+   claiming full 3-D stellarator eigenmode validation.
 
 .. figure:: _static/landreman_paul_convergence_dashboard.svg
    :alt: LandremanPaul2021 QA radial, angular, and Fourier convergence dashboard.

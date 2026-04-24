@@ -59,29 +59,103 @@ analysis:
 Global Modes
 ------------
 
-The reduced global eigenmode problem is planned as a generalized eigenproblem,
+The first implemented global layer is a one-dimensional radial envelope
+problem. It is deliberately narrower than AE3D/CAS3D/FAR3D-class 3-D
+calculations, but it gives FAX a validated radial eigenvalue path above
+surface-by-surface continuum matrices:
 
 .. math::
 
-   K(q) x = \omega^2 M(q) x,
+   K_r(q) \xi = \omega^2 M_r(q) \xi.
 
 where ``q`` denotes equilibrium, profile, and numerical parameters. ``M`` must
 be positive definite for accepted Hermitian validation cases, and ``K`` must be
 Hermitian to numerical tolerance unless the selected model explicitly includes
-non-Hermitian physics.
+non-Hermitian physics. The current radial fixture uses Dirichlet boundary
+conditions at the inner and outer radial endpoints. Its constant-coefficient
+finite-difference limit has an exact discrete spectrum,
+
+.. math::
+
+   \omega_j^2 = \omega_A^2 +
+   \frac{4 c_r}{\Delta s^2}
+   \sin^2\left(\frac{j\pi}{2(N+1)}\right),
+
+which is used as a reviewer-facing eigenvalue and residual gate.
+
+Gap Estimates
+-------------
+
+Analytic gap screens use the crossing of coupled sidebands ``m`` and
+``m + Delta m``:
+
+.. math::
+
+   n - m\iota = -\left[n - (m+\Delta m)\iota\right],
+   \qquad
+   \iota_{\rm gap} = \frac{2n}{2m+\Delta m}.
+
+The implemented TAE/EAE/HAE helpers report the nearest radial crossing,
+center frequency, and a configurable fractional width. These are analytic
+screening gates and should be replaced by Boozer/metric coupling integrals
+before making cross-code stellarator gap-width claims.
 
 Fast-Ion Drive
 --------------
 
-The first fast-ion implementation should be perturbative with respect to a
-validated eigenfunction:
+The first fast-ion implementation is a reduced resonance diagnostic. It uses
+the transit/precession resonance condition
 
 .. math::
 
-   \gamma_f \approx -\frac{\operatorname{Im}\delta W_f}{2 \omega W_{\rm MHD}}.
+   f_{\rm mode} - n f_\phi - \ell f_\theta = 0
 
-Resonance denominators and signs must be verified first in analytic transit,
-bounce, and precession limits before using full stellarator geometry.
+and a Lorentzian weight to rank candidate drive windows. Negative pressure
+gradient gives positive drive in the current convention:
+
+.. math::
+
+   D_f =
+   -\alpha_f \frac{\partial p_f}{\partial s}
+   \frac{1}{1 + \left[(f_{\rm mode}-n f_\phi-\ell f_\theta)/\Delta f\right]^2}.
+
+This is not yet a perturbative kinetic growth rate. The planned publication
+path is still
+
+.. math::
+
+   \gamma_f \approx -\frac{\operatorname{Im}\delta W_f}{2 \omega W_{\rm MHD}},
+
+validated against FAR3D/CAS3D-K-style limits after eigenfunctions and
+energetic-particle moments are added.
+
+Optimization Objective
+----------------------
+
+The current differentiable optimization screen penalizes radial eigenmode
+frequencies inside a user-selected exclusion window:
+
+.. math::
+
+   J(q) =
+   \frac{1}{N}\sum_j
+   \sigma\left(\frac{f_j-f_{\min}}{\Delta f}\right)
+   \sigma\left(\frac{f_{\max}-f_j}{\Delta f}\right)
+   + \lambda \|p\|^2.
+
+Here ``p = [log density scale, iota shift, log field scale]`` in the initial
+profile fixture. This tests the end-to-end differentiable pattern that will be
+connected to VMEC/vmec_jax design variables.
+
+Boozer Path
+-----------
+
+``fax.boozer`` can read ``boozmn`` files and can call local
+``booz_xform_jax`` from a VMEC ``wout`` when available. The implemented
+diagnostic computes normalized non-axisymmetric Boozer ``|B|`` spectral energy
+and dominant modes. A dedicated Boozer metric/operator assembly is still an
+open validation lane before Boozer spectra become the default stellarator
+continuum path.
 
 Equation Acceptance
 -------------------
