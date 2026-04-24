@@ -165,6 +165,14 @@ class ContinuumMatrices:
     mass: jax.Array
 
 
+@dataclass(frozen=True)
+class GeneralizedEigensystem:
+    """Eigenpairs for ``K x = lambda M x``."""
+
+    eigenvalues: jax.Array
+    eigenvectors: jax.Array
+
+
 def periodic_grid(count: int, *, period: float = 2.0 * np.pi) -> jax.Array:
     """Return a periodic grid without duplicating the endpoint."""
     if int(count) < 1:
@@ -381,8 +389,8 @@ def diagonal_continuum_frequencies_hz(metric: MetricGeometry, harmonics: Any) ->
     return jnp.sqrt(jnp.maximum(diagonal_omega2, 0.0)) / (2.0 * jnp.pi)
 
 
-def generalized_hermitian_eigenvalues(stiffness: Any, mass: Any, *, mass_floor: float = 1.0e-30) -> jax.Array:
-    """Return eigenvalues of ``K x = lambda M x`` for Hermitian batches."""
+def generalized_hermitian_eigensystem(stiffness: Any, mass: Any, *, mass_floor: float = 1.0e-30) -> GeneralizedEigensystem:
+    """Return eigenpairs of ``K x = lambda M x`` for Hermitian matrices."""
     stiffness_array = jnp.asarray(stiffness)
     mass_array = jnp.asarray(mass)
     if stiffness_array.shape != mass_array.shape:
@@ -391,17 +399,49 @@ def generalized_hermitian_eigenvalues(stiffness: Any, mass: Any, *, mass_floor: 
         raise ValueError("stiffness and mass must be rank-2 matrices or rank-3 batches")
     eye = jnp.eye(mass_array.shape[-1], dtype=mass_array.dtype)
 
-    def _solve_one(stiffness_one: jax.Array, mass_one: jax.Array) -> jax.Array:
+    def _solve_one(stiffness_one: jax.Array, mass_one: jax.Array) -> tuple[jax.Array, jax.Array]:
         regularized_mass = mass_one + float(mass_floor) * eye
         factor = jnp.linalg.cholesky(regularized_mass)
         inverse_factor = jnp.linalg.inv(factor)
         standard = inverse_factor @ stiffness_one @ jnp.conjugate(inverse_factor.T)
         standard = 0.5 * (standard + jnp.conjugate(standard.T))
-        return jnp.linalg.eigvalsh(standard)
+        eigenvalues, standard_eigenvectors = jnp.linalg.eigh(standard)
+        eigenvectors = jnp.linalg.solve(jnp.conjugate(factor.T), standard_eigenvectors)
+        return eigenvalues, eigenvectors
 
     if stiffness_array.ndim == 2:
-        return _solve_one(stiffness_array, mass_array)
-    return jax.vmap(_solve_one)(stiffness_array, mass_array)
+        eigenvalues, eigenvectors = _solve_one(stiffness_array, mass_array)
+        return GeneralizedEigensystem(eigenvalues=eigenvalues, eigenvectors=eigenvectors)
+    eigenvalues, eigenvectors = jax.vmap(_solve_one)(stiffness_array, mass_array)
+    return GeneralizedEigensystem(eigenvalues=eigenvalues, eigenvectors=eigenvectors)
+
+
+def generalized_hermitian_eigenvalues(stiffness: Any, mass: Any, *, mass_floor: float = 1.0e-30) -> jax.Array:
+    """Return eigenvalues of ``K x = lambda M x`` for Hermitian matrices."""
+    return generalized_hermitian_eigensystem(stiffness, mass, mass_floor=mass_floor).eigenvalues
+
+
+def generalized_eigen_residual_norms(stiffness: Any, mass: Any, eigensystem: GeneralizedEigensystem, *, floor: float = 1.0e-30) -> jax.Array:
+    """Return relative residual norms for ``Kx = lambda Mx`` eigenpairs."""
+    stiffness_array = jnp.asarray(stiffness)
+    mass_array = jnp.asarray(mass)
+    eigenvalues = jnp.asarray(eigensystem.eigenvalues)
+    eigenvectors = jnp.asarray(eigensystem.eigenvectors)
+
+    def _residual_one(stiffness_one: jax.Array, mass_one: jax.Array, values: jax.Array, vectors: jax.Array) -> jax.Array:
+        stiffness_vectors = stiffness_one @ vectors
+        mass_vectors = mass_one @ vectors
+        residual = stiffness_vectors - mass_vectors * values[None, :]
+        numerator = jnp.linalg.norm(residual, axis=0)
+        denominator = jnp.maximum(
+            jnp.linalg.norm(stiffness_vectors, axis=0) + jnp.abs(values) * jnp.linalg.norm(mass_vectors, axis=0),
+            float(floor),
+        )
+        return numerator / denominator
+
+    if stiffness_array.ndim == 2:
+        return _residual_one(stiffness_array, mass_array, eigenvalues, eigenvectors)
+    return jax.vmap(_residual_one)(stiffness_array, mass_array, eigenvalues, eigenvectors)
 
 
 def metric_continuum_frequencies_hz(metric: MetricGeometry, harmonics: Any, *, mass_floor: float = 1.0e-30) -> jax.Array:

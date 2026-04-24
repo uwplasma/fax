@@ -30,8 +30,12 @@ tags, and command. The current gates are:
   limit.
 * ``metric_matrix_hermitian``: checks Hermiticity of the local generalized
   continuum stiffness and mass matrices.
+* ``metric_eigensolve_residual``: checks dense generalized Hermitian
+  eigenvectors through ``Kx = lambda Mx`` residual norms.
 * ``density_scale_gradient``: checks JAX autodiff against the analytic
   ``rho^(-1/2)`` density scaling.
+* ``metric_angular_convergence``: checks that the analytic metric fixture is
+  insensitive to angular-grid refinement.
 * ``landreman_paul_adapter_smoke``: checks the Landreman-Paul QA VMEC ``wout``
   profile and metric adapters when local data are available.
 

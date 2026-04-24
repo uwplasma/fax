@@ -11,7 +11,7 @@ def test_validation_registry_has_unique_gate_ids_and_metadata():
     gates = registered_validation_gates()
     gate_ids = [gate.gate_id for gate in gates]
 
-    assert len(gates) >= 5
+    assert len(gates) >= 7
     assert len(gate_ids) == len(set(gate_ids))
     for gate in gates:
         assert gate.title
@@ -26,7 +26,9 @@ def test_core_validation_gates_pass():
         "analytic_cylinder_frequency",
         "metric_matches_profile_limit",
         "metric_matrix_hermitian",
+        "metric_eigensolve_residual",
         "density_scale_gradient",
+        "metric_angular_convergence",
     ]
 
     for gate_id in gate_ids:

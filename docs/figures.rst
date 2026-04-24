@@ -7,9 +7,21 @@ The current generator is:
 .. code-block:: bash
 
    python tools/generate_validation_figures.py
+   python tools/qa_figures.py
 
 Current Figures
 ---------------
+
+.. figure:: _static/workflow_io_diagram.svg
+   :alt: FAX input, adapter, operator, and output workflow.
+
+   New-user workflow diagram showing TOML/equilibrium/profile inputs, adapters,
+   current operators, and output artifacts.
+
+.. figure:: _static/equations_overview.svg
+   :alt: Equations currently implemented in FAX.
+
+   Implemented local-continuum and metric-matrix equations.
 
 .. figure:: _static/analytic_continuum_scaling.svg
    :alt: Analytic large-aspect-ratio continuum smoke-test branches.
@@ -28,6 +40,25 @@ Current Figures
 
    Prototype dashboard for README/docs: mode-family branches, nearest-branch
    separation, and autodiff sensitivities.
+
+.. figure:: _static/metric_residual_convergence.svg
+   :alt: Metric residual and angular-grid convergence checks.
+
+   Metric-matrix scaffold residual and angular-grid checks. The residual curve
+   verifies the dense generalized Hermitian eigensolver on a nonresonant
+   analytic fixture.
+
+.. figure:: _static/validation_gate_summary.svg
+   :alt: Registered validation-gate summary.
+
+   Current scaffold validation gates shown as metric/tolerance ratios.
+
+Figure QA
+---------
+
+``tools/qa_figures.py`` parses SVG files and inspects rendered PNG files for
+reasonable dimensions and non-white pixel coverage. This catches blank README
+figures and malformed generated artifacts before commits.
 
 Planned Publication Figures
 ---------------------------

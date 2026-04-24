@@ -42,6 +42,20 @@ Fourier coefficients. This is an operator-plumbing and symmetry milestone; the
 reviewer-facing stellarator validation still requires comparison with
 STELLGAP/AE3D-style reference calculations.
 
+Literature anchors for these conventions include Chen & Zonca's review of
+Alfven waves and energetic particles, STELLGAP-style stellarator continuum/gap
+calculations, the Landreman-Paul precise-quasisymmetry configuration used as
+the first VMEC-backed target, and recent quasisymmetric-stellarator continuum
+analysis:
+
+* Chen & Zonca, Rev. Mod. Phys. 88, 015008 (2016),
+  https://doi.org/10.1103/RevModPhys.88.015008
+* STELLGAP software record, https://www.osti.gov/biblio/code-4633
+* Landreman & Paul, Phys. Rev. Lett. 128, 035001 (2022),
+  https://doi.org/10.1103/PhysRevLett.128.035001
+* Paul et al., J. Plasma Phys. 91, E101 (2025),
+  https://doi.org/10.1017/S0022377825100524
+
 Global Modes
 ------------
 

@@ -9,6 +9,8 @@ from fax.continuum import continuum_branch_matrix
 from fax.equilibrium import analytic_circular_tokamak, analytic_cylinder
 from fax.metric import (
     diagonal_continuum_frequencies_hz,
+    generalized_eigen_residual_norms,
+    generalized_hermitian_eigensystem,
     generalized_hermitian_eigenvalues,
     metric_continuum_frequencies_hz,
     metric_continuum_matrices,
@@ -68,6 +70,19 @@ def test_generalized_eigenvalues_satisfy_known_diagonal_problem():
         np.asarray([1.0, 4.0]),
         rtol=1.0e-6,
     )
+
+
+def test_generalized_eigenpair_residuals_are_small():
+    geometry = analytic_circular_tokamak(radial_points=10, iota_axis=0.22, iota_edge=0.62)
+    metric_geometry = metric_from_equilibrium(geometry, theta_points=32, zeta_points=32)
+    harmonics = jnp.asarray([[1, 0], [2, 2], [3, 3]], dtype=float)
+    matrices = metric_continuum_matrices(metric_geometry, harmonics)
+
+    eigensystem = generalized_hermitian_eigensystem(matrices.stiffness, matrices.mass)
+    residuals = generalized_eigen_residual_norms(matrices.stiffness, matrices.mass, eigensystem)
+
+    assert residuals.shape == (10, 3)
+    assert float(jnp.max(residuals)) < 1.0e-5
 
 
 def test_metric_density_scale_gradient_matches_finite_difference():

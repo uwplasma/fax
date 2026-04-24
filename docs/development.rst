@@ -18,6 +18,7 @@ Regenerate validation figures:
 .. code-block:: bash
 
    python tools/generate_validation_figures.py
+   python tools/qa_figures.py
 
 Inspect registered validation gates:
 
@@ -37,6 +38,7 @@ Local quality gate while GitHub Actions is unavailable:
    python -m pytest
    sphinx-build -W -b html docs docs/_build/html
    python tools/generate_validation_figures.py
+   python tools/qa_figures.py
    python -m build
 
 Progress Output

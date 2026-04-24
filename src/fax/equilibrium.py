@@ -217,6 +217,34 @@ def _axisymmetric_b00(dataset: Any, ns: int) -> np.ndarray:
     return profile
 
 
+def _representative_radii(dataset: Any, *, major_radius: float, minor_radius: float) -> tuple[float, float]:
+    """Return robust representative radii for VMEC files with zero scalar radii."""
+    if major_radius > 0.0 and minor_radius > 0.0:
+        return major_radius, minor_radius
+    if "rmnc" not in dataset.variables or "xm" not in dataset.variables or "xn" not in dataset.variables:
+        safe_major = major_radius if major_radius > 0.0 else 1.0
+        safe_minor = minor_radius if minor_radius > 0.0 else 0.1 * safe_major
+        return safe_major, safe_minor
+
+    rmnc = np.asarray(dataset.variables["rmnc"][:], dtype=float)
+    xm = np.asarray(dataset.variables["xm"][:], dtype=float)
+    xn = np.asarray(dataset.variables["xn"][:], dtype=float)
+    zero_indices = np.flatnonzero((xm == 0.0) & (xn == 0.0))
+    if zero_indices.size > 0:
+        r00 = np.abs(rmnc[:, int(zero_indices[0])])
+        positive = r00[r00 > 0.0]
+        if major_radius <= 0.0 and positive.size > 0:
+            major_radius = float(positive[-1])
+
+    if minor_radius <= 0.0:
+        non_axisymmetric = np.flatnonzero(xm > 0.0)
+        edge_amplitudes = np.abs(rmnc[-1, non_axisymmetric]) if non_axisymmetric.size else np.asarray([])
+        estimate = float(np.sqrt(np.sum(edge_amplitudes**2))) if edge_amplitudes.size else 0.0
+        minor_radius = estimate if estimate > 0.0 else 0.1 * max(major_radius, 1.0)
+
+    return float(major_radius), float(minor_radius)
+
+
 def from_vmec_wout(
     path: str | Path,
     *,
@@ -242,6 +270,11 @@ def from_vmec_wout(
         magnetic_field = _axisymmetric_b00(dataset, ns)
         major_radius = float(_read_scalar(dataset, "Rmajor_p", 1.0))
         minor_radius = float(_read_scalar(dataset, "Aminor_p", 1.0))
+        major_radius, minor_radius = _representative_radii(
+            dataset,
+            major_radius=major_radius,
+            minor_radius=minor_radius,
+        )
 
     metadata = {
         "source": "vmec_wout",

@@ -13,9 +13,16 @@ import numpy as np
 from fax.continuum import continuum_branch_matrix
 from fax.equilibrium import analytic_circular_tokamak, from_vmec_wout
 from fax.gaps import minimum_gap_summary, sorted_branch_gaps
+from fax.metric import (
+    diagonal_continuum_frequencies_hz,
+    generalized_eigen_residual_norms,
+    generalized_hermitian_eigensystem,
+    metric_continuum_matrices,
+    metric_from_equilibrium,
+)
 from fax.modes import stellarator_mode_family
 from fax.reference_cases import landreman_paul_qa_lowres
-from fax.validation import registered_validation_gates
+from fax.validation import registered_validation_gates, run_validation_suite
 
 
 def _setup_matplotlib():
@@ -33,6 +40,7 @@ def _setup_matplotlib():
             "font.size": 9,
             "legend.frameon": False,
             "figure.dpi": 150,
+            "savefig.dpi": 180,
         }
     )
     return plt
@@ -42,15 +50,22 @@ def _harmonic_label(m: int, n: int) -> str:
     return f"m={m}, n={n}"
 
 
-def _save_svg(fig, path: Path) -> Path:
-    """Save an SVG and normalize trailing whitespace for clean diffs."""
-    fig.savefig(path)
+def _normalize_svg(path: Path) -> None:
     lines = path.read_text(encoding="utf-8").splitlines()
     path.write_text("\n".join(line.rstrip() for line in lines) + "\n", encoding="utf-8")
-    return path
 
 
-def generate_cylinder_scaling(output_dir: Path) -> Path:
+def _save_figure(fig, output_dir: Path, stem: str) -> list[Path]:
+    """Save SVG and PNG variants for docs and README rendering."""
+    svg_path = output_dir / f"{stem}.svg"
+    png_path = output_dir / f"{stem}.png"
+    fig.savefig(svg_path)
+    _normalize_svg(svg_path)
+    fig.savefig(png_path, facecolor="white")
+    return [svg_path, png_path]
+
+
+def generate_cylinder_scaling(output_dir: Path) -> list[Path]:
     """Generate an analytic continuum scaling figure."""
     plt = _setup_matplotlib()
     geometry = analytic_circular_tokamak(radial_points=220, iota_axis=0.22, iota_edge=0.82)
@@ -68,13 +83,12 @@ def generate_cylinder_scaling(output_dir: Path) -> Path:
     ax.set_ylim(bottom=0.0)
     ax.legend(ncol=2, loc="upper center")
 
-    path = output_dir / "analytic_continuum_scaling.svg"
-    _save_svg(fig, path)
+    paths = _save_figure(fig, output_dir, "analytic_continuum_scaling")
     plt.close(fig)
-    return path
+    return paths
 
 
-def generate_landreman_reference(output_dir: Path) -> Path:
+def generate_landreman_reference(output_dir: Path) -> list[Path]:
     """Generate the first Landreman-Paul QA reference-profile figure."""
     plt = _setup_matplotlib()
     case = landreman_paul_qa_lowres()
@@ -110,13 +124,12 @@ def generate_landreman_reference(output_dir: Path) -> Path:
     ax.set_ylim(bottom=0.0)
     ax.legend(fontsize=8)
 
-    path = output_dir / "landreman_paul_qa_lowres_profiles.svg"
-    _save_svg(fig, path)
+    paths = _save_figure(fig, output_dir, "landreman_paul_qa_lowres_profiles")
     plt.close(fig)
-    return path
+    return paths
 
 
-def generate_gap_sensitivity_dashboard(output_dir: Path) -> Path:
+def generate_gap_sensitivity_dashboard(output_dir: Path) -> list[Path]:
     """Generate a mode-family/gap/sensitivity dashboard figure."""
     plt = _setup_matplotlib()
     case = landreman_paul_qa_lowres()
@@ -189,10 +202,152 @@ def generate_gap_sensitivity_dashboard(output_dir: Path) -> Path:
     ax.set_ylabel("d mean f / d parameter [kHz]")
     ax.tick_params(axis="x", rotation=28)
 
-    path = output_dir / "gap_sensitivity_dashboard.svg"
-    _save_svg(fig, path)
+    paths = _save_figure(fig, output_dir, "gap_sensitivity_dashboard")
     plt.close(fig)
-    return path
+    return paths
+
+
+def generate_workflow_diagram(output_dir: Path) -> list[Path]:
+    """Generate a newcomer-facing input/operator/output workflow diagram."""
+    plt = _setup_matplotlib()
+    fig, ax = plt.subplots(figsize=(9.4, 4.2), constrained_layout=True)
+    ax.axis("off")
+
+    boxes = [
+        ("Inputs", "TOML case\nVMEC wout / vmec_jax\nprofiles\nmode family", 0.04, 0.55, "#e8f1fb"),
+        ("Adapters", "EquilibriumGeometry\nMetricGeometry\nBoozer path planned", 0.28, 0.55, "#e9f7ef"),
+        ("Operators", "continuum branches\nK(s), M(s)\nvalidation gates", 0.52, 0.55, "#fff4df"),
+        ("Outputs", "frequencies\nmode labels\ngaps, sensitivities\nfigures, metrics", 0.76, 0.55, "#f4ecfb"),
+    ]
+    for title, body, x, y, color in boxes:
+        patch = plt.Rectangle((x, y - 0.22), 0.19, 0.38, facecolor=color, edgecolor="#333333", linewidth=1.0)
+        ax.add_patch(patch)
+        ax.text(x + 0.095, y + 0.095, title, ha="center", va="center", weight="bold", fontsize=11)
+        ax.text(x + 0.095, y - 0.045, body, ha="center", va="center", fontsize=9, linespacing=1.35)
+    for x0 in (0.23, 0.47, 0.71):
+        ax.annotate("", xy=(x0 + 0.035, 0.55), xytext=(x0, 0.55), arrowprops={"arrowstyle": "->", "lw": 1.7})
+
+    ax.text(0.5, 0.18, "JAX transformations: jit, vmap, grad over operators and diagnostics", ha="center", fontsize=10)
+    ax.text(0.5, 0.09, "Current scope: scaffold gates and metric-matrix checks; full 3-D STELLGAP/AE3D validation is planned.", ha="center", fontsize=9)
+
+    paths = _save_figure(fig, output_dir, "workflow_io_diagram")
+    plt.close(fig)
+    return paths
+
+
+def generate_equations_overview(output_dir: Path) -> list[Path]:
+    """Generate a compact equation overview figure."""
+    plt = _setup_matplotlib()
+    fig, axes = plt.subplots(1, 2, figsize=(9.4, 3.7), constrained_layout=True)
+    for ax in axes:
+        ax.axis("off")
+
+    axes[0].set_title("Local shear-Alfven continuum", fontsize=12, weight="bold")
+    axes[0].text(
+        0.02,
+        0.72,
+        r"$v_A(s)=B(s)/\sqrt{\mu_0\rho(s)}$" "\n"
+        r"$k_{\parallel,mn}(s)=[n-m\iota(s)]/R$" "\n"
+        r"$\omega_{A,mn}(s)=v_A(s)\,|k_{\parallel,mn}(s)|$",
+        fontsize=13,
+        va="top",
+    )
+    axes[0].text(
+        0.02,
+        0.21,
+        "Used for analytic limits, profile smoke tests,\nand density/iota/field sensitivity checks.",
+        fontsize=9,
+    )
+
+    axes[1].set_title("Metric continuum matrix", fontsize=12, weight="bold")
+    axes[1].text(
+        0.02,
+        0.75,
+        r"$K_{ij}=\left\langle J\,B^2 k_i k_j\phi_i^*\phi_j/\mu_0\right\rangle$" "\n"
+        r"$M_{ij}=\left\langle J\,\rho\,\phi_i^*\phi_j\right\rangle$" "\n"
+        r"$K(s)x=\omega^2\,M(s)x$",
+        fontsize=12,
+        va="top",
+    )
+    axes[1].text(
+        0.02,
+        0.21,
+        "Used for Hermiticity, residual, angular-grid,\nand VMEC-adapter gates.",
+        fontsize=9,
+    )
+
+    fig.suptitle("Equations currently implemented in FAX", fontsize=13, weight="bold")
+    paths = _save_figure(fig, output_dir, "equations_overview")
+    plt.close(fig)
+    return paths
+
+
+def generate_validation_gate_summary(output_dir: Path) -> list[Path]:
+    """Generate a pass/fail summary for the registered validation gates."""
+    plt = _setup_matplotlib()
+    gates = registered_validation_gates()
+    results_by_id = {result.gate_id: result for result in run_validation_suite()}
+    labels = [gate.gate_id.replace("_", "\n") for gate in gates]
+    ratios = []
+    colors = []
+    statuses = []
+    for gate in gates:
+        result = results_by_id[gate.gate_id]
+        statuses.append(result.status)
+        if result.status == "skipped" or not np.isfinite(result.metric):
+            ratios.append(1.0)
+            colors.append("#9e9e9e")
+        else:
+            ratios.append(result.metric / gate.tolerance if gate.tolerance > 0.0 else 0.0)
+            colors.append("#2e7d32" if result.status == "passed" else "#b3261e")
+
+    y = np.arange(len(gates))
+    fig, ax = plt.subplots(figsize=(8.6, 4.4), constrained_layout=True)
+    ax.barh(y, ratios, color=colors)
+    ax.axvline(1.0, color="#222222", linewidth=1.0, linestyle="--", label="tolerance")
+    ax.set_yticks(y, labels, fontsize=8)
+    ax.set_xlabel("metric / tolerance")
+    ax.set_title("Registered validation gates")
+    ax.set_xlim(0.0, max(1.2, float(np.nanmax(ratios)) * 1.15))
+    for idx, (ratio, status) in enumerate(zip(ratios, statuses, strict=True)):
+        ax.text(min(ratio + 0.03, ax.get_xlim()[1] * 0.96), idx, status, va="center", fontsize=8)
+    ax.legend(loc="lower right")
+
+    paths = _save_figure(fig, output_dir, "validation_gate_summary")
+    plt.close(fig)
+    return paths
+
+
+def generate_metric_residual_convergence(output_dir: Path) -> list[Path]:
+    """Generate a residual and angular-refinement smoke-test figure."""
+    plt = _setup_matplotlib()
+    geometry = analytic_circular_tokamak(radial_points=28, iota_axis=0.24, iota_edge=0.72)
+    harmonics = jnp.asarray([[1, 0], [2, 2], [3, 3]], dtype=float)
+    profile = continuum_branch_matrix(geometry, harmonics)
+    angular_points = np.asarray([8, 12, 16, 24, 32, 48])
+    diagonal_errors = []
+    residuals = []
+    for count in angular_points:
+        metric_geometry = metric_from_equilibrium(geometry, theta_points=int(count), zeta_points=int(count))
+        diagonal = diagonal_continuum_frequencies_hz(metric_geometry, harmonics)
+        matrices = metric_continuum_matrices(metric_geometry, harmonics)
+        eigensystem = generalized_hermitian_eigensystem(matrices.stiffness, matrices.mass)
+        residual = generalized_eigen_residual_norms(matrices.stiffness, matrices.mass, eigensystem)
+        diagonal_errors.append(float(jnp.linalg.norm(diagonal - profile) / jnp.maximum(jnp.linalg.norm(profile), 1.0e-30)))
+        residuals.append(float(jnp.max(residual)))
+
+    fig, ax = plt.subplots(figsize=(6.8, 3.8), constrained_layout=True)
+    ax.loglog(angular_points, diagonal_errors, marker="o", linewidth=1.8, label="profile-limit frequency error")
+    ax.loglog(angular_points, residuals, marker="s", linewidth=1.8, label="max generalized residual")
+    ax.axhline(1.0e-5, color="#555555", linestyle="--", linewidth=1.0, label="residual gate")
+    ax.set_xlabel("theta/zeta grid points")
+    ax.set_ylabel("relative metric")
+    ax.set_title("Metric scaffold residual and angular-grid checks")
+    ax.legend()
+
+    paths = _save_figure(fig, output_dir, "metric_residual_convergence")
+    plt.close(fig)
+    return paths
 
 
 def write_figure_manifest(output_dir: Path, paths: list[Path]) -> Path:
@@ -215,6 +370,7 @@ def write_figure_manifest(output_dir: Path, paths: list[Path]) -> Path:
         "figures": [
             {
                 "file": path.name,
+                "format": path.suffix.removeprefix("."),
                 "status": "smoke-test",
                 "claim": (
                     "Development figure generated from analytic/local continuum formulas; "
@@ -237,11 +393,17 @@ def main(argv: list[str] | None = None) -> int:
 
     output_dir = Path(args.output_dir).expanduser().resolve()
     output_dir.mkdir(parents=True, exist_ok=True)
-    paths = [
+    paths = []
+    for generated in [
+        generate_workflow_diagram(output_dir),
+        generate_equations_overview(output_dir),
         generate_cylinder_scaling(output_dir),
         generate_landreman_reference(output_dir),
         generate_gap_sensitivity_dashboard(output_dir),
-    ]
+        generate_metric_residual_convergence(output_dir),
+        generate_validation_gate_summary(output_dir),
+    ]:
+        paths.extend(generated)
     paths.append(write_figure_manifest(output_dir, paths))
     for path in paths:
         print(path)

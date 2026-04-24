@@ -1006,6 +1006,10 @@ Needed docs:
 - Added the first metric-aware continuum scaffold in `fax.metric`: angular-grid `MetricGeometry`, analytic profile-to-metric lifting, VMEC `wout` Nyquist reconstruction of Jacobian/field/contravariant-field data, Hermitian continuum stiffness/mass matrices, and a dense generalized Hermitian frequency path.
 - Promoted the first smoke tests into a validation registry in `fax.validation` with named gates, tolerances, citations, commands, tags, and structured pass/fail/skip results.
 - Added tests for metric/profile-limit agreement, Hermiticity, generalized-eigenvalue sanity, density-gradient consistency, the Landreman-Paul metric adapter, and validation-registry metadata/results.
+- Added generalized eigensystem residual checks for `Kx = lambda Mx`, an angular-grid convergence gate, and tests for the metric residual path.
+- Fixed the VMEC `wout` profile adapter to derive representative radii from Fourier geometry when `Rmajor_p`/`Aminor_p` are zero; this corrected blank Landreman-Paul continuum figures caused by infinite frequencies.
+- Expanded generated documentation artifacts to include PNG and SVG versions of workflow, equation, analytic-continuum, VMEC-reference, gap/sensitivity, residual/convergence, and validation-gate figures.
+- Added `tools/qa_figures.py` to parse SVGs and inspect rendered PNGs for dimensions and nonblank pixel coverage before README/docs updates.
 
 ### Local Testing Policy Until GitHub Actions Resume
 
@@ -1055,8 +1059,8 @@ Sources:
 
 Implement the first metric-aware stellarator continuum milestone:
 
-1. Add residual norms and eigenvector checks for the coupled metric continuum matrices, not just eigenvalue/frequency checks.
-2. Add radial and angular resolution-convergence gates for the analytic metric fixture and the Landreman-Paul QA adapter.
+1. Add radial resolution-convergence gates for the analytic metric fixture and the Landreman-Paul QA adapter.
+2. Add an adapter/figure gate that checks VMEC-derived continuum branches are finite before plotting.
 3. Add an optional Boozer path through `booz_xform_jax` for models that need straight-field-line harmonics, while keeping analytic and VMEC-coordinate fixtures runnable without Boozer.
 4. Turn the metric matrix path into a CLI-accessible `fax continuum` or `fax validate` workflow with rich progress output, artifact writes, and figure generation.
 5. Start the first literature/cross-code comparison gate: STELLGAP-style continuum gaps for a documented quasi-symmetric or axisymmetric reference case.

@@ -67,5 +67,7 @@ def test_landreman_paul_wout_adapter_smoke():
     assert geometry.iota.shape == geometry.s.shape
     assert geometry.magnetic_field.shape == geometry.s.shape
     assert float(jnp.min(geometry.magnetic_field)) > 0.0
+    assert float(geometry.major_radius) > 0.0
+    assert float(geometry.minor_radius) > 0.0
     assert dict(geometry.metadata)["mpol"] == 8
     assert dict(geometry.metadata)["ntor"] == 8

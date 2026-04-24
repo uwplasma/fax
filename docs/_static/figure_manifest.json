@@ -42,6 +42,20 @@
       ]
     },
     {
+      "id": "metric_eigensolve_residual",
+      "title": "Metric eigensolve residual",
+      "layer": "operator",
+      "quantity": "maximum relative residual",
+      "tolerance": 1e-05,
+      "citation": "Generalized Hermitian eigenproblem K x = omega^2 M x from the shear-Alfven energy principle",
+      "command": "python -m pytest tests/test_metric.py tests/test_validation_registry.py",
+      "tags": [
+        "metric",
+        "eigensolve",
+        "residual"
+      ]
+    },
+    {
       "id": "density_scale_gradient",
       "title": "Density sensitivity against analytic scaling",
       "layer": "differentiability",
@@ -52,6 +66,19 @@
       "tags": [
         "autodiff",
         "continuum"
+      ]
+    },
+    {
+      "id": "metric_angular_convergence",
+      "title": "Metric angular convergence",
+      "layer": "convergence",
+      "quantity": "relative frequency error across angular refinement",
+      "tolerance": 2e-05,
+      "citation": "Large-aspect-ratio straight-field-line limit used as an angular-quadrature convergence fixture",
+      "command": "python -m pytest tests/test_metric.py tests/test_validation_registry.py",
+      "tags": [
+        "metric",
+        "convergence"
       ]
     },
     {
@@ -71,17 +98,86 @@
   ],
   "figures": [
     {
+      "file": "workflow_io_diagram.svg",
+      "format": "svg",
+      "status": "smoke-test",
+      "claim": "Development figure generated from analytic/local continuum formulas; not a full 3-D stellarator Alfvén-continuum validation."
+    },
+    {
+      "file": "workflow_io_diagram.png",
+      "format": "png",
+      "status": "smoke-test",
+      "claim": "Development figure generated from analytic/local continuum formulas; not a full 3-D stellarator Alfvén-continuum validation."
+    },
+    {
+      "file": "equations_overview.svg",
+      "format": "svg",
+      "status": "smoke-test",
+      "claim": "Development figure generated from analytic/local continuum formulas; not a full 3-D stellarator Alfvén-continuum validation."
+    },
+    {
+      "file": "equations_overview.png",
+      "format": "png",
+      "status": "smoke-test",
+      "claim": "Development figure generated from analytic/local continuum formulas; not a full 3-D stellarator Alfvén-continuum validation."
+    },
+    {
       "file": "analytic_continuum_scaling.svg",
+      "format": "svg",
+      "status": "smoke-test",
+      "claim": "Development figure generated from analytic/local continuum formulas; not a full 3-D stellarator Alfvén-continuum validation."
+    },
+    {
+      "file": "analytic_continuum_scaling.png",
+      "format": "png",
       "status": "smoke-test",
       "claim": "Development figure generated from analytic/local continuum formulas; not a full 3-D stellarator Alfvén-continuum validation."
     },
     {
       "file": "landreman_paul_qa_lowres_profiles.svg",
+      "format": "svg",
+      "status": "smoke-test",
+      "claim": "Development figure generated from analytic/local continuum formulas; not a full 3-D stellarator Alfvén-continuum validation."
+    },
+    {
+      "file": "landreman_paul_qa_lowres_profiles.png",
+      "format": "png",
       "status": "smoke-test",
       "claim": "Development figure generated from analytic/local continuum formulas; not a full 3-D stellarator Alfvén-continuum validation."
     },
     {
       "file": "gap_sensitivity_dashboard.svg",
+      "format": "svg",
+      "status": "smoke-test",
+      "claim": "Development figure generated from analytic/local continuum formulas; not a full 3-D stellarator Alfvén-continuum validation."
+    },
+    {
+      "file": "gap_sensitivity_dashboard.png",
+      "format": "png",
+      "status": "smoke-test",
+      "claim": "Development figure generated from analytic/local continuum formulas; not a full 3-D stellarator Alfvén-continuum validation."
+    },
+    {
+      "file": "metric_residual_convergence.svg",
+      "format": "svg",
+      "status": "smoke-test",
+      "claim": "Development figure generated from analytic/local continuum formulas; not a full 3-D stellarator Alfvén-continuum validation."
+    },
+    {
+      "file": "metric_residual_convergence.png",
+      "format": "png",
+      "status": "smoke-test",
+      "claim": "Development figure generated from analytic/local continuum formulas; not a full 3-D stellarator Alfvén-continuum validation."
+    },
+    {
+      "file": "validation_gate_summary.svg",
+      "format": "svg",
+      "status": "smoke-test",
+      "claim": "Development figure generated from analytic/local continuum formulas; not a full 3-D stellarator Alfvén-continuum validation."
+    },
+    {
+      "file": "validation_gate_summary.png",
+      "format": "png",
       "status": "smoke-test",
       "claim": "Development figure generated from analytic/local continuum formulas; not a full 3-D stellarator Alfvén-continuum validation."
     }

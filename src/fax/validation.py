@@ -12,6 +12,8 @@ from .continuum import continuum_branch_matrix, local_continuum_frequency_hz
 from .equilibrium import analytic_circular_tokamak, analytic_cylinder, from_vmec_wout
 from .metric import (
     diagonal_continuum_frequencies_hz,
+    generalized_eigen_residual_norms,
+    generalized_hermitian_eigensystem,
     metric_continuum_matrices,
     metric_from_equilibrium,
     metric_from_vmec_wout,
@@ -123,6 +125,18 @@ def _gate_metric_matrix_hermitian() -> GateResult:
     return _pass_fail(gate_id, metric, tolerance, "continuum stiffness and mass matrices are Hermitian")
 
 
+def _gate_metric_eigensolve_residual() -> GateResult:
+    gate_id = "metric_eigensolve_residual"
+    tolerance = 1.0e-5
+    geometry = analytic_circular_tokamak(radial_points=18, iota_axis=0.24, iota_edge=0.72)
+    harmonics = jnp.asarray([[1, 0], [2, 2], [3, 3]], dtype=float)
+    matrices = metric_continuum_matrices(metric_from_equilibrium(geometry, theta_points=32, zeta_points=32), harmonics)
+    eigensystem = generalized_hermitian_eigensystem(matrices.stiffness, matrices.mass)
+    residuals = generalized_eigen_residual_norms(matrices.stiffness, matrices.mass, eigensystem)
+    metric = float(jnp.max(residuals))
+    return _pass_fail(gate_id, metric, tolerance, "generalized continuum eigenpairs satisfy Kx = lambda Mx")
+
+
 def _gate_density_scale_gradient() -> GateResult:
     gate_id = "density_scale_gradient"
     tolerance = 5.0e-5
@@ -137,6 +151,18 @@ def _gate_density_scale_gradient() -> GateResult:
     expected = float(-0.5 * mean_frequency(scale0) / scale0)
     metric = abs(autodiff - expected) / max(abs(expected), 1.0e-30)
     return _pass_fail(gate_id, metric, tolerance, "autodiff density sensitivity matches analytic rho^(-1/2) scaling")
+
+
+def _gate_metric_angular_convergence() -> GateResult:
+    gate_id = "metric_angular_convergence"
+    tolerance = 2.0e-5
+    geometry = analytic_circular_tokamak(radial_points=24, iota_axis=0.21, iota_edge=0.74)
+    harmonics = jnp.asarray([[1, 0], [2, 1], [3, 2], [4, 3]], dtype=float)
+    profile = continuum_branch_matrix(geometry, harmonics)
+    coarse = diagonal_continuum_frequencies_hz(metric_from_equilibrium(geometry, theta_points=12, zeta_points=12), harmonics)
+    fine = diagonal_continuum_frequencies_hz(metric_from_equilibrium(geometry, theta_points=48, zeta_points=48), harmonics)
+    metric = max(float(relative_l2_error(coarse, profile)), float(relative_l2_error(fine, profile)))
+    return _pass_fail(gate_id, metric, tolerance, "uniform metric fixture is insensitive to angular grid refinement")
 
 
 def _gate_landreman_paul_adapter_smoke() -> GateResult:
@@ -205,6 +231,17 @@ def registered_validation_gates() -> tuple[ValidationGate, ...]:
             _runner=_gate_metric_matrix_hermitian,
         ),
         ValidationGate(
+            gate_id="metric_eigensolve_residual",
+            title="Metric eigensolve residual",
+            layer="operator",
+            quantity="maximum relative residual",
+            tolerance=1.0e-5,
+            citation="Generalized Hermitian eigenproblem K x = omega^2 M x from the shear-Alfven energy principle",
+            command="python -m pytest tests/test_metric.py tests/test_validation_registry.py",
+            tags=("metric", "eigensolve", "residual"),
+            _runner=_gate_metric_eigensolve_residual,
+        ),
+        ValidationGate(
             gate_id="density_scale_gradient",
             title="Density sensitivity against analytic scaling",
             layer="differentiability",
@@ -214,6 +251,17 @@ def registered_validation_gates() -> tuple[ValidationGate, ...]:
             command="python -m pytest tests/test_metric.py tests/test_validation_registry.py",
             tags=("autodiff", "continuum"),
             _runner=_gate_density_scale_gradient,
+        ),
+        ValidationGate(
+            gate_id="metric_angular_convergence",
+            title="Metric angular convergence",
+            layer="convergence",
+            quantity="relative frequency error across angular refinement",
+            tolerance=2.0e-5,
+            citation="Large-aspect-ratio straight-field-line limit used as an angular-quadrature convergence fixture",
+            command="python -m pytest tests/test_metric.py tests/test_validation_registry.py",
+            tags=("metric", "convergence"),
+            _runner=_gate_metric_angular_convergence,
         ),
         ValidationGate(
             gate_id="landreman_paul_adapter_smoke",
