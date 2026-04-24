@@ -984,13 +984,63 @@ Needed docs:
 - Added an optional `ecosystem` dependency extra for future prototypes using Diffrax, Equinox, JAXopt, Lineax, Optimistix, and Optax. These remain optional and unpinned.
 - Surveyed additional sources on custom derivatives, implicit differentiation, spectral adjoint solvers, Lineax, Equinox, Diffrax, stellarator adjoints/optimization, SIMSOPT/STELLOPT, DESC, and TORAX.
 - Verified after the milestone update with `python -m ruff check .`, `python -m pytest`, `sphinx-build -W -b html docs docs/_build/html`, and `python -m build`.
+- Confirmed GitHub Actions will not be available until next month; local checks are the required gate until then.
+- Promoted `LandremanPaul2021_QA_lowres` to the first VMEC-backed stellarator reference target.
+- Added `src/fax/reference_cases.py` with a local-path discovery helper for `LandremanPaul2021_QA_lowres`.
+- Added `examples/landreman_paul_qa_lowres.toml` pointing at the neighboring `vmec_jax` input and `wout`.
+- Verified the reference helper resolves the local VMEC input and `wout` on this machine.
+- Re-verified after the reference-case update with `python -m ruff check .`, `python -m pytest` (9 passed), `sphinx-build -W -b html docs docs/_build/html`, `fax examples/landreman_paul_qa_lowres.toml --dry-run`, and `python -m build`.
+
+### Local Testing Policy Until GitHub Actions Resume
+
+GitHub Actions are expected to remain unavailable until the UWPlasma billing/spending-limit issue resets next month. Until then, treat local checks as the required quality gate before every commit:
+
+```bash
+python -m ruff check .
+python -m pytest
+sphinx-build -W -b html docs docs/_build/html
+python -m build
+```
+
+Do not weaken tests to accommodate the missing CI. Instead, keep local validation commands logged here and use `[skip ci]` only to avoid creating known-failing remote runs while the account-level blocker remains.
+
+### First VMEC-Backed Stellarator Reference Target
+
+Use `LandremanPaul2021_QA_lowres` as the first `vmec_jax`/VMEC-backed stellarator target.
+
+Local paths identified on 2026-04-24:
+
+- VMEC input: `/Users/rogerio/local/vmec_jax/examples/data/input.LandremanPaul2021_QA_lowres`
+- VMEC `wout`: `/Users/rogerio/local/vmec_jax/examples/data/wout_LandremanPaul2021_QA_lowres.nc`
+- alternate `wout` fixture: `/Users/rogerio/local/simsopt/tests/test_files/wout_LandremanPaul2021_QA_lowres.nc`
+
+Why this case:
+
+- It is a low-resolution version of the Landreman-Paul precise quasi-axisymmetric configuration, so it is small enough for local testing.
+- It is literature anchored by Landreman & Paul, "Magnetic fields with precise quasisymmetry for plasma confinement", PRL 128, 035001 (2022), arXiv:2108.03711.
+- It is a two-field-period quasi-axisymmetric stellarator, so it is directly relevant to early continuum/gap and toroidal-coupling tests.
+- Neighboring `vmec_jax` and `booz_xform_jax` workflows already use the same case, which reduces adapter risk.
+
+Immediate uses:
+
+1. M1 adapter smoke test: read input/wout metadata, extract `nfp`, `ns`, `mpol`, `ntor`, `iota`, `B`, and geometry arrays.
+2. M2 continuum prototype: compute local large-aspect-ratio sanity checks before the full 3-D operator.
+3. Boozer pipeline check: run/compare `booz_xform_jax` on the same `wout` once Boozer coordinates are needed.
+4. Benchmark seed: record local parse/adapter/operator runtime before optimizing.
+5. Physics understanding: use the quasisymmetric Alfvén-continuum literature as a nearby reference, while being explicit that this case is not a validation until a concrete metric is matched.
+
+Sources:
+
+- <https://arxiv.org/abs/2108.03711>
+- <https://doi.org/10.1103/PhysRevLett.128.035001>
+- <https://www.cambridge.org/core/journals/journal-of-plasma-physics/article/shear-alfven-continuum-of-quasisymmetric-stellarators/7B50E360D4324D8AF93DA73EB25C35D8>
 
 ### Next Recommended Step
 
 Implement M1 in a narrow branch:
 
 1. Add `fax.equilibrium` with an analytic cylindrical/tokamak fixture.
-2. Add a minimal `vmec_jax` adapter that can consume either a local `wout` or a `vmec_jax` Python object.
+2. Add a minimal `vmec_jax`/`wout` adapter using `LandremanPaul2021_QA_lowres` as the first smoke target.
 3. Define the `EquilibriumGeometry` pytree and coordinate/unit conventions.
-4. Add unit tests for shape stability, dtype behavior, and Alfvén-speed scaling.
+4. Add unit tests for shape stability, dtype behavior, local path discovery, and Alfvén-speed scaling.
 5. Update docs with the coordinate convention before starting the continuum operator.
