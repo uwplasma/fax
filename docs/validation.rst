@@ -49,6 +49,10 @@ tags, and command. The current gates are:
   ``iota=2n/(2m+1)``.
 * ``fast_ion_resonance_peak``: checks that the reduced fast-ion drive peaks at
   the transit/precession resonance.
+* ``boozer_harmonic_projection``: checks Boozer ``|B|`` harmonic
+  reconstruction/projection and Fourier orthogonality on a synthetic spectrum.
+* ``boozer_straight_field_line_phase``: checks that Boozer harmonic phases have
+  slope ``m*iota-n`` along a straight field line.
 * ``landreman_paul_adapter_smoke``: checks the Landreman-Paul QA VMEC ``wout``
   profile and metric adapters when local data are available.
 * ``landreman_paul_continuum_finite``: checks that the Landreman-Paul profile
@@ -142,6 +146,13 @@ yet full 3-D Alfvén-continuum validation.
    estimates, fast-ion resonance screen, and optimization-gradient smoke test.
    This exercises the new end-to-end differentiable reduced path without
    claiming full 3-D stellarator eigenmode validation.
+
+.. figure:: _static/boozer_harmonic_validation.svg
+   :alt: Boozer harmonic reconstruction and phase validation dashboard.
+
+   Boozer harmonic reconstruction/projection, Fourier orthogonality, and
+   straight-field-line phase checks. These validate representation conventions
+   before Boozer metric operators are used for continuum claims.
 
 .. figure:: _static/landreman_paul_convergence_dashboard.svg
    :alt: LandremanPaul2021 QA radial, angular, and Fourier convergence dashboard.

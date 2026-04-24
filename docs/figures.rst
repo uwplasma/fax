@@ -48,6 +48,12 @@ Current Figures
    gradient dashboard. The top-left panel is tied to an exact finite-difference
    spectrum gate; the bottom panels are analytic/reduced screening diagnostics.
 
+.. figure:: _static/boozer_harmonic_validation.svg
+   :alt: Boozer harmonic reconstruction and straight-field-line validation.
+
+   Boozer ``|B|`` harmonic map, coefficient bars, projection/orthogonality
+   gates, and straight-field-line phase-slope gate.
+
 .. figure:: _static/continuum_artifact_dashboard.svg
    :alt: Dashboard generated from fax continuum artifacts.
 

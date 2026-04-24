@@ -153,9 +153,25 @@ Boozer Path
 ``fax.boozer`` can read ``boozmn`` files and can call local
 ``booz_xform_jax`` from a VMEC ``wout`` when available. The implemented
 diagnostic computes normalized non-axisymmetric Boozer ``|B|`` spectral energy
-and dominant modes. A dedicated Boozer metric/operator assembly is still an
-open validation lane before Boozer spectra become the default stellarator
-continuum path.
+and dominant modes. It also validates the scalar harmonic representation
+
+.. math::
+
+   |B|(s,\theta_B,\zeta_B) =
+   \sum_{m,n} B^c_{mn}(s)\cos(m\theta_B-n\zeta_B)
+   + B^s_{mn}(s)\sin(m\theta_B-n\zeta_B),
+
+with uniform-grid projection back to ``B^c_{mn}`` and ``B^s_{mn}``. The current
+straight-field-line convention is
+
+.. math::
+
+   \theta_B(\zeta_B) = \theta_{B0} + \iota \zeta_B,
+   \qquad
+   \frac{d}{d\zeta_B}\left(m\theta_B-n\zeta_B\right)=m\iota-n.
+
+A dedicated Boozer metric/operator assembly is still an open validation lane
+before Boozer spectra become the default stellarator continuum path.
 
 Equation Acceptance
 -------------------

@@ -64,3 +64,19 @@ def test_global_gap_fastion_screen_example_runs():
     assert payload["lowest_radial_mode_frequency_hz"] > 0.0
     assert len(payload["gap_estimates"]) == 3
     assert payload["fast_ion_peak"]["drive"] > 0.0
+
+
+def test_boozer_harmonic_validation_example_runs():
+    result = subprocess.run(
+        [sys.executable, "examples/research/boozer_harmonic_validation.py"],
+        cwd=REPO_ROOT,
+        check=True,
+        text=True,
+        capture_output=True,
+    )
+    payload = json.loads(result.stdout)
+    assert payload["projection_error_surface_0"] < 2.0e-6
+    assert payload["projection_error_surface_1"] < 2.0e-6
+    assert payload["orthogonality_error"] < 2.0e-6
+    assert payload["straight_field_line_phase_error"] < 1.0e-4
+    assert 0.0 < payload["normalized_nonaxisymmetric_energy"] < 1.0

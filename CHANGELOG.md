@@ -12,6 +12,7 @@ Initial research scaffold release for FAX.
 - Reduced radial global-eigenmode operator with exact constant-profile spectrum and density-gradient gates.
 - Analytic TAE/EAE/HAE gap estimates and reduced fast-ion transit/precession resonance diagnostics.
 - Optional Boozer-spectrum reader and local `booz_xform_jax` coupling smoke path.
+- Boozer harmonic reconstruction/projection, Fourier orthogonality, and straight-field-line phase validation.
 - Differentiable radial-mode avoidance objective for early design-screen demonstrations.
 - VMEC `wout` adapter smoke path for the Landreman-Paul QA low-resolution reference case.
 - Validation registry with named gates, tolerances, citations, commands, tags, and JSON/Markdown reports.
@@ -25,6 +26,7 @@ Initial research scaffold release for FAX.
   - `fax benchmark`
 - Generated README/docs figures with automated nonblank figure QA.
 - Research examples for validation packets, differentiability sensitivity, a small inverse-design toy problem, and a reduced global/gap/fast-ion screening packet.
+- Research example for Boozer harmonic convention validation.
 - ReadTheDocs/Sphinx docs, GitHub Actions definitions for tests/docs/publish, and PyPI trusted-publishing workflow.
 
 The PyPI distribution name is `uwplasma-fax`; the import package and CLI remain

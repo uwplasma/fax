@@ -1062,6 +1062,12 @@ Needed docs:
   - `sphinx-build -W -b html docs docs/_build/html`
   - `python -m build`
   - `python -m twine check dist/*`
+- Added the next Boozer validation step:
+  - `fax.boozer` now reconstructs sampled ``|B|(theta_B,zeta_B)`` from Boozer harmonics, projects sampled fields back to cosine/sine coefficients, checks Fourier-basis orthogonality, and checks the straight-field-line phase slope ``m*iota-n``.
+  - Added validation gates `boozer_harmonic_projection` and `boozer_straight_field_line_phase`.
+  - Added `examples/research/boozer_harmonic_validation.py` and the generated `boozer_harmonic_validation` README/docs figure.
+  - Direct `run_validation_suite()` now has 17 registered gates passing on this machine.
+  - Verified after this Boozer step with `python -m ruff check .`, `python -m mypy src/fax`, `python -m pytest -q` (82 passed), `python tools/generate_validation_figures.py && python tools/qa_figures.py`, `sphinx-build -W -b html docs docs/_build/html`, `python -m build`, and `python -m twine check dist/*`.
 
 ### Local Testing Policy Until GitHub Actions Resume
 

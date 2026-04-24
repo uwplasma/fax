@@ -126,6 +126,13 @@ exact finite-difference spectrum, plots radial eigenfunctions, reports analytic
 TAE/EAE/HAE gap-center estimates, scans reduced fast-ion resonance drive, and
 shows a JAX gradient of the radial-mode avoidance objective.
 
+![Boozer harmonic validation](docs/_static/boozer_harmonic_validation.png)
+
+This figure validates Boozer scalar-field representation conventions:
+reconstructing `|B|(theta_B,zeta_B)` from harmonics, projecting the sampled
+field back to coefficients, checking Fourier orthogonality, and checking the
+straight-field-line phase slope `m*iota-n`.
+
 ![Continuum artifact dashboard](docs/_static/continuum_artifact_dashboard.png)
 
 This figure is generated from files written by `fax continuum`: the branch CSV,
@@ -195,6 +202,7 @@ fax convergence examples/landreman_paul_qa_lowres.toml --radial-points 24 --radi
 fax plot-convergence outputs/landreman_paul_qa_lowres/convergence --output-dir outputs/landreman_paul_qa_lowres/figures
 fax benchmark examples/landreman_paul_qa_lowres.toml --repeats 3
 python examples/research/global_gap_fastion_screen.py
+python examples/research/boozer_harmonic_validation.py
 ```
 
 `fax` reads TOML configuration files. The normal CLI path is intentionally
@@ -255,6 +263,7 @@ python examples/research/validation_packet.py
 python examples/research/density_sensitivity.py
 python examples/research/inverse_iota_shift.py
 python examples/research/global_gap_fastion_screen.py
+python examples/research/boozer_harmonic_validation.py
 ```
 
 These generate validation packets, continuum artifacts, convergence dashboards,
@@ -281,6 +290,7 @@ Current figures:
 - `landreman_paul_qa_lowres_profiles.svg`: first VMEC-backed profile/adapter target.
 - `gap_sensitivity_dashboard.svg`: mode-family, gap-proxy, and autodiff sensitivity dashboard.
 - `global_gap_fastion_dashboard.svg`: reduced radial mode, gap, fast-ion, and optimization dashboard.
+- `boozer_harmonic_validation.svg`: Boozer harmonic reconstruction/projection and straight-field-line phase dashboard.
 - `continuum_artifact_dashboard.svg`: dashboard generated from `fax continuum` artifacts.
 - `metric_residual_convergence.svg`: metric-matrix residual and angular-grid check.
 - `landreman_paul_convergence_dashboard.svg`: VMEC-backed radial/angular/Fourier convergence smoke-test dashboard.
@@ -311,8 +321,9 @@ matrix to the profile limit, Hermiticity of the generalized continuum matrices,
 generalized eigensolve residuals, density-gradient consistency,
 angular/radial-grid consistency, radial quadrature convergence, reduced global
 radial spectrum residuals, radial-mode gradient consistency, analytic TAE
-gap-center checks, reduced fast-ion resonance ordering, and Landreman-Paul QA
-VMEC adapter plus continuum finite-output/radial-sampling smoke tests. These are
+gap-center checks, reduced fast-ion resonance ordering, Boozer harmonic
+projection/phase convention checks, and Landreman-Paul QA VMEC adapter plus
+continuum finite-output/radial-sampling smoke tests. These are
 acceptance gates for the scaffold, not yet full STELLGAP/AE3D stellarator
 validation.
 

@@ -11,6 +11,15 @@ import jax
 import jax.numpy as jnp
 import numpy as np
 
+from fax.boozer import (
+    BoozerSpectrum,
+    boozer_angle_grid,
+    boozer_harmonic_orthogonality_error,
+    boozer_projection_error,
+    normalized_nonaxisymmetric_boozer_energy,
+    reconstruct_boozer_field,
+    straight_field_line_phase_error,
+)
 from fax.config import EquilibriumConfig, FaxConfig, GridConfig, RunConfig
 from fax.continuum import continuum_branch_matrix
 from fax.equilibrium import analytic_circular_tokamak, from_vmec_wout
@@ -330,6 +339,95 @@ def generate_global_gap_fastion_dashboard(output_dir: Path) -> list[Path]:
     return paths
 
 
+def generate_boozer_harmonic_validation(output_dir: Path) -> list[Path]:
+    """Generate a Boozer harmonic reconstruction/projection validation figure."""
+    plt = _setup_matplotlib()
+    spectrum = BoozerSpectrum(
+        source="synthetic_figure",
+        s=jnp.asarray([0.25, 0.75]),
+        xm=jnp.asarray([0.0, 1.0, 2.0, 1.0]),
+        xn=jnp.asarray([0.0, 0.0, 1.0, -1.0]),
+        bmnc=jnp.asarray(
+            [
+                [2.8, 0.10, -0.035, 0.022],
+                [2.7, 0.08, -0.025, 0.018],
+            ]
+        ),
+        bmns=jnp.asarray(
+            [
+                [0.0, 0.025, 0.012, -0.008],
+                [0.0, 0.020, 0.010, -0.006],
+            ]
+        ),
+        field_periods=2,
+    )
+    theta, zeta = boozer_angle_grid(theta_points=96, zeta_points=96)
+    field = reconstruct_boozer_field(spectrum, surface_index=0, theta=theta, zeta=zeta)
+    harmonics = jnp.column_stack([spectrum.xm, spectrum.xn])
+    mode_labels = [f"({int(m)},{int(n)})" for m, n in np.asarray(harmonics)]
+    nonaxisymmetric_energy = float(normalized_nonaxisymmetric_boozer_energy(spectrum))
+    metrics = {
+        "projection": float(boozer_projection_error(spectrum, surface_index=0, theta_points=96, zeta_points=96)),
+        "orthogonality": float(boozer_harmonic_orthogonality_error(spectrum.xm, spectrum.xn, theta_points=96, zeta_points=96)),
+        "phase slope": float(straight_field_line_phase_error(harmonics, iota=0.73, zeta_points=128)),
+    }
+
+    fig, axes = plt.subplots(1, 3, figsize=(11.0, 3.4), constrained_layout=True)
+
+    ax = axes[0]
+    image = ax.imshow(
+        np.asarray(field),
+        origin="lower",
+        extent=(0.0, 2.0 * np.pi, 0.0, 2.0 * np.pi),
+        aspect="auto",
+        cmap="viridis",
+    )
+    ax.set_title(r"Reconstructed $|B|(\theta_B,\zeta_B)$")
+    ax.set_xlabel(r"$\zeta_B$")
+    ax.set_ylabel(r"$\theta_B$")
+    fig.colorbar(image, ax=ax, fraction=0.046, pad=0.04, label="T")
+
+    ax = axes[1]
+    x = np.arange(len(mode_labels))
+    width = 0.38
+    ax.bar(x - width / 2.0, np.asarray(spectrum.bmnc[0]), width=width, label="cos")
+    ax.bar(x + width / 2.0, np.asarray(spectrum.bmns[0]), width=width, label="sin")
+    ax.axhline(0.0, color="#222222", linewidth=0.8)
+    ax.set_xticks(x, mode_labels)
+    ax.set_title("Synthetic Boozer coefficients")
+    ax.set_xlabel("(m,n)")
+    ax.set_ylabel("coefficient [T]")
+    ax.legend(fontsize=8)
+
+    ax = axes[2]
+    metric_labels = list(metrics)
+    metric_values = np.asarray([metrics[label] for label in metric_labels])
+    gate_values = np.asarray([2.0e-6, 2.0e-6, 1.0e-4])
+    colors = ["#4c78a8", "#f58518", "#54a24b"]
+    x_metric = np.arange(len(metric_labels))
+    ax.bar(x_metric, metric_values, color=colors)
+    ax.scatter(x_metric, gate_values, color="#222222", marker="_", s=260, linewidths=2.0, label="gate")
+    ax.set_xticks(x_metric, metric_labels)
+    ax.set_yscale("log")
+    ax.set_title("Boozer representation gates")
+    ax.set_ylabel("metric")
+    ax.tick_params(axis="x", rotation=25)
+    ax.text(
+        0.04,
+        0.90,
+        f"non-axisymmetric energy={nonaxisymmetric_energy:.2e}",
+        transform=ax.transAxes,
+        fontsize=8,
+        bbox={"facecolor": "white", "edgecolor": "#bbbbbb", "boxstyle": "round,pad=0.25"},
+    )
+    ax.legend(fontsize=8)
+
+    fig.suptitle("Boozer harmonic validation: reconstruction, projection, and straight-field-line phase", fontsize=12, weight="bold")
+    paths = _save_figure(fig, output_dir, "boozer_harmonic_validation")
+    plt.close(fig)
+    return paths
+
+
 def generate_continuum_artifact_dashboard(output_dir: Path) -> list[Path]:
     """Generate a dashboard from files written by the continuum workflow."""
     case = landreman_paul_qa_lowres()
@@ -600,6 +698,7 @@ def main(argv: list[str] | None = None) -> int:
         generate_landreman_reference(output_dir),
         generate_gap_sensitivity_dashboard(output_dir),
         generate_global_gap_fastion_dashboard(output_dir),
+        generate_boozer_harmonic_validation(output_dir),
         generate_continuum_artifact_dashboard(output_dir),
         generate_metric_residual_convergence(output_dir),
         generate_landreman_convergence_dashboard(output_dir),

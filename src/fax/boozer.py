@@ -150,6 +150,123 @@ def normalized_nonaxisymmetric_boozer_energy(spectrum: BoozerSpectrum) -> jax.Ar
     return numerator / jnp.maximum(total, 1.0e-30)
 
 
+def boozer_angle_grid(*, theta_points: int = 64, zeta_points: int = 64) -> tuple[jax.Array, jax.Array]:
+    """Return a periodic tensor-product Boozer angle grid.
+
+    The returned arrays have shape ``(theta_points, zeta_points)`` and cover
+    ``[0, 2*pi)`` without duplicating the periodic endpoint.
+    """
+    theta = 2.0 * jnp.pi * jnp.arange(int(theta_points), dtype=float) / float(theta_points)
+    zeta = 2.0 * jnp.pi * jnp.arange(int(zeta_points), dtype=float) / float(zeta_points)
+    theta_grid, zeta_grid = jnp.meshgrid(theta, zeta, indexing="ij")
+    return theta_grid, zeta_grid
+
+
+def boozer_harmonic_phase(theta: Any, zeta: Any, xm: Any, xn: Any) -> jax.Array:
+    """Return phases ``m*theta - n*zeta`` for Boozer harmonics."""
+    theta_array = jnp.asarray(theta)
+    zeta_array = jnp.asarray(zeta)
+    return theta_array[..., None] * jnp.asarray(xm) - zeta_array[..., None] * jnp.asarray(xn)
+
+
+def reconstruct_boozer_field(
+    spectrum: BoozerSpectrum,
+    *,
+    surface_index: int = 0,
+    theta: Any | None = None,
+    zeta: Any | None = None,
+    theta_points: int = 64,
+    zeta_points: int = 64,
+) -> jax.Array:
+    """Reconstruct ``|B|(theta,zeta)`` from one radial surface of a spectrum."""
+    theta_grid, zeta_grid = boozer_angle_grid(theta_points=theta_points, zeta_points=zeta_points) if theta is None or zeta is None else (theta, zeta)
+    phase = boozer_harmonic_phase(theta_grid, zeta_grid, spectrum.xm, spectrum.xn)
+    bmnc = spectrum.bmnc[int(surface_index)]
+    field = jnp.sum(bmnc * jnp.cos(phase), axis=-1)
+    if spectrum.bmns is not None:
+        field = field + jnp.sum(spectrum.bmns[int(surface_index)] * jnp.sin(phase), axis=-1)
+    return field
+
+
+def project_boozer_field_to_modes(field: Any, theta: Any, zeta: Any, xm: Any, xn: Any, *, floor: float = 1.0e-30) -> tuple[jax.Array, jax.Array]:
+    """Project a sampled scalar field onto Boozer cosine and sine modes."""
+    field_array = jnp.asarray(field)
+    phase = boozer_harmonic_phase(theta, zeta, xm, xn)
+    cos_basis = jnp.cos(phase)
+    sin_basis = jnp.sin(phase)
+    cos_norm = jnp.mean(cos_basis**2, axis=(0, 1))
+    sin_norm = jnp.mean(sin_basis**2, axis=(0, 1))
+    bmnc = jnp.mean(field_array[..., None] * cos_basis, axis=(0, 1)) / jnp.maximum(cos_norm, float(floor))
+    bmns = jnp.where(
+        sin_norm > float(floor),
+        jnp.mean(field_array[..., None] * sin_basis, axis=(0, 1)) / jnp.maximum(sin_norm, float(floor)),
+        0.0,
+    )
+    return bmnc, bmns
+
+
+def boozer_projection_error(
+    spectrum: BoozerSpectrum,
+    *,
+    surface_index: int = 0,
+    theta_points: int = 64,
+    zeta_points: int = 64,
+    floor: float = 1.0e-30,
+) -> jax.Array:
+    """Return relative coefficient error after reconstructing and re-projecting."""
+    theta, zeta = boozer_angle_grid(theta_points=theta_points, zeta_points=zeta_points)
+    field = reconstruct_boozer_field(spectrum, surface_index=surface_index, theta=theta, zeta=zeta)
+    bmnc, bmns = project_boozer_field_to_modes(field, theta, zeta, spectrum.xm, spectrum.xn)
+    expected_bmns = jnp.zeros_like(bmns) if spectrum.bmns is None else spectrum.bmns[int(surface_index)]
+    numerator = jnp.linalg.norm(bmnc - spectrum.bmnc[int(surface_index)]) + jnp.linalg.norm(bmns - expected_bmns)
+    denominator = jnp.maximum(jnp.linalg.norm(spectrum.bmnc[int(surface_index)]) + jnp.linalg.norm(expected_bmns), float(floor))
+    return numerator / denominator
+
+
+def boozer_harmonic_orthogonality_error(xm: Any, xn: Any, *, theta_points: int = 64, zeta_points: int = 64, floor: float = 1.0e-30) -> jax.Array:
+    """Return the maximum normalized off-diagonal error of Boozer Fourier bases."""
+    theta, zeta = boozer_angle_grid(theta_points=theta_points, zeta_points=zeta_points)
+    phase = boozer_harmonic_phase(theta, zeta, xm, xn)
+    basis = jnp.concatenate(
+        [
+            jnp.reshape(jnp.cos(phase), (-1, phase.shape[-1])),
+            jnp.reshape(jnp.sin(phase), (-1, phase.shape[-1])),
+        ],
+        axis=1,
+    )
+    gram = basis.T @ basis / float(theta_points * zeta_points)
+    norms = jnp.sqrt(jnp.maximum(jnp.diag(gram), 0.0))
+    normalized = gram / jnp.maximum(norms[:, None] * norms[None, :], float(floor))
+    off_diagonal = normalized - jnp.diag(jnp.diag(normalized))
+    return jnp.max(jnp.abs(off_diagonal))
+
+
+def straight_field_line_phase_error(
+    harmonics: Any,
+    *,
+    iota: Any,
+    theta0: float = 0.17,
+    zeta_points: int = 128,
+    floor: float = 1.0e-30,
+) -> jax.Array:
+    """Check that Boozer harmonic phases vary linearly along field lines.
+
+    With the FAX convention ``exp(i*(m*theta - n*zeta))`` and straight field
+    lines ``theta = theta0 + iota*zeta``, each phase has slope
+    ``m*iota - n`` with respect to ``zeta``.
+    """
+    harmonic_array = jnp.asarray(harmonics, dtype=float)
+    zeta = 2.0 * jnp.pi * jnp.arange(int(zeta_points), dtype=harmonic_array.dtype) / float(zeta_points)
+    theta = float(theta0) + jnp.asarray(iota) * zeta
+    phase = theta[:, None] * harmonic_array[:, 0] - zeta[:, None] * harmonic_array[:, 1]
+    dzeta = zeta[1] - zeta[0]
+    observed = (phase[1:] - phase[:-1]) / dzeta
+    expected = harmonic_array[:, 0] * jnp.asarray(iota) - harmonic_array[:, 1]
+    numerator = jnp.linalg.norm(observed - expected[None, :])
+    denominator = jnp.maximum(jnp.linalg.norm(expected), float(floor))
+    return numerator / denominator
+
+
 def dominant_boozer_modes(spectrum: BoozerSpectrum, *, count: int = 8) -> tuple[tuple[int, int, float], ...]:
     """Return dominant Boozer ``|B|`` modes by maximum radial amplitude."""
     amplitudes = np.max(np.abs(np.asarray(spectrum.bmnc)), axis=0)

@@ -9,6 +9,12 @@ import jax
 import jax.numpy as jnp
 import numpy as np
 
+from .boozer import (
+    BoozerSpectrum,
+    boozer_harmonic_orthogonality_error,
+    boozer_projection_error,
+    straight_field_line_phase_error,
+)
 from .continuum import continuum_branch_matrix, local_continuum_frequency_hz
 from .equilibrium import analytic_circular_tokamak, analytic_cylinder, from_vmec_wout
 from .fast_ions import FastIonPopulation, reduced_fast_ion_drive
@@ -315,6 +321,57 @@ def _gate_fast_ion_resonance_peak() -> GateResult:
     )
 
 
+def _synthetic_boozer_spectrum() -> BoozerSpectrum:
+    return BoozerSpectrum(
+        source="synthetic_validation",
+        s=jnp.asarray([0.25, 0.75]),
+        xm=jnp.asarray([0.0, 1.0, 2.0, 1.0]),
+        xn=jnp.asarray([0.0, 0.0, 1.0, -1.0]),
+        bmnc=jnp.asarray(
+            [
+                [2.8, 0.10, -0.035, 0.022],
+                [2.7, 0.08, -0.025, 0.018],
+            ]
+        ),
+        bmns=jnp.asarray(
+            [
+                [0.0, 0.025, 0.012, -0.008],
+                [0.0, 0.020, 0.010, -0.006],
+            ]
+        ),
+        field_periods=2,
+    )
+
+
+def _gate_boozer_harmonic_projection() -> GateResult:
+    gate_id = "boozer_harmonic_projection"
+    tolerance = 2.0e-6
+    spectrum = _synthetic_boozer_spectrum()
+    projection = boozer_projection_error(spectrum, surface_index=1, theta_points=64, zeta_points=64)
+    orthogonality = boozer_harmonic_orthogonality_error(spectrum.xm, spectrum.xn, theta_points=64, zeta_points=64)
+    metric = max(float(projection), float(orthogonality))
+    return _pass_fail(
+        gate_id,
+        metric,
+        tolerance,
+        "Boozer Fourier harmonics reconstruct and project back to known coefficients",
+    )
+
+
+def _gate_boozer_straight_field_line_phase() -> GateResult:
+    gate_id = "boozer_straight_field_line_phase"
+    tolerance = 1.0e-4
+    spectrum = _synthetic_boozer_spectrum()
+    harmonics = jnp.column_stack([spectrum.xm, spectrum.xn])
+    metric = straight_field_line_phase_error(harmonics, iota=0.73, zeta_points=128)
+    return _pass_fail(
+        gate_id,
+        float(metric),
+        tolerance,
+        "Boozer harmonic phases have slope m*iota-n along straight field lines",
+    )
+
+
 def _gate_landreman_paul_adapter_smoke() -> GateResult:
     gate_id = "landreman_paul_adapter_smoke"
     tolerance = 0.0
@@ -569,6 +626,28 @@ def registered_validation_gates() -> tuple[ValidationGate, ...]:
             command="python -m pytest tests/test_fast_ions.py tests/test_validation_registry.py",
             tags=("fast-ion", "resonance", "analytic"),
             _runner=_gate_fast_ion_resonance_peak,
+        ),
+        ValidationGate(
+            gate_id="boozer_harmonic_projection",
+            title="Boozer harmonic projection",
+            layer="boozer",
+            quantity="relative projection and orthogonality error",
+            tolerance=2.0e-6,
+            citation="Boozer straight-field-line Fourier representation used by BOOZ_XFORM and stellarator continuum calculations",
+            command="python -m pytest tests/test_boozer.py tests/test_validation_registry.py",
+            tags=("boozer", "harmonics", "analytic"),
+            _runner=_gate_boozer_harmonic_projection,
+        ),
+        ValidationGate(
+            gate_id="boozer_straight_field_line_phase",
+            title="Boozer straight-field-line phase",
+            layer="boozer",
+            quantity="relative phase-slope error",
+            tolerance=1.0e-4,
+            citation="Straight-field-line Boozer convention theta=theta0+iota*zeta and phase m*theta-n*zeta",
+            command="python -m pytest tests/test_boozer.py tests/test_validation_registry.py",
+            tags=("boozer", "straight-field-line", "analytic"),
+            _runner=_gate_boozer_straight_field_line_phase,
         ),
         ValidationGate(
             gate_id="landreman_paul_adapter_smoke",

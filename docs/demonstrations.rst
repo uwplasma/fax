@@ -37,6 +37,11 @@ Reduced global/gap/fast-ion screen
    eigenmode gate, analytic gap estimates, reduced fast-ion resonance screen,
    and radial-mode avoidance gradients.
 
+Boozer harmonic validation
+   ``examples/research/boozer_harmonic_validation.py`` checks Boozer scalar
+   field reconstruction/projection, harmonic orthogonality, and straight-field
+   line phase conventions.
+
 Planned demonstrations include:
 
 Runtime

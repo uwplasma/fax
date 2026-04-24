@@ -91,6 +91,19 @@ the lowest reduced radial eigenfrequency for an analytic equilibrium, TAE/EAE/
 HAE gap estimates, a reduced fast-ion resonance peak, and the gradient of the
 radial-mode avoidance objective.
 
+Boozer Harmonic Validation
+--------------------------
+
+Run:
+
+.. code-block:: bash
+
+   python examples/research/boozer_harmonic_validation.py
+
+This prints a JSON packet with Boozer ``|B|`` reconstruction/projection error,
+harmonic orthogonality error, straight-field-line phase-slope error, and
+normalized non-axisymmetric spectral energy for a synthetic spectrum.
+
 Regenerating Documentation Figures
 ----------------------------------
 

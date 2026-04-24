@@ -43,6 +43,9 @@ reproduce a quantitative comparison. Current priority targets are:
   continuum analysis used for the first VMEC-backed target:
   https://doi.org/10.1103/PhysRevLett.128.035001 and
   https://doi.org/10.1017/S0022377825100524
+* Boozer-coordinate transformation references and implementation conventions:
+  https://princetonuniversity.github.io/STELLOPT/BOOZ_XFORM.html and
+  https://github.com/hiddenSymmetries/booz_xform
 
 Differentiability references
 ----------------------------

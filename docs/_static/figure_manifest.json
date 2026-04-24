@@ -165,6 +165,34 @@
       ]
     },
     {
+      "id": "boozer_harmonic_projection",
+      "title": "Boozer harmonic projection",
+      "layer": "boozer",
+      "quantity": "relative projection and orthogonality error",
+      "tolerance": 2e-06,
+      "citation": "Boozer straight-field-line Fourier representation used by BOOZ_XFORM and stellarator continuum calculations",
+      "command": "python -m pytest tests/test_boozer.py tests/test_validation_registry.py",
+      "tags": [
+        "boozer",
+        "harmonics",
+        "analytic"
+      ]
+    },
+    {
+      "id": "boozer_straight_field_line_phase",
+      "title": "Boozer straight-field-line phase",
+      "layer": "boozer",
+      "quantity": "relative phase-slope error",
+      "tolerance": 0.0001,
+      "citation": "Straight-field-line Boozer convention theta=theta0+iota*zeta and phase m*theta-n*zeta",
+      "command": "python -m pytest tests/test_boozer.py tests/test_validation_registry.py",
+      "tags": [
+        "boozer",
+        "straight-field-line",
+        "analytic"
+      ]
+    },
+    {
       "id": "landreman_paul_adapter_smoke",
       "title": "Landreman-Paul QA VMEC adapter smoke test",
       "layer": "adapter",
@@ -278,6 +306,18 @@
     },
     {
       "file": "global_gap_fastion_dashboard.png",
+      "format": "png",
+      "status": "smoke-test",
+      "claim": "Development figure generated from analytic/local continuum formulas; not a full 3-D stellarator Alfvén-continuum validation."
+    },
+    {
+      "file": "boozer_harmonic_validation.svg",
+      "format": "svg",
+      "status": "smoke-test",
+      "claim": "Development figure generated from analytic/local continuum formulas; not a full 3-D stellarator Alfvén-continuum validation."
+    },
+    {
+      "file": "boozer_harmonic_validation.png",
       "format": "png",
       "status": "smoke-test",
       "claim": "Development figure generated from analytic/local continuum formulas; not a full 3-D stellarator Alfvén-continuum validation."
