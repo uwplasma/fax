@@ -1003,6 +1003,9 @@ Needed docs:
   - `docs/_static/figure_manifest.json`
 - Updated the README to show the generated dashboard and list the local quality gate.
 - Added rich terminal progress reporting for the CLI and Python `run()` function. Normal runs now print solve parameters, phase starts/completions, elapsed time, estimated remaining time, implementation status, and final execution-phase tables. `--json` and `--quiet` remain machine-readable paths.
+- Added the first metric-aware continuum scaffold in `fax.metric`: angular-grid `MetricGeometry`, analytic profile-to-metric lifting, VMEC `wout` Nyquist reconstruction of Jacobian/field/contravariant-field data, Hermitian continuum stiffness/mass matrices, and a dense generalized Hermitian frequency path.
+- Promoted the first smoke tests into a validation registry in `fax.validation` with named gates, tolerances, citations, commands, tags, and structured pass/fail/skip results.
+- Added tests for metric/profile-limit agreement, Hermiticity, generalized-eigenvalue sanity, density-gradient consistency, the Landreman-Paul metric adapter, and validation-registry metadata/results.
 
 ### Local Testing Policy Until GitHub Actions Resume
 
@@ -1052,8 +1055,8 @@ Sources:
 
 Implement the first metric-aware stellarator continuum milestone:
 
-1. Promote the existing local-continuum smoke tests into a validation registry with explicit gate names, tolerances, citations, and generated figure metadata.
-2. Add the VMEC/`vmec_jax` metric adapter needed by the continuum operator: flux-surface grid, rotational transform, density profile, Jacobian, and field-strength/metric harmonics.
+1. Add residual norms and eigenvector checks for the coupled metric continuum matrices, not just eigenvalue/frequency checks.
+2. Add radial and angular resolution-convergence gates for the analytic metric fixture and the Landreman-Paul QA adapter.
 3. Add an optional Boozer path through `booz_xform_jax` for models that need straight-field-line harmonics, while keeping analytic and VMEC-coordinate fixtures runnable without Boozer.
-4. Implement the first coupled-mode continuum matrix for one mode family, with residual checks, Hermitian/symmetry checks, resolution-convergence tests, and autodiff consistency tests.
-5. Wire the rich progress reporter into the real operator path so long runs report resolved paths, compile/run phases, matrix assembly, eigensolver residuals, convergence, artifact writes, elapsed time, and estimated remaining time.
+4. Turn the metric matrix path into a CLI-accessible `fax continuum` or `fax validate` workflow with rich progress output, artifact writes, and figure generation.
+5. Start the first literature/cross-code comparison gate: STELLGAP-style continuum gaps for a documented quasi-symmetric or axisymmetric reference case.

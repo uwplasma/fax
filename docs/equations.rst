@@ -21,6 +21,27 @@ form proportional to ``n - m iota``. The production operator must use the full
 metric/Jacobian data from the selected coordinate representation rather than
 hard-coding this approximation.
 
+The first metric-matrix scaffold uses the harmonic convention
+``exp(i * (m * theta - n * zeta))`` and forms, on each flux surface,
+
+.. math::
+
+   K_{ij} =
+   \left\langle J \frac{B^2}{\mu_0}
+   k_{\parallel i} k_{\parallel j}
+   \phi_i^* \phi_j \right\rangle_{\theta,\zeta},
+   \qquad
+   M_{ij} =
+   \left\langle J \rho
+   \phi_i^* \phi_j \right\rangle_{\theta,\zeta},
+
+with ``K x = omega^2 M x``. In the uniform straight-field-line fixture this
+reduces to the profile formula above. In VMEC ``wout`` smoke tests, ``J``,
+``B``, and contravariant field components are reconstructed from Nyquist
+Fourier coefficients. This is an operator-plumbing and symmetry milestone; the
+reviewer-facing stellarator validation still requires comparison with
+STELLGAP/AE3D-style reference calculations.
+
 Global Modes
 ------------
 
@@ -59,4 +80,3 @@ Each equation entering the code must have:
 * a convergence test,
 * a finite-difference or adjoint consistency test if it is differentiable,
 * at least one validation case before it can support a publication claim.
-

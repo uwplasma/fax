@@ -16,6 +16,9 @@ API
 .. automodule:: fax.continuum
    :members:
 
+.. automodule:: fax.metric
+   :members:
+
 .. automodule:: fax.modes
    :members:
 

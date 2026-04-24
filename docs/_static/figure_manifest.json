@@ -1,5 +1,74 @@
 {
   "generator": "tools/generate_validation_figures.py",
+  "validation_gates": [
+    {
+      "id": "analytic_cylinder_frequency",
+      "title": "Uniform-cylinder continuum frequency",
+      "layer": "analytic",
+      "quantity": "relative L2 branch variation",
+      "tolerance": 2e-06,
+      "citation": "Goedbloed, Keppens, Poedts, Advanced Magnetohydrodynamics, local shear-Alfven continuum limit",
+      "command": "python -m pytest tests/test_validation_registry.py",
+      "tags": [
+        "analytic",
+        "continuum"
+      ]
+    },
+    {
+      "id": "metric_matches_profile_limit",
+      "title": "Metric matrix reduces to profile continuum limit",
+      "layer": "operator",
+      "quantity": "relative L2 frequency error",
+      "tolerance": 2e-05,
+      "citation": "Large-aspect-ratio straight-field-line limit used as the FAX dense reference fixture",
+      "command": "python -m pytest tests/test_metric.py tests/test_validation_registry.py",
+      "tags": [
+        "analytic",
+        "metric",
+        "continuum"
+      ]
+    },
+    {
+      "id": "metric_matrix_hermitian",
+      "title": "Metric continuum matrix Hermiticity",
+      "layer": "operator",
+      "quantity": "relative Frobenius Hermitian error",
+      "tolerance": 1e-12,
+      "citation": "Self-adjoint ideal-MHD shear-Alfven energy principle in the incompressible limit",
+      "command": "python -m pytest tests/test_metric.py tests/test_validation_registry.py",
+      "tags": [
+        "metric",
+        "symmetry"
+      ]
+    },
+    {
+      "id": "density_scale_gradient",
+      "title": "Density sensitivity against analytic scaling",
+      "layer": "differentiability",
+      "quantity": "relative gradient error",
+      "tolerance": 5e-05,
+      "citation": "JAX reverse-mode autodiff consistency check for omega proportional to rho^(-1/2)",
+      "command": "python -m pytest tests/test_metric.py tests/test_validation_registry.py",
+      "tags": [
+        "autodiff",
+        "continuum"
+      ]
+    },
+    {
+      "id": "landreman_paul_adapter_smoke",
+      "title": "Landreman-Paul QA VMEC adapter smoke test",
+      "layer": "adapter",
+      "quantity": "finite/positive metric-field check",
+      "tolerance": 0.0,
+      "citation": "Landreman & Paul, Phys. Rev. Lett. 128, 035001 (2022), arXiv:2108.03711",
+      "command": "python -m pytest -m requires_vmec_jax tests/test_metric.py tests/test_validation_registry.py",
+      "tags": [
+        "vmec",
+        "landreman-paul",
+        "adapter"
+      ]
+    }
+  ],
   "figures": [
     {
       "file": "analytic_continuum_scaling.svg",

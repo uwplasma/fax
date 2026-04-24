@@ -15,6 +15,7 @@ from fax.equilibrium import analytic_circular_tokamak, from_vmec_wout
 from fax.gaps import minimum_gap_summary, sorted_branch_gaps
 from fax.modes import stellarator_mode_family
 from fax.reference_cases import landreman_paul_qa_lowres
+from fax.validation import registered_validation_gates
 
 
 def _setup_matplotlib():
@@ -198,6 +199,19 @@ def write_figure_manifest(output_dir: Path, paths: list[Path]) -> Path:
     """Write a JSON manifest describing generated figures and their claims."""
     manifest = {
         "generator": "tools/generate_validation_figures.py",
+        "validation_gates": [
+            {
+                "id": gate.gate_id,
+                "title": gate.title,
+                "layer": gate.layer,
+                "quantity": gate.quantity,
+                "tolerance": gate.tolerance,
+                "citation": gate.citation,
+                "command": gate.command,
+                "tags": list(gate.tags),
+            }
+            for gate in registered_validation_gates()
+        ],
         "figures": [
             {
                 "file": path.name,

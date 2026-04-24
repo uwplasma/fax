@@ -12,6 +12,7 @@ from typing import Any, TextIO
 
 from .config import FaxConfig
 from .progress import PhaseRecord, ProgressReporter
+from .validation import registered_validation_gates
 
 
 @dataclass(frozen=True)
@@ -79,8 +80,9 @@ def run(
             if config.equilibrium.use_boozer:
                 reporter.log(f"Boozer coordinates requested: {config.equilibrium.boozmn or 'to be generated'}")
         elif name == "Plan physics operators":
-            reporter.log("current implementation: local-continuum smoke-test operators and planning summary")
-            reporter.log("next operators: metric-aware VMEC/Boozer continuum and global eigenmodes")
+            reporter.log("current implementation: profile continuum, metric-matrix scaffold, and validation registry")
+            reporter.log(f"registered validation gates: {len(registered_validation_gates())}")
+            reporter.log("next operators: full VMEC/Boozer continuum coupling and global eigenmodes")
         reporter.phase_done(status="done")
 
     summary = RunSummary(

@@ -19,6 +19,15 @@ Regenerate validation figures:
 
    python tools/generate_validation_figures.py
 
+Inspect registered validation gates:
+
+.. code-block:: python
+
+   from fax.validation import run_validation_suite
+
+   for result in run_validation_suite():
+       print(result.gate_id, result.status, result.metric, result.tolerance)
+
 Local quality gate while GitHub Actions is unavailable:
 
 .. code-block:: bash

@@ -16,6 +16,10 @@ Coordinate adapters
 Operators
    Build continuum and global-mode operators from metric coefficients,
    rotational transform, density profiles, and Fourier coupling matrices.
+   The current implementation includes both the profile-limit continuum formulas
+   and a first angular-grid metric matrix scaffold, so new physics can be
+   checked against an analytic reduction before it is treated as stellarator
+   validation.
 
 Solvers
    Provide dense reference eigensolvers first, then matrix-free Krylov and
@@ -24,4 +28,5 @@ Solvers
 Validation
    Treat reference cases as first-class artifacts: exact analytic cases,
    cross-code comparisons, convergence scans, and experimental benchmarks.
-
+   ``fax.validation`` now provides a registry of named validation gates with
+   tolerances, citations, commands, and pass/fail results.

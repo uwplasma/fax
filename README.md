@@ -14,8 +14,9 @@ The project is intentionally coupled to the UWPlasma JAX ecosystem:
 The current repository state has the first executable physics foundation:
 packaging, CLI, docs, local tests, analytic equilibrium fixtures, a minimal VMEC
 `wout` profile adapter, local Alfvén-continuum smoke-test formulas, mode-family
-helpers, gap/sensitivity diagnostics, and generated documentation figures.
-Full 3-D VMEC/Boozer continuum operators, global eigenmodes, and fast-ion drive
+helpers, gap/sensitivity diagnostics, a first metric-matrix continuum scaffold,
+a registered validation-gate inventory, and generated documentation figures.
+Full 3-D VMEC/Boozer continuum validation, global eigenmodes, and fast-ion drive
 models are still planned work.
 
 ![Gap and sensitivity dashboard](docs/_static/gap_sensitivity_dashboard.svg)
@@ -89,6 +90,25 @@ Current figures:
 - `landreman_paul_qa_lowres_profiles.svg`: first VMEC-backed profile/adapter target.
 - `gap_sensitivity_dashboard.svg`: mode-family, gap-proxy, and autodiff sensitivity dashboard.
 
+## Validation Gates
+
+The current validation registry is available from Python:
+
+```python
+from fax.validation import registered_validation_gates, run_validation_suite
+
+for gate in registered_validation_gates():
+    print(gate.gate_id, gate.tolerance, gate.citation)
+
+results = run_validation_suite(tags=("metric",))
+```
+
+The first gates cover analytic continuum scaling, reduction of the metric
+matrix to the profile limit, Hermiticity of the generalized continuum matrices,
+density-gradient consistency, and the Landreman-Paul QA VMEC adapter smoke
+test. These are acceptance gates for the scaffold, not yet full STELLGAP/AE3D
+stellarator validation.
+
 ## Repository Layout
 
 - `plan.md`: literature survey, physics goals, architecture, validation plan,
@@ -110,7 +130,7 @@ It currently establishes:
 - GitHub Actions for tests, docs, and PyPI publishing,
 - local-only quality gates while GitHub Actions billing is blocked,
 - unit tests for configuration, CLI, reference cases, continuum formulas,
-  gradients, validation metrics, and benchmark helpers,
+  metric matrices, gradients, validation gates, and benchmark helpers,
 - a LandremanPaul2021 QA lowres local reference target,
 - generated smoke-test figures for docs and README,
 - a handoff plan grounded in the existing literature and comparison codes.

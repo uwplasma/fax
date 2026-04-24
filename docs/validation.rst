@@ -16,6 +16,40 @@ validation layers include:
 Each published validation case should include the input files, source citation,
 expected metric, tolerance, and the exact command used to regenerate the result.
 
+Current Registered Gates
+------------------------
+
+``fax.validation`` now contains a small registry of named validation gates. Each
+gate has an identifier, physics layer, measured quantity, tolerance, citation,
+tags, and command. The current gates are:
+
+* ``analytic_cylinder_frequency``: verifies the uniform-cylinder continuum
+  branch is radially constant.
+* ``metric_matches_profile_limit``: checks the angular-grid metric matrix
+  reduces to the profile continuum formula in the uniform straight-field-line
+  limit.
+* ``metric_matrix_hermitian``: checks Hermiticity of the local generalized
+  continuum stiffness and mass matrices.
+* ``density_scale_gradient``: checks JAX autodiff against the analytic
+  ``rho^(-1/2)`` density scaling.
+* ``landreman_paul_adapter_smoke``: checks the Landreman-Paul QA VMEC ``wout``
+  profile and metric adapters when local data are available.
+
+Run them from Python:
+
+.. code-block:: python
+
+   from fax.validation import registered_validation_gates, run_validation_suite
+
+   for gate in registered_validation_gates():
+       print(gate.gate_id, gate.tolerance, gate.citation)
+
+   results = run_validation_suite()
+
+These are scaffold acceptance gates. Publication claims about 3-D stellarator
+continuum gaps still require the planned STELLGAP/AE3D/literature comparison
+gates and resolution-convergence reports.
+
 First Local Stellarator Target
 ------------------------------
 
