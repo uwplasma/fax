@@ -10,6 +10,8 @@ from typing import Any
 
 import numpy as np
 
+from .gap_models import BasicAlfvenGapMap, basic_alfven_gap_map
+
 
 @dataclass(frozen=True)
 class ContinuumArtifacts:
@@ -201,6 +203,108 @@ def plot_convergence_artifacts(
             f"theta={reference.get('theta_points', '?')}, m_max={reference.get('m_max', '?')}"
         )
     fig.suptitle(f"{case}: convergence artifact dashboard{reference_text}", fontsize=12, weight="bold")
+
+    paths = _save_figure(fig, output_path, stem, formats=formats)
+    plt.close(fig)
+    return paths
+
+
+def plot_basic_alfven_gap_map(
+    output_dir: str | Path,
+    *,
+    demo: BasicAlfvenGapMap | None = None,
+    stem: str = "basic_alfven_gap_map",
+    formats: tuple[str, ...] = ("svg", "png"),
+) -> tuple[Path, ...]:
+    """Plot a fast analytic BAE/TAE/EAE continuum gap demonstration."""
+    data = basic_alfven_gap_map() if demo is None else demo
+    output_path = Path(output_dir).expanduser().resolve()
+    output_path.mkdir(parents=True, exist_ok=True)
+    plt = _setup_matplotlib()
+
+    q = np.asarray(data.q)
+    order = np.argsort(q)
+    q_sorted = q[order]
+    branches = np.asarray(data.continuum_branches_hz)[order, :] / 1.0e3
+    tae_lower = np.asarray(data.tae.lower_frequency_hz)[order] / 1.0e3
+    tae_upper = np.asarray(data.tae.upper_frequency_hz)[order] / 1.0e3
+    eae_lower = np.asarray(data.eae.lower_frequency_hz)[order] / 1.0e3
+    eae_upper = np.asarray(data.eae.upper_frequency_hz)[order] / 1.0e3
+    bae = np.asarray(data.bae_frequency_hz)[order] / 1.0e3
+
+    fig, (ax, ax_bae) = plt.subplots(
+        2,
+        1,
+        figsize=(7.7, 6.1),
+        sharex=True,
+        constrained_layout=True,
+        gridspec_kw={"height_ratios": [3.0, 1.25]},
+    )
+    labels = [r"uncoupled $(m,n)=(1,1)$", r"uncoupled $(2,1)$", r"uncoupled $(3,1)$"]
+    for index, label in enumerate(labels):
+        ax.plot(q_sorted, branches[:, index], color="#767676", linewidth=1.0, linestyle="--", alpha=0.72, label=label)
+
+    ax.plot(q_sorted, tae_lower, color="#2458a6", linewidth=1.9, label="TAE coupled branches")
+    ax.plot(q_sorted, tae_upper, color="#2458a6", linewidth=1.9)
+    tae_q = float(1.0 / data.tae.estimate.iota)
+    eae_q = float(1.0 / data.eae.estimate.iota)
+    bae_q = float(data.bae_q)
+    ax.fill_between(q_sorted, tae_lower, tae_upper, where=np.abs(q_sorted - tae_q) < 0.28, color="#2458a6", alpha=0.18)
+
+    ax.plot(q_sorted, eae_lower, color="#b13f2a", linewidth=1.9, label="EAE coupled branches")
+    ax.plot(q_sorted, eae_upper, color="#b13f2a", linewidth=1.9)
+    ax.fill_between(q_sorted, eae_lower, eae_upper, where=np.abs(q_sorted - eae_q) < 0.35, color="#b13f2a", alpha=0.14)
+
+    for gap_q, color, text, y_khz in [
+        (tae_q, "#2458a6", "TAE gap\nm,m+1", float(data.tae.estimate.center_frequency_hz / 1.0e3)),
+        (eae_q, "#b13f2a", "EAE gap\nm,m+2", float(data.eae.estimate.center_frequency_hz / 1.0e3)),
+    ]:
+        ax.axvline(gap_q, color=color, linewidth=1.1, alpha=0.45)
+        ax.annotate(
+            text,
+            xy=(gap_q, y_khz),
+            xytext=(gap_q + 0.08, y_khz + 42.0),
+            arrowprops={"arrowstyle": "->", "color": color, "lw": 1.0},
+            fontsize=8,
+            color=color,
+            ha="left",
+            va="bottom",
+        )
+
+    ax.set_title("Basic Alfvén continuum gaps in a large-aspect-ratio tokamak")
+    ax.set_ylabel("frequency [kHz]")
+    ax.set_xlim(float(np.min(q_sorted)), float(np.max(q_sorted)))
+    ax.set_ylim(bottom=0.0)
+    ax.legend(fontsize=7, ncols=2, loc="upper left")
+    ax.text(
+        0.98,
+        0.93,
+        r"$\omega_A=v_A|n-m/q|/R$; shaded regions show minimal avoided crossings.",
+        transform=ax.transAxes,
+        fontsize=8,
+        color="#333333",
+        ha="right",
+        va="top",
+        bbox={"facecolor": "white", "edgecolor": "none", "alpha": 0.78, "pad": 2.0},
+    )
+
+    ax_bae.plot(q_sorted, bae, color="#2e7d32", linewidth=2.0, label="BAE accumulation")
+    ax_bae.fill_between(q_sorted, 0.9 * bae, 1.1 * bae, color="#2e7d32", alpha=0.15)
+    ax_bae.axvline(bae_q, color="#2e7d32", linewidth=1.1, alpha=0.55)
+    ax_bae.annotate(
+        "BAE gap\nfinite beta",
+        xy=(bae_q, float(data.bae_frequency_at_surface_hz / 1.0e3)),
+        xytext=(bae_q + 0.08, float(data.bae_frequency_at_surface_hz / 1.0e3) + 5.0),
+        arrowprops={"arrowstyle": "->", "color": "#2e7d32", "lw": 1.0},
+        fontsize=8,
+        color="#2e7d32",
+        ha="left",
+        va="bottom",
+    )
+    ax_bae.set_xlabel("safety factor q")
+    ax_bae.set_ylabel("frequency [kHz]")
+    ax_bae.set_ylim(bottom=0.0)
+    ax_bae.legend(fontsize=7, loc="upper right")
 
     paths = _save_figure(fig, output_path, stem, formats=formats)
     plt.close(fig)

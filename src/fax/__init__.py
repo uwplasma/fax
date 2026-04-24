@@ -14,6 +14,7 @@ from .plotting import (
     ConvergenceArtifacts,
     load_continuum_artifacts,
     load_convergence_artifacts,
+    plot_basic_alfven_gap_map,
     plot_continuum_artifacts,
     plot_convergence_artifacts,
 )
@@ -52,6 +53,7 @@ __all__ = [
     "load_convergence_artifacts",
     "load_config",
     "plot_continuum_artifacts",
+    "plot_basic_alfven_gap_map",
     "plot_convergence_artifacts",
     "run",
     "run_benchmark",

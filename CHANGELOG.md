@@ -11,6 +11,7 @@ Initial research scaffold release for FAX.
 - Analytic equilibrium fixtures, local shear-Alfven continuum formulas, and metric-matrix continuum scaffold.
 - Reduced radial global-eigenmode operator with exact constant-profile spectrum and density-gradient gates.
 - Analytic TAE/EAE/HAE gap estimates and reduced fast-ion transit/precession resonance diagnostics.
+- Fast BAE/TAE/EAE large-aspect-ratio gap-map example with a publication-style figure.
 - Optional Boozer-spectrum reader and local `booz_xform_jax` coupling smoke path.
 - Boozer harmonic reconstruction/projection, Fourier orthogonality, and straight-field-line phase validation.
 - Reduced Boozer continuum matrix with constant-field profile-limit and sideband-coupling gates.
@@ -26,7 +27,7 @@ Initial research scaffold release for FAX.
   - `fax plot-convergence`
   - `fax benchmark`
 - Generated README/docs figures with automated nonblank figure QA.
-- Research examples for validation packets, differentiability sensitivity, a small inverse-design toy problem, and a reduced global/gap/fast-ion screening packet.
+- Research examples for validation packets, differentiability sensitivity, a small inverse-design toy problem, a basic BAE/TAE/EAE gap map, and a reduced global/gap/fast-ion screening packet.
 - Research example for Boozer harmonic convention validation.
 - ReadTheDocs/Sphinx docs, GitHub Actions definitions for tests/docs/publish, and PyPI trusted-publishing workflow.
 
@@ -39,8 +40,8 @@ This release is a validated scaffold, not a final 3-D stellarator eigenmode solv
 Current gates cover analytic continuum limits, metric reduction to the profile
 limit, Hermiticity, generalized-eigensolve residuals, JAX density-gradient
 consistency, radial/angular convergence, reduced radial eigenmode spectra,
-analytic gap centers, reduced fast-ion resonance ordering, and VMEC/Boozer
-adapter smoke tests.
+analytic gap centers, BAE/TAE/EAE reference ordering, reduced fast-ion
+resonance ordering, and VMEC/Boozer adapter smoke tests.
 
 ### Local Release Gate
 

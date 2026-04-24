@@ -100,6 +100,40 @@ center frequency, and a configurable fractional width. These are analytic
 screening gates and should be replaced by Boozer/metric coupling integrals
 before making cross-code stellarator gap-width claims.
 
+For the fast user-facing BAE/TAE/EAE example, FAX also solves a minimal
+two-branch avoided-crossing model,
+
+.. math::
+
+   \begin{bmatrix}
+   \omega_m^2 & c\,\omega_m\omega_{m+\Delta m}\\
+   c\,\omega_m\omega_{m+\Delta m} & \omega_{m+\Delta m}^2
+   \end{bmatrix}
+   \phi = \omega^2 \phi,
+
+where ``Delta m=1`` reproduces the toroidicity-induced TAE crossing and
+``Delta m=2`` reproduces the ellipticity-induced EAE crossing in the
+large-aspect-ratio picture. The corresponding reference surfaces are
+
+.. math::
+
+   q_{\rm TAE}=\frac{2m+1}{2n}, \qquad
+   q_{\rm EAE}=\frac{m+1}{n}.
+
+The same example marks the finite-beta/acoustic BAE accumulation frequency with
+the fluid-order estimate
+
+.. math::
+
+   \omega_{\rm BAE} =
+   \sqrt{\frac{7}{4}+\frac{T_e}{T_i}}\,
+   \frac{v_{ti}}{qR}, \qquad
+   v_{ti} = \sqrt{\frac{T_i}{m_i}}.
+
+This BAE marker is intentionally a low-frequency reference scale; kinetic,
+diamagnetic, isotope, and shaped-equilibrium corrections require later
+validation layers.
+
 Fast-Ion Drive
 --------------
 

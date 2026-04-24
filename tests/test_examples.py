@@ -66,6 +66,27 @@ def test_global_gap_fastion_screen_example_runs():
     assert payload["fast_ion_peak"]["drive"] > 0.0
 
 
+def test_basic_alfven_gap_map_example_runs(tmp_path):
+    result = subprocess.run(
+        [
+            sys.executable,
+            "examples/research/basic_alfven_gap_map.py",
+            "--output-dir",
+            str(tmp_path),
+            "--format",
+            "png",
+        ],
+        cwd=REPO_ROOT,
+        check=True,
+        text=True,
+        capture_output=True,
+    )
+    payload = json.loads(result.stdout)
+    assert payload["tae_gap"]["center_frequency_hz"] > payload["bae_gap"]["accumulation_frequency_hz"]
+    assert payload["eae_gap"]["center_frequency_hz"] > payload["tae_gap"]["center_frequency_hz"]
+    assert Path(payload["figure_files"][0]).exists()
+
+
 def test_boozer_harmonic_validation_example_runs():
     result = subprocess.run(
         [sys.executable, "examples/research/boozer_harmonic_validation.py"],

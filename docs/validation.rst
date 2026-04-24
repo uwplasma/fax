@@ -47,6 +47,11 @@ tags, and command. The current gates are:
   generalized eigenproblem against the analytic ``rho^(-1/2)`` scaling.
 * ``analytic_tae_gap_center``: checks the analytic TAE crossing condition
   ``iota=2n/(2m+1)``.
+* ``basic_gap_map_ordering``: checks that the fast BAE/TAE/EAE example places
+  TAE and EAE at their large-aspect-ratio reference ``q`` surfaces and orders
+  the BAE, TAE, and EAE frequencies correctly.
+* ``bae_temperature_scaling``: checks that the BAE accumulation marker follows
+  the expected ``sqrt(T_i)`` scaling at fixed ``T_e/T_i``.
 * ``fast_ion_resonance_peak``: checks that the reduced fast-ion drive peaks at
   the transit/precession resonance.
 * ``boozer_harmonic_projection``: checks Boozer ``|B|`` harmonic
@@ -150,6 +155,14 @@ yet full 3-D Alfvén-continuum validation.
    estimates, fast-ion resonance screen, and optimization-gradient smoke test.
    This exercises the new end-to-end differentiable reduced path without
    claiming full 3-D stellarator eigenmode validation.
+
+.. figure:: _static/basic_alfven_gap_map.svg
+   :alt: Basic BAE, TAE, and EAE Alfvén-continuum gap map.
+
+   Fast user-facing large-aspect-ratio reproduction of standard continuum gaps:
+   TAE from toroidal ``m,m+1`` coupling, EAE from elliptic ``m,m+2`` coupling,
+   and the low-frequency BAE accumulation marker. This is a pedagogical
+   analytic reference, not a 3-D stellarator benchmark.
 
 .. figure:: _static/boozer_harmonic_validation.svg
    :alt: Boozer harmonic reconstruction and phase validation dashboard.

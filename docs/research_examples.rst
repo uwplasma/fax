@@ -77,6 +77,22 @@ rotational-transform shift to move a selected analytic continuum diagnostic
 toward a target frequency. It is deliberately simple so that users can inspect
 the objective, gradients, and iteration history.
 
+Basic BAE/TAE/EAE Gap Map
+-------------------------
+
+Run:
+
+.. code-block:: bash
+
+   python examples/research/basic_alfven_gap_map.py
+
+This writes ``outputs/basic_alfven_gap_map/basic_alfven_gap_map.png`` and
+``.svg``. It is a fast large-aspect-ratio reproduction of the standard
+Alfvén-continuum gap picture: cylindrical branches, toroidicity-induced TAE
+coupling, ellipticity-induced EAE coupling, and a finite-beta/acoustic BAE
+accumulation-frequency marker. The script also prints the reference ``q``
+locations and frequencies as JSON.
+
 Reduced Global/Gaps/Fast Ions
 -----------------------------
 

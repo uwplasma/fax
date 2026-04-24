@@ -38,7 +38,7 @@ from fax.metric import (
 )
 from fax.modes import stellarator_mode_family
 from fax.optimization import radial_mode_avoidance_objective
-from fax.plotting import plot_continuum_artifacts, plot_convergence_artifacts
+from fax.plotting import plot_basic_alfven_gap_map, plot_continuum_artifacts, plot_convergence_artifacts
 from fax.reference_cases import landreman_paul_qa_lowres
 from fax.workflows import run_continuum, run_convergence
 from fax.validation import registered_validation_gates, run_validation_suite
@@ -809,6 +809,7 @@ def main(argv: list[str] | None = None) -> int:
         generate_equations_overview(output_dir),
         generate_cylinder_scaling(output_dir),
         generate_landreman_reference(output_dir),
+        list(plot_basic_alfven_gap_map(output_dir)),
         generate_gap_sensitivity_dashboard(output_dir),
         generate_global_gap_fastion_dashboard(output_dir),
         generate_boozer_harmonic_validation(output_dir),

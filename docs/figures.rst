@@ -35,6 +35,14 @@ Current Figures
    First VMEC-backed local reference target. This is a profile/adapter and
    local-continuum smoke test, not full 3-D continuum validation.
 
+.. figure:: _static/basic_alfven_gap_map.svg
+   :alt: Basic BAE, TAE, and EAE Alfvén-continuum gap map.
+
+   Fast analytic large-aspect-ratio gap example: cylindrical continuum
+   branches, a TAE avoided crossing from ``m,m+1`` coupling, an EAE avoided
+   crossing from ``m,m+2`` coupling, and a low-frequency BAE accumulation
+   marker.
+
 .. figure:: _static/gap_sensitivity_dashboard.svg
    :alt: Gap and sensitivity dashboard for the LandremanPaul2021 QA lowres smoke test.
 

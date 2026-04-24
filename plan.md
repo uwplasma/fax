@@ -1074,6 +1074,13 @@ Needed docs:
   - Added `boozer_continuum_coupling` README/docs figure showing constant-field profile recovery, Hermitian sideband coupling, and reduced gap opening under controlled harmonic amplitude.
   - Direct `run_validation_suite()` now has 19 registered gates passing on this machine.
   - Verified after this Boozer-continuum step with `python -m ruff check .`, `python -m mypy src/fax`, `python -m pytest -q` (85 passed), `python tools/generate_validation_figures.py`, `python tools/qa_figures.py`, `sphinx-build -W -b html docs docs/_build/html`, `python -m build`, and `python -m twine check dist/*`.
+- Added a fast basic BAE/TAE/EAE gap-map demonstration:
+  - `coupled_gap_branch_map`, `tae_gap_branch_map`, and `eae_gap_branch_map` now solve a minimal Hermitian two-branch avoided crossing for the textbook large-aspect-ratio continuum.
+  - `bae_accumulation_frequency_hz` adds the fluid-order finite-beta/acoustic marker ``omega_BAE=sqrt(7/4+Te/Ti) v_ti/(qR)`` for examples and gates.
+  - `basic_alfven_gap_map` builds a small analytic tokamak case spanning the ``q=3/2`` TAE surface and ``q=2`` EAE/BAE surface.
+  - Added `examples/research/basic_alfven_gap_map.py`, README/docs explanations, and generated `basic_alfven_gap_map` figure showing the TAE, EAE, and BAE gaps clearly.
+  - Added validation gates `basic_gap_map_ordering` and `bae_temperature_scaling`; direct `run_validation_suite()` now has 21 registered gates passing on this machine.
+  - Verified after this gap-map step with `python -m ruff check .`, `python -m mypy src/fax`, `python -m pytest -q` (89 passed), `python tools/generate_validation_figures.py`, `python tools/qa_figures.py`, `sphinx-build -W -b html docs docs/_build/html`, `python -m build`, and `python -m twine check dist/*`.
 
 ### Local Testing Policy Until GitHub Actions Resume
 

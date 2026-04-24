@@ -32,6 +32,11 @@ Inverse design
    ``examples/research/inverse_iota_shift.py`` optimizes a bounded scalar
    rotational-transform shift in a transparent analytic fixture.
 
+Basic BAE/TAE/EAE gap map
+   ``examples/research/basic_alfven_gap_map.py`` generates a two-panel
+   large-aspect-ratio continuum figure showing the TAE, EAE, and BAE reference
+   gaps with a compact JSON summary.
+
 Reduced global/gap/fast-ion screen
    ``examples/research/global_gap_fastion_screen.py`` combines the radial
    eigenmode gate, analytic gap estimates, reduced fast-ion resonance screen,

@@ -20,7 +20,7 @@ from .boozer import (
 from .continuum import continuum_branch_matrix, local_continuum_frequency_hz
 from .equilibrium import analytic_circular_tokamak, analytic_cylinder, from_vmec_wout
 from .fast_ions import FastIonPopulation, reduced_fast_ion_drive
-from .gap_models import tae_gap_estimate
+from .gap_models import bae_accumulation_frequency_hz, basic_alfven_gap_map, tae_gap_estimate
 from .global_modes import (
     constant_problem_discrete_omega2,
     constant_radial_problem,
@@ -288,6 +288,41 @@ def _gate_analytic_tae_gap_center() -> GateResult:
         metric,
         tolerance,
         "TAE m/m+1 crossing occurs at the analytic iota=2n/(2m+1) resonance",
+    )
+
+
+def _gate_basic_gap_map_ordering() -> GateResult:
+    gate_id = "basic_gap_map_ordering"
+    tolerance = 2.0e-2
+    demo = basic_alfven_gap_map(radial_points=192)
+    tae_q = 1.0 / demo.tae.estimate.iota
+    eae_q = 1.0 / demo.eae.estimate.iota
+    bae_frequency = demo.bae_frequency_at_surface_hz
+    tae_frequency = demo.tae.estimate.center_frequency_hz
+    eae_frequency = demo.eae.estimate.center_frequency_hz
+    location_error = jnp.maximum(jnp.abs(tae_q - 1.5) / 1.5, jnp.abs(eae_q - 2.0) / 2.0)
+    ordering_failure = jnp.where((bae_frequency < tae_frequency) & (tae_frequency < eae_frequency), 0.0, 1.0)
+    metric = float(jnp.maximum(location_error, ordering_failure))
+    return _pass_fail(
+        gate_id,
+        metric,
+        tolerance,
+        "basic gap map places BAE below TAE below EAE with TAE/EAE at the analytic q surfaces",
+    )
+
+
+def _gate_bae_temperature_scaling() -> GateResult:
+    gate_id = "bae_temperature_scaling"
+    tolerance = 1.0e-6
+    geometry = analytic_circular_tokamak(radial_points=48, iota_axis=0.8, iota_edge=0.4, major_radius=3.0)
+    cold = bae_accumulation_frequency_hz(geometry, ion_temperature_ev=1_000.0, electron_temperature_ev=1_000.0)
+    hot = bae_accumulation_frequency_hz(geometry, ion_temperature_ev=4_000.0, electron_temperature_ev=4_000.0)
+    metric = max_relative_error(hot / cold, 2.0)
+    return _pass_fail(
+        gate_id,
+        float(metric),
+        tolerance,
+        "fluid-order BAE accumulation frequency follows sqrt(T_i) scaling at fixed Te/Ti",
     )
 
 
@@ -688,6 +723,28 @@ def registered_validation_gates() -> tuple[ValidationGate, ...]:
             command="python -m pytest tests/test_gap_models.py tests/test_validation_registry.py",
             tags=("gap", "tae", "analytic"),
             _runner=_gate_analytic_tae_gap_center,
+        ),
+        ValidationGate(
+            gate_id="basic_gap_map_ordering",
+            title="Basic BAE/TAE/EAE gap-map ordering",
+            layer="gap-physics",
+            quantity="relative q-location error and frequency ordering",
+            tolerance=2.0e-2,
+            citation="Large-aspect-ratio continuum: TAE m/m+1 gap, EAE m/m+2 gap, and finite-beta BAE accumulation scale",
+            command="python -m pytest tests/test_gap_models.py tests/test_examples.py tests/test_validation_registry.py",
+            tags=("gap", "tae", "eae", "bae", "analytic"),
+            _runner=_gate_basic_gap_map_ordering,
+        ),
+        ValidationGate(
+            gate_id="bae_temperature_scaling",
+            title="BAE accumulation temperature scaling",
+            layer="gap-physics",
+            quantity="relative sqrt(T_i) scaling error",
+            tolerance=1.0e-6,
+            citation="Fluid-order beta-induced Alfvén-acoustic accumulation frequency omega_BAE=sqrt(7/4+Te/Ti) vti/(qR)",
+            command="python -m pytest tests/test_gap_models.py tests/test_validation_registry.py",
+            tags=("gap", "bae", "analytic"),
+            _runner=_gate_bae_temperature_scaling,
         ),
         ValidationGate(
             gate_id="fast_ion_resonance_peak",

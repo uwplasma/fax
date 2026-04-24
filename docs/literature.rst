@@ -46,6 +46,15 @@ reproduce a quantitative comparison. Current priority targets are:
 * Boozer-coordinate transformation references and implementation conventions:
   https://princetonuniversity.github.io/STELLOPT/BOOZ_XFORM.html and
   https://github.com/hiddenSymmetries/booz_xform
+* Basic large-aspect-ratio gap references for the user-facing BAE/TAE/EAE
+  example:
+  Fu & Cheng, "Theory of a high-n toroidicity-induced shear Alfven eigenmode in
+  tokamaks", Physics of Fluids B 2, 985 (1990),
+  https://www.osti.gov/biblio/6896532; Betti & Freidberg, "Ellipticity induced
+  Alfven eigenmodes", Physics of Fluids B 3, 1865 (1991),
+  https://www.osti.gov/biblio/5722321; Turnbull et al., "Global Alfven modes:
+  Theory and experiment", Physics of Fluids B 5, 2546 (1993),
+  https://www.osti.gov/biblio/6484922.
 
 Differentiability references
 ----------------------------

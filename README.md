@@ -113,6 +113,14 @@ LandremanPaul2021 QA lowres `wout` from the neighboring `vmec_jax` checkout,
 extracts profile-level geometry, and computes local continuum smoke-test
 branches. It is not yet a full 3-D stellarator continuum validation.
 
+![Basic Alfvén gap map](docs/_static/basic_alfven_gap_map.png)
+
+This fast example reproduces the textbook large-aspect-ratio continuum picture:
+cylindrical branches `omega_A=v_A |n-m/q|/R`, toroidicity opening the TAE gap
+near `q=(2m+1)/(2n)`, ellipticity opening the EAE gap near `q=(m+1)/n`, and a
+finite-beta/acoustic BAE accumulation-frequency marker. Generate it with
+`python examples/research/basic_alfven_gap_map.py`.
+
 ![Gap and sensitivity dashboard](docs/_static/gap_sensitivity_dashboard.png)
 
 This dashboard shows a stellarator sideband family, nearest-branch separation,
@@ -212,6 +220,7 @@ fax plot-continuum outputs/landreman_paul_qa_lowres --output-dir outputs/landrem
 fax convergence examples/landreman_paul_qa_lowres.toml --radial-points 24 --radial-points 40
 fax plot-convergence outputs/landreman_paul_qa_lowres/convergence --output-dir outputs/landreman_paul_qa_lowres/figures
 fax benchmark examples/landreman_paul_qa_lowres.toml --repeats 3
+python examples/research/basic_alfven_gap_map.py
 python examples/research/global_gap_fastion_screen.py
 python examples/research/boozer_harmonic_validation.py
 ```
@@ -299,6 +308,7 @@ Current figures:
 - `equations_overview.svg`: implemented equation summary for new users.
 - `workflow_io_diagram.svg`: input/operator/output workflow diagram.
 - `landreman_paul_qa_lowres_profiles.svg`: first VMEC-backed profile/adapter target.
+- `basic_alfven_gap_map.svg`: fast BAE/TAE/EAE large-aspect-ratio continuum example.
 - `gap_sensitivity_dashboard.svg`: mode-family, gap-proxy, and autodiff sensitivity dashboard.
 - `global_gap_fastion_dashboard.svg`: reduced radial mode, gap, fast-ion, and optimization dashboard.
 - `boozer_harmonic_validation.svg`: Boozer harmonic reconstruction/projection and straight-field-line phase dashboard.

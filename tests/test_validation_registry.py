@@ -34,6 +34,8 @@ def test_core_validation_gates_pass():
         "global_mode_constant_profile",
         "global_mode_density_gradient",
         "analytic_tae_gap_center",
+        "basic_gap_map_ordering",
+        "bae_temperature_scaling",
         "fast_ion_resonance_peak",
         "boozer_harmonic_projection",
         "boozer_straight_field_line_phase",
