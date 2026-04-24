@@ -1,0 +1,65 @@
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "fax"
+version = "0.1.0"
+description = "Differentiable JAX code for Alfvén eigenmodes and fast-ion physics in stellarators."
+readme = "README.md"
+requires-python = ">=3.10"
+authors = [{ name = "UWPlasma contributors" }]
+license = "MIT"
+dependencies = [
+  "jax",
+  "jaxlib",
+  "numpy",
+  "scipy",
+  "netCDF4",
+  "tomli; python_version < '3.11'",
+]
+classifiers = [
+  "Development Status :: 2 - Pre-Alpha",
+  "Intended Audience :: Science/Research",
+  "Operating System :: OS Independent",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Topic :: Scientific/Engineering :: Physics",
+]
+keywords = ["alfven eigenmodes", "fast ions", "jax", "stellarator", "vmec"]
+
+[project.urls]
+Homepage = "https://github.com/uwplasma/fax"
+Repository = "https://github.com/uwplasma/fax"
+Documentation = "https://fax.readthedocs.io"
+Issues = "https://github.com/uwplasma/fax/issues"
+
+[project.scripts]
+fax = "fax.cli:main"
+
+[project.optional-dependencies]
+test = ["pytest"]
+docs = ["sphinx", "furo"]
+dev = ["build", "pytest", "ruff", "mypy", "sphinx", "furo"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = [
+  "slow: long-running physics or convergence test",
+  "regression: reference-data regression test",
+  "requires_vmec_jax: requires a local vmec_jax checkout or installation",
+  "requires_booz_xform_jax: requires a local booz_xform_jax checkout or installation",
+]
+
+[tool.ruff]
+line-length = 120
+
+[tool.mypy]
+python_version = "3.10"
+ignore_missing_imports = true

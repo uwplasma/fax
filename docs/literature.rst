@@ -1,0 +1,20 @@
+Literature And Codes
+====================
+
+The initial survey anchors the code plan in the following families:
+
+* FAR3D: reduced-MHD/gyro-fluid modelling of linear and nonlinear AE/EPM
+  stability with energetic-particle moments.
+* STELLGAP: shear Alfvén continuum and gap calculations in 3-D equilibria.
+* AE3D: shear Alfvén eigenmode and eigenfrequency calculations in 2-D and 3-D
+  toroidal configurations.
+* CAS3D and CAS3D-K: full ideal-MHD modes and perturbative kinetic growth-rate
+  calculations in stellarators.
+* EUTERPE/GTC/ORB5/LIGKA-style gyrokinetic approaches: higher-fidelity kinetic
+  references for selected cases.
+* BOOZ_XFORM and ``booz_xform_jax``: Boozer-coordinate transforms for
+  straight-field-line representations.
+
+See ``plan.md`` for source URLs, validation targets, and implementation
+priorities.
+
