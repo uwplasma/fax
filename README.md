@@ -44,12 +44,33 @@ the TOML parser fallback; on Python 3.11+ it uses the standard-library
 
 ```bash
 fax examples/minimal.toml --dry-run
-fax examples/minimal.toml --dump-config
 fax examples/landreman_paul_qa_lowres.toml --dry-run
 ```
 
-`fax` reads TOML configuration files. The current CLI validates and reports the
-planned run configuration; solver implementations will be added incrementally.
+`fax` reads TOML configuration files. The normal CLI path is intentionally
+verbose: it prints solve parameters, phase-by-phase status, elapsed time,
+estimated remaining time, and what the code is doing so long runs do not look
+silent.
+
+For machine-readable output:
+
+```bash
+fax examples/minimal.toml --dry-run --json
+fax examples/minimal.toml --dump-config
+fax examples/minimal.toml --quiet
+```
+
+Python calls are also progress-aware:
+
+```python
+from fax import load_config, run
+
+config = load_config("examples/landreman_paul_qa_lowres.toml")
+summary = run(config, progress=True, dry_run=True)
+```
+
+Solver implementations will be added incrementally behind the same progress
+reporting interface.
 
 ## Figures
 

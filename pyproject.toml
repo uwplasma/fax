@@ -16,6 +16,7 @@ dependencies = [
   "numpy",
   "scipy",
   "netCDF4",
+  "rich",
   "tomli; python_version < '3.11'",
 ]
 classifiers = [

@@ -1002,6 +1002,7 @@ Needed docs:
   - `docs/_static/gap_sensitivity_dashboard.svg`
   - `docs/_static/figure_manifest.json`
 - Updated the README to show the generated dashboard and list the local quality gate.
+- Added rich terminal progress reporting for the CLI and Python `run()` function. Normal runs now print solve parameters, phase starts/completions, elapsed time, estimated remaining time, implementation status, and final execution-phase tables. `--json` and `--quiet` remain machine-readable paths.
 
 ### Local Testing Policy Until GitHub Actions Resume
 
@@ -1049,10 +1050,10 @@ Sources:
 
 ### Next Recommended Step
 
-Implement M1 in a narrow branch:
+Implement the first metric-aware stellarator continuum milestone:
 
-1. Add `fax.equilibrium` with an analytic cylindrical/tokamak fixture.
-2. Add a minimal `vmec_jax`/`wout` adapter using `LandremanPaul2021_QA_lowres` as the first smoke target.
-3. Define the `EquilibriumGeometry` pytree and coordinate/unit conventions.
-4. Add unit tests for shape stability, dtype behavior, local path discovery, and Alfvén-speed scaling.
-5. Update docs with the coordinate convention before starting the continuum operator.
+1. Promote the existing local-continuum smoke tests into a validation registry with explicit gate names, tolerances, citations, and generated figure metadata.
+2. Add the VMEC/`vmec_jax` metric adapter needed by the continuum operator: flux-surface grid, rotational transform, density profile, Jacobian, and field-strength/metric harmonics.
+3. Add an optional Boozer path through `booz_xform_jax` for models that need straight-field-line harmonics, while keeping analytic and VMEC-coordinate fixtures runnable without Boozer.
+4. Implement the first coupled-mode continuum matrix for one mode family, with residual checks, Hermitian/symmetry checks, resolution-convergence tests, and autodiff consistency tests.
+5. Wire the rich progress reporter into the real operator path so long runs report resolved paths, compile/run phases, matrix assembly, eigensolver residuals, convergence, artifact writes, elapsed time, and estimated remaining time.

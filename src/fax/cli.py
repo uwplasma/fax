@@ -50,6 +50,8 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("config", nargs="?", help="Path to a fax TOML configuration file.")
     parser.add_argument("--dry-run", action="store_true", help="Validate input and print a planned-run summary.")
     parser.add_argument("--dump-config", action="store_true", help="Print the resolved configuration as JSON.")
+    parser.add_argument("--json", action="store_true", help="Print only the run summary JSON; disables rich progress output.")
+    parser.add_argument("--quiet", action="store_true", help="Suppress rich progress output and print only summary JSON.")
     parser.add_argument("--example", action="store_true", help="Print an example TOML configuration and exit.")
     parser.add_argument("--version", action="version", version=f"%(prog)s {__version__}")
     return parser
@@ -77,8 +79,10 @@ def main(argv: list[str] | None = None) -> int:
         print(json.dumps(config.to_dict(), indent=2, sort_keys=True))
         return 0
 
-    summary = run(config)
-    print(json.dumps(summary.to_dict(), indent=2, sort_keys=True))
+    machine_readable = bool(args.json or args.quiet)
+    summary = run(config, progress=not machine_readable, dry_run=bool(args.dry_run))
+    if machine_readable:
+        print(json.dumps(summary.to_dict(), indent=2, sort_keys=True))
 
     if args.dry_run:
         return 0
@@ -90,4 +94,3 @@ def main(argv: list[str] | None = None) -> int:
 def parse_config_from_mapping(mapping: dict[str, object]) -> FaxConfig:
     """Small helper for tests and downstream wrappers."""
     return FaxConfig.from_mapping(mapping)
-

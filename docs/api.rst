@@ -30,3 +30,6 @@ API
 
 .. automodule:: fax.reference_cases
    :members:
+
+.. automodule:: fax.progress
+   :members:

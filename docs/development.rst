@@ -30,6 +30,22 @@ Local quality gate while GitHub Actions is unavailable:
    python tools/generate_validation_figures.py
    python -m build
 
+Progress Output
+---------------
+
+Long-running functions should report progress through ``fax.progress`` instead
+of ad hoc ``print`` calls. The CLI uses progress output by default and disables
+it only for ``--json`` or ``--quiet``.
+
+Future solvers should report:
+
+* configuration and resolved input paths,
+* phase starts and completions,
+* elapsed time and estimated remaining time,
+* current residuals or convergence metrics,
+* current resolution, mode-family, or scan point,
+* output paths as artifacts are written.
+
 Before physics kernels are merged, each new operator should include:
 
 * an analytic unit test,
