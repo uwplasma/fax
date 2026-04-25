@@ -34,6 +34,17 @@ def test_resonance_mismatch_is_zero_on_resonance():
     np.testing.assert_allclose(float(lorentzian_resonance_weight(mismatch, population.resonance_width_hz)), 1.0)
 
 
+def test_fast_ion_population_pytree_roundtrip_preserves_drive():
+    population = _population()
+    leaves, treedef = jax.tree_util.tree_flatten(population)
+    reconstructed = jax.tree_util.tree_unflatten(treedef, leaves)
+
+    original = reduced_fast_ion_drive(45_000.0, toroidal_mode=1, transit_harmonic=1, population=population)
+    roundtripped = reduced_fast_ion_drive(45_000.0, toroidal_mode=1, transit_harmonic=1, population=reconstructed)
+
+    np.testing.assert_allclose(float(roundtripped), float(original), rtol=1.0e-12)
+
+
 def test_reduced_drive_peaks_on_resonance_and_is_differentiable():
     population = _population()
     resonant_frequency = 2.0 * population.precession_frequency_hz + population.transit_frequency_hz

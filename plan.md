@@ -1139,6 +1139,14 @@ Needed docs:
   - Updated README, docs, changelog, release notes, validation registry, and tests to distinguish true STELLGAP local-continuum parity from AE3D artifact smoke tests and still-open full global parity.
   - Verified locally with `python -m ruff check .`, `python -m mypy src/fax`, direct `run_validation_suite(include_skipped=True)` (36 passed, 0 skipped, 0 failed), `python -m pytest -q` (114 passed), `python -m coverage run --source=src/fax -m pytest -q` (114 passed, 90.2% coverage badge), `python tools/generate_validation_figures.py`, `python tools/qa_figures.py`, `sphinx-build -W -b html docs docs/_build/html`, `python -m build`, and `python -m twine check dist/*`.
   - Re-verified after the artifact-convention gates with direct `run_validation_suite(include_skipped=True)` (39 passed, 0 skipped, 0 failed), `python -m pytest -q` (116 passed), coverage run (116 passed, 90.4% coverage badge), figure generation/QA, Sphinx with warnings as errors, build, and twine check.
+  - 2026-04-25 coverage-hardening milestone:
+    - Added physics/workflow tests rather than line-only scaffolds: analytic BAE/TAE/EAE gap-map figure rendering and ordering, continuum/convergence artifact contract checks, CLI plotting/error paths, validated TOML rejection paths, benchmark synchronization of nested JAX-like outputs, and the `python -m fax` entry point.
+    - Added differentiability-oriented PyTree round-trip tests for `MetricGeometry`, `BoozerGeometry`, `CoupledGapEstimate`, and `FastIonPopulation`, each checking that the relevant continuum, gap, Boozer identity, or fast-ion-drive quantity is preserved.
+    - Added Boozer/global-mode physics contracts for sine Boozer harmonics, Boozer radial metric profiles/grids, metric-derived and mass-scaled global radial stiffness, explicit radial-stiffness profiles/full blocks, eigenpair residual norms, and invalid operator inputs.
+    - Added a local Landreman-Paul QA `wout` CLI continuum test that exercises VMEC `wout` loading, radial resampling, and density scaling when the local fixture is present.
+    - Local coverage command now uses `--source=fax` to avoid coverage trying to report generated third-party `netCDF4` internals.
+    - Verified locally with `python -m coverage erase && python -m coverage run --source=fax -m pytest && python -m coverage report --skip-empty -m`: 150 passed, 96% FAX source coverage.
+    - Also verified `python -m ruff check .` and `python -m mypy src`.
 
 ### Local Testing Policy Until GitHub Actions Resume
 

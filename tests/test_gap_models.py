@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import jax
 import numpy as np
 
 from fax.equilibrium import analytic_circular_tokamak
@@ -23,6 +24,20 @@ def test_tae_gap_center_matches_crossing_condition():
     np.testing.assert_allclose(float(gap.iota), 2.0 / 3.0, rtol=2.0e-2)
     np.testing.assert_allclose(float(gap.width_frequency_hz), 0.1 * float(gap.center_frequency_hz), rtol=1.0e-6)
     assert float(gap.lower_frequency_hz) < float(gap.center_frequency_hz) < float(gap.upper_frequency_hz)
+
+
+def test_coupled_gap_estimate_pytree_roundtrip_preserves_frequency_window():
+    geometry = analytic_circular_tokamak(radial_points=128, iota_axis=0.45, iota_edge=0.85, major_radius=6.2)
+    gap = tae_gap_estimate(geometry, m=1, n=1, inverse_aspect_ratio=0.08)
+    leaves, treedef = jax.tree_util.tree_flatten(gap)
+    reconstructed = jax.tree_util.tree_unflatten(treedef, leaves)
+
+    assert reconstructed.family == "TAE"
+    np.testing.assert_allclose(
+        np.asarray([reconstructed.lower_frequency_hz, reconstructed.center_frequency_hz, reconstructed.upper_frequency_hz]),
+        np.asarray([gap.lower_frequency_hz, gap.center_frequency_hz, gap.upper_frequency_hz]),
+        rtol=1.0e-12,
+    )
 
 
 def test_eae_and_hae_gap_estimates_have_expected_family_labels():
@@ -70,6 +85,22 @@ def test_bae_accumulation_frequency_scaling():
 
     np.testing.assert_allclose(np.asarray(hot / cold), 2.0, rtol=1.0e-6)
     assert np.all(np.asarray(cold) > 0.0)
+
+
+def test_bae_accumulation_frequency_rejects_unphysical_temperatures():
+    geometry = analytic_circular_tokamak(radial_points=16)
+
+    for kwargs, message in [
+        ({"ion_temperature_ev": 0.0, "electron_temperature_ev": 1_000.0}, "ion_temperature_ev"),
+        ({"ion_temperature_ev": 1_000.0, "electron_temperature_ev": -1.0}, "electron_temperature_ev"),
+        ({"ion_temperature_ev": 1_000.0, "electron_temperature_ev": 1_000.0, "ion_mass": 0.0}, "ion_mass"),
+    ]:
+        try:
+            bae_accumulation_frequency_hz(geometry, **kwargs)
+        except ValueError as exc:
+            assert message in str(exc)
+        else:  # pragma: no cover
+            raise AssertionError(f"expected ValueError for {message}")
 
 
 def test_basic_alfven_gap_map_contains_ordered_literature_gaps():

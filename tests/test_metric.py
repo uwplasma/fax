@@ -34,6 +34,21 @@ def test_metric_from_equilibrium_matches_profile_continuum_limit():
     np.testing.assert_allclose(np.asarray(metric_frequencies), np.asarray(profile_frequencies), rtol=2.0e-5)
 
 
+def test_metric_geometry_pytree_roundtrip_preserves_continuum_limit():
+    geometry = analytic_circular_tokamak(radial_points=12, iota_axis=0.2, iota_edge=0.6)
+    harmonics = jnp.asarray([[1, 0], [2, 1]], dtype=float)
+    metric_geometry = metric_from_equilibrium(geometry, theta_points=16, zeta_points=16)
+
+    leaves, treedef = jax.tree_util.tree_flatten(metric_geometry)
+    reconstructed = jax.tree_util.tree_unflatten(treedef, leaves)
+    original = diagonal_continuum_frequencies_hz(metric_geometry, harmonics)
+    roundtripped = diagonal_continuum_frequencies_hz(reconstructed, harmonics)
+
+    assert reconstructed.name == metric_geometry.name
+    assert reconstructed.field_periods == metric_geometry.field_periods
+    np.testing.assert_allclose(np.asarray(roundtripped), np.asarray(original), rtol=1.0e-12)
+
+
 def test_metric_matrices_are_hermitian_and_positive_mass():
     geometry = analytic_circular_tokamak(radial_points=18)
     metric_geometry = metric_from_equilibrium(geometry)

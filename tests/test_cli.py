@@ -1,8 +1,13 @@
 from __future__ import annotations
 
 import json
+import runpy
+import sys
+
+import pytest
 
 from fax.cli import main
+from fax.reference_cases import landreman_paul_qa_lowres
 
 
 def test_cli_example(capsys):
@@ -271,3 +276,188 @@ field_periods = 1
     assert payload["artifact_size_bytes"] > 0
     assert (output_dir / "benchmark" / "benchmark_summary.json").exists()
     assert (output_dir / "benchmark" / "benchmark_metrics.csv").exists()
+
+
+def test_cli_rejects_missing_top_level_config(capsys):
+    assert main([str("__missing_fax_case__.toml"), "--json"]) == 2
+
+    captured = capsys.readouterr()
+    assert "configuration file not found" in captured.err
+
+
+def test_cli_rejects_missing_subcommand_config(capsys):
+    assert main(["validate", str("__missing_fax_case__.toml"), "--json"]) == 2
+
+    captured = capsys.readouterr()
+    assert "configuration file not found" in captured.err
+
+
+def test_cli_requires_config_when_no_example_is_requested():
+    with pytest.raises(SystemExit) as excinfo:
+        main([])
+
+    assert excinfo.value.code == 2
+
+
+def test_module_entrypoint_prints_example(monkeypatch, capsys):
+    monkeypatch.setattr(sys, "argv", ["python -m fax", "--example"])
+
+    with pytest.raises(SystemExit) as excinfo:
+        runpy.run_module("fax.__main__", run_name="__main__")
+
+    assert excinfo.value.code == 0
+    assert "[run]" in capsys.readouterr().out
+
+
+def test_cli_plot_commands_have_plain_output_and_error_contracts(tmp_path, capsys):
+    artifact_dir = tmp_path / "artifacts"
+    figure_dir = tmp_path / "figures"
+    run_config = tmp_path / "case.toml"
+    run_config.write_text(
+        f"""
+[run]
+case = "plot_plain_cli"
+model = "continuum"
+output_dir = "{artifact_dir}"
+
+[equilibrium]
+source = "analytic"
+
+[grid]
+radial_points = 8
+m_max = 1
+n_max = 1
+field_periods = 1
+""",
+        encoding="utf-8",
+    )
+    assert main(["continuum", str(run_config), "--json"]) == 0
+    capsys.readouterr()
+
+    assert (
+        main(
+            [
+                "plot-continuum",
+                str(artifact_dir),
+                "--output-dir",
+                str(figure_dir),
+                "--stem",
+                "plain_continuum",
+                "--format",
+                "svg",
+            ]
+        )
+        == 0
+    )
+    captured = capsys.readouterr()
+    assert "FAX continuum artifact figures" in captured.out
+    assert (figure_dir / "plain_continuum.svg").exists()
+
+    assert main(["plot-continuum", str(tmp_path / "does_not_exist")]) == 2
+    assert "missing continuum artifact" in capsys.readouterr().err
+
+    assert (
+        main(
+            [
+                "convergence",
+                str(run_config),
+                "--angular-points",
+                "8",
+                "--mode-max",
+                "1",
+                "--json",
+            ]
+        )
+        == 0
+    )
+    capsys.readouterr()
+    convergence_dir = artifact_dir / "convergence"
+    assert (
+        main(
+            [
+                "plot-convergence",
+                str(convergence_dir),
+                "--output-dir",
+                str(figure_dir),
+                "--stem",
+                "plain_convergence",
+                "--format",
+                "svg",
+            ]
+        )
+        == 0
+    )
+    captured = capsys.readouterr()
+    assert "FAX convergence artifact figures" in captured.out
+    assert (figure_dir / "plain_convergence.svg").exists()
+
+    assert main(["plot-convergence", str(tmp_path / "does_not_exist")]) == 2
+    assert "missing convergence artifact" in capsys.readouterr().err
+
+
+def test_cli_benchmark_rejects_empty_repeat_sweep(tmp_path, capsys):
+    config_path = tmp_path / "case.toml"
+    config_path.write_text(
+        """
+[run]
+case = "benchmark_invalid"
+model = "continuum"
+
+[equilibrium]
+source = "analytic"
+
+[grid]
+radial_points = 8
+m_max = 1
+n_max = 1
+field_periods = 1
+""",
+        encoding="utf-8",
+    )
+
+    assert main(["benchmark", str(config_path), "--repeats", "0", "--json"]) == 2
+    assert "repeats must be at least 1" in capsys.readouterr().err
+
+
+@pytest.mark.requires_vmec_jax
+def test_cli_continuum_wout_landreman_qa_resamples_geometry(tmp_path, capsys):
+    case = landreman_paul_qa_lowres()
+    if case.wout is None or not case.wout.exists():
+        pytest.skip(f"missing local Landreman-Paul QA wout: {case.wout}")
+
+    output_dir = tmp_path / "lpqa_wout_outputs"
+    config_path = tmp_path / "lpqa.toml"
+    config_path.write_text(
+        f"""
+[run]
+case = "lpqa_wout_coverage"
+model = "continuum"
+output_dir = "{output_dir}"
+
+[equilibrium]
+source = "wout"
+wout = "{case.wout}"
+
+[grid]
+radial_points = 8
+m_max = 1
+n_max = 1
+field_periods = 2
+
+[physics]
+density_scale = 1.1
+""",
+        encoding="utf-8",
+    )
+
+    assert main(["continuum", str(config_path), "--json", "--no-artifacts"]) == 0
+    payload = json.loads(capsys.readouterr().out)
+    profile_metadata = dict(payload["geometry"]["profile_metadata"])
+    metric_metadata = dict(payload["geometry"]["metric_metadata"])
+
+    assert payload["geometry"]["source"] == "vmec_wout"
+    assert payload["radial_points"] == 8
+    assert payload["metric_residual_p95"] < 1.0e-4
+    assert profile_metadata["radial_adapter"] == "linear_s_interpolation"
+    assert metric_metadata["radial_adapter"] == "linear_s_interpolation"
+    assert payload["profile_max_frequency_hz"] > payload["profile_min_frequency_hz"]

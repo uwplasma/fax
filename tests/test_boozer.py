@@ -4,6 +4,7 @@ from pathlib import Path
 
 import numpy as np
 import pytest
+import jax
 
 from fax.boozer import (
     BoozerGeometry,
@@ -14,6 +15,7 @@ from fax.boozer import (
     boozer_continuum_frequencies_hz,
     boozer_continuum_matrices,
     boozer_embedding_jacobian_shape_error,
+    boozer_geometry_field_and_jacobian,
     boozer_geometry_jacobian_identity_error,
     boozer_harmonic_orthogonality_error,
     boozer_jacobian_identity_error,
@@ -106,6 +108,23 @@ def test_boozer_harmonic_orthogonality_and_straight_field_line_phase():
     assert float(straight_field_line_phase_error(harmonics, iota=0.73, zeta_points=128)) < 1.0e-4
 
 
+def test_boozer_geometry_pytree_roundtrip_preserves_field_and_jacobian_identity():
+    geometry = _constant_boozer_geometry()
+    leaves, treedef = jax.tree_util.tree_flatten(geometry)
+    reconstructed = jax.tree_util.tree_unflatten(treedef, leaves)
+    spectrum = reconstructed.as_spectrum()
+
+    theta, zeta, field, jacobian = boozer_geometry_field_and_jacobian(reconstructed, theta_points=16, zeta_points=16)
+    reconstructed_field = reconstruct_boozer_field(spectrum, surface_index=0, theta=theta, zeta=zeta)
+
+    np.testing.assert_allclose(np.asarray(reconstructed_field), np.asarray(field[0]), rtol=1.0e-12)
+    np.testing.assert_allclose(
+        np.asarray(jacobian[0] * field[0] ** 2),
+        np.asarray(reconstructed.boozer_g[0] + reconstructed.iota[0] * reconstructed.boozer_i[0]),
+        rtol=1.0e-12,
+    )
+
+
 def test_normalized_nonaxisymmetric_boozer_energy_is_jittable():
     import jax
 
@@ -195,6 +214,53 @@ def test_boozer_continuum_sideband_coupling_is_hermitian_and_jittable():
         ).stiffness
     )(spectrum)
     assert jitted.shape == (1, 2, 2)
+
+
+def test_boozer_sine_harmonics_enter_reduced_and_metric_continuum_matrices():
+    spectrum = _synthetic_spectrum()
+    no_sine = BoozerSpectrum(
+        source="synthetic_no_sine",
+        s=spectrum.s,
+        xm=spectrum.xm,
+        xn=spectrum.xn,
+        bmnc=spectrum.bmnc,
+        bmns=None,
+        field_periods=spectrum.field_periods,
+    )
+    harmonics = np.asarray([[1.0, 0.0], [2.0, 1.0], [3.0, 2.0]])
+
+    reduced = boozer_continuum_matrices(
+        spectrum,
+        harmonics,
+        iota=np.asarray([0.42, 0.56]),
+        major_radius=5.1,
+        mass_density=np.asarray([3.0e-8, 4.0e-8]),
+        theta_points=64,
+        zeta_points=64,
+    )
+    reduced_without_sine = boozer_continuum_matrices(
+        no_sine,
+        harmonics,
+        iota=np.asarray([0.42, 0.56]),
+        major_radius=5.1,
+        mass_density=np.asarray([3.0e-8, 4.0e-8]),
+        theta_points=64,
+        zeta_points=64,
+    )
+    metric_weighted = boozer_metric_continuum_matrices(
+        spectrum,
+        harmonics,
+        iota=np.asarray([0.42, 0.56]),
+        major_radius=5.1,
+        mass_density=np.asarray([3.0e-8, 4.0e-8]),
+        jacobian_numerator=np.asarray([1.2, 1.4]),
+        theta_points=64,
+        zeta_points=64,
+    )
+
+    assert reduced.stiffness.shape == (2, 3, 3)
+    assert metric_weighted.mass.shape == (2, 3, 3)
+    assert float(np.linalg.norm(np.asarray(reduced.stiffness - reduced_without_sine.stiffness))) > 0.0
 
 
 def test_boozer_parallel_wavenumber_shape():
@@ -319,6 +385,41 @@ def test_boozer_3d_continuum_constant_field_matches_profile_limit():
     stiffness = np.asarray(matrices.stiffness[0])
     off_diagonal = stiffness - np.diag(np.diag(stiffness))
     assert np.max(np.abs(off_diagonal)) / np.max(np.abs(np.diag(stiffness))) < 3.0e-9
+
+
+def test_boozer_3d_radial_metric_profiles_and_grids_are_accepted():
+    geometry = _constant_boozer_geometry()
+    harmonics = np.asarray([[1.0, 0.0], [2.0, 1.0]])
+    theta, zeta = boozer_angle_grid(theta_points=12, zeta_points=10)
+
+    profile_metric = boozer_3d_continuum_matrices(
+        geometry,
+        harmonics,
+        mass_density=3.4e-8,
+        radial_metric=np.asarray([1.0, 1.2]),
+        theta_points=12,
+        zeta_points=10,
+    )
+    grid_metric = boozer_3d_continuum_matrices(
+        geometry,
+        harmonics,
+        mass_density=3.4e-8,
+        radial_metric=np.ones((2, theta.shape[0], zeta.shape[1])),
+        theta_points=12,
+        zeta_points=10,
+    )
+
+    assert profile_metric.stiffness.shape == (2, 2, 2)
+    assert grid_metric.mass.shape == (2, 2, 2)
+    with pytest.raises(ValueError, match="radial_metric"):
+        boozer_3d_continuum_matrices(
+            geometry,
+            harmonics,
+            mass_density=3.4e-8,
+            radial_metric=np.ones((3,)),
+            theta_points=12,
+            zeta_points=10,
+        )
 
 
 @pytest.mark.requires_booz_xform_jax
