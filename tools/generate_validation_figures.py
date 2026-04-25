@@ -38,10 +38,12 @@ from fax.fast_ions import FastIonPopulation, resonance_scan
 from fax.gaps import minimum_gap_summary, sorted_branch_gaps
 from fax.gap_models import eae_gap_estimate, hae_gap_estimate, tae_gap_estimate
 from fax.global_modes import constant_problem_discrete_omega2, constant_radial_problem, solve_radial_eigenmodes
+from fax.global_modes import radial_block_problem_from_boozer_geometry, solve_radial_block_eigenmodes
 from fax.metric import (
     diagonal_continuum_frequencies_hz,
     generalized_eigen_residual_norms,
     generalized_hermitian_eigensystem,
+    generalized_hermitian_eigenvalues,
     metric_continuum_matrices,
     metric_from_equilibrium,
 )
@@ -51,6 +53,8 @@ from fax.plotting import plot_basic_alfven_gap_map, plot_continuum_artifacts, pl
 from fax.reference_cases import landreman_paul_qa_lowres
 from fax.workflows import run_continuum, run_convergence
 from fax.validation import registered_validation_gates, run_validation_suite
+
+jax.config.update("jax_enable_x64", True)
 
 
 def _setup_matplotlib():
@@ -709,6 +713,82 @@ def generate_boozmn_3d_geometry_operator(output_dir: Path) -> list[Path]:
     return paths
 
 
+def generate_boozmn_global_3d_eigenmodes(output_dir: Path) -> list[Path]:
+    """Generate a real-boozmn global radial 3-D eigenmode figure."""
+    plt = _setup_matplotlib()
+    path = Path("/Users/rogerio/local/booz_xform_jax/tests/test_files/boozmn_LandremanSenguptaPlunk_section5p3.nc")
+    if not path.exists():
+        raise FileNotFoundError(f"booz_xform_jax boozmn fixture not found: {path}")
+
+    geometry = read_boozmn_geometry(path)
+    harmonics = jnp.asarray([[1.0, 0.0], [2.0, 1.0]])
+    problem = radial_block_problem_from_boozer_geometry(
+        geometry,
+        harmonics,
+        mass_density=3.4e-8,
+        radial_coupling_fraction=0.004,
+        theta_points=16,
+        zeta_points=16,
+    )
+    result = solve_radial_block_eigenmodes(problem)
+    local_omega2 = generalized_hermitian_eigenvalues(problem.local_stiffness, problem.local_mass)
+    local_frequencies_khz = np.asarray(jnp.sqrt(jnp.maximum(jnp.real(local_omega2), 0.0)) / (2.0 * jnp.pi)) / 1.0e3
+    structures = np.asarray(result.mode_structures[:4])
+    envelope = np.linalg.norm(structures, axis=2)
+    harmonic_components = np.real(structures[0])
+    harmonic_components = harmonic_components / max(float(np.max(np.abs(harmonic_components))), 1.0e-30)
+    residuals = np.asarray(result.residuals[:8])
+
+    fig, axes = plt.subplots(2, 2, figsize=(10.4, 6.7), constrained_layout=True)
+
+    ax = axes[0, 0]
+    for branch in range(local_frequencies_khz.shape[1]):
+        ax.plot(np.asarray(geometry.s), local_frequencies_khz[:, branch], color="#777777", alpha=0.35, linewidth=1.0)
+    colors = ["#2458a6", "#b13f2a", "#2e7d32", "#6f4a8e"]
+    for mode in range(4):
+        ax.axhline(float(result.frequencies_hz[mode]) / 1.0e3, color=colors[mode], linewidth=1.4, label=f"global {mode + 1}")
+    ax.set_title("global modes over local continuum")
+    ax.set_xlabel("normalized toroidal flux s")
+    ax.set_ylabel("frequency [kHz]")
+    ax.set_xlim(float(np.min(np.asarray(geometry.s))), float(np.max(np.asarray(geometry.s))))
+    ax.legend(fontsize=8, ncol=2)
+
+    ax = axes[0, 1]
+    for mode in range(4):
+        ax.plot(np.asarray(geometry.s), envelope[mode] / max(float(np.max(envelope[mode])), 1.0e-30), linewidth=1.5, label=f"mode {mode + 1}")
+    ax.set_title("radial envelope norms")
+    ax.set_xlabel("s")
+    ax.set_ylabel("normalized |xi|")
+    ax.legend(fontsize=8)
+
+    ax = axes[1, 0]
+    image = ax.imshow(
+        harmonic_components.T,
+        origin="lower",
+        aspect="auto",
+        extent=(float(np.min(np.asarray(geometry.s))), float(np.max(np.asarray(geometry.s))), 0.5, harmonic_components.shape[1] + 0.5),
+        cmap="coolwarm",
+    )
+    ax.set_title("mode 1 harmonic structure")
+    ax.set_xlabel("s")
+    ax.set_ylabel("harmonic index")
+    ax.set_yticks(np.arange(1, harmonic_components.shape[1] + 1))
+    fig.colorbar(image, ax=ax, fraction=0.046, pad=0.04, label="real amplitude")
+
+    ax = axes[1, 1]
+    ax.semilogy(np.arange(1, residuals.size + 1), residuals, marker="o", linewidth=1.4)
+    ax.axhline(2.0e-5, color="#555555", linestyle="--", linewidth=1.0, label="gate")
+    ax.set_title("generalized eigen residuals")
+    ax.set_xlabel("sorted mode")
+    ax.set_ylabel("relative residual")
+    ax.legend(fontsize=8)
+
+    fig.suptitle("Global radial 3-D Boozer eigenmode operator from real boozmn geometry", fontsize=12, weight="bold")
+    paths = _save_figure(fig, output_dir, "boozmn_global_3d_eigenmodes")
+    plt.close(fig)
+    return paths
+
+
 def generate_continuum_artifact_dashboard(output_dir: Path) -> list[Path]:
     """Generate a dashboard from files written by the continuum workflow."""
     case = landreman_paul_qa_lowres()
@@ -805,20 +885,21 @@ def generate_equations_overview(output_dir: Path) -> list[Path]:
         fontsize=9,
     )
 
-    axes[2].set_title("Radial and fast-ion diagnostics", fontsize=12, weight="bold")
+    axes[2].set_title("Global modes and fast ions", fontsize=12, weight="bold")
     axes[2].text(
         0.02,
-        0.77,
+        0.80,
         r"$K_r \xi=\omega^2 M_r \xi$" "\n"
+        r"$K_g=\mathrm{blockdiag}(K^{3D})+D_s^\dagger C_sD_s$" "\n"
         r"$\iota_{\rm gap}=2n/(2m+\Delta m)$" "\n"
         r"$f_{\rm mode}=n f_\phi+\ell f_\theta$",
-        fontsize=12,
+        fontsize=11,
         va="top",
     )
     axes[2].text(
         0.02,
-        0.21,
-        "Used for radial spectrum, gap-center,\nresonance, and optimization-gradient gates.",
+        0.17,
+        "Used for scalar and block radial spectra,\ngap centers, resonances, and gradients.",
         fontsize=9,
     )
 
@@ -984,6 +1065,7 @@ def main(argv: list[str] | None = None) -> int:
         generate_boozer_continuum_coupling(output_dir),
         generate_boozer_jacobian_identity(output_dir),
         generate_boozmn_3d_geometry_operator(output_dir),
+        generate_boozmn_global_3d_eigenmodes(output_dir),
         generate_continuum_artifact_dashboard(output_dir),
         generate_metric_residual_convergence(output_dir),
         generate_landreman_convergence_dashboard(output_dir),

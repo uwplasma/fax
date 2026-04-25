@@ -6,7 +6,12 @@ from .boozer import BoozerGeometry, BoozerGeometryGrid, BoozerSpectrum
 from .config import FaxConfig, load_config
 from .equilibrium import EquilibriumGeometry
 from .fast_ions import FastIonPopulation
-from .global_modes import RadialEigenmodeProblem, RadialEigenmodeResult
+from .global_modes import (
+    RadialBlockEigenmodeProblem,
+    RadialBlockEigenmodeResult,
+    RadialEigenmodeProblem,
+    RadialEigenmodeResult,
+)
 from .metric import MetricGeometry
 from .modes import ModeFamily
 from .plotting import (
@@ -45,6 +50,8 @@ __all__ = [
     "FastIonPopulation",
     "MetricGeometry",
     "ModeFamily",
+    "RadialBlockEigenmodeProblem",
+    "RadialBlockEigenmodeResult",
     "RadialEigenmodeProblem",
     "RadialEigenmodeResult",
     "ReferenceCase",

@@ -83,6 +83,36 @@ finite-difference limit has an exact discrete spectrum,
 
 which is used as a reviewer-facing eigenvalue and residual gate.
 
+The global 3-D Boozer layer generalizes this scalar problem to a radial block
+operator. On each surface, the unknown is the Boozer harmonic vector
+``u_r = [u_{r1}, ..., u_{rH}]``. The local matrices are supplied by the 3-D
+Boozer continuum operator and the radial envelope term is assembled as a
+Hermitian finite-difference energy:
+
+.. math::
+
+   K_{\rm global} =
+   \operatorname{blockdiag}(K_1^{3D},\ldots,K_N^{3D})
+   + D_s^\dagger C_s D_s,
+   \qquad
+   M_{\rm global} =
+   \operatorname{blockdiag}(M_1^{3D},\ldots,M_N^{3D}),
+
+with Dirichlet radial boundaries at the first and last sampled surfaces. The
+resulting generalized eigenproblem is
+
+.. math::
+
+   K_{\rm global} x = \omega^2 M_{\rm global} x.
+
+The coefficient ``C_s`` is a Hermitian radial-stiffness block. For real Boozer
+geometry runs, FAX currently uses the local mass matrix times a user-selectable
+``omega^2`` scale, defaulting to a small fraction of the median local continuum
+eigenvalue. This is a validated global radial shear-Alfven envelope operator,
+not yet a complete ideal-MHD CAS3D/AE3D replacement. Its acceptance gates are
+an exact diagonal constant-coefficient spectrum, generalized-eigen residuals,
+JAX density-scaling gradients, and finite real-``boozmn`` mode structures.
+
 Gap Estimates
 -------------
 

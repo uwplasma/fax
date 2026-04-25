@@ -31,6 +31,7 @@ from fax.boozer import (
     run_booz_xform_jax_from_wout,
     straight_field_line_phase_error,
 )
+from fax.global_modes import radial_block_problem_from_boozer_geometry, solve_radial_block_eigenmodes
 from fax.units import MU0
 
 
@@ -399,6 +400,30 @@ def test_boozer_3d_real_geometry_operator_is_hermitian_and_finite():
     )
     assert np.all(np.isfinite(np.asarray(frequencies)))
     assert np.all(np.asarray(frequencies) >= 0.0)
+
+
+@pytest.mark.requires_booz_xform_jax
+def test_boozer_global_3d_radial_operator_is_finite_with_modes():
+    path = BOOZ_XFORM_TEST_FILES / "boozmn_LandremanSenguptaPlunk_section5p3.nc"
+    if not path.exists():
+        pytest.skip(f"missing local booz_xform_jax fixture: {path}")
+
+    geometry = read_boozmn_geometry(path)
+    harmonics = np.asarray([[1.0, 0.0], [2.0, 1.0]])
+    problem = radial_block_problem_from_boozer_geometry(
+        geometry,
+        harmonics,
+        mass_density=3.4e-8,
+        radial_coupling_fraction=0.004,
+        theta_points=16,
+        zeta_points=16,
+    )
+    result = solve_radial_block_eigenmodes(problem)
+
+    assert result.mode_structures.shape[1:] == (int(geometry.s.shape[0]), 2)
+    assert np.all(np.isfinite(np.asarray(result.frequencies_hz[:6])))
+    assert np.all(np.asarray(result.frequencies_hz[:6]) >= 0.0)
+    assert float(np.max(np.asarray(result.residuals[:6]))) < 2.0e-5
 
 
 @pytest.mark.requires_booz_xform_jax

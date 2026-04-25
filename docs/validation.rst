@@ -45,6 +45,10 @@ tags, and command. The current gates are:
   eigenpair residuals.
 * ``global_mode_density_gradient``: checks JAX autodiff through the radial
   generalized eigenproblem against the analytic ``rho^(-1/2)`` scaling.
+* ``global_3d_block_constant_spectrum``: checks the block radial 3-D
+  eigenproblem against an exact diagonal constant-coefficient spectrum.
+* ``global_3d_block_density_gradient``: checks JAX autodiff through the block
+  radial generalized eigenproblem against the analytic ``rho^(-1/2)`` scaling.
 * ``analytic_tae_gap_center``: checks the analytic TAE crossing condition
   ``iota=2n/(2m+1)``.
 * ``basic_gap_map_ordering``: checks that the fast BAE/TAE/EAE example places
@@ -78,6 +82,9 @@ tags, and command. The current gates are:
   ``boozmn`` Jacobian harmonics up to one surface-wise radial-coordinate scale.
 * ``boozmn_3d_continuum_finite``: checks that a real ``boozmn`` local 3-D
   continuum matrix is Hermitian and produces finite non-negative branches.
+* ``boozmn_global_3d_eigenmode_finite``: assembles real ``boozmn`` local 3-D
+  Boozer matrices into a global radial block eigenproblem and checks finite
+  frequencies, mode structures, and residuals.
 * ``landreman_paul_adapter_smoke``: checks the Landreman-Paul QA VMEC ``wout``
   profile and metric adapters when local data are available.
 * ``landreman_paul_continuum_finite``: checks that the Landreman-Paul profile
@@ -210,6 +217,15 @@ yet full 3-D Alfvén-continuum validation.
    embedding-derived ``|\\nabla s|^2`` shape, and the first local 3-D Boozer
    continuum branches. This fixture is used to exercise asymmetric Boozer
    harmonics; it is not a Landreman-Paul QA quasisymmetry claim.
+
+.. figure:: _static/boozmn_global_3d_eigenmodes.svg
+   :alt: Global radial 3-D Boozer eigenmode dashboard.
+
+   Global radial 3-D Boozer eigenmode gate from a real ``boozmn`` fixture:
+   local continuum branches, global eigenfrequencies, radial envelopes,
+   harmonic content of the first mode, and generalized-eigen residuals. This
+   validates the radial block operator and mode-structure plumbing before
+   cross-code STELLGAP/AE3D benchmarking.
 
 .. figure:: _static/landreman_paul_convergence_dashboard.svg
    :alt: LandremanPaul2021 QA radial, angular, and Fourier convergence dashboard.

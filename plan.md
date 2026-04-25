@@ -1104,6 +1104,15 @@ Needed docs:
   - Important scope note: this is the first true `boozmn` local-operator layer, not yet a global radial eigenmode operator or STELLGAP/AE3D cross-code validation.
   - Direct `run_validation_suite()` now has 28 registered gates passing on this machine.
   - Verified after this real-`boozmn` step with `python -m ruff check .`, `python -m mypy src/fax`, `python -m pytest -q` (100 passed), `python -m coverage run --source=src/fax -m pytest -q` (100 passed, 89.9% coverage badge), `python tools/generate_validation_figures.py`, `python tools/qa_figures.py`, `sphinx-build -W -b html docs docs/_build/html`, `python -m build`, and `python -m twine check dist/*`.
+- Added the first global radial 3-D Boozer eigenmode operator:
+  - `RadialBlockEigenmodeProblem` carries one coupled harmonic vector per radial surface, local 3-D Boozer stiffness/mass blocks, and Hermitian radial-stiffness blocks.
+  - `assemble_radial_block_matrices` builds the Dirichlet radial block matrix `K_global = blockdiag(K_3D) + D_s^H C_s D_s` and `M_global = blockdiag(M_3D)`.
+  - `solve_radial_block_eigenmodes` returns global eigenfrequencies, residuals, and full `(mode, surface, harmonic)` mode structures including boundary zeros.
+  - `radial_block_problem_from_boozer_geometry` builds the global problem from real `boozmn` local 3-D Boozer matrices.
+  - Added exact diagonal constant-coefficient spectrum and density-gradient gates: `global_3d_block_constant_spectrum` and `global_3d_block_density_gradient`.
+  - Added real-file gate `boozmn_global_3d_eigenmode_finite`.
+  - Added `examples/research/boozmn_global_3d_eigenmodes.py` and generated `boozmn_global_3d_eigenmodes` README/docs figure.
+  - Scope note: this closes the global radial operator lane for the current shear-Alfven/Boozer envelope model; STELLGAP/AE3D/CAS3D cross-code benchmarking remains the next validation lane.
 
 ### Local Testing Policy Until GitHub Actions Resume
 
@@ -1153,9 +1162,9 @@ Sources:
 
 Turn the reduced physics layers into publication-grade stellarator validation:
 
-1. Promote the local `boozmn` surface operator into a radial/global Boozer operator with boundary conditions, radial metric terms, and eigenfunctions.
-2. Start the first cross-code/literature comparison gate: STELLGAP-style continuum/gap data for a documented quasi-symmetric or axisymmetric reference case, then extend to AE3D/CAS3D/FAR3D where data are available.
-3. Add convergence gates for real `boozmn` harmonic truncation, Boozer angular grids, radial surface sampling, and local branch/gap sensitivity.
+1. Start the first cross-code/literature comparison gate: STELLGAP-style continuum/gap data for a documented quasi-symmetric or axisymmetric reference case, then extend to AE3D/CAS3D/FAR3D where data are available.
+2. Add convergence gates for real `boozmn` harmonic truncation, Boozer angular grids, radial surface sampling, radial block resolution, and local/global branch sensitivity.
+3. Add additional radial boundary-condition variants beyond Dirichlet and validate them on analytic and cross-code targets.
 4. Add perturbative fast-ion drive/damping terms tied to validated eigenfunctions, with sign and resonance gates before FAR3D/CAS3D-K comparisons.
 5. Connect `fax.optimization` to real `vmec_jax` differentiable design variables and add finite-difference/adjoint consistency plots for VMEC-to-stability gradients.
 6. Publish the staged `v0.0.1` GitHub release when GitHub Actions are available so the PyPI trusted-publishing workflow can complete.

@@ -18,6 +18,7 @@ Initial research scaffold release for FAX.
 - Boozer-Jacobian identity and Jacobian-weighted reduced continuum gates.
 - Real `boozmn` geometry reader for Boozer embedding and Jacobian harmonics, with local 3-D Boozer continuum matrices.
 - Real-file Boozer validation gates for `sqrt(g)|B|^2=G+iota I`, embedding-Jacobian shape, and finite Hermitian local 3-D continuum output.
+- Global radial 3-D Boozer block eigenmode operator with Dirichlet radial boundaries, radial/harmonic mode structures, exact constant-spectrum gates, density-gradient gates, and real-`boozmn` residual gates.
 - README status badges for tests, docs, publish, ReadTheDocs, coverage, PyPI, Python versions, license, Ruff, and JAX.
 - Differentiable radial-mode avoidance objective for early design-screen demonstrations.
 - VMEC `wout` adapter smoke path for the Landreman-Paul QA low-resolution reference case.
@@ -34,6 +35,7 @@ Initial research scaffold release for FAX.
 - Research examples for validation packets, differentiability sensitivity, a small inverse-design toy problem, a basic BAE/TAE/EAE gap map, and a reduced global/gap/fast-ion screening packet.
 - Research example for Boozer harmonic convention validation.
 - Research example for applying the local 3-D Boozer continuum operator to a real `boozmn` file and generating a plot/JSON packet.
+- Research example for solving the global radial 3-D Boozer eigenmode problem and plotting radial envelopes/harmonic structure.
 - ReadTheDocs/Sphinx docs, GitHub Actions definitions for tests/docs/publish, and PyPI trusted-publishing workflow.
 
 The PyPI distribution name is `uwplasma-fax`; the import package and CLI remain

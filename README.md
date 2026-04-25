@@ -204,6 +204,16 @@ This figure is the first real `boozmn` geometry/operator dashboard: sampled
 used to validate asymmetric Boozer harmonic handling and is not a
 Landreman-Paul QA quasisymmetry claim.
 
+![Global radial 3-D Boozer eigenmodes](docs/_static/boozmn_global_3d_eigenmodes.png)
+
+This figure promotes the real-geometry local matrices into a radial block
+generalized eigenproblem. Each radial node carries the coupled Boozer harmonic
+vector, neighboring surfaces are connected by a Hermitian radial derivative
+energy, and the plotted eigenfunctions include both radial envelope and
+harmonic content. This closes the global-radial operator lane for the current
+shear-Alfvén/Boozer model; STELLGAP/AE3D cross-code validation remains a
+separate publication gate.
+
 ![Continuum artifact dashboard](docs/_static/continuum_artifact_dashboard.png)
 
 This figure is generated from files written by `fax continuum`: the branch CSV,
@@ -276,6 +286,7 @@ python examples/research/basic_alfven_gap_map.py
 python examples/research/global_gap_fastion_screen.py
 python examples/research/boozer_harmonic_validation.py
 python examples/research/boozmn_3d_continuum.py
+python examples/research/boozmn_global_3d_eigenmodes.py
 ```
 
 `fax` reads TOML configuration files. The normal CLI path is intentionally
@@ -338,11 +349,12 @@ python examples/research/inverse_iota_shift.py
 python examples/research/global_gap_fastion_screen.py
 python examples/research/boozer_harmonic_validation.py
 python examples/research/boozmn_3d_continuum.py --boozmn /path/to/boozmn.nc
+python examples/research/boozmn_global_3d_eigenmodes.py --boozmn /path/to/boozmn.nc
 ```
 
 These generate validation packets, continuum artifacts, convergence dashboards,
 JAX sensitivity output, a small inverse-design trace, and real `boozmn` local
-3-D Boozer continuum plots using the current validated local operators.
+3-D Boozer continuum/global-mode plots using the current validated operators.
 
 ## Figures
 
@@ -369,6 +381,7 @@ Current figures:
 - `boozer_continuum_coupling.svg`: reduced Boozer continuum matrix and controlled sideband-coupling dashboard.
 - `boozer_jacobian_identity.svg`: Boozer-Jacobian identity and weighted mass-coupling dashboard.
 - `boozmn_3d_geometry_operator.svg`: real `boozmn` geometry, Jacobian, embedding metric, and local 3-D Boozer continuum dashboard.
+- `boozmn_global_3d_eigenmodes.svg`: global radial 3-D Boozer eigenmode frequencies, envelopes, harmonic structure, and residuals.
 - `continuum_artifact_dashboard.svg`: dashboard generated from `fax continuum` artifacts.
 - `metric_residual_convergence.svg`: metric-matrix residual and angular-grid check.
 - `landreman_paul_convergence_dashboard.svg`: VMEC-backed radial/angular/Fourier convergence smoke-test dashboard.
@@ -402,9 +415,11 @@ radial spectrum residuals, radial-mode gradient consistency, analytic TAE
 gap-center checks, reduced fast-ion resonance ordering, Boozer harmonic
 projection/phase convention checks, reduced Boozer continuum matrix checks,
 real `boozmn` Jacobian/embedding/local-3-D gates, and Landreman-Paul QA VMEC
-adapter plus continuum finite-output/radial-sampling smoke tests. These are
-acceptance gates for the current local operators, not yet full STELLGAP/AE3D
-stellarator validation.
+adapter plus continuum finite-output/radial-sampling smoke tests. The new
+global radial block gates validate a multi-harmonic radial eigenproblem with
+Dirichlet boundaries, exact constant-coefficient spectrum, AD density scaling,
+and real-`boozmn` residual checks. These are acceptance gates for the current
+operators, not yet full STELLGAP/AE3D stellarator validation.
 
 ## Repository Layout
 
@@ -433,6 +448,9 @@ It currently establishes:
 - a LandremanPaul2021 QA lowres local reference target,
 - real `boozmn` geometry gates for Boozer Jacobian identity, embedding
   Jacobian shape, and local 3-D surface continuum matrices,
+- a global radial 3-D Boozer block eigenmode operator with radial envelopes,
+  harmonic mode structures, residual diagnostics, and analytic constant-limit
+  gates,
 - generated smoke-test figures for docs and README,
 - a reduced radial global eigenmode operator, analytic gap estimates, reduced
   fast-ion resonance screens, and differentiable design objective,

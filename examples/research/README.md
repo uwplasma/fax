@@ -14,6 +14,7 @@ python examples/research/basic_alfven_gap_map.py
 python examples/research/global_gap_fastion_screen.py
 python examples/research/boozer_harmonic_validation.py
 python examples/research/boozmn_3d_continuum.py
+python examples/research/boozmn_global_3d_eigenmodes.py
 ```
 
 The examples intentionally use the analytic and Landreman-Paul low-resolution
@@ -42,3 +43,14 @@ This reads Boozer harmonics, checks `sqrt(g)|B|^2=G+iota I`, compares the
 embedding-derived Jacobian shape, solves the local 3-D Boozer continuum matrix,
 and writes a compact figure. It is a local surface-by-surface geometry/operator
 example, not a global radial eigenmode or STELLGAP cross-code benchmark.
+
+## Real `boozmn` Global 3-D Eigenmodes
+
+```bash
+python examples/research/boozmn_global_3d_eigenmodes.py --boozmn /path/to/boozmn.nc
+```
+
+This builds the radial block eigenproblem from real local 3-D Boozer matrices,
+solves for global frequencies and radial/harmonic mode structures, writes a
+figure, and prints residuals. It is the current global radial shear-Alfven
+operator path, still awaiting STELLGAP/AE3D cross-code validation.

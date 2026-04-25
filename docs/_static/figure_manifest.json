@@ -137,6 +137,36 @@
       ]
     },
     {
+      "id": "global_3d_block_constant_spectrum",
+      "title": "Global radial 3-D block constant spectrum",
+      "layer": "global-eigenmode",
+      "quantity": "relative omega^2 error and residual",
+      "tolerance": 1e-05,
+      "citation": "Dirichlet block finite-difference validation for the global radial Boozer-harmonic shear-Alfven envelope operator",
+      "command": "python -m pytest tests/test_global_modes.py tests/test_validation_registry.py",
+      "tags": [
+        "global",
+        "eigenmode",
+        "3d",
+        "analytic"
+      ]
+    },
+    {
+      "id": "global_3d_block_density_gradient",
+      "title": "Global radial 3-D block density sensitivity",
+      "layer": "differentiability",
+      "quantity": "relative autodiff/analytic gradient error",
+      "tolerance": 0.0001,
+      "citation": "JAX autodiff consistency check for the block radial generalized eigenproblem rho^(-1/2) scaling",
+      "command": "python -m pytest tests/test_global_modes.py tests/test_validation_registry.py",
+      "tags": [
+        "global",
+        "eigenmode",
+        "3d",
+        "autodiff"
+      ]
+    },
+    {
       "id": "analytic_tae_gap_center",
       "title": "Analytic TAE gap-center crossing",
       "layer": "gap-physics",
@@ -356,6 +386,23 @@
       ]
     },
     {
+      "id": "boozmn_global_3d_eigenmode_finite",
+      "title": "Real boozmn global radial 3-D eigenmode smoke test",
+      "layer": "global-eigenmode",
+      "quantity": "maximum residual and finite-output check",
+      "tolerance": 2e-05,
+      "citation": "Block radial generalized eigenproblem built from local 3-D Boozer shear-Alfven matrices and Dirichlet radial boundaries",
+      "command": "python -m pytest -m requires_booz_xform_jax tests/test_boozer.py tests/test_validation_registry.py",
+      "tags": [
+        "boozer",
+        "global",
+        "eigenmode",
+        "boozmn",
+        "fixture",
+        "3d"
+      ]
+    },
+    {
       "id": "landreman_paul_adapter_smoke",
       "title": "Landreman-Paul QA VMEC adapter smoke test",
       "layer": "adapter",
@@ -529,6 +576,18 @@
     },
     {
       "file": "boozmn_3d_geometry_operator.png",
+      "format": "png",
+      "status": "smoke-test",
+      "claim": "Development figure generated from analytic/local continuum formulas; not a full 3-D stellarator Alfvén-continuum validation."
+    },
+    {
+      "file": "boozmn_global_3d_eigenmodes.svg",
+      "format": "svg",
+      "status": "smoke-test",
+      "claim": "Development figure generated from analytic/local continuum formulas; not a full 3-D stellarator Alfvén-continuum validation."
+    },
+    {
+      "file": "boozmn_global_3d_eigenmodes.png",
       "format": "png",
       "status": "smoke-test",
       "claim": "Development figure generated from analytic/local continuum formulas; not a full 3-D stellarator Alfvén-continuum validation."

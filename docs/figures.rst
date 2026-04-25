@@ -85,6 +85,13 @@ Current Figures
    and local 3-D Boozer continuum branches. The fixture is a geometry/operator
    validation target, not a Landreman-Paul QA quasisymmetry claim.
 
+.. figure:: _static/boozmn_global_3d_eigenmodes.svg
+   :alt: Global radial 3-D Boozer eigenmode dashboard.
+
+   Global radial 3-D Boozer eigenmode dashboard: local continuum branches,
+   global radial eigenfrequencies, radial envelope norms, harmonic content, and
+   residual gates. This is the first full radial block operator figure in FAX.
+
 .. figure:: _static/continuum_artifact_dashboard.svg
    :alt: Dashboard generated from fax continuum artifacts.
 
@@ -123,7 +130,7 @@ Planned Publication Figures
 1. Analytic cylinder and tokamak continuum validation with convergence.
 2. LandremanPaul2021 QA full VMEC/Boozer metric continuum map.
 3. STELLGAP or AE3D cross-code comparison with branch/gap error bars.
-4. Global radial 3-D eigenfunction and boundary-condition validation figure.
+4. Boundary-condition comparison figure for Dirichlet/Neumann/radiation variants.
 5. Gradient correctness figure: finite difference, direct AD, and custom adjoint.
 6. Runtime scaling figure: compile time, warm runtime, memory, and resolution.
 7. Inverse-design demonstration with before/after continuum-risk dashboard.

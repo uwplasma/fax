@@ -135,6 +135,21 @@ the embedding-derived Jacobian shape, solves the local 3-D Boozer continuum
 matrix, writes SVG/PNG figures, and prints a JSON summary. Use
 ``--boozmn path/to/boozmn.nc`` for a new Boozer geometry.
 
+Real ``boozmn`` Global 3-D Eigenmodes
+-------------------------------------
+
+Run:
+
+.. code-block:: bash
+
+   python examples/research/boozmn_global_3d_eigenmodes.py
+
+This reads a real ``boozmn`` file, builds the local 3-D Boozer surface
+matrices, assembles the global radial block eigenproblem with Dirichlet radial
+boundaries, writes radial-envelope/harmonic-structure figures, and prints
+frequencies plus residuals as JSON. Use ``--boozmn path/to/boozmn.nc`` for a
+new geometry.
+
 Regenerating Documentation Figures
 ----------------------------------
 

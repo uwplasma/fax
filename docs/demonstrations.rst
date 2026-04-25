@@ -47,6 +47,12 @@ Boozer harmonic validation
    field reconstruction/projection, harmonic orthogonality, and straight-field
    line phase conventions.
 
+Real Boozer 3-D continuum and global modes
+   ``examples/research/boozmn_3d_continuum.py`` and
+   ``examples/research/boozmn_global_3d_eigenmodes.py`` apply the real
+   ``boozmn`` geometry path to local surface continuum matrices and global
+   radial block eigenmodes with plotted mode structures and residuals.
+
 Planned demonstrations include:
 
 Runtime

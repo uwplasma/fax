@@ -132,3 +132,35 @@ def test_boozmn_3d_continuum_example_runs(tmp_path):
     assert payload["min_frequency_hz"] >= 0.0
     assert payload["max_frequency_hz"] > payload["min_frequency_hz"]
     assert all(Path(path).exists() for path in payload["figure_files"])
+
+
+def test_boozmn_global_3d_eigenmodes_example_runs(tmp_path):
+    fixture = Path("/Users/rogerio/local/booz_xform_jax/tests/test_files/boozmn_LandremanSenguptaPlunk_section5p3.nc")
+    if not fixture.exists():
+        return
+
+    result = subprocess.run(
+        [
+            sys.executable,
+            "examples/research/boozmn_global_3d_eigenmodes.py",
+            "--boozmn",
+            str(fixture),
+            "--output-dir",
+            str(tmp_path),
+            "--theta-points",
+            "12",
+            "--zeta-points",
+            "12",
+            "--modes",
+            "3",
+        ],
+        cwd=REPO_ROOT,
+        check=True,
+        text=True,
+        capture_output=True,
+    )
+    payload = json.loads(result.stdout)
+    assert payload["max_residual"] < 2.0e-5
+    assert len(payload["frequencies_hz"]) == 3
+    assert payload["mode_structure_shape"][1] == payload["surface_count"]
+    assert all(Path(path).exists() for path in payload["figure_files"])

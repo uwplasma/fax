@@ -21,9 +21,14 @@ from typing import Any
 import jax
 import jax.numpy as jnp
 
+from .boozer import BoozerGeometry, boozer_3d_continuum_matrices
 from .continuum import continuum_branch_matrix
 from .equilibrium import EquilibriumGeometry
-from .metric import generalized_eigen_residual_norms, generalized_hermitian_eigensystem
+from .metric import (
+    generalized_eigen_residual_norms,
+    generalized_hermitian_eigensystem,
+    generalized_hermitian_eigenvalues,
+)
 
 
 @jax.tree_util.register_pytree_node_class
@@ -96,6 +101,79 @@ class RadialEigenmodeResult:
     mass: jax.Array
 
 
+@jax.tree_util.register_pytree_node_class
+@dataclass(frozen=True)
+class RadialBlockEigenmodeProblem:
+    """Block radial eigenproblem with coupled angular/Boozer harmonics.
+
+    ``local_stiffness`` and ``local_mass`` contain one Hermitian generalized
+    continuum matrix per radial surface. ``radial_stiffness`` is the Hermitian
+    face-averaged coefficient used in the finite-difference radial energy
+    ``D_s^H C D_s``. The current implementation uses Dirichlet radial boundary
+    conditions at the first and last sampled surfaces.
+    """
+
+    s: jax.Array
+    local_stiffness: jax.Array
+    local_mass: jax.Array
+    radial_stiffness: jax.Array
+    harmonics: jax.Array
+    boundary_condition: str = "dirichlet"
+    metadata: tuple[tuple[str, Any], ...] = ()
+
+    def __post_init__(self) -> None:
+        object.__setattr__(self, "s", jnp.asarray(self.s))
+        object.__setattr__(self, "local_stiffness", jnp.asarray(self.local_stiffness))
+        object.__setattr__(self, "local_mass", jnp.asarray(self.local_mass))
+        object.__setattr__(self, "radial_stiffness", jnp.asarray(self.radial_stiffness))
+        object.__setattr__(self, "harmonics", jnp.asarray(self.harmonics))
+        object.__setattr__(self, "metadata", tuple((str(key), value) for key, value in self.metadata))
+        object.__setattr__(self, "boundary_condition", str(self.boundary_condition))
+        if self.boundary_condition != "dirichlet":
+            raise ValueError("only dirichlet radial boundary conditions are currently implemented")
+        if self.s.ndim != 1 or self.s.shape[0] < 4:
+            raise ValueError("s must be one-dimensional with at least four radial points")
+        if self.harmonics.ndim != 2 or self.harmonics.shape[1] != 2:
+            raise ValueError("harmonics must have shape (count, 2)")
+        block_shape = (self.s.shape[0], self.harmonics.shape[0], self.harmonics.shape[0])
+        for name in ("local_stiffness", "local_mass", "radial_stiffness"):
+            if getattr(self, name).shape != block_shape:
+                raise ValueError(f"{name} must have shape {block_shape}")
+
+    def tree_flatten(self):
+        """Return JAX pytree children and static metadata."""
+        children = (self.s, self.local_stiffness, self.local_mass, self.radial_stiffness, self.harmonics)
+        return children, (self.boundary_condition, self.metadata)
+
+    @classmethod
+    def tree_unflatten(cls, aux: tuple[Any, ...], children: tuple[Any, ...]) -> "RadialBlockEigenmodeProblem":
+        """Reconstruct a block radial problem from pytree parts."""
+        boundary_condition, metadata = aux
+        s, local_stiffness, local_mass, radial_stiffness, harmonics = children
+        return cls(
+            s=s,
+            local_stiffness=local_stiffness,
+            local_mass=local_mass,
+            radial_stiffness=radial_stiffness,
+            harmonics=harmonics,
+            boundary_condition=boundary_condition,
+            metadata=metadata,
+        )
+
+
+@dataclass(frozen=True)
+class RadialBlockEigenmodeResult:
+    """Eigenvalues, eigenvectors, mode structures, and residuals for blocks."""
+
+    omega2: jax.Array
+    frequencies_hz: jax.Array
+    eigenvectors: jax.Array
+    mode_structures: jax.Array
+    residuals: jax.Array
+    stiffness: jax.Array
+    mass: jax.Array
+
+
 def radial_problem_from_equilibrium(
     geometry: EquilibriumGeometry,
     *,
@@ -128,6 +206,85 @@ def radial_problem_from_equilibrium(
     )
 
 
+def constant_radial_block_problem(
+    *,
+    radial_points: int = 64,
+    continuum_frequency_hz: float | tuple[float, ...] = 125_000.0,
+    radial_coupling_omega2: float | tuple[float, ...] = 1.0e10,
+    harmonic_count: int | None = None,
+    mass_weight: float = 1.0,
+) -> RadialBlockEigenmodeProblem:
+    """Return a block constant-coefficient global validation fixture."""
+    frequencies = jnp.atleast_1d(jnp.asarray(continuum_frequency_hz, dtype=float))
+    coupling = jnp.atleast_1d(jnp.asarray(radial_coupling_omega2, dtype=float))
+    count = int(harmonic_count if harmonic_count is not None else max(frequencies.shape[0], coupling.shape[0]))
+    frequencies = _broadcast_mode_profile(frequencies, count, name="continuum_frequency_hz")
+    coupling = _broadcast_mode_profile(coupling, count, name="radial_coupling_omega2")
+    s = jnp.linspace(0.0, 1.0, int(radial_points))
+    harmonics = jnp.column_stack([jnp.arange(1, count + 1, dtype=float), jnp.zeros((count,), dtype=float)])
+    complex_dtype = jnp.result_type(frequencies, coupling, jnp.asarray(1j))
+    local_mass_block = jnp.eye(count, dtype=complex_dtype) * complex(float(mass_weight))
+    local_stiffness_block = jnp.diag((2.0 * jnp.pi * frequencies) ** 2 * float(mass_weight)).astype(complex_dtype)
+    radial_stiffness_block = jnp.diag(coupling * float(mass_weight)).astype(complex_dtype)
+    return RadialBlockEigenmodeProblem(
+        s=s,
+        local_stiffness=jnp.broadcast_to(local_stiffness_block[None, :, :], (int(radial_points), count, count)),
+        local_mass=jnp.broadcast_to(local_mass_block[None, :, :], (int(radial_points), count, count)),
+        radial_stiffness=jnp.broadcast_to(radial_stiffness_block[None, :, :], (int(radial_points), count, count)),
+        harmonics=harmonics,
+        metadata=(("source", "constant_radial_block_problem"),),
+    )
+
+
+def radial_block_problem_from_boozer_geometry(
+    geometry: BoozerGeometry,
+    harmonics: Any,
+    *,
+    mass_density: Any,
+    radial_coupling_fraction: float = 0.01,
+    radial_coupling_omega2: Any | None = None,
+    theta_points: int = 32,
+    zeta_points: int = 32,
+) -> RadialBlockEigenmodeProblem:
+    """Build a global radial block problem from real 3-D Boozer geometry.
+
+    The local block matrices are the real-geometry Boozer surface matrices. The
+    radial term is a Hermitian envelope regularization using the local mass
+    matrix as the radial metric. If ``radial_coupling_omega2`` is not supplied,
+    it is set to ``radial_coupling_fraction`` times the median local continuum
+    eigenvalue. This closes the global radial operator path for the current
+    shear-Alfven/Boozer model; cross-code ideal-MHD validation remains a
+    separate acceptance layer.
+    """
+    harmonic_array = jnp.asarray(harmonics, dtype=float)
+    matrices = boozer_3d_continuum_matrices(
+        geometry,
+        harmonic_array,
+        mass_density=mass_density,
+        theta_points=theta_points,
+        zeta_points=zeta_points,
+    )
+    if radial_coupling_omega2 is None:
+        local_eigenvalues = generalized_hermitian_eigenvalues(matrices.stiffness, matrices.mass)
+        coupling = float(radial_coupling_fraction) * jnp.median(jnp.maximum(local_eigenvalues, 1.0))
+    else:
+        coupling = jnp.asarray(radial_coupling_omega2)
+    radial_stiffness = _scale_block_profile(matrices.mass, coupling, name="radial_coupling_omega2")
+    return RadialBlockEigenmodeProblem(
+        s=geometry.s,
+        local_stiffness=matrices.stiffness,
+        local_mass=matrices.mass,
+        radial_stiffness=radial_stiffness,
+        harmonics=harmonic_array,
+        metadata=(
+            ("source", "boozmn_global_3d"),
+            ("radial_coupling_fraction", float(radial_coupling_fraction)),
+            ("theta_points", int(theta_points)),
+            ("zeta_points", int(zeta_points)),
+        ),
+    )
+
+
 def constant_radial_problem(
     *,
     radial_points: int = 64,
@@ -144,6 +301,37 @@ def constant_radial_problem(
         mass_weight=jnp.ones_like(s),
         metadata=(("source", "constant_radial_problem"),),
     )
+
+
+def assemble_radial_block_matrices(problem: RadialBlockEigenmodeProblem) -> tuple[jax.Array, jax.Array]:
+    """Assemble block radial stiffness and mass matrices on interior nodes."""
+    surface_count = int(problem.s.shape[0])
+    harmonic_count = int(problem.harmonics.shape[0])
+    interior_count = surface_count - 2
+    matrix_size = interior_count * harmonic_count
+    spacing = problem.s[1:] - problem.s[:-1]
+    dtype = jnp.result_type(problem.local_stiffness, problem.local_mass, problem.radial_stiffness, jnp.asarray(1j) * problem.s[0])
+    stiffness = jnp.zeros((matrix_size, matrix_size), dtype=dtype)
+    mass = jnp.zeros((matrix_size, matrix_size), dtype=dtype)
+    inverse_face_ds2 = 1.0 / spacing**2
+    face_stiffness = 0.5 * (problem.radial_stiffness[1:] + problem.radial_stiffness[:-1])
+    for local_index in range(interior_count):
+        surface_index = local_index + 1
+        row = slice(local_index * harmonic_count, (local_index + 1) * harmonic_count)
+        left = face_stiffness[surface_index - 1] * inverse_face_ds2[surface_index - 1]
+        right = face_stiffness[surface_index] * inverse_face_ds2[surface_index]
+        block = problem.local_stiffness[surface_index] + left + right
+        stiffness = stiffness.at[row, row].add(block)
+        mass = mass.at[row, row].add(problem.local_mass[surface_index])
+        if local_index > 0:
+            col = slice((local_index - 1) * harmonic_count, local_index * harmonic_count)
+            stiffness = stiffness.at[row, col].add(-left)
+        if local_index < interior_count - 1:
+            col = slice((local_index + 1) * harmonic_count, (local_index + 2) * harmonic_count)
+            stiffness = stiffness.at[row, col].add(-right)
+    stiffness = 0.5 * (stiffness + jnp.conjugate(stiffness.T))
+    mass = 0.5 * (mass + jnp.conjugate(mass.T))
+    return stiffness, mass
 
 
 def assemble_radial_matrices(problem: RadialEigenmodeProblem) -> tuple[jax.Array, jax.Array]:
@@ -165,6 +353,24 @@ def assemble_radial_matrices(problem: RadialEigenmodeProblem) -> tuple[jax.Array
     return stiffness, mass
 
 
+def solve_radial_block_eigenmodes(problem: RadialBlockEigenmodeProblem) -> RadialBlockEigenmodeResult:
+    """Solve the block radial generalized Hermitian eigenproblem."""
+    stiffness, mass = assemble_radial_block_matrices(problem)
+    eigensystem = generalized_hermitian_eigensystem(stiffness, mass)
+    omega2 = jnp.real(eigensystem.eigenvalues)
+    frequencies_hz = jnp.sqrt(jnp.maximum(omega2, 0.0)) / (2.0 * jnp.pi)
+    residuals = generalized_eigen_residual_norms(stiffness, mass, eigensystem)
+    return RadialBlockEigenmodeResult(
+        omega2=omega2,
+        frequencies_hz=frequencies_hz,
+        eigenvectors=eigensystem.eigenvectors,
+        mode_structures=radial_block_mode_structures(problem, eigensystem.eigenvectors),
+        residuals=residuals,
+        stiffness=stiffness,
+        mass=mass,
+    )
+
+
 def solve_radial_eigenmodes(problem: RadialEigenmodeProblem) -> RadialEigenmodeResult:
     """Solve the radial generalized Hermitian eigenproblem."""
     stiffness, mass = assemble_radial_matrices(problem)
@@ -182,6 +388,17 @@ def solve_radial_eigenmodes(problem: RadialEigenmodeProblem) -> RadialEigenmodeR
     )
 
 
+def radial_block_mode_structures(problem: RadialBlockEigenmodeProblem, eigenvectors: Any) -> jax.Array:
+    """Return eigenvectors as ``(mode, surface, harmonic)`` with zero boundaries."""
+    vectors = jnp.asarray(eigenvectors)
+    harmonic_count = int(problem.harmonics.shape[0])
+    mode_count = int(vectors.shape[1])
+    interior = jnp.reshape(vectors, (int(problem.s.shape[0]) - 2, harmonic_count, mode_count))
+    boundary = jnp.zeros((1, harmonic_count, mode_count), dtype=vectors.dtype)
+    full = jnp.concatenate([boundary, interior, boundary], axis=0)
+    return jnp.moveaxis(full, -1, 0)
+
+
 def constant_problem_discrete_omega2(problem: RadialEigenmodeProblem) -> jax.Array:
     """Return the exact discrete spectrum for a constant-coefficient problem."""
     interior_count = problem.s.shape[0] - 2
@@ -191,6 +408,23 @@ def constant_problem_discrete_omega2(problem: RadialEigenmodeProblem) -> jax.Arr
     coupling = problem.radial_coupling[0]
     laplacian = 4.0 * coupling / ds**2 * jnp.sin(mode_indices * jnp.pi / (2.0 * (interior_count + 1))) ** 2
     return continuum + laplacian
+
+
+def constant_block_problem_discrete_omega2(problem: RadialBlockEigenmodeProblem) -> jax.Array:
+    """Return the exact spectrum for a diagonal constant block problem."""
+    interior_count = problem.s.shape[0] - 2
+    mode_indices = jnp.arange(1, interior_count + 1, dtype=problem.s.dtype)
+    ds = problem.s[1] - problem.s[0]
+    mass_diagonal = jnp.real(jnp.diagonal(problem.local_mass[0]))
+    local_omega2 = jnp.real(jnp.diagonal(problem.local_stiffness[0])) / mass_diagonal
+    coupling_omega2 = jnp.real(jnp.diagonal(problem.radial_stiffness[0])) / mass_diagonal
+    radial_laplacian = (
+        4.0
+        * coupling_omega2[:, None]
+        / ds**2
+        * jnp.sin(mode_indices[None, :] * jnp.pi / (2.0 * (interior_count + 1))) ** 2
+    )
+    return jnp.sort(jnp.ravel(local_omega2[:, None] + radial_laplacian))
 
 
 def lowest_radial_frequency_hz(
@@ -210,6 +444,25 @@ def lowest_radial_frequency_hz(
     return solve_radial_eigenmodes(scaled).frequencies_hz[0]
 
 
+def lowest_radial_block_frequency_hz(
+    density_scale: Any,
+    *,
+    base_problem: RadialBlockEigenmodeProblem,
+) -> jax.Array:
+    """Return the lowest block frequency after scaling the generalized mass."""
+    scale = jnp.asarray(density_scale)
+    scaled = RadialBlockEigenmodeProblem(
+        s=base_problem.s,
+        local_stiffness=base_problem.local_stiffness,
+        local_mass=base_problem.local_mass * scale,
+        radial_stiffness=base_problem.radial_stiffness,
+        harmonics=base_problem.harmonics,
+        boundary_condition=base_problem.boundary_condition,
+        metadata=base_problem.metadata + (("density_scale", "autodiff"),),
+    )
+    return solve_radial_block_eigenmodes(scaled).frequencies_hz[0]
+
+
 def eigenpair_residual_norm(stiffness: Any, mass: Any, omega2: Any, vector: Any, *, floor: float = 1.0e-30) -> jax.Array:
     """Return a relative residual norm for one radial eigenpair."""
     stiffness_array = jnp.asarray(stiffness)
@@ -222,3 +475,22 @@ def eigenpair_residual_norm(stiffness: Any, mass: Any, omega2: Any, vector: Any,
         float(floor),
     )
     return jnp.linalg.norm(residual) / denominator
+
+
+def _broadcast_mode_profile(value: jax.Array, count: int, *, name: str) -> jax.Array:
+    if value.shape == (1,):
+        return jnp.full((int(count),), value[0])
+    if value.shape != (int(count),):
+        raise ValueError(f"{name} must be scalar-like or have shape ({count},)")
+    return value
+
+
+def _scale_block_profile(blocks: jax.Array, scale: Any, *, name: str) -> jax.Array:
+    scale_array = jnp.asarray(scale)
+    if scale_array.ndim == 0:
+        return blocks * scale_array
+    if scale_array.shape == (int(blocks.shape[0]),):
+        return blocks * scale_array[:, None, None]
+    if scale_array.shape == blocks.shape:
+        return scale_array
+    raise ValueError(f"{name} must be scalar, a radial profile, or full block array with shape {blocks.shape}")

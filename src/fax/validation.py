@@ -32,10 +32,15 @@ from .equilibrium import analytic_circular_tokamak, analytic_cylinder, from_vmec
 from .fast_ions import FastIonPopulation, reduced_fast_ion_drive
 from .gap_models import bae_accumulation_frequency_hz, basic_alfven_gap_map, tae_gap_estimate
 from .global_modes import (
+    constant_block_problem_discrete_omega2,
     constant_problem_discrete_omega2,
+    constant_radial_block_problem,
     constant_radial_problem,
+    lowest_radial_block_frequency_hz,
     lowest_radial_frequency_hz,
+    radial_block_problem_from_boozer_geometry,
     solve_radial_eigenmodes,
+    solve_radial_block_eigenmodes,
 )
 from .metric import (
     MetricGeometry,
@@ -50,6 +55,8 @@ from .metric import (
 from .modes import stellarator_mode_family
 from .reference_cases import landreman_paul_qa_lowres
 from .units import MU0
+
+jax.config.update("jax_enable_x64", True)
 
 
 def relative_l2_error(actual: Any, expected: Any, *, floor: float = 1.0e-30) -> jnp.ndarray:
@@ -283,6 +290,50 @@ def _gate_global_mode_density_gradient() -> GateResult:
         metric,
         tolerance,
         "global radial eigenmode density sensitivity matches analytic rho^(-1/2) scaling",
+    )
+
+
+def _gate_global_3d_block_constant_spectrum() -> GateResult:
+    gate_id = "global_3d_block_constant_spectrum"
+    tolerance = 1.0e-5
+    problem = constant_radial_block_problem(
+        radial_points=24,
+        continuum_frequency_hz=(90_000.0, 135_000.0),
+        radial_coupling_omega2=(2.0e9, 3.5e9),
+    )
+    result = solve_radial_block_eigenmodes(problem)
+    expected = constant_block_problem_discrete_omega2(problem)
+    metric = relative_l2_error(result.omega2[:12], expected[:12])
+    residual = float(jnp.max(result.residuals[:12]))
+    return _pass_fail(
+        gate_id,
+        max(float(metric), residual),
+        tolerance,
+        "block radial 3-D eigenproblem recovers the exact diagonal constant-coefficient spectrum",
+    )
+
+
+def _gate_global_3d_block_density_gradient() -> GateResult:
+    gate_id = "global_3d_block_density_gradient"
+    tolerance = 1.0e-4
+    problem = constant_radial_block_problem(
+        radial_points=18,
+        continuum_frequency_hz=(95_000.0, 145_000.0),
+        radial_coupling_omega2=(2.4e9, 3.1e9),
+    )
+
+    def frequency(scale: float) -> jnp.ndarray:
+        return lowest_radial_block_frequency_hz(scale, base_problem=problem)
+
+    scale0 = 1.25
+    autodiff = float(jax.grad(frequency)(scale0))
+    expected = float(-0.5 * frequency(scale0) / scale0)
+    metric = abs(autodiff - expected) / max(abs(expected), 1.0e-30)
+    return _pass_fail(
+        gate_id,
+        metric,
+        tolerance,
+        "block radial 3-D eigenproblem density sensitivity follows rho^(-1/2) scaling",
     )
 
 
@@ -727,6 +778,39 @@ def _gate_boozmn_3d_continuum_finite() -> GateResult:
     )
 
 
+def _gate_boozmn_global_3d_eigenmode_finite() -> GateResult:
+    gate_id = "boozmn_global_3d_eigenmode_finite"
+    tolerance = 2.0e-5
+    fixture = _booz_xform_fixture("boozmn_LandremanSenguptaPlunk_section5p3.nc")
+    if fixture is None:
+        return GateResult(
+            gate_id=gate_id,
+            status="skipped",
+            metric=float("nan"),
+            tolerance=tolerance,
+            message="missing local booz_xform_jax boozmn_LandremanSenguptaPlunk_section5p3.nc fixture",
+        )
+    geometry = read_boozmn_geometry(fixture)
+    harmonics = jnp.asarray([[1.0, 0.0], [2.0, 1.0]])
+    problem = radial_block_problem_from_boozer_geometry(
+        geometry,
+        harmonics,
+        mass_density=3.4e-8,
+        radial_coupling_fraction=0.004,
+        theta_points=16,
+        zeta_points=16,
+    )
+    result = solve_radial_block_eigenmodes(problem)
+    finite_failure = 0.0 if bool(jnp.all(jnp.isfinite(result.frequencies_hz[:6]))) else 1.0
+    metric = max(float(jnp.max(result.residuals[:6])), finite_failure)
+    return _pass_fail(
+        gate_id,
+        metric,
+        tolerance,
+        "real boozmn local 3-D matrices assemble into a finite global radial block eigenproblem with small residuals",
+    )
+
+
 def _gate_landreman_paul_adapter_smoke() -> GateResult:
     gate_id = "landreman_paul_adapter_smoke"
     tolerance = 0.0
@@ -961,6 +1045,28 @@ def registered_validation_gates() -> tuple[ValidationGate, ...]:
             _runner=_gate_global_mode_density_gradient,
         ),
         ValidationGate(
+            gate_id="global_3d_block_constant_spectrum",
+            title="Global radial 3-D block constant spectrum",
+            layer="global-eigenmode",
+            quantity="relative omega^2 error and residual",
+            tolerance=1.0e-5,
+            citation="Dirichlet block finite-difference validation for the global radial Boozer-harmonic shear-Alfven envelope operator",
+            command="python -m pytest tests/test_global_modes.py tests/test_validation_registry.py",
+            tags=("global", "eigenmode", "3d", "analytic"),
+            _runner=_gate_global_3d_block_constant_spectrum,
+        ),
+        ValidationGate(
+            gate_id="global_3d_block_density_gradient",
+            title="Global radial 3-D block density sensitivity",
+            layer="differentiability",
+            quantity="relative autodiff/analytic gradient error",
+            tolerance=1.0e-4,
+            citation="JAX autodiff consistency check for the block radial generalized eigenproblem rho^(-1/2) scaling",
+            command="python -m pytest tests/test_global_modes.py tests/test_validation_registry.py",
+            tags=("global", "eigenmode", "3d", "autodiff"),
+            _runner=_gate_global_3d_block_density_gradient,
+        ),
+        ValidationGate(
             gate_id="analytic_tae_gap_center",
             title="Analytic TAE gap-center crossing",
             layer="gap-physics",
@@ -1124,6 +1230,17 @@ def registered_validation_gates() -> tuple[ValidationGate, ...]:
             command="python -m pytest -m requires_booz_xform_jax tests/test_boozer.py tests/test_validation_registry.py",
             tags=("boozer", "continuum", "boozmn", "fixture", "3d"),
             _runner=_gate_boozmn_3d_continuum_finite,
+        ),
+        ValidationGate(
+            gate_id="boozmn_global_3d_eigenmode_finite",
+            title="Real boozmn global radial 3-D eigenmode smoke test",
+            layer="global-eigenmode",
+            quantity="maximum residual and finite-output check",
+            tolerance=2.0e-5,
+            citation="Block radial generalized eigenproblem built from local 3-D Boozer shear-Alfven matrices and Dirichlet radial boundaries",
+            command="python -m pytest -m requires_booz_xform_jax tests/test_boozer.py tests/test_validation_registry.py",
+            tags=("boozer", "global", "eigenmode", "boozmn", "fixture", "3d"),
+            _runner=_gate_boozmn_global_3d_eigenmode_finite,
         ),
         ValidationGate(
             gate_id="landreman_paul_adapter_smoke",
