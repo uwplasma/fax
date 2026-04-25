@@ -16,6 +16,7 @@ python examples/research/boozer_harmonic_validation.py
 python examples/research/boozmn_3d_continuum.py
 python examples/research/boozmn_global_3d_eigenmodes.py
 python examples/research/stellgap_ctok_comparison.py
+python examples/research/external_code_artifact_dashboard.py
 ```
 
 The examples intentionally use the analytic and Landreman-Paul low-resolution
@@ -68,3 +69,15 @@ local 3-D Boozer continuum branches for the same harmonic family, and writes a
 comparison figure plus JSON metrics. This is the first quantitative external
 code parity gate in FAX; it is local-continuum parity, not a global AE3D/CAS3D
 eigenmode benchmark.
+
+## External-Code Artifact Dashboard
+
+```bash
+python examples/research/external_code_artifact_dashboard.py
+```
+
+This reads the public ORNL STELLGAP and AE3D answer artifacts under
+`/Users/rogerio/local`, reproduces STELLGAP and AE3D post-processing/eigenvalue
+conventions, checks AE3D sparse matrix symmetry, and writes a figure plus JSON
+metrics. These are prerequisite convention gates before full physics parity
+against AE3D/CAS3D/FAR3D.

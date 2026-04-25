@@ -99,6 +99,15 @@ Current Figures
    continuum branches overlaid on ORNL STELLGAP CTOK output, with a radial
    spectrum-error panel.
 
+.. figure:: _static/external_code_artifact_dashboard.svg
+   :alt: STELLGAP and AE3D public artifact parity dashboard.
+
+   Artifact-level public-code checks: FAX reproduces STELLGAP
+   ``alfven_spec`` to ``alfven_post`` post-processing, reproduces AE3D
+   ``omega2.dat`` to ``egn_values.dat`` conventions, and checks AE3D sparse
+   matrix symmetry/residual metrics. These are convention gates that precede
+   full global-mode physics parity.
+
 .. figure:: _static/continuum_artifact_dashboard.svg
    :alt: Dashboard generated from fax continuum artifacts.
 

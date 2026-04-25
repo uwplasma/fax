@@ -1127,12 +1127,18 @@ Needed docs:
   - Added the first quantitative public external-code gate: `stellgap_ctok_local_continuum`. It compares FAX local 3-D Boozer continuum branches with the ORNL STELLGAP CTOK `alfven_post` output using the same `boozmn_ctok.nc` geometry. Current local metric: 97 matched surfaces, mean relative sorted-spectrum error about `1.30e-2`, p95 about `2.55e-2`, max about `3.32e-2`; the gate tolerance is `4.0e-2`.
   - Added `examples/research/stellgap_ctok_comparison.py` and generated `docs/_static/stellgap_ctok_comparison.{svg,png}`.
   - Added the optional AE3D public eigenvalue artifact residual gate. This checks parser/residual handling only; it is not a FAX-vs-AE3D eigenmode parity claim.
+  - Added the next artifact-convention gates:
+    - `stellgap_public_postprocess_parity`: reproduces STELLGAP `post_process.f` conversion from `alfven_spec` to `alfven_post`; current max relative error is about `4.9e-7` over 3848 rows.
+    - `ae3d_public_omega2_eigenvalue_parity`: reproduces AE3D `omega2.dat` to `egn_values.dat`; current max relative error is about `6.9e-7` over 1287 modes.
+    - `ae3d_public_matrix_symmetry`: checks public AE3D `a_matrix.dat`/`b_matrix.dat` sparse symmetry; current relative asymmetry is about `1.19e-6` for `A` and `0` for `B`.
+  - Added `examples/research/external_code_artifact_dashboard.py` and generated `docs/_static/external_code_artifact_dashboard.{svg,png}`. This is a convention/status figure, not a global-mode physics parity figure.
   - Replaced the old mass-proportional radial coupling default in the real-Boozer global path with a metric-derived radial stiffness matrix `<|J||grad s|^2|B|^2 phi_i^* phi_j/mu0>`, while keeping the previous mass-scaled path available for analytic tests.
   - Added Neumann radial boundary support and an exact constant-coefficient Neumann spectrum gate alongside the existing Dirichlet gate.
   - Added eigenfunction-weighted fast-ion drive/damping diagnostics that project reduced resonance drive onto global `(surface, harmonic)` eigenfunctions.
   - Added `boozer_global_mode_avoidance_objective` and `boozer_pipeline_mode_avoidance_objective` for differentiable Boozer/FAX design screens. The pipeline objective accepts a differentiable Boozer-geometry builder, which is the API boundary for future `vmec_jax`/`booz_xform_jax` end-to-end optimization.
   - Updated README, docs, changelog, release notes, validation registry, and tests to distinguish true STELLGAP local-continuum parity from AE3D artifact smoke tests and still-open full global parity.
   - Verified locally with `python -m ruff check .`, `python -m mypy src/fax`, direct `run_validation_suite(include_skipped=True)` (36 passed, 0 skipped, 0 failed), `python -m pytest -q` (114 passed), `python -m coverage run --source=src/fax -m pytest -q` (114 passed, 90.2% coverage badge), `python tools/generate_validation_figures.py`, `python tools/qa_figures.py`, `sphinx-build -W -b html docs docs/_build/html`, `python -m build`, and `python -m twine check dist/*`.
+  - Re-verified after the artifact-convention gates with direct `run_validation_suite(include_skipped=True)` (39 passed, 0 skipped, 0 failed), `python -m pytest -q` (116 passed), coverage run (116 passed, 90.4% coverage badge), figure generation/QA, Sphinx with warnings as errors, build, and twine check.
 
 ### Local Testing Policy Until GitHub Actions Resume
 

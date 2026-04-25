@@ -74,7 +74,13 @@ def test_boozmn_validation_gates_pass_or_skip_cleanly():
 
 
 def test_cross_code_validation_gates_pass_or_skip_cleanly():
-    for gate_id in ("stellgap_ctok_local_continuum", "ae3d_public_eigenvalue_artifact"):
+    for gate_id in (
+        "stellgap_ctok_local_continuum",
+        "stellgap_public_postprocess_parity",
+        "ae3d_public_eigenvalue_artifact",
+        "ae3d_public_omega2_eigenvalue_parity",
+        "ae3d_public_matrix_symmetry",
+    ):
         result = run_validation_gate(gate_id)
 
         assert result.status in {"passed", "skipped"}

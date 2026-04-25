@@ -466,6 +466,21 @@
       ]
     },
     {
+      "id": "stellgap_public_postprocess_parity",
+      "title": "STELLGAP public postprocess parity",
+      "layer": "cross-code",
+      "quantity": "maximum alfven_spec-to-alfven_post relative error",
+      "tolerance": 1e-05,
+      "citation": "ORNL STELLGAP public CTOK alfven_spec/alfven_post artifacts and STELLGAP post_process.f convention",
+      "command": "python -m pytest tests/test_validation_registry.py",
+      "tags": [
+        "cross-code",
+        "stellgap",
+        "artifact",
+        "postprocess"
+      ]
+    },
+    {
       "id": "ae3d_public_eigenvalue_artifact",
       "title": "AE3D public eigenvalue artifact residual",
       "layer": "cross-code",
@@ -478,6 +493,36 @@
         "ae3d",
         "artifact",
         "eigenmode"
+      ]
+    },
+    {
+      "id": "ae3d_public_omega2_eigenvalue_parity",
+      "title": "AE3D public omega2 eigenvalue convention",
+      "layer": "cross-code",
+      "quantity": "maximum omega2-to-egn_values relative error",
+      "tolerance": 1e-05,
+      "citation": "ORNL AE3D public omega2.dat and egn_values.dat artifacts; positive entries are square-rooted and negative entries are preserved",
+      "command": "python -m pytest tests/test_validation_registry.py",
+      "tags": [
+        "cross-code",
+        "ae3d",
+        "artifact",
+        "eigenvalue"
+      ]
+    },
+    {
+      "id": "ae3d_public_matrix_symmetry",
+      "title": "AE3D public sparse matrix symmetry",
+      "layer": "cross-code",
+      "quantity": "relative sparse matrix asymmetry",
+      "tolerance": 1e-05,
+      "citation": "ORNL AE3D public a_matrix.dat/b_matrix.dat generalized-eigenproblem artifacts",
+      "command": "python -m pytest tests/test_validation_registry.py",
+      "tags": [
+        "cross-code",
+        "ae3d",
+        "artifact",
+        "matrix"
       ]
     },
     {
@@ -678,6 +723,18 @@
     },
     {
       "file": "stellgap_ctok_comparison.png",
+      "format": "png",
+      "status": "smoke-test",
+      "claim": "Development figure generated from analytic/local continuum formulas; not a full 3-D stellarator Alfvén-continuum validation."
+    },
+    {
+      "file": "external_code_artifact_dashboard.svg",
+      "format": "svg",
+      "status": "smoke-test",
+      "claim": "Development figure generated from analytic/local continuum formulas; not a full 3-D stellarator Alfvén-continuum validation."
+    },
+    {
+      "file": "external_code_artifact_dashboard.png",
       "format": "png",
       "status": "smoke-test",
       "claim": "Development figure generated from analytic/local continuum formulas; not a full 3-D stellarator Alfvén-continuum validation."

@@ -33,7 +33,16 @@ from fax.boozer import (
 )
 from fax.config import EquilibriumConfig, FaxConfig, GridConfig, RunConfig
 from fax.continuum import continuum_branch_matrix
-from fax.cross_code import read_stellgap_alfven_post
+from fax.cross_code import (
+    ae3d_eigenvalue_residual_summary,
+    ae3d_matrix_symmetry_summary,
+    ae3d_omega2_eigenvalue_error,
+    read_ae3d_eigenvalues,
+    read_ae3d_omega2,
+    read_stellgap_alfven_post,
+    stellgap_postprocess_error,
+    stellgap_spec_postprocessed_continuum,
+)
 from fax.equilibrium import analytic_circular_tokamak, from_vmec_wout
 from fax.fast_ions import FastIonPopulation, resonance_scan
 from fax.gaps import minimum_gap_summary, sorted_branch_gaps
@@ -846,6 +855,115 @@ def generate_stellgap_ctok_comparison(output_dir: Path) -> list[Path]:
     return paths
 
 
+def generate_external_code_artifact_dashboard(output_dir: Path) -> list[Path]:
+    """Generate artifact-level STELLGAP/AE3D parity diagnostics."""
+    stellgap_dir = Path("/Users/rogerio/local/Stellgap_test_problem")
+    ae3d_dir = Path("/Users/rogerio/local/AE3D_test_problem")
+    alfven_spec = stellgap_dir / "alfven_spec"
+    alfven_post = stellgap_dir / "alfven_post"
+    omega2_path = ae3d_dir / "omega2.dat"
+    egn_values_path = ae3d_dir / "egn_values.dat"
+    a_matrix = ae3d_dir / "a_matrix.dat"
+    b_matrix = ae3d_dir / "b_matrix.dat"
+    if not all(path.exists() for path in (alfven_spec, alfven_post, omega2_path, egn_values_path, a_matrix, b_matrix)):
+        return []
+    plt = _setup_matplotlib()
+    stellgap_comparison = stellgap_postprocess_error(alfven_spec_path=alfven_spec, alfven_post_path=alfven_post)
+    ae3d_comparison = ae3d_omega2_eigenvalue_error(omega2_path=omega2_path, egn_values_path=egn_values_path)
+    ae3d_residual = ae3d_eigenvalue_residual_summary(egn_values_path)
+    a_summary = ae3d_matrix_symmetry_summary(a_matrix)
+    b_summary = ae3d_matrix_symmetry_summary(b_matrix)
+    stellgap_processed = stellgap_spec_postprocessed_continuum(alfven_spec)
+    stellgap_reference = read_stellgap_alfven_post(alfven_post)
+    predicted = np.asarray(stellgap_processed.frequency_khz)
+    reference = np.asarray(stellgap_reference.frequency_khz)
+    count = min(predicted.shape[0], reference.shape[0])
+    stellgap_error = np.abs(predicted[:count] - reference[:count]) / np.maximum(np.abs(reference[:count]), 1.0e-30)
+    omega2 = read_ae3d_omega2(omega2_path)
+    egn_values = read_ae3d_eigenvalues(egn_values_path)
+    raw = np.asarray(omega2.eigenvalue)
+    ae3d_predicted = np.where(raw > 0.0, np.sqrt(np.maximum(raw, 0.0)), raw)
+    ae3d_reference = np.asarray(egn_values.frequency_khz)
+    ae3d_count = min(ae3d_predicted.shape[0], ae3d_reference.shape[0])
+
+    fig, axes = plt.subplots(2, 2, figsize=(12.5, 7.4), constrained_layout=True)
+    axes[0, 0].scatter(np.asarray(stellgap_reference.s), reference, s=3, alpha=0.32, label="STELLGAP alfven_post")
+    axes[0, 0].scatter(np.asarray(stellgap_processed.s), predicted, s=2, alpha=0.22, label="FAX postprocess")
+    axes[0, 0].set_title("STELLGAP postprocess parity")
+    axes[0, 0].set_xlabel("s")
+    axes[0, 0].set_ylabel("frequency [kHz]")
+    axes[0, 0].legend(loc="upper right", fontsize=8)
+
+    axes[0, 1].semilogy(stellgap_error, linewidth=1.1)
+    axes[0, 1].axhline(1.0e-5, color="black", linestyle="--", linewidth=1.0, label="gate")
+    axes[0, 1].set_title(f"STELLGAP row error, max={stellgap_comparison.max_relative_error:.2e}")
+    axes[0, 1].set_xlabel("postprocessed row")
+    axes[0, 1].set_ylabel("relative error")
+    axes[0, 1].legend(loc="upper right", fontsize=8)
+
+    axes[1, 0].scatter(ae3d_reference[:ae3d_count], ae3d_predicted[:ae3d_count], s=5, alpha=0.5)
+    lo = min(float(np.min(ae3d_reference[:ae3d_count])), float(np.min(ae3d_predicted[:ae3d_count])))
+    hi = max(float(np.max(ae3d_reference[:ae3d_count])), float(np.max(ae3d_predicted[:ae3d_count])))
+    axes[1, 0].plot([lo, hi], [lo, hi], color="black", linestyle="--", linewidth=1.0)
+    axes[1, 0].set_title(f"AE3D omega2 convention, max={ae3d_comparison.max_relative_error:.2e}")
+    axes[1, 0].set_xlabel("AE3D egn_values")
+    axes[1, 0].set_ylabel("FAX reproduction")
+
+    labels = ["A asym.", "B asym.", "AE3D residual", "omega2 error"]
+    values = [
+        a_summary.relative_asymmetry,
+        b_summary.relative_asymmetry,
+        ae3d_residual.max_residual,
+        ae3d_comparison.max_relative_error,
+    ]
+    axes[1, 1].bar(labels, values, color=["#4c78a8", "#72b7b2", "#f58518", "#54a24b"])
+    axes[1, 1].set_yscale("log")
+    axes[1, 1].axhline(1.0e-5, color="black", linestyle="--", linewidth=1.0, label="matrix/eigenvalue gate")
+    axes[1, 1].axhline(1.0e-2, color="#777777", linestyle=":", linewidth=1.0, label="residual gate")
+    axes[1, 1].set_title(f"AE3D matrices: N={a_summary.dimension}, nnz={a_summary.nonzero_count}")
+    axes[1, 1].set_ylabel("metric")
+    axes[1, 1].tick_params(axis="x", rotation=18)
+    axes[1, 1].legend(loc="upper right", fontsize=8)
+
+    fig.suptitle("Public external-code artifact parity checks", fontsize=12, weight="bold")
+    paths = _save_figure(fig, output_dir, "external_code_artifact_dashboard")
+    plt.close(fig)
+    metrics = {
+        "stellgap_postprocess": {
+            "count": stellgap_comparison.count,
+            "mean_relative_error": stellgap_comparison.mean_relative_error,
+            "p95_relative_error": stellgap_comparison.p95_relative_error,
+            "max_relative_error": stellgap_comparison.max_relative_error,
+        },
+        "ae3d_omega2_eigenvalue": {
+            "count": ae3d_comparison.count,
+            "mean_relative_error": ae3d_comparison.mean_relative_error,
+            "p95_relative_error": ae3d_comparison.p95_relative_error,
+            "max_relative_error": ae3d_comparison.max_relative_error,
+        },
+        "ae3d_residual": {
+            "count": ae3d_residual.count,
+            "p95_residual": ae3d_residual.p95_residual,
+            "max_residual": ae3d_residual.max_residual,
+        },
+        "ae3d_a_matrix": {
+            "dimension": a_summary.dimension,
+            "nonzero_count": a_summary.nonzero_count,
+            "relative_asymmetry": a_summary.relative_asymmetry,
+        },
+        "ae3d_b_matrix": {
+            "dimension": b_summary.dimension,
+            "nonzero_count": b_summary.nonzero_count,
+            "relative_asymmetry": b_summary.relative_asymmetry,
+        },
+    }
+    (output_dir / "external_code_artifact_metrics.json").write_text(
+        json.dumps(metrics, indent=2, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
+    return paths
+
+
 def generate_continuum_artifact_dashboard(output_dir: Path) -> list[Path]:
     """Generate a dashboard from files written by the continuum workflow."""
     case = landreman_paul_qa_lowres()
@@ -1124,6 +1242,7 @@ def main(argv: list[str] | None = None) -> int:
         generate_boozmn_3d_geometry_operator(output_dir),
         generate_boozmn_global_3d_eigenmodes(output_dir),
         generate_stellgap_ctok_comparison(output_dir),
+        generate_external_code_artifact_dashboard(output_dir),
         generate_continuum_artifact_dashboard(output_dir),
         generate_metric_residual_convergence(output_dir),
         generate_landreman_convergence_dashboard(output_dir),

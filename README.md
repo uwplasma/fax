@@ -221,6 +221,15 @@ ORNL STELLGAP CTOK `boozmn` fixture, computes local 3-D Boozer continuum
 branches, and compares them with STELLGAP `alfven_post` output. The p95
 relative spectrum error is about 2.55% over 97 matched surfaces.
 
+![External code artifact dashboard](docs/_static/external_code_artifact_dashboard.png)
+
+This dashboard adds artifact-level parity checks for public ORNL outputs:
+STELLGAP `alfven_spec` post-processing reproduces `alfven_post` to max
+relative error `4.9e-7`, AE3D `omega2.dat` reproduces `egn_values.dat` to max
+relative error `6.9e-7`, and AE3D public sparse matrices are symmetric to the
+registered gates. These are prerequisite code-convention gates before claiming
+full global AE3D/CAS3D/FAR3D physics parity.
+
 ![Continuum artifact dashboard](docs/_static/continuum_artifact_dashboard.png)
 
 This figure is generated from files written by `fax continuum`: the branch CSV,
@@ -394,6 +403,7 @@ Current figures:
 - `boozmn_3d_geometry_operator.svg`: real `boozmn` geometry, Jacobian, embedding metric, and local 3-D Boozer continuum dashboard.
 - `boozmn_global_3d_eigenmodes.svg`: global radial 3-D Boozer eigenmode frequencies, envelopes, harmonic structure, and residuals.
 - `stellgap_ctok_comparison.svg`: public ORNL STELLGAP CTOK continuum comparison against FAX local 3-D Boozer branches.
+- `external_code_artifact_dashboard.svg`: STELLGAP/AE3D public artifact post-processing, eigenvalue-convention, matrix-symmetry, and residual checks.
 - `continuum_artifact_dashboard.svg`: dashboard generated from `fax continuum` artifacts.
 - `metric_residual_convergence.svg`: metric-matrix residual and angular-grid check.
 - `landreman_paul_convergence_dashboard.svg`: VMEC-backed radial/angular/Fourier convergence smoke-test dashboard.

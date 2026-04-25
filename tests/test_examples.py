@@ -192,3 +192,41 @@ def test_stellgap_ctok_comparison_example_runs(tmp_path):
     assert payload["matched_surfaces"] >= 90
     assert payload["p95_relative_error"] < 4.0e-2
     assert all(Path(path).exists() for path in payload["figure_files"])
+
+
+def test_external_code_artifact_dashboard_example_runs(tmp_path):
+    stellgap_dir = Path("/Users/rogerio/local/Stellgap_test_problem")
+    ae3d_dir = Path("/Users/rogerio/local/AE3D_test_problem")
+    required = [
+        stellgap_dir / "alfven_spec",
+        stellgap_dir / "alfven_post",
+        ae3d_dir / "omega2.dat",
+        ae3d_dir / "egn_values.dat",
+        ae3d_dir / "a_matrix.dat",
+        ae3d_dir / "b_matrix.dat",
+    ]
+    if not all(path.exists() for path in required):
+        return
+
+    result = subprocess.run(
+        [
+            sys.executable,
+            "examples/research/external_code_artifact_dashboard.py",
+            "--stellgap-dir",
+            str(stellgap_dir),
+            "--ae3d-dir",
+            str(ae3d_dir),
+            "--output-dir",
+            str(tmp_path),
+        ],
+        cwd=REPO_ROOT,
+        check=True,
+        text=True,
+        capture_output=True,
+    )
+    payload = json.loads(result.stdout)
+    assert payload["stellgap_postprocess"]["max_relative_error"] < 1.0e-5
+    assert payload["ae3d_omega2_eigenvalue"]["max_relative_error"] < 1.0e-5
+    assert payload["ae3d_a_matrix"]["relative_asymmetry"] < 1.0e-5
+    assert payload["ae3d_b_matrix"]["relative_asymmetry"] < 1.0e-12
+    assert all(Path(path).exists() for path in payload["figures"])

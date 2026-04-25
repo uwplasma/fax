@@ -93,7 +93,8 @@ The following public repositories and answer artifacts have been cloned under
   https://github.com/ORNL-Fusion/AE3D. The OSTI software record states that
   AE3D solves reduced-MHD shear-Alfvén eigenmodes and eigenfrequencies in 2-D
   and 3-D magnetic confinement devices. The public ``egn_values.dat`` answer
-  table is currently used only as a parser/residual artifact gate; full
+  table, ``omega2.dat`` table, and sparse matrix artifacts are currently used
+  for parser, eigenvalue-convention, residual, and matrix-symmetry gates; full
   FAX-vs-AE3D eigenmode parity remains open.
 * ``/Users/rogerio/local/FAR3d`` from https://github.com/DSfusion/FAR3d. The
   FAR3D review describes a reduced-MHD/gyro-fluid code for AE/EPM stability,
@@ -114,5 +115,9 @@ Current quantitative external-code status:
 * FAX local 3-D Boozer continuum branches match the public ORNL STELLGAP CTOK
   ``alfven_post`` answer with p95 sorted-spectrum relative error about
   ``2.55e-2`` over 97 matched radial surfaces.
-* The AE3D public answer table is readable and its reported residuals are small
-  on this machine, but this is not yet a physics parity test.
+* FAX reproduces STELLGAP ``alfven_spec`` to ``alfven_post`` post-processing
+  with max relative error about ``4.9e-7`` over 3848 public CTOK rows.
+* FAX reproduces AE3D ``omega2.dat`` to ``egn_values.dat`` eigenvalue
+  conventions with max relative error about ``6.9e-7`` over 1287 modes, and
+  checks public AE3D sparse matrix symmetry. These AE3D checks are artifact
+  convention gates, not yet a FAX physics parity test.

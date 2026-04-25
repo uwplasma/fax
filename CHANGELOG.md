@@ -23,6 +23,8 @@ Initial research scaffold release for FAX.
 - Builder-based Boozer pipeline optimization objective for future differentiable `vmec_jax`/`booz_xform_jax` design workflows.
 - Public ORNL STELLGAP CTOK local-continuum comparison gate and generated figure.
 - Public ORNL AE3D eigenvalue-answer parser/residual smoke gate.
+- Public ORNL STELLGAP post-processing parity gate and AE3D omega2/matrix artifact gates.
+- External-code artifact dashboard example and generated README/docs figure.
 - README status badges for tests, docs, publish, ReadTheDocs, coverage, PyPI, Python versions, license, Ruff, and JAX.
 - Differentiable radial-mode avoidance objective for early design-screen demonstrations.
 - VMEC `wout` adapter smoke path for the Landreman-Paul QA low-resolution reference case.

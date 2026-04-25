@@ -94,10 +94,18 @@ tags, and command. The current gates are:
   Boozer radial derivative energy matrix for Hermiticity and positivity.
 * ``stellgap_ctok_local_continuum``: compares FAX local 3-D Boozer continuum
   branches against the public ORNL STELLGAP CTOK test problem.
+* ``stellgap_public_postprocess_parity``: reproduces the STELLGAP
+  ``post_process.f`` convention that converts public ``alfven_spec`` rows into
+  the published ``alfven_post`` frequency table.
 * ``ae3d_public_eigenvalue_artifact``: checks that the public ORNL AE3D
   eigenvalue answer table is readable and has small reported residuals. This
   is an external-artifact smoke gate, not yet a FAX-vs-AE3D eigenmode
   comparison.
+* ``ae3d_public_omega2_eigenvalue_parity``: checks AE3D's convention that
+  positive ``omega2.dat`` eigenvalues are square-rooted in ``egn_values.dat``
+  while negative entries are preserved.
+* ``ae3d_public_matrix_symmetry``: checks the symmetry of public AE3D
+  ``a_matrix.dat`` and ``b_matrix.dat`` generalized-eigenproblem artifacts.
 * ``landreman_paul_adapter_smoke``: checks the Landreman-Paul QA VMEC ``wout``
   profile and metric adapters when local data are available.
 * ``landreman_paul_continuum_finite``: checks that the Landreman-Paul profile
@@ -253,6 +261,13 @@ The AE3D public answer table is also parsed in local validation so future
 global-eigenmode parity work starts from a tested artifact reader. That gate
 only checks AE3D's reported residual columns; it does not claim FAX reproduces
 AE3D eigenfrequencies yet.
+
+.. figure:: _static/external_code_artifact_dashboard.svg
+   :alt: STELLGAP and AE3D public artifact parity dashboard.
+
+   STELLGAP and AE3D artifact-convention dashboard. These gates prove that FAX
+   can read and reproduce public external-code answer conventions before using
+   those files for stricter FAX-vs-code physics comparisons.
 
 .. figure:: _static/landreman_paul_convergence_dashboard.svg
    :alt: LandremanPaul2021 QA radial, angular, and Fourier convergence dashboard.

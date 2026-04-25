@@ -28,7 +28,13 @@ from .boozer import (
     straight_field_line_phase_error,
 )
 from .continuum import continuum_branch_matrix, local_continuum_frequency_hz
-from .cross_code import ae3d_eigenvalue_residual_summary, stellgap_ctok_local_continuum_error
+from .cross_code import (
+    ae3d_eigenvalue_residual_summary,
+    ae3d_matrix_symmetry_summary,
+    ae3d_omega2_eigenvalue_error,
+    stellgap_ctok_local_continuum_error,
+    stellgap_postprocess_error,
+)
 from .equilibrium import analytic_circular_tokamak, analytic_cylinder, from_vmec_wout
 from .fast_ions import FastIonPopulation, eigenfunction_fast_ion_drive, reduced_fast_ion_drive
 from .gap_models import bae_accumulation_frequency_hz, basic_alfven_gap_map, tae_gap_estimate
@@ -928,6 +934,28 @@ def _gate_stellgap_ctok_local_continuum() -> GateResult:
     )
 
 
+def _gate_stellgap_public_postprocess_parity() -> GateResult:
+    gate_id = "stellgap_public_postprocess_parity"
+    tolerance = 1.0e-5
+    alfven_spec = _local_external_file("Stellgap_test_problem", "alfven_spec")
+    alfven_post = _local_external_file("Stellgap_test_problem", "alfven_post")
+    if alfven_spec is None or alfven_post is None:
+        return GateResult(
+            gate_id=gate_id,
+            status="skipped",
+            metric=float("nan"),
+            tolerance=tolerance,
+            message="missing local ORNL STELLGAP alfven_spec/alfven_post artifacts under /Users/rogerio/local",
+        )
+    comparison = stellgap_postprocess_error(alfven_spec_path=alfven_spec, alfven_post_path=alfven_post)
+    return _pass_fail(
+        gate_id,
+        comparison.max_relative_error,
+        tolerance,
+        f"FAX reproduces STELLGAP post_process.f frequencies for {comparison.count} public CTOK rows",
+    )
+
+
 def _gate_ae3d_public_eigenvalue_artifact() -> GateResult:
     gate_id = "ae3d_public_eigenvalue_artifact"
     tolerance = 1.0e-2
@@ -948,6 +976,55 @@ def _gate_ae3d_public_eigenvalue_artifact() -> GateResult:
         (
             "ORNL AE3D public eigenvalue table is readable and has small reported residuals "
             f"for {summary.count} modes over [{summary.min_frequency_khz:.3g}, {summary.max_frequency_khz:.3g}] kHz"
+        ),
+    )
+
+
+def _gate_ae3d_public_omega2_eigenvalue_parity() -> GateResult:
+    gate_id = "ae3d_public_omega2_eigenvalue_parity"
+    tolerance = 1.0e-5
+    omega2 = _local_external_file("AE3D_test_problem", "omega2.dat")
+    egn_values = _local_external_file("AE3D_test_problem", "egn_values.dat")
+    if omega2 is None or egn_values is None:
+        return GateResult(
+            gate_id=gate_id,
+            status="skipped",
+            metric=float("nan"),
+            tolerance=tolerance,
+            message="missing local ORNL AE3D omega2/egn_values artifacts under /Users/rogerio/local",
+        )
+    comparison = ae3d_omega2_eigenvalue_error(omega2_path=omega2, egn_values_path=egn_values)
+    return _pass_fail(
+        gate_id,
+        comparison.max_relative_error,
+        tolerance,
+        f"FAX reproduces AE3D omega2-to-egn_values convention for {comparison.count} public CTOK modes",
+    )
+
+
+def _gate_ae3d_public_matrix_symmetry() -> GateResult:
+    gate_id = "ae3d_public_matrix_symmetry"
+    tolerance = 1.0e-5
+    a_matrix = _local_external_file("AE3D_test_problem", "a_matrix.dat")
+    b_matrix = _local_external_file("AE3D_test_problem", "b_matrix.dat")
+    if a_matrix is None or b_matrix is None:
+        return GateResult(
+            gate_id=gate_id,
+            status="skipped",
+            metric=float("nan"),
+            tolerance=tolerance,
+            message="missing local ORNL AE3D sparse matrix artifacts under /Users/rogerio/local",
+        )
+    a_summary = ae3d_matrix_symmetry_summary(a_matrix)
+    b_summary = ae3d_matrix_symmetry_summary(b_matrix)
+    metric = max(a_summary.relative_asymmetry, b_summary.relative_asymmetry)
+    return _pass_fail(
+        gate_id,
+        metric,
+        tolerance,
+        (
+            "ORNL AE3D public sparse matrices are symmetric to the expected tolerance "
+            f"with dimension {a_summary.dimension} and {a_summary.nonzero_count}/{b_summary.nonzero_count} nonzeros"
         ),
     )
 
@@ -1428,6 +1505,17 @@ def registered_validation_gates() -> tuple[ValidationGate, ...]:
             _runner=_gate_stellgap_ctok_local_continuum,
         ),
         ValidationGate(
+            gate_id="stellgap_public_postprocess_parity",
+            title="STELLGAP public postprocess parity",
+            layer="cross-code",
+            quantity="maximum alfven_spec-to-alfven_post relative error",
+            tolerance=1.0e-5,
+            citation="ORNL STELLGAP public CTOK alfven_spec/alfven_post artifacts and STELLGAP post_process.f convention",
+            command="python -m pytest tests/test_validation_registry.py",
+            tags=("cross-code", "stellgap", "artifact", "postprocess"),
+            _runner=_gate_stellgap_public_postprocess_parity,
+        ),
+        ValidationGate(
             gate_id="ae3d_public_eigenvalue_artifact",
             title="AE3D public eigenvalue artifact residual",
             layer="cross-code",
@@ -1437,6 +1525,28 @@ def registered_validation_gates() -> tuple[ValidationGate, ...]:
             command="python -m pytest tests/test_validation_registry.py",
             tags=("cross-code", "ae3d", "artifact", "eigenmode"),
             _runner=_gate_ae3d_public_eigenvalue_artifact,
+        ),
+        ValidationGate(
+            gate_id="ae3d_public_omega2_eigenvalue_parity",
+            title="AE3D public omega2 eigenvalue convention",
+            layer="cross-code",
+            quantity="maximum omega2-to-egn_values relative error",
+            tolerance=1.0e-5,
+            citation="ORNL AE3D public omega2.dat and egn_values.dat artifacts; positive entries are square-rooted and negative entries are preserved",
+            command="python -m pytest tests/test_validation_registry.py",
+            tags=("cross-code", "ae3d", "artifact", "eigenvalue"),
+            _runner=_gate_ae3d_public_omega2_eigenvalue_parity,
+        ),
+        ValidationGate(
+            gate_id="ae3d_public_matrix_symmetry",
+            title="AE3D public sparse matrix symmetry",
+            layer="cross-code",
+            quantity="relative sparse matrix asymmetry",
+            tolerance=1.0e-5,
+            citation="ORNL AE3D public a_matrix.dat/b_matrix.dat generalized-eigenproblem artifacts",
+            command="python -m pytest tests/test_validation_registry.py",
+            tags=("cross-code", "ae3d", "artifact", "matrix"),
+            _runner=_gate_ae3d_public_matrix_symmetry,
         ),
         ValidationGate(
             gate_id="landreman_paul_adapter_smoke",

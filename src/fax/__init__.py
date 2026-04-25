@@ -4,7 +4,16 @@ from __future__ import annotations
 
 from .boozer import BoozerGeometry, BoozerGeometryGrid, BoozerSpectrum
 from .config import FaxConfig, load_config
-from .cross_code import Ae3dEigenvalueData, Ae3dResidualSummary, CrossCodeComparison, StellgapContinuumData
+from .cross_code import (
+    Ae3dEigenvalueData,
+    Ae3dMatrixSummary,
+    Ae3dOmega2Data,
+    Ae3dResidualSummary,
+    CrossCodeComparison,
+    CrossCodePostprocessComparison,
+    StellgapContinuumData,
+    StellgapSpectrumData,
+)
 from .equilibrium import EquilibriumGeometry
 from .fast_ions import FastIonModeDriveResult, FastIonPopulation
 from .global_modes import (
@@ -42,6 +51,8 @@ __all__ = [
     "ContinuumRunSummary",
     "ContinuumArtifacts",
     "Ae3dEigenvalueData",
+    "Ae3dMatrixSummary",
+    "Ae3dOmega2Data",
     "Ae3dResidualSummary",
     "BenchmarkRunSummary",
     "BoozerGeometry",
@@ -50,6 +61,7 @@ __all__ = [
     "ConvergenceRunSummary",
     "ConvergenceArtifacts",
     "CrossCodeComparison",
+    "CrossCodePostprocessComparison",
     "EquilibriumGeometry",
     "FaxConfig",
     "FastIonPopulation",
@@ -63,6 +75,7 @@ __all__ = [
     "ReferenceCase",
     "RunSummary",
     "StellgapContinuumData",
+    "StellgapSpectrumData",
     "ValidationRunSummary",
     "boozer_radial_stiffness_matrices",
     "landreman_paul_qa_lowres",
