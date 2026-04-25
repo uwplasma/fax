@@ -12,6 +12,12 @@ JAX operations. This path is the correctness reference for custom adjoints.
 The current gates differentiate profile continuum diagnostics and the reduced
 radial generalized eigenproblem with respect to density, rotational-transform,
 and magnetic-field profile parameters.
+``boozer_pipeline_mode_avoidance_objective`` extends this pattern to a
+callable Boozer-geometry builder, which is the intended API boundary for a
+future differentiable ``vmec_jax``/``booz_xform_jax`` pipeline. The current
+unit test differentiates through a synthetic builder; a full VMEC-to-Boozer
+gradient gate requires a differentiable Boozer transform artifact with stable
+local runtime.
 
 Generalized eigenvalue path
 ---------------------------
@@ -66,3 +72,9 @@ with a constant-profile radial spectrum residual, analytic gap estimates, a
 fast-ion resonance peak, and the gradient of a radial-mode avoidance objective.
 ``tools/generate_validation_figures.py`` turns the same ingredients into the
 ``global_gap_fastion_dashboard`` documentation figure.
+
+The Boozer global-mode objective test differentiates through local 3-D Boozer
+matrices, metric-derived radial stiffness, generalized eigenfrequencies, and a
+smooth frequency-window penalty. This is the current differentiable design
+screen for avoiding dangerous resonances or moving candidate modes out of
+selected frequency windows.

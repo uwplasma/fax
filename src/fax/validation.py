@@ -28,10 +28,12 @@ from .boozer import (
     straight_field_line_phase_error,
 )
 from .continuum import continuum_branch_matrix, local_continuum_frequency_hz
+from .cross_code import ae3d_eigenvalue_residual_summary, stellgap_ctok_local_continuum_error
 from .equilibrium import analytic_circular_tokamak, analytic_cylinder, from_vmec_wout
-from .fast_ions import FastIonPopulation, reduced_fast_ion_drive
+from .fast_ions import FastIonPopulation, eigenfunction_fast_ion_drive, reduced_fast_ion_drive
 from .gap_models import bae_accumulation_frequency_hz, basic_alfven_gap_map, tae_gap_estimate
 from .global_modes import (
+    boozer_radial_stiffness_matrices,
     constant_block_problem_discrete_omega2,
     constant_problem_discrete_omega2,
     constant_radial_block_problem,
@@ -54,7 +56,7 @@ from .metric import (
 )
 from .modes import stellarator_mode_family
 from .reference_cases import landreman_paul_qa_lowres
-from .units import MU0
+from .units import MU0, PROTON_MASS
 
 jax.config.update("jax_enable_x64", True)
 
@@ -313,6 +315,27 @@ def _gate_global_3d_block_constant_spectrum() -> GateResult:
     )
 
 
+def _gate_global_3d_block_neumann_spectrum() -> GateResult:
+    gate_id = "global_3d_block_neumann_spectrum"
+    tolerance = 1.0e-5
+    problem = constant_radial_block_problem(
+        radial_points=24,
+        continuum_frequency_hz=(90_000.0, 135_000.0),
+        radial_coupling_omega2=(2.0e9, 3.5e9),
+        boundary_condition="neumann",
+    )
+    result = solve_radial_block_eigenmodes(problem)
+    expected = constant_block_problem_discrete_omega2(problem)
+    metric = relative_l2_error(result.omega2[:12], expected[:12])
+    residual = float(jnp.max(result.residuals[:12]))
+    return _pass_fail(
+        gate_id,
+        max(float(metric), residual),
+        tolerance,
+        "block radial 3-D Neumann eigenproblem recovers the exact zero-gradient constant-coefficient spectrum",
+    )
+
+
 def _gate_global_3d_block_density_gradient() -> GateResult:
     gate_id = "global_3d_block_density_gradient"
     tolerance = 1.0e-4
@@ -420,6 +443,40 @@ def _gate_fast_ion_resonance_peak() -> GateResult:
     )
 
 
+def _gate_fast_ion_eigenfunction_drive_localization() -> GateResult:
+    gate_id = "fast_ion_eigenfunction_drive_localization"
+    tolerance = 0.35
+    s = jnp.linspace(0.0, 1.0, 80)
+    center_mode = jnp.exp(-((s - 0.45) / 0.10) ** 2)
+    edge_mode = jnp.exp(-((s - 0.82) / 0.08) ** 2)
+    mode_structures = jnp.stack([center_mode, edge_mode], axis=0)[:, :, None]
+    pressure_gradient = -jnp.exp(-((s - 0.45) / 0.12) ** 2)
+    population = FastIonPopulation(
+        density_fraction=0.03,
+        pressure_gradient=pressure_gradient,
+        transit_frequency_hz=jnp.full_like(s, 40_000.0),
+        precession_frequency_hz=jnp.full_like(s, 5_000.0),
+        resonance_width_hz=jnp.full_like(s, 2_000.0),
+    )
+    result = eigenfunction_fast_ion_drive(
+        jnp.asarray([45_000.0, 45_000.0]),
+        mode_structures,
+        s,
+        toroidal_mode=1,
+        transit_harmonics=(1,),
+        population=population,
+        drive_scale_hz=1_000.0,
+        damping_rate_hz=1.0,
+    )
+    metric = float(result.drive_indicator[1] / jnp.maximum(result.drive_indicator[0], 1.0e-30))
+    return _pass_fail(
+        gate_id,
+        metric,
+        tolerance,
+        "mode-resolved fast-ion drive weights a resonant pressure-gradient profile by eigenfunction localization",
+    )
+
+
 def _synthetic_boozer_spectrum() -> BoozerSpectrum:
     return BoozerSpectrum(
         source="synthetic_validation",
@@ -471,6 +528,11 @@ def _constant_boozer_geometry() -> BoozerGeometry:
 
 def _booz_xform_fixture(name: str) -> Path | None:
     path = Path("/Users/rogerio/local/booz_xform_jax/tests/test_files") / name
+    return path if path.exists() else None
+
+
+def _local_external_file(*parts: str) -> Path | None:
+    path = Path("/Users/rogerio/local").joinpath(*parts)
     return path if path.exists() else None
 
 
@@ -811,6 +873,85 @@ def _gate_boozmn_global_3d_eigenmode_finite() -> GateResult:
     )
 
 
+def _gate_boozmn_metric_radial_stiffness_hermitian() -> GateResult:
+    gate_id = "boozmn_metric_radial_stiffness_hermitian"
+    tolerance = 2.0e-5
+    fixture = _booz_xform_fixture("boozmn_LandremanSenguptaPlunk_section5p3.nc")
+    if fixture is None:
+        return GateResult(
+            gate_id=gate_id,
+            status="skipped",
+            metric=float("nan"),
+            tolerance=tolerance,
+            message="missing local booz_xform_jax boozmn_LandremanSenguptaPlunk_section5p3.nc fixture",
+        )
+    geometry = read_boozmn_geometry(fixture)
+    harmonics = jnp.asarray([[1.0, 0.0], [2.0, 1.0]])
+    radial = boozer_radial_stiffness_matrices(geometry, harmonics, theta_points=16, zeta_points=16)
+    hermitian_error = float(jnp.max(jax.vmap(hermitian_relative_error)(radial)))
+    eigenvalues = jnp.linalg.eigvalsh(radial)
+    negative_failure = 0.0 if bool(jnp.min(jnp.real(eigenvalues)) > -1.0e-8 * jnp.max(jnp.abs(eigenvalues))) else 1.0
+    metric = max(hermitian_error, negative_failure)
+    return _pass_fail(
+        gate_id,
+        metric,
+        tolerance,
+        "metric-derived real-boozmn radial stiffness blocks are Hermitian and positive semidefinite",
+    )
+
+
+def _gate_stellgap_ctok_local_continuum() -> GateResult:
+    gate_id = "stellgap_ctok_local_continuum"
+    tolerance = 4.0e-2
+    boozmn = _local_external_file("Stellgap_test_inputs", "boozmn_ctok.nc")
+    alfven_post = _local_external_file("Stellgap_test_problem", "alfven_post")
+    if boozmn is None or alfven_post is None:
+        return GateResult(
+            gate_id=gate_id,
+            status="skipped",
+            metric=float("nan"),
+            tolerance=tolerance,
+            message="missing local ORNL STELLGAP CTOK test artifacts under /Users/rogerio/local",
+        )
+    comparison = stellgap_ctok_local_continuum_error(
+        boozmn_path=boozmn,
+        alfven_post_path=alfven_post,
+        mass_density=2.0 * PROTON_MASS * 1.0e19,
+        theta_points=32,
+        zeta_points=32,
+    )
+    return _pass_fail(
+        gate_id,
+        comparison.p95_relative_error,
+        tolerance,
+        f"FAX local Boozer continuum matches ORNL STELLGAP CTOK test output on {comparison.count} matched surfaces",
+    )
+
+
+def _gate_ae3d_public_eigenvalue_artifact() -> GateResult:
+    gate_id = "ae3d_public_eigenvalue_artifact"
+    tolerance = 1.0e-2
+    egn_values = _local_external_file("AE3D_test_problem", "egn_values.dat")
+    if egn_values is None:
+        return GateResult(
+            gate_id=gate_id,
+            status="skipped",
+            metric=float("nan"),
+            tolerance=tolerance,
+            message="missing local ORNL AE3D public eigenvalue answer artifact under /Users/rogerio/local",
+        )
+    summary = ae3d_eigenvalue_residual_summary(egn_values)
+    return _pass_fail(
+        gate_id,
+        summary.max_residual,
+        tolerance,
+        (
+            "ORNL AE3D public eigenvalue table is readable and has small reported residuals "
+            f"for {summary.count} modes over [{summary.min_frequency_khz:.3g}, {summary.max_frequency_khz:.3g}] kHz"
+        ),
+    )
+
+
 def _gate_landreman_paul_adapter_smoke() -> GateResult:
     gate_id = "landreman_paul_adapter_smoke"
     tolerance = 0.0
@@ -1056,6 +1197,17 @@ def registered_validation_gates() -> tuple[ValidationGate, ...]:
             _runner=_gate_global_3d_block_constant_spectrum,
         ),
         ValidationGate(
+            gate_id="global_3d_block_neumann_spectrum",
+            title="Global radial 3-D block Neumann spectrum",
+            layer="global-eigenmode",
+            quantity="relative omega^2 error and residual",
+            tolerance=1.0e-5,
+            citation="Zero-gradient block finite-difference validation for the global radial Boozer-harmonic shear-Alfven envelope operator",
+            command="python -m pytest tests/test_global_modes.py tests/test_validation_registry.py",
+            tags=("global", "eigenmode", "3d", "analytic", "boundary"),
+            _runner=_gate_global_3d_block_neumann_spectrum,
+        ),
+        ValidationGate(
             gate_id="global_3d_block_density_gradient",
             title="Global radial 3-D block density sensitivity",
             layer="differentiability",
@@ -1109,6 +1261,17 @@ def registered_validation_gates() -> tuple[ValidationGate, ...]:
             command="python -m pytest tests/test_fast_ions.py tests/test_validation_registry.py",
             tags=("fast-ion", "resonance", "analytic"),
             _runner=_gate_fast_ion_resonance_peak,
+        ),
+        ValidationGate(
+            gate_id="fast_ion_eigenfunction_drive_localization",
+            title="Mode-resolved fast-ion drive localization",
+            layer="fast-ion",
+            quantity="edge/center drive ratio",
+            tolerance=3.5e-1,
+            citation="Perturbative energetic-particle drive weighted by global eigenfunction intensity and resonance overlap",
+            command="python -m pytest tests/test_fast_ions.py tests/test_validation_registry.py",
+            tags=("fast-ion", "eigenfunction", "resonance", "analytic"),
+            _runner=_gate_fast_ion_eigenfunction_drive_localization,
         ),
         ValidationGate(
             gate_id="boozer_harmonic_projection",
@@ -1241,6 +1404,39 @@ def registered_validation_gates() -> tuple[ValidationGate, ...]:
             command="python -m pytest -m requires_booz_xform_jax tests/test_boozer.py tests/test_validation_registry.py",
             tags=("boozer", "global", "eigenmode", "boozmn", "fixture", "3d"),
             _runner=_gate_boozmn_global_3d_eigenmode_finite,
+        ),
+        ValidationGate(
+            gate_id="boozmn_metric_radial_stiffness_hermitian",
+            title="Real boozmn metric radial stiffness",
+            layer="global-eigenmode",
+            quantity="Hermitian error and positive-semidefinite check",
+            tolerance=2.0e-5,
+            citation="Ideal-MHD radial derivative energy <|J||grad s|^2|B|^2 phi_i^* phi_j/mu0> in Boozer coordinates",
+            command="python -m pytest -m requires_booz_xform_jax tests/test_boozer.py tests/test_validation_registry.py",
+            tags=("boozer", "global", "metric", "boozmn", "fixture", "3d"),
+            _runner=_gate_boozmn_metric_radial_stiffness_hermitian,
+        ),
+        ValidationGate(
+            gate_id="stellgap_ctok_local_continuum",
+            title="STELLGAP CTOK local continuum comparison",
+            layer="cross-code",
+            quantity="p95 relative branch error",
+            tolerance=4.0e-2,
+            citation="ORNL STELLGAP CTOK public test problem compared against FAX real-boozmn local 3-D Boozer continuum",
+            command="python -m pytest tests/test_validation_registry.py",
+            tags=("cross-code", "stellgap", "boozer", "continuum"),
+            _runner=_gate_stellgap_ctok_local_continuum,
+        ),
+        ValidationGate(
+            gate_id="ae3d_public_eigenvalue_artifact",
+            title="AE3D public eigenvalue artifact residual",
+            layer="cross-code",
+            quantity="maximum reported eigenpair residual",
+            tolerance=1.0e-2,
+            citation="ORNL AE3D public test-problem answer table; parser/residual smoke gate before full FAX-vs-AE3D parity",
+            command="python -m pytest tests/test_validation_registry.py",
+            tags=("cross-code", "ae3d", "artifact", "eigenmode"),
+            _runner=_gate_ae3d_public_eigenvalue_artifact,
         ),
         ValidationGate(
             gate_id="landreman_paul_adapter_smoke",

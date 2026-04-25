@@ -164,3 +164,31 @@ def test_boozmn_global_3d_eigenmodes_example_runs(tmp_path):
     assert len(payload["frequencies_hz"]) == 3
     assert payload["mode_structure_shape"][1] == payload["surface_count"]
     assert all(Path(path).exists() for path in payload["figure_files"])
+
+
+def test_stellgap_ctok_comparison_example_runs(tmp_path):
+    boozmn = Path("/Users/rogerio/local/Stellgap_test_inputs/boozmn_ctok.nc")
+    alfven_post = Path("/Users/rogerio/local/Stellgap_test_problem/alfven_post")
+    if not boozmn.exists() or not alfven_post.exists():
+        return
+
+    result = subprocess.run(
+        [
+            sys.executable,
+            "examples/research/stellgap_ctok_comparison.py",
+            "--boozmn",
+            str(boozmn),
+            "--alfven-post",
+            str(alfven_post),
+            "--output-dir",
+            str(tmp_path),
+        ],
+        cwd=REPO_ROOT,
+        check=True,
+        text=True,
+        capture_output=True,
+    )
+    payload = json.loads(result.stdout)
+    assert payload["matched_surfaces"] >= 90
+    assert payload["p95_relative_error"] < 4.0e-2
+    assert all(Path(path).exists() for path in payload["figure_files"])

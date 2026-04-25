@@ -92,6 +92,13 @@ Current Figures
    global radial eigenfrequencies, radial envelope norms, harmonic content, and
    residual gates. This is the first full radial block operator figure in FAX.
 
+.. figure:: _static/stellgap_ctok_comparison.svg
+   :alt: STELLGAP CTOK continuum comparison.
+
+   First public cross-code comparison dashboard: FAX local 3-D Boozer
+   continuum branches overlaid on ORNL STELLGAP CTOK output, with a radial
+   spectrum-error panel.
+
 .. figure:: _static/continuum_artifact_dashboard.svg
    :alt: Dashboard generated from fax continuum artifacts.
 

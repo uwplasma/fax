@@ -98,20 +98,30 @@ Hermitian finite-difference energy:
    M_{\rm global} =
    \operatorname{blockdiag}(M_1^{3D},\ldots,M_N^{3D}),
 
-with Dirichlet radial boundaries at the first and last sampled surfaces. The
-resulting generalized eigenproblem is
+with either Dirichlet radial boundaries or zero-gradient Neumann boundaries.
+The resulting generalized eigenproblem is
 
 .. math::
 
    K_{\rm global} x = \omega^2 M_{\rm global} x.
 
 The coefficient ``C_s`` is a Hermitian radial-stiffness block. For real Boozer
-geometry runs, FAX currently uses the local mass matrix times a user-selectable
-``omega^2`` scale, defaulting to a small fraction of the median local continuum
-eigenvalue. This is a validated global radial shear-Alfven envelope operator,
+geometry runs, the default coefficient is the metric-derived radial magnetic
+energy
+
+.. math::
+
+   (C_s)_{ij} =
+   \left< \frac{|\sqrt{g}|\,|\nabla s|^2 |B|^2}{\mu_0}
+   \phi_i^* \phi_j \right>_{\theta_B,\zeta_B}.
+
+For analytic sensitivity tests FAX can also use the older local-mass scaled
+coefficient. This is a validated global radial shear-Alfven envelope operator,
 not yet a complete ideal-MHD CAS3D/AE3D replacement. Its acceptance gates are
-an exact diagonal constant-coefficient spectrum, generalized-eigen residuals,
-JAX density-scaling gradients, and finite real-``boozmn`` mode structures.
+exact diagonal constant-coefficient spectra for Dirichlet and Neumann
+boundaries, generalized-eigen residuals, JAX density-scaling gradients,
+metric-radial-stiffness Hermiticity, finite real-``boozmn`` mode structures,
+and the first STELLGAP CTOK local-continuum comparison.
 
 Gap Estimates
 -------------
@@ -192,6 +202,20 @@ path is still
 
 validated against FAR3D/CAS3D-K-style limits after eigenfunctions and
 energetic-particle moments are added.
+
+The current global-mode diagnostic also projects this reduced drive onto
+eigenfunctions:
+
+.. math::
+
+   \Gamma_k =
+   S_f \frac{\int ds\, |\xi_k(s)|^2 \sum_\ell D_f(s,\ell)}
+   {\int ds\,|\xi_k(s)|^2}
+   - \gamma_{\rm damp}.
+
+This gives a differentiable screening metric for resonance overlap and radial
+localization. It is a sign and sensitivity gate, not a substitute for a
+drift-kinetic closure.
 
 Optimization Objective
 ----------------------

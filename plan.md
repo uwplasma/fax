@@ -1113,6 +1113,26 @@ Needed docs:
   - Added real-file gate `boozmn_global_3d_eigenmode_finite`.
   - Added `examples/research/boozmn_global_3d_eigenmodes.py` and generated `boozmn_global_3d_eigenmodes` README/docs figure.
   - Scope note: this closes the global radial operator lane for the current shear-Alfven/Boozer envelope model; STELLGAP/AE3D/CAS3D cross-code benchmarking remains the next validation lane.
+- Added the next cross-code/differentiability/fast-ion milestone:
+  - Cloned public code references into `/Users/rogerio/local`: ORNL `Stellgap`, ORNL `AE3D`, DSfusion `FAR3d`, `PyStellgap`, and `shearalfvenwave`.
+  - Extracted public ORNL STELLGAP and AE3D answer artifacts into `/Users/rogerio/local/Stellgap_test_problem`, `/Users/rogerio/local/Stellgap_test_inputs`, `/Users/rogerio/local/AE3D_test_problem`, and `/Users/rogerio/local/AE3D_test_inputs`.
+  - Built STELLGAP locally with:
+    - `make PRECOMP=/opt/homebrew/bin/gcc-15 STELLOPT_PATH=/Users/rogerio/local/STELLOPT/ NETCDF_LIB='-L/opt/homebrew/Cellar/netcdf-fortran/4.6.2/lib -lnetcdff -L/opt/homebrew/Cellar/netcdf/4.9.3/lib -lnetcdf'`
+    - Produced `/Users/rogerio/local/Stellgap/xmetric`, `xstgap`, `xstgap_snd_ver6`, and `xstgap_snd_ver7`.
+    - Ran `/Users/rogerio/local/Stellgap/xmetric ctok` in `/Users/rogerio/local/Stellgap_test_inputs`, which regenerated `ae_metric.dat` and `tae_data_boozer`.
+    - `xstgap` starts and prints version/MPI/grid metadata on the CTOK inputs, but exits on this gfortran/OpenMPI stack while opening an invalid `alfven_spec...` path. Do not treat executable STELLGAP parity as closed until this runtime issue is understood.
+  - Attempted a local FAR3D build. CMake configured with Homebrew `libomp`, but the Fortran build stopped at the CUDA Fortran `cudafor.mod` dependency in `src/matrix.f90`; a CPU-only build recipe remains open.
+  - Confirmed AE3D public build scripts expect Intel `ifort`/`ifx`, which is not available on this machine; the answer artifacts are usable now, while executable parity waits on a portable build path.
+  - Added `fax.cross_code` readers for STELLGAP `alfven_post` and AE3D `egn_values.dat`.
+  - Added the first quantitative public external-code gate: `stellgap_ctok_local_continuum`. It compares FAX local 3-D Boozer continuum branches with the ORNL STELLGAP CTOK `alfven_post` output using the same `boozmn_ctok.nc` geometry. Current local metric: 97 matched surfaces, mean relative sorted-spectrum error about `1.30e-2`, p95 about `2.55e-2`, max about `3.32e-2`; the gate tolerance is `4.0e-2`.
+  - Added `examples/research/stellgap_ctok_comparison.py` and generated `docs/_static/stellgap_ctok_comparison.{svg,png}`.
+  - Added the optional AE3D public eigenvalue artifact residual gate. This checks parser/residual handling only; it is not a FAX-vs-AE3D eigenmode parity claim.
+  - Replaced the old mass-proportional radial coupling default in the real-Boozer global path with a metric-derived radial stiffness matrix `<|J||grad s|^2|B|^2 phi_i^* phi_j/mu0>`, while keeping the previous mass-scaled path available for analytic tests.
+  - Added Neumann radial boundary support and an exact constant-coefficient Neumann spectrum gate alongside the existing Dirichlet gate.
+  - Added eigenfunction-weighted fast-ion drive/damping diagnostics that project reduced resonance drive onto global `(surface, harmonic)` eigenfunctions.
+  - Added `boozer_global_mode_avoidance_objective` and `boozer_pipeline_mode_avoidance_objective` for differentiable Boozer/FAX design screens. The pipeline objective accepts a differentiable Boozer-geometry builder, which is the API boundary for future `vmec_jax`/`booz_xform_jax` end-to-end optimization.
+  - Updated README, docs, changelog, release notes, validation registry, and tests to distinguish true STELLGAP local-continuum parity from AE3D artifact smoke tests and still-open full global parity.
+  - Verified locally with `python -m ruff check .`, `python -m mypy src/fax`, direct `run_validation_suite(include_skipped=True)` (36 passed, 0 skipped, 0 failed), `python -m pytest -q` (114 passed), `python -m coverage run --source=src/fax -m pytest -q` (114 passed, 90.2% coverage badge), `python tools/generate_validation_figures.py`, `python tools/qa_figures.py`, `sphinx-build -W -b html docs docs/_build/html`, `python -m build`, and `python -m twine check dist/*`.
 
 ### Local Testing Policy Until GitHub Actions Resume
 
@@ -1162,10 +1182,10 @@ Sources:
 
 Turn the reduced physics layers into publication-grade stellarator validation:
 
-1. Start the first cross-code/literature comparison gate: STELLGAP-style continuum/gap data for a documented quasi-symmetric or axisymmetric reference case, then extend to AE3D/CAS3D/FAR3D where data are available.
+1. Extend the first STELLGAP CTOK local-continuum parity gate to additional STELLGAP/literature geometries, then add true AE3D/CAS3D/FAR3D global-mode parity where input/output data and executable builds are available.
 2. Add convergence gates for real `boozmn` harmonic truncation, Boozer angular grids, radial surface sampling, radial block resolution, and local/global branch sensitivity.
-3. Add additional radial boundary-condition variants beyond Dirichlet and validate them on analytic and cross-code targets.
-4. Add perturbative fast-ion drive/damping terms tied to validated eigenfunctions, with sign and resonance gates before FAR3D/CAS3D-K comparisons.
-5. Connect `fax.optimization` to real `vmec_jax` differentiable design variables and add finite-difference/adjoint consistency plots for VMEC-to-stability gradients.
+3. Add additional radial boundary-condition variants beyond Dirichlet/Neumann and validate them on analytic and cross-code targets.
+4. Upgrade perturbative fast-ion drive/damping from the current eigenfunction-weighted screen toward FAR3D/CAS3D-K comparable closures, with sign, resonance, and growth-rate gates.
+5. Wire `boozer_pipeline_mode_avoidance_objective` to a real differentiable `vmec_jax`/`booz_xform_jax` builder and add finite-difference/adjoint consistency plots for VMEC-to-stability gradients.
 6. Publish the staged `v0.0.1` GitHub release when GitHub Actions are available so the PyPI trusted-publishing workflow can complete.
 7. Extend `fax benchmark` with memory/process telemetry and separate compile/warm kernel timing once matrix-free kernels are introduced.

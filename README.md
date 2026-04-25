@@ -211,8 +211,15 @@ generalized eigenproblem. Each radial node carries the coupled Boozer harmonic
 vector, neighboring surfaces are connected by a Hermitian radial derivative
 energy, and the plotted eigenfunctions include both radial envelope and
 harmonic content. This closes the global-radial operator lane for the current
-shear-Alfvén/Boozer model; STELLGAP/AE3D cross-code validation remains a
-separate publication gate.
+shear-Alfvén/Boozer model; broader STELLGAP/AE3D global-mode validation
+remains a separate publication gate.
+
+![STELLGAP CTOK comparison](docs/_static/stellgap_ctok_comparison.png)
+
+This figure is the first quantitative external-code gate: FAX reads the public
+ORNL STELLGAP CTOK `boozmn` fixture, computes local 3-D Boozer continuum
+branches, and compares them with STELLGAP `alfven_post` output. The p95
+relative spectrum error is about 2.55% over 97 matched surfaces.
 
 ![Continuum artifact dashboard](docs/_static/continuum_artifact_dashboard.png)
 
@@ -236,7 +243,8 @@ truncation, and eigensolve residuals for a small VMEC-backed smoke sweep.
 
 The validation-gate plot summarizes scaffold acceptance gates. A gate below the
 dashed line is within tolerance. These are local scaffold gates; publication
-claims still require the planned STELLGAP/AE3D/literature comparison gates.
+claims still require expanding the current STELLGAP local-continuum comparison
+to global AE3D/CAS3D/FAR3D and literature benchmarks.
 
 ## Install
 
@@ -287,6 +295,7 @@ python examples/research/global_gap_fastion_screen.py
 python examples/research/boozer_harmonic_validation.py
 python examples/research/boozmn_3d_continuum.py
 python examples/research/boozmn_global_3d_eigenmodes.py
+python examples/research/stellgap_ctok_comparison.py
 ```
 
 `fax` reads TOML configuration files. The normal CLI path is intentionally
@@ -350,11 +359,13 @@ python examples/research/global_gap_fastion_screen.py
 python examples/research/boozer_harmonic_validation.py
 python examples/research/boozmn_3d_continuum.py --boozmn /path/to/boozmn.nc
 python examples/research/boozmn_global_3d_eigenmodes.py --boozmn /path/to/boozmn.nc
+python examples/research/stellgap_ctok_comparison.py --boozmn /path/to/boozmn_ctok.nc --alfven-post /path/to/alfven_post
 ```
 
 These generate validation packets, continuum artifacts, convergence dashboards,
 JAX sensitivity output, a small inverse-design trace, and real `boozmn` local
-3-D Boozer continuum/global-mode plots using the current validated operators.
+3-D Boozer continuum/global-mode plots using the current validated operators,
+plus the first public STELLGAP comparison packet when local artifacts exist.
 
 ## Figures
 
@@ -382,6 +393,7 @@ Current figures:
 - `boozer_jacobian_identity.svg`: Boozer-Jacobian identity and weighted mass-coupling dashboard.
 - `boozmn_3d_geometry_operator.svg`: real `boozmn` geometry, Jacobian, embedding metric, and local 3-D Boozer continuum dashboard.
 - `boozmn_global_3d_eigenmodes.svg`: global radial 3-D Boozer eigenmode frequencies, envelopes, harmonic structure, and residuals.
+- `stellgap_ctok_comparison.svg`: public ORNL STELLGAP CTOK continuum comparison against FAX local 3-D Boozer branches.
 - `continuum_artifact_dashboard.svg`: dashboard generated from `fax continuum` artifacts.
 - `metric_residual_convergence.svg`: metric-matrix residual and angular-grid check.
 - `landreman_paul_convergence_dashboard.svg`: VMEC-backed radial/angular/Fourier convergence smoke-test dashboard.
@@ -417,9 +429,13 @@ projection/phase convention checks, reduced Boozer continuum matrix checks,
 real `boozmn` Jacobian/embedding/local-3-D gates, and Landreman-Paul QA VMEC
 adapter plus continuum finite-output/radial-sampling smoke tests. The new
 global radial block gates validate a multi-harmonic radial eigenproblem with
-Dirichlet boundaries, exact constant-coefficient spectrum, AD density scaling,
-and real-`boozmn` residual checks. These are acceptance gates for the current
-operators, not yet full STELLGAP/AE3D stellarator validation.
+Dirichlet and Neumann boundaries, exact constant-coefficient spectra, AD
+density scaling, metric-derived Boozer radial stiffness, eigenfunction-weighted
+fast-ion drive, real-`boozmn` residual checks, and the first public STELLGAP
+CTOK continuum comparison. The AE3D public answer table is parsed as an
+artifact/residual smoke gate, but not yet as a FAX eigenmode parity claim.
+These are acceptance gates for the current operators, not yet full
+AE3D/CAS3D/FAR3D stellarator validation.
 
 ## Repository Layout
 
@@ -451,6 +467,12 @@ It currently establishes:
 - a global radial 3-D Boozer block eigenmode operator with radial envelopes,
   harmonic mode structures, residual diagnostics, and analytic constant-limit
   gates,
+- metric-derived Boozer radial stiffness, Dirichlet/Neumann block boundary
+  gates, eigenfunction-weighted fast-ion drive diagnostics, and a differentiable
+  Boozer global-mode avoidance objective with a builder-based API for future
+  `vmec_jax`/`booz_xform_jax` end-to-end pipelines,
+- a public STELLGAP CTOK local-continuum comparison gate and figure, plus an
+  AE3D public-artifact residual smoke gate,
 - generated smoke-test figures for docs and README,
 - a reduced radial global eigenmode operator, analytic gap estimates, reduced
   fast-ion resonance screens, and differentiable design objective,

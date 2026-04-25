@@ -34,11 +34,13 @@ def test_core_validation_gates_pass():
         "global_mode_constant_profile",
         "global_mode_density_gradient",
         "global_3d_block_constant_spectrum",
+        "global_3d_block_neumann_spectrum",
         "global_3d_block_density_gradient",
         "analytic_tae_gap_center",
         "basic_gap_map_ordering",
         "bae_temperature_scaling",
         "fast_ion_resonance_peak",
+        "fast_ion_eigenfunction_drive_localization",
         "boozer_harmonic_projection",
         "boozer_straight_field_line_phase",
         "boozer_constant_field_continuum",
@@ -63,7 +65,16 @@ def test_boozmn_validation_gates_pass_or_skip_cleanly():
         "boozmn_embedding_jacobian_shape",
         "boozmn_3d_continuum_finite",
         "boozmn_global_3d_eigenmode_finite",
+        "boozmn_metric_radial_stiffness_hermitian",
     ):
+        result = run_validation_gate(gate_id)
+
+        assert result.status in {"passed", "skipped"}
+        assert result.message
+
+
+def test_cross_code_validation_gates_pass_or_skip_cleanly():
+    for gate_id in ("stellgap_ctok_local_continuum", "ae3d_public_eigenvalue_artifact"):
         result = run_validation_gate(gate_id)
 
         assert result.status in {"passed", "skipped"}

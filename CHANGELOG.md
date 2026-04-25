@@ -19,6 +19,10 @@ Initial research scaffold release for FAX.
 - Real `boozmn` geometry reader for Boozer embedding and Jacobian harmonics, with local 3-D Boozer continuum matrices.
 - Real-file Boozer validation gates for `sqrt(g)|B|^2=G+iota I`, embedding-Jacobian shape, and finite Hermitian local 3-D continuum output.
 - Global radial 3-D Boozer block eigenmode operator with Dirichlet radial boundaries, radial/harmonic mode structures, exact constant-spectrum gates, density-gradient gates, and real-`boozmn` residual gates.
+- Metric-derived Boozer radial stiffness, Neumann radial boundary variant, and eigenfunction-weighted fast-ion drive/damping screen.
+- Builder-based Boozer pipeline optimization objective for future differentiable `vmec_jax`/`booz_xform_jax` design workflows.
+- Public ORNL STELLGAP CTOK local-continuum comparison gate and generated figure.
+- Public ORNL AE3D eigenvalue-answer parser/residual smoke gate.
 - README status badges for tests, docs, publish, ReadTheDocs, coverage, PyPI, Python versions, license, Ruff, and JAX.
 - Differentiable radial-mode avoidance objective for early design-screen demonstrations.
 - VMEC `wout` adapter smoke path for the Landreman-Paul QA low-resolution reference case.

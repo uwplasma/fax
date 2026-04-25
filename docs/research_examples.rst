@@ -150,6 +150,22 @@ boundaries, writes radial-envelope/harmonic-structure figures, and prints
 frequencies plus residuals as JSON. Use ``--boozmn path/to/boozmn.nc`` for a
 new geometry.
 
+STELLGAP CTOK Cross-Code Comparison
+-----------------------------------
+
+Run after cloning/extracting the public ORNL STELLGAP test artifacts under
+``/Users/rogerio/local``:
+
+.. code-block:: bash
+
+   python examples/research/stellgap_ctok_comparison.py
+
+This reads the public CTOK ``boozmn_ctok.nc`` and STELLGAP ``alfven_post``
+output, recomputes the local 3-D Boozer continuum branches in FAX, writes an
+overlay/error figure, and prints JSON metrics. On the current local fixture the
+p95 sorted-spectrum error is about 2.55 percent over 97 matched radial
+surfaces.
+
 Regenerating Documentation Figures
 ----------------------------------
 

@@ -152,6 +152,22 @@
       ]
     },
     {
+      "id": "global_3d_block_neumann_spectrum",
+      "title": "Global radial 3-D block Neumann spectrum",
+      "layer": "global-eigenmode",
+      "quantity": "relative omega^2 error and residual",
+      "tolerance": 1e-05,
+      "citation": "Zero-gradient block finite-difference validation for the global radial Boozer-harmonic shear-Alfven envelope operator",
+      "command": "python -m pytest tests/test_global_modes.py tests/test_validation_registry.py",
+      "tags": [
+        "global",
+        "eigenmode",
+        "3d",
+        "analytic",
+        "boundary"
+      ]
+    },
+    {
       "id": "global_3d_block_density_gradient",
       "title": "Global radial 3-D block density sensitivity",
       "layer": "differentiability",
@@ -220,6 +236,21 @@
       "command": "python -m pytest tests/test_fast_ions.py tests/test_validation_registry.py",
       "tags": [
         "fast-ion",
+        "resonance",
+        "analytic"
+      ]
+    },
+    {
+      "id": "fast_ion_eigenfunction_drive_localization",
+      "title": "Mode-resolved fast-ion drive localization",
+      "layer": "fast-ion",
+      "quantity": "edge/center drive ratio",
+      "tolerance": 0.35,
+      "citation": "Perturbative energetic-particle drive weighted by global eigenfunction intensity and resonance overlap",
+      "command": "python -m pytest tests/test_fast_ions.py tests/test_validation_registry.py",
+      "tags": [
+        "fast-ion",
+        "eigenfunction",
         "resonance",
         "analytic"
       ]
@@ -400,6 +431,53 @@
         "boozmn",
         "fixture",
         "3d"
+      ]
+    },
+    {
+      "id": "boozmn_metric_radial_stiffness_hermitian",
+      "title": "Real boozmn metric radial stiffness",
+      "layer": "global-eigenmode",
+      "quantity": "Hermitian error and positive-semidefinite check",
+      "tolerance": 2e-05,
+      "citation": "Ideal-MHD radial derivative energy <|J||grad s|^2|B|^2 phi_i^* phi_j/mu0> in Boozer coordinates",
+      "command": "python -m pytest -m requires_booz_xform_jax tests/test_boozer.py tests/test_validation_registry.py",
+      "tags": [
+        "boozer",
+        "global",
+        "metric",
+        "boozmn",
+        "fixture",
+        "3d"
+      ]
+    },
+    {
+      "id": "stellgap_ctok_local_continuum",
+      "title": "STELLGAP CTOK local continuum comparison",
+      "layer": "cross-code",
+      "quantity": "p95 relative branch error",
+      "tolerance": 0.04,
+      "citation": "ORNL STELLGAP CTOK public test problem compared against FAX real-boozmn local 3-D Boozer continuum",
+      "command": "python -m pytest tests/test_validation_registry.py",
+      "tags": [
+        "cross-code",
+        "stellgap",
+        "boozer",
+        "continuum"
+      ]
+    },
+    {
+      "id": "ae3d_public_eigenvalue_artifact",
+      "title": "AE3D public eigenvalue artifact residual",
+      "layer": "cross-code",
+      "quantity": "maximum reported eigenpair residual",
+      "tolerance": 0.01,
+      "citation": "ORNL AE3D public test-problem answer table; parser/residual smoke gate before full FAX-vs-AE3D parity",
+      "command": "python -m pytest tests/test_validation_registry.py",
+      "tags": [
+        "cross-code",
+        "ae3d",
+        "artifact",
+        "eigenmode"
       ]
     },
     {
@@ -588,6 +666,18 @@
     },
     {
       "file": "boozmn_global_3d_eigenmodes.png",
+      "format": "png",
+      "status": "smoke-test",
+      "claim": "Development figure generated from analytic/local continuum formulas; not a full 3-D stellarator Alfvén-continuum validation."
+    },
+    {
+      "file": "stellgap_ctok_comparison.svg",
+      "format": "svg",
+      "status": "smoke-test",
+      "claim": "Development figure generated from analytic/local continuum formulas; not a full 3-D stellarator Alfvén-continuum validation."
+    },
+    {
+      "file": "stellgap_ctok_comparison.png",
       "format": "png",
       "status": "smoke-test",
       "claim": "Development figure generated from analytic/local continuum formulas; not a full 3-D stellarator Alfvén-continuum validation."

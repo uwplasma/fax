@@ -47,6 +47,8 @@ tags, and command. The current gates are:
   generalized eigenproblem against the analytic ``rho^(-1/2)`` scaling.
 * ``global_3d_block_constant_spectrum``: checks the block radial 3-D
   eigenproblem against an exact diagonal constant-coefficient spectrum.
+* ``global_3d_block_neumann_spectrum``: checks the same block problem with
+  zero-gradient Neumann radial boundaries against the exact spectrum.
 * ``global_3d_block_density_gradient``: checks JAX autodiff through the block
   radial generalized eigenproblem against the analytic ``rho^(-1/2)`` scaling.
 * ``analytic_tae_gap_center``: checks the analytic TAE crossing condition
@@ -58,6 +60,9 @@ tags, and command. The current gates are:
   the expected ``sqrt(T_i)`` scaling at fixed ``T_e/T_i``.
 * ``fast_ion_resonance_peak``: checks that the reduced fast-ion drive peaks at
   the transit/precession resonance.
+* ``fast_ion_eigenfunction_drive_localization``: checks that mode-resolved
+  fast-ion drive follows eigenfunction overlap with a resonant pressure
+  gradient profile.
 * ``boozer_harmonic_projection``: checks Boozer ``|B|`` harmonic
   reconstruction/projection and Fourier orthogonality on a synthetic spectrum.
 * ``boozer_straight_field_line_phase``: checks that Boozer harmonic phases have
@@ -85,6 +90,14 @@ tags, and command. The current gates are:
 * ``boozmn_global_3d_eigenmode_finite``: assembles real ``boozmn`` local 3-D
   Boozer matrices into a global radial block eigenproblem and checks finite
   frequencies, mode structures, and residuals.
+* ``boozmn_metric_radial_stiffness_hermitian``: checks the real-geometry
+  Boozer radial derivative energy matrix for Hermiticity and positivity.
+* ``stellgap_ctok_local_continuum``: compares FAX local 3-D Boozer continuum
+  branches against the public ORNL STELLGAP CTOK test problem.
+* ``ae3d_public_eigenvalue_artifact``: checks that the public ORNL AE3D
+  eigenvalue answer table is readable and has small reported residuals. This
+  is an external-artifact smoke gate, not yet a FAX-vs-AE3D eigenmode
+  comparison.
 * ``landreman_paul_adapter_smoke``: checks the Landreman-Paul QA VMEC ``wout``
   profile and metric adapters when local data are available.
 * ``landreman_paul_continuum_finite``: checks that the Landreman-Paul profile
@@ -127,8 +140,9 @@ sweep. Branch matrices on coarser radial grids are interpolated onto the
 reference radial grid before relative L2 errors are computed.
 
 These are scaffold acceptance gates. Publication claims about 3-D stellarator
-continuum gaps still require the planned STELLGAP/AE3D/literature comparison
-gates and resolution-convergence reports.
+continuum gaps now start from the STELLGAP CTOK local-continuum gate, but still
+require more geometries, global AE3D/CAS3D/FAR3D comparisons, and
+resolution-convergence reports.
 
 First Local Stellarator Target
 ------------------------------
@@ -226,6 +240,19 @@ yet full 3-D Alfvén-continuum validation.
    harmonic content of the first mode, and generalized-eigen residuals. This
    validates the radial block operator and mode-structure plumbing before
    cross-code STELLGAP/AE3D benchmarking.
+
+.. figure:: _static/stellgap_ctok_comparison.svg
+   :alt: STELLGAP CTOK comparison dashboard.
+
+   First public cross-code gate: FAX local 3-D Boozer continuum branches
+   compared with ORNL STELLGAP CTOK ``alfven_post`` output. The current p95
+   relative spectrum error is below the 4 percent gate over 97 matched
+   surfaces.
+
+The AE3D public answer table is also parsed in local validation so future
+global-eigenmode parity work starts from a tested artifact reader. That gate
+only checks AE3D's reported residual columns; it does not claim FAX reproduces
+AE3D eigenfrequencies yet.
 
 .. figure:: _static/landreman_paul_convergence_dashboard.svg
    :alt: LandremanPaul2021 QA radial, angular, and Fourier convergence dashboard.

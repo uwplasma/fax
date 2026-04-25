@@ -59,6 +59,17 @@ class FastIonPopulation:
         )
 
 
+@dataclass(frozen=True)
+class FastIonModeDriveResult:
+    """Mode-resolved energetic-particle drive and damping diagnostics."""
+
+    drive_indicator: jax.Array
+    damping_rate_hz: jax.Array
+    net_growth_rate_hz: jax.Array
+    resonance_overlap: jax.Array
+    mode_weights: jax.Array
+
+
 def resonance_mismatch_hz(
     mode_frequency_hz: Any,
     *,
@@ -122,3 +133,76 @@ def resonance_scan(
             for harmonic in transit_harmonics
         ]
     )
+
+
+def eigenfunction_fast_ion_drive(
+    frequencies_hz: Any,
+    mode_structures: Any,
+    s: Any,
+    *,
+    toroidal_mode: int,
+    transit_harmonics: tuple[int, ...],
+    population: FastIonPopulation,
+    drive_scale_hz: Any = 1.0,
+    damping_rate_hz: Any = 0.0,
+) -> FastIonModeDriveResult:
+    """Project reduced fast-ion drive onto radial eigenfunction structures.
+
+    The reduced resonance drive is evaluated on the radial population profile
+    and weighted by ``sum_h |xi_h(s)|^2`` for each eigenmode. The returned
+    ``net_growth_rate_hz`` is a signed screening metric,
+
+    ``gamma = drive_scale_hz * <drive>_xi - damping_rate_hz``.
+
+    This is still a perturbative diagnostic rather than a drift-kinetic
+    closure, but it ties the standard resonance condition to the global
+    eigenfunctions used by the current FAX operator.
+    """
+    frequencies = jnp.asarray(frequencies_hz)
+    structures = jnp.asarray(mode_structures)
+    radial_grid = jnp.asarray(s)
+    mode_weights = jnp.sum(jnp.abs(structures) ** 2, axis=-1)
+    norm = jnp.maximum(_trapz(mode_weights, radial_grid), 1.0e-30)
+
+    drive_rows = []
+    overlap_rows = []
+    for frequency in frequencies:
+        harmonic_drive = []
+        harmonic_overlap = []
+        for harmonic in transit_harmonics:
+            mismatch = resonance_mismatch_hz(
+                frequency,
+                toroidal_mode=toroidal_mode,
+                transit_harmonic=harmonic,
+                population=population,
+            )
+            harmonic_overlap.append(lorentzian_resonance_weight(mismatch, population.resonance_width_hz))
+            harmonic_drive.append(
+                reduced_fast_ion_drive(
+                    frequency,
+                    toroidal_mode=toroidal_mode,
+                    transit_harmonic=harmonic,
+                    population=population,
+                )
+            )
+        drive_rows.append(jnp.sum(jnp.stack(harmonic_drive), axis=0))
+        overlap_rows.append(jnp.max(jnp.stack(harmonic_overlap), axis=0))
+
+    drive_density = jnp.stack(drive_rows)
+    overlap_density = jnp.stack(overlap_rows)
+    weighted_drive = _trapz(mode_weights * drive_density, radial_grid) / norm
+    weighted_overlap = _trapz(mode_weights * overlap_density, radial_grid) / norm
+    damping = jnp.broadcast_to(jnp.asarray(damping_rate_hz), weighted_drive.shape)
+    net_growth = jnp.asarray(drive_scale_hz) * weighted_drive - damping
+    return FastIonModeDriveResult(
+        drive_indicator=weighted_drive,
+        damping_rate_hz=damping,
+        net_growth_rate_hz=net_growth,
+        resonance_overlap=weighted_overlap,
+        mode_weights=mode_weights,
+    )
+
+
+def _trapz(values: jax.Array, x: jax.Array) -> jax.Array:
+    dx = x[1:] - x[:-1]
+    return jnp.sum(0.5 * (values[..., 1:] + values[..., :-1]) * dx, axis=-1)

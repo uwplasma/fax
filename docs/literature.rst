@@ -71,3 +71,48 @@ the JAX custom-derivative guide,
 https://docs.jax.dev/en/latest/notebooks/Custom_derivative_rules_for_Python_code.html,
 and recent spectral-adjoint preprints such as
 https://arxiv.org/abs/2506.14792.
+
+Local External-Code Artifacts
+-----------------------------
+
+The following public repositories and answer artifacts have been cloned under
+``/Users/rogerio/local`` for reproducible comparison work:
+
+* ``/Users/rogerio/local/Stellgap`` from
+  https://github.com/ORNL-Fusion/Stellgap. The repository describes STELLGAP
+  as a shear-Alfvén gap/continuum code for 3-D configurations, including
+  stellarators, RFPs, and 3-D tokamaks. Its public CTOK test problem now drives
+  the FAX ``stellgap_ctok_local_continuum`` validation gate. A local build
+  succeeded using Homebrew ``gcc-15`` for preprocessing, ``mpif90``, the local
+  STELLOPT ``libstell`` tree, and explicit NetCDF C/Fortran library paths.
+  ``xmetric ctok`` runs on the public CTOK input and regenerates
+  ``ae_metric.dat``/``tae_data_boozer``. ``xstgap`` still needs build/runtime
+  cleanup on this gfortran/OpenMPI stack before it can be an automated
+  executable parity gate.
+* ``/Users/rogerio/local/AE3D`` from
+  https://github.com/ORNL-Fusion/AE3D. The OSTI software record states that
+  AE3D solves reduced-MHD shear-Alfvén eigenmodes and eigenfrequencies in 2-D
+  and 3-D magnetic confinement devices. The public ``egn_values.dat`` answer
+  table is currently used only as a parser/residual artifact gate; full
+  FAX-vs-AE3D eigenmode parity remains open.
+* ``/Users/rogerio/local/FAR3d`` from https://github.com/DSfusion/FAR3d. The
+  FAR3D review describes a reduced-MHD/gyro-fluid code for AE/EPM stability,
+  energetic-particle moment closures, acoustic coupling, and nonlinear studies.
+  A local build attempt reached compilation but stopped at the CUDA Fortran
+  ``cudafor.mod`` dependency in ``matrix.f90``; a CPU-only build path should be
+  resolved before using FAR3D for automated parity gates.
+* ``/Users/rogerio/local/shearalfvenwave`` from
+  https://github.com/arknyazev/shearalfvenwave. This helper repository
+  advertises tools for interacting with STELLGAP, AE3D, and FAR3D and is a
+  candidate source of input/output conversion conventions.
+* ``/Users/rogerio/local/PyStellgap`` from
+  https://github.com/ejpaul/PyStellgap. This is a useful Python-side reference
+  for STELLGAP plotting and data handling conventions.
+
+Current quantitative external-code status:
+
+* FAX local 3-D Boozer continuum branches match the public ORNL STELLGAP CTOK
+  ``alfven_post`` answer with p95 sorted-spectrum relative error about
+  ``2.55e-2`` over 97 matched radial surfaces.
+* The AE3D public answer table is readable and its reported residuals are small
+  on this machine, but this is not yet a physics parity test.

@@ -4,13 +4,15 @@ from __future__ import annotations
 
 from .boozer import BoozerGeometry, BoozerGeometryGrid, BoozerSpectrum
 from .config import FaxConfig, load_config
+from .cross_code import Ae3dEigenvalueData, Ae3dResidualSummary, CrossCodeComparison, StellgapContinuumData
 from .equilibrium import EquilibriumGeometry
-from .fast_ions import FastIonPopulation
+from .fast_ions import FastIonModeDriveResult, FastIonPopulation
 from .global_modes import (
     RadialBlockEigenmodeProblem,
     RadialBlockEigenmodeResult,
     RadialEigenmodeProblem,
     RadialEigenmodeResult,
+    boozer_radial_stiffness_matrices,
 )
 from .metric import MetricGeometry
 from .modes import ModeFamily
@@ -39,15 +41,19 @@ from .workflows import (
 __all__ = [
     "ContinuumRunSummary",
     "ContinuumArtifacts",
+    "Ae3dEigenvalueData",
+    "Ae3dResidualSummary",
     "BenchmarkRunSummary",
     "BoozerGeometry",
     "BoozerGeometryGrid",
     "BoozerSpectrum",
     "ConvergenceRunSummary",
     "ConvergenceArtifacts",
+    "CrossCodeComparison",
     "EquilibriumGeometry",
     "FaxConfig",
     "FastIonPopulation",
+    "FastIonModeDriveResult",
     "MetricGeometry",
     "ModeFamily",
     "RadialBlockEigenmodeProblem",
@@ -56,7 +62,9 @@ __all__ = [
     "RadialEigenmodeResult",
     "ReferenceCase",
     "RunSummary",
+    "StellgapContinuumData",
     "ValidationRunSummary",
+    "boozer_radial_stiffness_matrices",
     "landreman_paul_qa_lowres",
     "load_continuum_artifacts",
     "load_convergence_artifacts",

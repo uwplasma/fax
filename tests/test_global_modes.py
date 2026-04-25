@@ -7,6 +7,7 @@ import numpy as np
 from fax.equilibrium import analytic_circular_tokamak
 from fax.global_modes import (
     assemble_radial_block_matrices,
+    boozer_radial_stiffness_matrices,
     constant_block_problem_discrete_omega2,
     constant_radial_block_problem,
     constant_problem_discrete_omega2,
@@ -18,6 +19,7 @@ from fax.global_modes import (
     solve_radial_block_eigenmodes,
     solve_radial_eigenmodes,
 )
+from fax.boozer import BoozerGeometry
 
 
 def test_constant_radial_problem_matches_exact_discrete_spectrum():
@@ -83,6 +85,22 @@ def test_constant_radial_block_problem_matches_exact_discrete_spectrum():
     assert result.mode_structures.shape == (40, 22, 2)
 
 
+def test_constant_radial_block_neumann_problem_matches_exact_discrete_spectrum():
+    problem = constant_radial_block_problem(
+        radial_points=22,
+        continuum_frequency_hz=(90_000.0, 135_000.0),
+        radial_coupling_omega2=(2.0e9, 3.5e9),
+        boundary_condition="neumann",
+    )
+
+    result = solve_radial_block_eigenmodes(problem)
+    expected = constant_block_problem_discrete_omega2(problem)
+
+    np.testing.assert_allclose(np.asarray(result.omega2[:12]), np.asarray(expected[:12]), rtol=4.0e-6)
+    assert float(jnp.max(result.residuals[:12])) < 1.0e-5
+    assert result.mode_structures.shape == (44, 22, 2)
+
+
 def test_radial_block_problem_is_jittable_and_hermitian():
     problem = constant_radial_block_problem(radial_points=14, continuum_frequency_hz=(80_000.0, 120_000.0))
 
@@ -111,3 +129,38 @@ def test_lowest_radial_block_frequency_density_gradient_matches_analytic_scaling
     expected = -0.5 * frequency(scale0) / scale0
 
     np.testing.assert_allclose(float(autodiff), float(expected), rtol=8.0e-5)
+
+
+def test_boozer_radial_stiffness_matrices_are_hermitian():
+    s = np.linspace(0.2, 0.8, 4)
+    minor = 0.4 * s
+    magnetic_field = 2.7
+    major_radius = 5.5
+    numerator = magnetic_field * major_radius
+    zeros = np.zeros((4, 2))
+    geometry = BoozerGeometry(
+        source="synthetic_radial_metric",
+        s=s,
+        xm=np.asarray([0.0, 1.0]),
+        xn=np.asarray([0.0, 0.0]),
+        bmnc=np.column_stack([np.full_like(s, magnetic_field), np.zeros_like(s)]),
+        bmns=zeros,
+        rmnc=np.column_stack([np.full_like(s, major_radius), minor]),
+        rmns=zeros,
+        zmns=np.column_stack([np.zeros_like(s), minor]),
+        zmnc=zeros,
+        pmns=zeros,
+        pmnc=zeros,
+        gmnc=np.column_stack([np.full_like(s, numerator / magnetic_field**2), np.zeros_like(s)]),
+        gmns=zeros,
+        iota=np.full_like(s, 0.61),
+        boozer_i=np.zeros_like(s),
+        boozer_g=np.full_like(s, numerator),
+        field_periods=1,
+    )
+    harmonics = np.asarray([[1.0, 0.0], [2.0, 1.0]])
+
+    radial = boozer_radial_stiffness_matrices(geometry, harmonics, theta_points=24, zeta_points=24)
+
+    np.testing.assert_allclose(np.asarray(radial[0]), np.conjugate(np.asarray(radial[0]).T), rtol=1.0e-6, atol=1.0e-8)
+    assert np.all(np.linalg.eigvalsh(np.asarray(radial[0])) > 0.0)

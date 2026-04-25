@@ -15,6 +15,7 @@ python examples/research/global_gap_fastion_screen.py
 python examples/research/boozer_harmonic_validation.py
 python examples/research/boozmn_3d_continuum.py
 python examples/research/boozmn_global_3d_eigenmodes.py
+python examples/research/stellgap_ctok_comparison.py
 ```
 
 The examples intentionally use the analytic and Landreman-Paul low-resolution
@@ -54,3 +55,16 @@ This builds the radial block eigenproblem from real local 3-D Boozer matrices,
 solves for global frequencies and radial/harmonic mode structures, writes a
 figure, and prints residuals. It is the current global radial shear-Alfven
 operator path, still awaiting STELLGAP/AE3D cross-code validation.
+
+## STELLGAP CTOK Cross-Code Comparison
+
+```bash
+python examples/research/stellgap_ctok_comparison.py
+```
+
+This reads the public ORNL STELLGAP CTOK `boozmn_ctok.nc` and `alfven_post`
+artifacts when they are available under `/Users/rogerio/local`, computes FAX
+local 3-D Boozer continuum branches for the same harmonic family, and writes a
+comparison figure plus JSON metrics. This is the first quantitative external
+code parity gate in FAX; it is local-continuum parity, not a global AE3D/CAS3D
+eigenmode benchmark.

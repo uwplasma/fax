@@ -33,6 +33,7 @@ from fax.boozer import (
 )
 from fax.config import EquilibriumConfig, FaxConfig, GridConfig, RunConfig
 from fax.continuum import continuum_branch_matrix
+from fax.cross_code import read_stellgap_alfven_post
 from fax.equilibrium import analytic_circular_tokamak, from_vmec_wout
 from fax.fast_ions import FastIonPopulation, resonance_scan
 from fax.gaps import minimum_gap_summary, sorted_branch_gaps
@@ -51,6 +52,7 @@ from fax.modes import stellarator_mode_family
 from fax.optimization import radial_mode_avoidance_objective
 from fax.plotting import plot_basic_alfven_gap_map, plot_continuum_artifacts, plot_convergence_artifacts
 from fax.reference_cases import landreman_paul_qa_lowres
+from fax.units import PROTON_MASS
 from fax.workflows import run_continuum, run_convergence
 from fax.validation import registered_validation_gates, run_validation_suite
 
@@ -789,6 +791,61 @@ def generate_boozmn_global_3d_eigenmodes(output_dir: Path) -> list[Path]:
     return paths
 
 
+def generate_stellgap_ctok_comparison(output_dir: Path) -> list[Path]:
+    """Generate the STELLGAP CTOK comparison dashboard when local artifacts exist."""
+    boozmn = Path("/Users/rogerio/local/Stellgap_test_inputs/boozmn_ctok.nc")
+    alfven_post = Path("/Users/rogerio/local/Stellgap_test_problem/alfven_post")
+    if not boozmn.exists() or not alfven_post.exists():
+        return []
+    plt = _setup_matplotlib()
+    geometry = read_boozmn_geometry(boozmn)
+    reference = read_stellgap_alfven_post(alfven_post)
+    harmonics = jnp.asarray([[float(m), 2.0] for m in range(13)])
+    fax_khz = np.asarray(
+        boozer_3d_continuum_frequencies_hz(
+            geometry,
+            harmonics,
+            mass_density=2.0 * PROTON_MASS * 1.0e19,
+            theta_points=32,
+            zeta_points=32,
+        )
+        / 1.0e3
+    )
+    unique_s = np.unique(np.asarray(reference.s))
+    surfaces = []
+    errors = []
+    for surface_index, surface in enumerate(np.asarray(geometry.s)):
+        nearest_index = int(np.argmin(np.abs(unique_s - surface)))
+        if abs(float(unique_s[nearest_index] - surface)) > 2.0e-3:
+            continue
+        mask = np.asarray(reference.s) == unique_s[nearest_index]
+        ref = np.sort(np.asarray(reference.frequency_khz)[mask])
+        if ref.shape[0] != 13:
+            continue
+        err = np.linalg.norm(np.sort(fax_khz[surface_index]) - ref) / max(np.linalg.norm(ref), 1.0e-30)
+        surfaces.append(float(surface))
+        errors.append(float(err))
+
+    fig, axes = plt.subplots(1, 2, figsize=(10.8, 4.0), constrained_layout=True)
+    axes[0].scatter(np.asarray(reference.s), np.asarray(reference.frequency_khz), s=3, alpha=0.28, label="STELLGAP")
+    for branch in range(fax_khz.shape[1]):
+        axes[0].plot(np.asarray(geometry.s), fax_khz[:, branch], color="black", alpha=0.38, linewidth=0.8)
+    axes[0].set_title("CTOK continuum branches")
+    axes[0].set_xlabel("s")
+    axes[0].set_ylabel("frequency [kHz]")
+    axes[0].set_ylim(0.0, 8_500.0)
+    axes[0].legend(loc="upper right")
+    axes[1].plot(surfaces, errors, marker=".", linewidth=1.0)
+    axes[1].axhline(0.04, linestyle="--", color="black", linewidth=1.0, label="gate")
+    axes[1].set_title("relative spectrum error")
+    axes[1].set_xlabel("s")
+    axes[1].set_ylabel("relative L2 error")
+    axes[1].legend(loc="upper left")
+    paths = _save_figure(fig, output_dir, "stellgap_ctok_comparison")
+    plt.close(fig)
+    return paths
+
+
 def generate_continuum_artifact_dashboard(output_dir: Path) -> list[Path]:
     """Generate a dashboard from files written by the continuum workflow."""
     case = landreman_paul_qa_lowres()
@@ -1066,6 +1123,7 @@ def main(argv: list[str] | None = None) -> int:
         generate_boozer_jacobian_identity(output_dir),
         generate_boozmn_3d_geometry_operator(output_dir),
         generate_boozmn_global_3d_eigenmodes(output_dir),
+        generate_stellgap_ctok_comparison(output_dir),
         generate_continuum_artifact_dashboard(output_dir),
         generate_metric_residual_convergence(output_dir),
         generate_landreman_convergence_dashboard(output_dir),

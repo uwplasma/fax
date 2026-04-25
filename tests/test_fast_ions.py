@@ -1,10 +1,12 @@
 from __future__ import annotations
 
 import jax
+import jax.numpy as jnp
 import numpy as np
 
 from fax.fast_ions import (
     FastIonPopulation,
+    eigenfunction_fast_ion_drive,
     lorentzian_resonance_weight,
     reduced_fast_ion_drive,
     resonance_mismatch_hz,
@@ -52,3 +54,51 @@ def test_resonance_scan_returns_one_value_per_harmonic():
 
     assert values.shape == (3,)
     assert np.all(np.asarray(values) >= 0.0)
+
+
+def test_eigenfunction_fast_ion_drive_tracks_mode_localization_and_gradients():
+    s = jnp.linspace(0.0, 1.0, 80)
+    center_mode = jnp.exp(-((s - 0.45) / 0.10) ** 2)
+    edge_mode = jnp.exp(-((s - 0.82) / 0.08) ** 2)
+    structures = jnp.stack([center_mode, edge_mode], axis=0)[:, :, None]
+
+    def center_drive(density_fraction):
+        population = FastIonPopulation(
+            density_fraction=density_fraction,
+            pressure_gradient=-jnp.exp(-((s - 0.45) / 0.12) ** 2),
+            transit_frequency_hz=jnp.full_like(s, 40_000.0),
+            precession_frequency_hz=jnp.full_like(s, 5_000.0),
+            resonance_width_hz=jnp.full_like(s, 2_000.0),
+        )
+        return eigenfunction_fast_ion_drive(
+            jnp.asarray([45_000.0, 45_000.0]),
+            structures,
+            s,
+            toroidal_mode=1,
+            transit_harmonics=(1,),
+            population=population,
+            drive_scale_hz=1_000.0,
+            damping_rate_hz=1.0,
+        ).net_growth_rate_hz[0]
+
+    population = FastIonPopulation(
+        density_fraction=0.03,
+        pressure_gradient=-jnp.exp(-((s - 0.45) / 0.12) ** 2),
+        transit_frequency_hz=jnp.full_like(s, 40_000.0),
+        precession_frequency_hz=jnp.full_like(s, 5_000.0),
+        resonance_width_hz=jnp.full_like(s, 2_000.0),
+    )
+    result = eigenfunction_fast_ion_drive(
+        jnp.asarray([45_000.0, 45_000.0]),
+        structures,
+        s,
+        toroidal_mode=1,
+        transit_harmonics=(1,),
+        population=population,
+        drive_scale_hz=1_000.0,
+        damping_rate_hz=1.0,
+    )
+
+    assert float(result.drive_indicator[0]) > 3.0 * float(result.drive_indicator[1])
+    assert float(result.net_growth_rate_hz[0]) > float(result.net_growth_rate_hz[1])
+    assert float(jax.grad(center_drive)(0.03)) > 0.0
