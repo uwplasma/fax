@@ -183,6 +183,57 @@ eigenpair residuals, and sparse matrix symmetry. These checks are intentionally
 artifact-level; the next physics step is full global FAX eigenmode parity
 against AE3D/CAS3D/FAR3D cases.
 
+Publication Figure Suite
+------------------------
+
+Run:
+
+.. code-block:: bash
+
+   python examples/research/publication_figure_suite.py --output-dir outputs/publication_figure_suite
+
+This writes ten publication-style SVG/PNG figures plus a JSON summary. The
+cases are intended to cover the figure families normally requested in
+Alfvén-eigenmode studies:
+
+* analytic BAE/TAE/EAE gap taxonomy,
+* radial/angular/Fourier convergence and eigensolve residuals,
+* VMEC ``wout`` profile/metric continuum inspection for the Landreman-Paul QA
+  target,
+* Boozer harmonic reconstruction and spectral content,
+* real ``boozmn`` local 3-D continuum operation,
+* global radial eigenfrequencies, eigenfunctions, and residuals,
+* fast-ion resonance drive/damping and eigenfunction overlap,
+* autodiff sensitivity checks,
+* STELLGAP CTOK local-continuum parity with a gap-anchored FAX global-mode
+  screen, and
+* AE3D public sparse-matrix/eigenmode residual parity.
+
+Generate selected figures with repeated ``--case`` flags, for example:
+
+.. code-block:: bash
+
+   python examples/research/publication_figure_suite.py --case 09 --case 10 --format pdf
+
+The STELLGAP and AE3D cases require the public ORNL artifacts under
+``/Users/rogerio/local``. The suite labels those cases as skipped in the JSON
+summary if the local artifacts are unavailable.
+
+.. figure:: _static/publication_suite/09_stellgap_ctok_gap_anchored_global_screen.svg
+   :alt: STELLGAP CTOK continuum and FAX global-mode screen.
+
+   STELLGAP CTOK local-continuum parity overlaid with the current reduced FAX
+   global radial eigenmode screen. The left panel is a parity/inspection
+   figure; it should not be described as full AE3D/CAS3D global physics parity.
+
+.. figure:: _static/publication_suite/10_ae3d_matrix_eigenmode_parity.svg
+   :alt: AE3D public matrix and eigenmode parity dashboard.
+
+   Public AE3D sparse matrices and ``egn_mode_asci.dat`` eigenvectors checked
+   through ``A x = lambda B x`` residuals and Rayleigh-quotient errors. This is
+   now a real external matrix/eigenmode parity gate and a prerequisite for
+   future FAX-vs-AE3D operator-level validation.
+
 Regenerating Documentation Figures
 ----------------------------------
 

@@ -17,6 +17,7 @@ python examples/research/boozmn_3d_continuum.py
 python examples/research/boozmn_global_3d_eigenmodes.py
 python examples/research/stellgap_ctok_comparison.py
 python examples/research/external_code_artifact_dashboard.py
+python examples/research/publication_figure_suite.py
 ```
 
 The examples intentionally use the analytic and Landreman-Paul low-resolution
@@ -81,3 +82,17 @@ This reads the public ORNL STELLGAP and AE3D answer artifacts under
 conventions, checks AE3D sparse matrix symmetry, and writes a figure plus JSON
 metrics. These are prerequisite convention gates before full physics parity
 against AE3D/CAS3D/FAR3D.
+
+## Publication Figure Suite
+
+```bash
+python examples/research/publication_figure_suite.py --output-dir outputs/publication_figure_suite
+```
+
+This writes ten SVG/PNG figures plus a JSON summary covering the common
+publication lanes for FAX studies: gap taxonomy, convergence, VMEC/wout
+inspection, Boozer harmonics, local 3-D Boozer continua, global radial
+eigenmodes, fast-ion drive/damping, differentiable sensitivities, STELLGAP
+CTOK gap-anchored global screening, and AE3D public matrix/eigenmode parity.
+Run selected cases with repeated `--case` flags, for example `--case 09 --case
+10`.

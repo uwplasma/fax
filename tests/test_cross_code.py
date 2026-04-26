@@ -6,10 +6,13 @@ import pytest
 
 from fax.cross_code import (
     ae3d_eigenvalue_residual_summary,
+    ae3d_matrix_eigenmode_parity,
     ae3d_matrix_symmetry_summary,
     ae3d_omega2_eigenvalue_error,
+    read_ae3d_eigenmodes,
     read_ae3d_omega2,
     read_ae3d_eigenvalues,
+    read_ae3d_sparse_matrix,
     read_stellgap_alfven_spec,
     read_stellgap_alfven_post,
     stellgap_postprocess_error,
@@ -92,3 +95,29 @@ def test_stellgap_and_ae3d_public_artifact_consistency_passes_or_skips():
     assert a_summary.dimension == b_summary.dimension == 1287
     assert a_summary.relative_asymmetry < 1.0e-5
     assert b_summary.relative_asymmetry < 1.0e-12
+
+
+def test_ae3d_public_matrix_eigenmode_parity_passes_or_skips():
+    root = Path("/Users/rogerio/local/AE3D_test_problem")
+    a_matrix = root / "a_matrix.dat"
+    b_matrix = root / "b_matrix.dat"
+    egn_mode = root / "egn_mode_asci.dat"
+    if not all(path.exists() for path in (a_matrix, b_matrix, egn_mode)):
+        pytest.skip("missing local ORNL AE3D public matrix/eigenmode artifacts")
+
+    a = read_ae3d_sparse_matrix(a_matrix)
+    modes = read_ae3d_eigenmodes(egn_mode, max_modes=3)
+    parity = ae3d_matrix_eigenmode_parity(
+        a_matrix_path=a_matrix,
+        b_matrix_path=b_matrix,
+        egn_mode_path=egn_mode,
+        max_modes=8,
+    )
+
+    assert a.shape == (1287, 1287)
+    assert modes.modes.shape == (3, 99, 13)
+    assert parity.count == 8
+    assert parity.matrix_dimension == 1287
+    assert parity.max_residual < 5.0e-6
+    assert parity.max_rayleigh_relative_error < 2.0e-6
+    assert parity.max_frequency_relative_error < 2.0e-6

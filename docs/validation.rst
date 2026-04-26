@@ -106,6 +106,10 @@ tags, and command. The current gates are:
   while negative entries are preserved.
 * ``ae3d_public_matrix_symmetry``: checks the symmetry of public AE3D
   ``a_matrix.dat`` and ``b_matrix.dat`` generalized-eigenproblem artifacts.
+* ``ae3d_public_matrix_eigenmode_parity``: checks public AE3D
+  ``egn_mode_asci.dat`` eigenvectors against public ``a_matrix.dat`` and
+  ``b_matrix.dat`` through ``A x = lambda B x`` residuals and Rayleigh
+  quotient errors for the first modes.
 * ``landreman_paul_adapter_smoke``: checks the Landreman-Paul QA VMEC ``wout``
   profile and metric adapters when local data are available.
 * ``landreman_paul_continuum_finite``: checks that the Landreman-Paul profile
@@ -257,10 +261,12 @@ yet full 3-D Alfvén-continuum validation.
    relative spectrum error is below the 4 percent gate over 97 matched
    surfaces.
 
-The AE3D public answer table is also parsed in local validation so future
-global-eigenmode parity work starts from a tested artifact reader. That gate
-only checks AE3D's reported residual columns; it does not claim FAX reproduces
-AE3D eigenfrequencies yet.
+The AE3D public answer table and sparse generalized-eigenproblem artifacts are
+also parsed in local validation so future global-eigenmode parity work starts
+from tested artifact readers. FAX now verifies AE3D's public matrix/eigenmode
+triplet internally through residuals and Rayleigh quotients. This is still an
+external matrix/eigenmode parity gate, not yet a claim that the current reduced
+FAX radial operator reproduces AE3D's full physics operator.
 
 .. figure:: _static/external_code_artifact_dashboard.svg
    :alt: STELLGAP and AE3D public artifact parity dashboard.

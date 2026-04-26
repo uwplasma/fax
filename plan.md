@@ -1147,6 +1147,14 @@ Needed docs:
     - Local coverage command now uses `--source=fax` to avoid coverage trying to report generated third-party `netCDF4` internals.
     - Verified locally with `python -m coverage erase && python -m coverage run --source=fax -m pytest && python -m coverage report --skip-empty -m`: 150 passed, 96% FAX source coverage.
     - Also verified `python -m ruff check .` and `python -m mypy src`.
+  - 2026-04-25 parity/publication-suite milestone:
+    - Added AE3D public matrix/eigenmode parity: FAX now reads `egn_mode_asci.dat`, reconstructs `(mode, surface, harmonic)` eigenvectors, reads public sparse `a_matrix.dat`/`b_matrix.dat`, and checks `A x = lambda B x` residuals plus Rayleigh-quotient/frequency errors. Current local public-artifact metrics over the first 8 modes: max residual about `3.29e-6`, max Rayleigh relative error about `1.63e-6`, and max frequency relative error about `8.17e-7`.
+    - Added registered gate `ae3d_public_matrix_eigenmode_parity`. This closes AE3D artifact/matrix/eigenmode parity, not the harder FAX reduced-operator vs AE3D full-operator physics parity.
+    - Added `examples/research/publication_figure_suite.py`, a ten-case publication-style figure suite covering: analytic BAE/TAE/EAE gaps, convergence, Landreman-Paul VMEC/wout inspection, Boozer harmonics, real `boozmn` local 3-D continuum, global radial eigenmodes, fast-ion drive/damping, autodiff sensitivities, STELLGAP CTOK gap-anchored global screening, and AE3D matrix/eigenmode parity.
+    - Generated and QA-checked `docs/_static/publication_suite/*.svg` and `*.png`; all 10 cases completed locally, with STELLGAP CTOK p95 local-continuum error about `2.55e-2` and global-screen residual about `7.9e-13`.
+    - Updated README, research examples, validation docs, and literature notes to distinguish: (1) STELLGAP CTOK local-continuum parity, (2) AE3D public matrix/eigenmode parity, and (3) still-open CAS3D/FAR3D and full AE3D/CAS3D/FAR3D operator-level physics parity.
+    - Literature framing checked against AE3D (Spong, D'Azevedo & Todo 2010 / ORNL software record), STELLGAP (Spong, Sanchez & Weller 2003 / ORNL software record), recent quasisymmetric SAW continuum work, and FAR3D energetic-particle stability review literature.
+    - Verified locally with `python -m ruff check .`, `python -m mypy src`, `python -m pytest -q` (153 passed), `python -m coverage run --source=fax -m pytest -q` plus coverage report/badge (153 passed, 95.7% exact / 96% rounded), `python tools/qa_figures.py`, `python tools/qa_figures.py --figure-dir docs/_static/publication_suite`, `sphinx-build -W -b html docs docs/_build/html`, `python -m build`, and `python -m twine check dist/*`.
 
 ### Local Testing Policy Until GitHub Actions Resume
 

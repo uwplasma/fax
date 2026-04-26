@@ -85,6 +85,34 @@ class Ae3dMatrixSummary:
 
 
 @dataclass(frozen=True)
+class Ae3dEigenmodeData:
+    """AE3D eigenmode table from ``egn_mode_asci.dat``."""
+
+    eigenvalue_omega2: jax.Array
+    rho: jax.Array
+    harmonics: jax.Array
+    modes: jax.Array
+
+
+@dataclass(frozen=True)
+class Ae3dMatrixEigenmodeParity:
+    """Residual and mode-structure summary for public AE3D matrix artifacts."""
+
+    count: int
+    matrix_dimension: int
+    surface_count: int
+    harmonic_count: int
+    max_residual: float
+    p95_residual: float
+    max_rayleigh_relative_error: float
+    p95_rayleigh_relative_error: float
+    max_frequency_relative_error: float
+    dominant_mode_surface: int
+    dominant_mode_harmonic_m: int
+    dominant_mode_harmonic_n: int
+
+
+@dataclass(frozen=True)
 class CrossCodeComparison:
     """Summary metric for an external-code comparison."""
 
@@ -244,22 +272,131 @@ def ae3d_omega2_eigenvalue_error(*, omega2_path: str | Path, egn_values_path: st
 
 def ae3d_matrix_symmetry_summary(path: str | Path) -> Ae3dMatrixSummary:
     """Return sparse symmetry metrics for an AE3D matrix artifact."""
-    raw = np.loadtxt(Path(path))
-    rows = raw[:, 0].astype(int) - 1
-    cols = raw[:, 1].astype(int) - 1
-    values = raw[:, 2]
-    dimension = int(max(np.max(rows), np.max(cols)) + 1)
-    matrix = sparse.coo_matrix((values, (rows, cols)), shape=(dimension, dimension)).tocsr()
+    matrix = read_ae3d_sparse_matrix(path)
     asymmetry = matrix - matrix.T
     matrix_norm = float(np.sqrt(matrix.multiply(matrix).sum()))
     asymmetry_norm = float(np.sqrt(asymmetry.multiply(asymmetry).sum()))
     diagonal = matrix.diagonal()
     return Ae3dMatrixSummary(
-        dimension=dimension,
+        dimension=int(matrix.shape[0]),
         nonzero_count=int(matrix.nnz),
         relative_asymmetry=asymmetry_norm / max(matrix_norm, 1.0e-30),
         diagonal_min=float(np.min(diagonal)),
         diagonal_max=float(np.max(diagonal)),
+    )
+
+
+def read_ae3d_sparse_matrix(path: str | Path) -> sparse.csr_matrix:
+    """Read a public AE3D sparse matrix artifact as a SciPy CSR matrix."""
+    raw = np.loadtxt(Path(path))
+    rows = raw[:, 0].astype(int) - 1
+    cols = raw[:, 1].astype(int) - 1
+    values = raw[:, 2]
+    dimension = int(max(np.max(rows), np.max(cols)) + 1)
+    return sparse.coo_matrix((values, (rows, cols)), shape=(dimension, dimension)).tocsr()
+
+
+def read_ae3d_eigenmodes(path: str | Path, *, max_modes: int | None = None) -> Ae3dEigenmodeData:
+    """Read AE3D ``egn_mode_asci.dat`` eigenvalues and mode structures.
+
+    The public ASCII file starts with ``nmat``, ``mn_col``, and ``ns``, followed
+    by ``mn_col`` pairs of ``(m, n)``, ``nmat`` eigenvalues, ``ns`` radial
+    coordinates, and then mode vectors in ``(mode, surface, harmonic)`` order.
+    ``max_modes`` can be used for quick residual gates without loading all
+    public eigenvectors.
+    """
+    source = Path(path)
+    with source.open("r", encoding="utf-8") as stream:
+        mode_count_total = int(stream.readline())
+        harmonic_count = int(stream.readline())
+        surface_count = int(stream.readline())
+        harmonics = np.asarray(
+            [(int(stream.readline()), int(stream.readline())) for _ in range(harmonic_count)],
+            dtype=float,
+        )
+        eigenvalues = np.asarray([float(stream.readline()) for _ in range(mode_count_total)], dtype=float)
+        rho = np.asarray([float(stream.readline()) for _ in range(surface_count)], dtype=float)
+        selected_modes = mode_count_total if max_modes is None else min(int(max_modes), mode_count_total)
+        vector_size = surface_count * harmonic_count
+        raw_modes = np.fromiter(
+            (float(stream.readline()) for _ in range(selected_modes * vector_size)),
+            dtype=float,
+            count=selected_modes * vector_size,
+        )
+    if raw_modes.size != selected_modes * vector_size:
+        raise ValueError("AE3D eigenmode file ended before the requested modes were read")
+    modes = raw_modes.reshape((selected_modes, surface_count, harmonic_count))
+    return Ae3dEigenmodeData(
+        eigenvalue_omega2=jnp.asarray(eigenvalues[:selected_modes]),
+        rho=jnp.asarray(rho),
+        harmonics=jnp.asarray(harmonics),
+        modes=jnp.asarray(modes),
+    )
+
+
+def ae3d_matrix_eigenmode_parity(
+    *,
+    a_matrix_path: str | Path,
+    b_matrix_path: str | Path,
+    egn_mode_path: str | Path,
+    max_modes: int = 16,
+) -> Ae3dMatrixEigenmodeParity:
+    """Check public AE3D eigenmodes against public AE3D sparse matrices.
+
+    This is an external matrix/eigenmode parity gate: it verifies that the
+    eigenvectors stored by AE3D satisfy the generalized problem ``A x = lambda B
+    x`` and that the Rayleigh quotients recover the reported eigenvalues. It is
+    a prerequisite for FAX/AE3D physics parity, not by itself a claim that FAX's
+    reduced radial operator matches AE3D's full operator.
+    """
+    a_matrix = read_ae3d_sparse_matrix(a_matrix_path)
+    b_matrix = read_ae3d_sparse_matrix(b_matrix_path)
+    if a_matrix.shape != b_matrix.shape:
+        raise ValueError("AE3D A and B matrices must have matching shapes")
+    data = read_ae3d_eigenmodes(egn_mode_path, max_modes=max_modes)
+    mode_array = np.asarray(data.modes)
+    eigenvalues = np.asarray(data.eigenvalue_omega2)
+    vector_size = int(mode_array.shape[1] * mode_array.shape[2])
+    if a_matrix.shape[0] != vector_size:
+        raise ValueError(
+            f"AE3D matrix dimension {a_matrix.shape[0]} does not match eigenmode vector size {vector_size}"
+        )
+
+    residuals: list[float] = []
+    quotient_errors: list[float] = []
+    frequency_errors: list[float] = []
+    dominant_flat_index = int(np.argmax(np.abs(mode_array[0]))) if mode_array.size else 0
+    dominant_surface, dominant_harmonic = np.unravel_index(dominant_flat_index, mode_array[0].shape)
+    for index in range(mode_array.shape[0]):
+        vector = mode_array[index].reshape(vector_size)
+        eigenvalue = float(eigenvalues[index])
+        av = a_matrix @ vector
+        bv = b_matrix @ vector
+        denominator = max(float(np.linalg.norm(av) + abs(eigenvalue) * np.linalg.norm(bv)), 1.0e-30)
+        residuals.append(float(np.linalg.norm(av - eigenvalue * bv) / denominator))
+        rayleigh = float(np.vdot(vector, av) / np.vdot(vector, bv))
+        quotient_errors.append(abs(rayleigh - eigenvalue) / max(abs(eigenvalue), 1.0e-30))
+        reference_frequency = np.sqrt(max(eigenvalue, 0.0))
+        rayleigh_frequency = np.sqrt(max(rayleigh, 0.0))
+        frequency_errors.append(abs(rayleigh_frequency - reference_frequency) / max(abs(reference_frequency), 1.0e-30))
+
+    residual_array = np.asarray(residuals, dtype=float)
+    quotient_error_array = np.asarray(quotient_errors, dtype=float)
+    frequency_error_array = np.asarray(frequency_errors, dtype=float)
+    harmonics = np.asarray(data.harmonics, dtype=int)
+    return Ae3dMatrixEigenmodeParity(
+        count=int(mode_array.shape[0]),
+        matrix_dimension=int(a_matrix.shape[0]),
+        surface_count=int(mode_array.shape[1]),
+        harmonic_count=int(mode_array.shape[2]),
+        max_residual=float(np.max(residual_array)),
+        p95_residual=float(np.percentile(residual_array, 95.0)),
+        max_rayleigh_relative_error=float(np.max(quotient_error_array)),
+        p95_rayleigh_relative_error=float(np.percentile(quotient_error_array, 95.0)),
+        max_frequency_relative_error=float(np.max(frequency_error_array)),
+        dominant_mode_surface=int(dominant_surface),
+        dominant_mode_harmonic_m=int(harmonics[dominant_harmonic, 0]),
+        dominant_mode_harmonic_n=int(harmonics[dominant_harmonic, 1]),
     )
 
 

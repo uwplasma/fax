@@ -80,6 +80,7 @@ def test_cross_code_validation_gates_pass_or_skip_cleanly():
         "ae3d_public_eigenvalue_artifact",
         "ae3d_public_omega2_eigenvalue_parity",
         "ae3d_public_matrix_symmetry",
+        "ae3d_public_matrix_eigenmode_parity",
     ):
         result = run_validation_gate(gate_id)
 

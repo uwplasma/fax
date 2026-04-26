@@ -230,3 +230,73 @@ def test_external_code_artifact_dashboard_example_runs(tmp_path):
     assert payload["ae3d_a_matrix"]["relative_asymmetry"] < 1.0e-5
     assert payload["ae3d_b_matrix"]["relative_asymmetry"] < 1.0e-12
     assert all(Path(path).exists() for path in payload["figures"])
+
+
+def test_publication_figure_suite_selected_cases_run(tmp_path):
+    result = subprocess.run(
+        [
+            sys.executable,
+            "examples/research/publication_figure_suite.py",
+            "--case",
+            "01",
+            "--case",
+            "06",
+            "--case",
+            "08",
+            "--format",
+            "png",
+            "--output-dir",
+            str(tmp_path),
+        ],
+        cwd=REPO_ROOT,
+        check=True,
+        text=True,
+        capture_output=True,
+    )
+    payload = json.loads(result.stdout)
+
+    assert payload["case_count"] == 3
+    assert payload["completed_count"] == 3
+    assert payload["skipped_count"] == 0
+    assert all(Path(path).exists() for result in payload["results"] for path in result["figures"])
+
+
+def test_publication_suite_external_parity_cases_run_if_artifacts_exist(tmp_path):
+    stellgap_required = [
+        Path("/Users/rogerio/local/Stellgap_test_inputs/boozmn_ctok.nc"),
+        Path("/Users/rogerio/local/Stellgap_test_problem/alfven_post"),
+    ]
+    ae3d_required = [
+        Path("/Users/rogerio/local/AE3D_test_problem/a_matrix.dat"),
+        Path("/Users/rogerio/local/AE3D_test_problem/b_matrix.dat"),
+        Path("/Users/rogerio/local/AE3D_test_problem/egn_mode_asci.dat"),
+    ]
+    if not all(path.exists() for path in (*stellgap_required, *ae3d_required)):
+        return
+
+    result = subprocess.run(
+        [
+            sys.executable,
+            "examples/research/publication_figure_suite.py",
+            "--case",
+            "09",
+            "--case",
+            "10",
+            "--format",
+            "png",
+            "--output-dir",
+            str(tmp_path),
+        ],
+        cwd=REPO_ROOT,
+        check=True,
+        text=True,
+        capture_output=True,
+    )
+    payload = json.loads(result.stdout)
+    by_case = {result["case"]: result for result in payload["results"]}
+
+    assert payload["completed_count"] == 2
+    assert by_case["09_stellgap_ctok_gap_anchored_global_screen"]["stellgap_p95_relative_error"] < 4.0e-2
+    assert by_case["09_stellgap_ctok_gap_anchored_global_screen"]["max_residual"] < 1.0e-10
+    assert by_case["10_ae3d_matrix_eigenmode_parity"]["max_residual"] < 5.0e-6
+    assert all(Path(path).exists() for result in payload["results"] for path in result["figures"])

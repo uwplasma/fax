@@ -33,9 +33,10 @@ helpers, gap/sensitivity diagnostics, a first metric-matrix continuum scaffold,
 a reduced radial global-eigenmode operator, reduced fast-ion resonance screens,
 an optional Boozer adapter, real `boozmn` geometry/Jacobian readers, a local
 3-D Boozer continuum operator, a registered validation-gate inventory, and
-generated documentation figures. Full radial 3-D VMEC/Boozer eigenmodes,
-cross-code STELLGAP/AE3D validation, and perturbative kinetic fast-ion drive
-models are still planned work.
+generated documentation figures. The first public STELLGAP CTOK
+local-continuum parity gate and AE3D public sparse-matrix/eigenmode parity gate
+are implemented. Broader FAX reduced-operator parity against AE3D/CAS3D/FAR3D
+and perturbative kinetic fast-ion growth-rate models are still planned work.
 
 ![FAX input/operator/output workflow](docs/_static/workflow_io_diagram.png)
 
@@ -229,6 +230,28 @@ relative error `4.9e-7`, AE3D `omega2.dat` reproduces `egn_values.dat` to max
 relative error `6.9e-7`, and AE3D public sparse matrices are symmetric to the
 registered gates. These are prerequisite code-convention gates before claiming
 full global AE3D/CAS3D/FAR3D physics parity.
+
+![AE3D public matrix/eigenmode parity](docs/_static/publication_suite/10_ae3d_matrix_eigenmode_parity.png)
+
+This publication-suite figure reads AE3D public `a_matrix.dat`,
+`b_matrix.dat`, and `egn_mode_asci.dat`, reconstructs radial-harmonic mode
+structures, and checks `A x = lambda B x` residuals plus Rayleigh-quotient
+errors. On the current public artifact set, the first 8 modes have max residual
+about `3.3e-6` and max frequency relative error about `8.2e-7`.
+
+![STELLGAP CTOK gap-anchored global screen](docs/_static/publication_suite/09_stellgap_ctok_gap_anchored_global_screen.png)
+
+This publication-suite figure overlays public STELLGAP CTOK continuum points,
+FAX local Boozer continuum branches, and the current reduced FAX radial global
+mode screen. The cross-code claim here is the local-continuum p95 branch error
+of about `2.55%`; the global eigenmode overlay is a research workflow screen
+awaiting full AE3D/CAS3D/FAR3D operator parity.
+
+Generate the ten-case publication figure packet with:
+
+```bash
+python examples/research/publication_figure_suite.py --output-dir outputs/publication_figure_suite
+```
 
 ![Continuum artifact dashboard](docs/_static/continuum_artifact_dashboard.png)
 

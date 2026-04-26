@@ -30,6 +30,7 @@ from .boozer import (
 from .continuum import continuum_branch_matrix, local_continuum_frequency_hz
 from .cross_code import (
     ae3d_eigenvalue_residual_summary,
+    ae3d_matrix_eigenmode_parity,
     ae3d_matrix_symmetry_summary,
     ae3d_omega2_eigenvalue_error,
     stellgap_ctok_local_continuum_error,
@@ -1029,6 +1030,40 @@ def _gate_ae3d_public_matrix_symmetry() -> GateResult:
     )
 
 
+def _gate_ae3d_public_matrix_eigenmode_parity() -> GateResult:
+    gate_id = "ae3d_public_matrix_eigenmode_parity"
+    tolerance = 5.0e-6
+    a_matrix = _local_external_file("AE3D_test_problem", "a_matrix.dat")
+    b_matrix = _local_external_file("AE3D_test_problem", "b_matrix.dat")
+    egn_mode = _local_external_file("AE3D_test_problem", "egn_mode_asci.dat")
+    if a_matrix is None or b_matrix is None or egn_mode is None:
+        return GateResult(
+            gate_id=gate_id,
+            status="skipped",
+            metric=float("nan"),
+            tolerance=tolerance,
+            message="missing local ORNL AE3D sparse matrix/eigenmode artifacts under /Users/rogerio/local",
+        )
+    parity = ae3d_matrix_eigenmode_parity(
+        a_matrix_path=a_matrix,
+        b_matrix_path=b_matrix,
+        egn_mode_path=egn_mode,
+        max_modes=16,
+    )
+    metric = max(parity.max_residual, parity.max_rayleigh_relative_error)
+    return _pass_fail(
+        gate_id,
+        metric,
+        tolerance,
+        (
+            "ORNL AE3D public eigenvectors satisfy A x = lambda B x for "
+            f"{parity.count} modes; dominant first-mode component is "
+            f"(m,n)=({parity.dominant_mode_harmonic_m},{parity.dominant_mode_harmonic_n}) "
+            f"near radial index {parity.dominant_mode_surface}"
+        ),
+    )
+
+
 def _gate_landreman_paul_adapter_smoke() -> GateResult:
     gate_id = "landreman_paul_adapter_smoke"
     tolerance = 0.0
@@ -1547,6 +1582,17 @@ def registered_validation_gates() -> tuple[ValidationGate, ...]:
             command="python -m pytest tests/test_validation_registry.py",
             tags=("cross-code", "ae3d", "artifact", "matrix"),
             _runner=_gate_ae3d_public_matrix_symmetry,
+        ),
+        ValidationGate(
+            gate_id="ae3d_public_matrix_eigenmode_parity",
+            title="AE3D public matrix/eigenmode parity",
+            layer="cross-code",
+            quantity="maximum generalized eigenpair residual/Rayleigh error",
+            tolerance=5.0e-6,
+            citation="ORNL AE3D public a_matrix.dat/b_matrix.dat/egn_mode_asci.dat artifacts; Spong, D'Azevedo & Todo, Phys. Plasmas 17, 022106 (2010)",
+            command="python -m pytest tests/test_validation_registry.py",
+            tags=("cross-code", "ae3d", "matrix", "eigenmode", "parity"),
+            _runner=_gate_ae3d_public_matrix_eigenmode_parity,
         ),
         ValidationGate(
             gate_id="landreman_paul_adapter_smoke",
