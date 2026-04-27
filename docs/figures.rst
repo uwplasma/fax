@@ -56,6 +56,13 @@ Current Figures
    gradient dashboard. The top-left panel is tied to an exact finite-difference
    spectrum gate; the bottom panels are analytic/reduced screening diagnostics.
 
+.. figure:: _static/differentiable_design_study.svg
+   :alt: Differentiable design study dashboard.
+
+   Integrated differentiable design dashboard: frequency sensitivity matrix,
+   linearized UQ bands, inverse-design objective history, and reduced fast-ion
+   growth before/after optimization.
+
 .. figure:: _static/boozer_harmonic_validation.svg
    :alt: Boozer harmonic reconstruction and straight-field-line validation.
 

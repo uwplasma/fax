@@ -66,6 +66,31 @@ def test_global_gap_fastion_screen_example_runs():
     assert payload["fast_ion_peak"]["drive"] > 0.0
 
 
+def test_differentiable_design_study_example_runs(tmp_path):
+    result = subprocess.run(
+        [
+            sys.executable,
+            "examples/research/differentiable_design_study.py",
+            "--output-dir",
+            str(tmp_path),
+            "--format",
+            "png",
+            "--steps",
+            "8",
+        ],
+        cwd=REPO_ROOT,
+        check=True,
+        text=True,
+        capture_output=True,
+    )
+    payload = json.loads(result.stdout)
+
+    assert payload["final_objective"] < payload["initial_objective"]
+    assert len(payload["frequency_jacobian_hz_per_parameter"]) == 4
+    assert max(payload["initial_net_growth_hz"]) > max(payload["optimized_net_growth_hz"])
+    assert all(Path(path).exists() for path in payload["figure_files"])
+
+
 def test_basic_alfven_gap_map_example_runs(tmp_path):
     result = subprocess.run(
         [

@@ -77,6 +77,30 @@ rotational-transform shift to move a selected analytic continuum diagnostic
 toward a target frequency. It is deliberately simple so that users can inspect
 the objective, gradients, and iteration history.
 
+Differentiable Design Study
+---------------------------
+
+Run:
+
+.. code-block:: bash
+
+   python examples/research/differentiable_design_study.py --output-dir outputs/differentiable_design_study
+
+This is the first integrated design-facing FAX example. It computes autodiff
+sensitivities of global radial eigenfrequencies, propagates parameter
+covariance into linearized frequency uncertainty bands, runs a small
+gradient-based inverse-design loop to move a mode out of a selected risk
+window, and projects a reduced fast-ion drive screen onto the eigenfunctions
+before and after the design move.
+
+.. figure:: _static/differentiable_design_study.svg
+   :alt: Differentiable FAX design study dashboard.
+
+   Differentiable sensitivity, uncertainty quantification, inverse design, and
+   fast-ion risk reduction for the current reduced radial model. This is a new
+   research-workflow capability, while full 3-D operator parity remains a
+   separate validation lane.
+
 Basic BAE/TAE/EAE Gap Map
 -------------------------
 

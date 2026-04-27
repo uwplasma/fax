@@ -12,6 +12,7 @@ python examples/research/density_sensitivity.py
 python examples/research/inverse_iota_shift.py
 python examples/research/basic_alfven_gap_map.py
 python examples/research/global_gap_fastion_screen.py
+python examples/research/differentiable_design_study.py
 python examples/research/boozer_harmonic_validation.py
 python examples/research/boozmn_3d_continuum.py
 python examples/research/boozmn_global_3d_eigenmodes.py
@@ -23,6 +24,18 @@ python examples/research/publication_figure_suite.py
 The examples intentionally use the analytic and Landreman-Paul low-resolution
 paths that are already covered by local tests and validation gates. They are
 research workflow templates, not final 3-D stellarator eigenmode validations.
+
+## Differentiable Design Study
+
+```bash
+python examples/research/differentiable_design_study.py --output-dir outputs/differentiable_design_study
+```
+
+This writes a four-panel publication-style dashboard and JSON summary:
+autodiff sensitivity matrix, linearized frequency uncertainty bands,
+gradient-based inverse-design history, and reduced fast-ion growth before/after
+optimization. This is the first FAX example built around capabilities that are
+hard to reproduce in legacy non-differentiable AE workflows.
 
 ## Basic Alfvén Gap Map
 

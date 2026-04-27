@@ -78,3 +78,20 @@ matrices, metric-derived radial stiffness, generalized eigenfrequencies, and a
 smooth frequency-window penalty. This is the current differentiable design
 screen for avoiding dangerous resonances or moving candidate modes out of
 selected frequency windows.
+
+The newest differentiability demonstration is
+``examples/research/differentiable_design_study.py``. It uses the same dense
+reference path to produce four quantities that are difficult to obtain from
+legacy non-differentiable workflows without repeated manual perturbation
+studies:
+
+* a full sensitivity matrix ``df_mode / dparameter`` for low-order global
+  radial eigenfrequencies,
+* linearized uncertainty bands from ``J C J^T`` covariance propagation,
+* an inverse-design trajectory from direct gradients of an AE risk objective,
+* fast-ion growth screens before and after the differentiable design move.
+
+This remains a reduced radial-model demonstration. The planned publication
+path is to preserve the same API while replacing the profile fixture with
+validated VMEC/Boozer operators and then cross-code benchmarking the resulting
+mode frequencies and structures.

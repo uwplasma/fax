@@ -69,8 +69,20 @@ custom VJP/JVP or implicit-adjoint rules only when they reproduce the dense
 reference and improve memory/runtime. Useful implementation references include
 the JAX custom-derivative guide,
 https://docs.jax.dev/en/latest/notebooks/Custom_derivative_rules_for_Python_code.html,
-and recent spectral-adjoint preprints such as
+JAX implicit linear-solve differentiation,
+https://docs.jax.dev/en/latest/_autosummary/jax.lax.custom_linear_solve.html,
+the Lineax differentiable linear-solver paper,
+https://arxiv.org/abs/2311.17283, and recent differentiable computational
+physics examples such as JAX-FEM,
+https://arxiv.org/abs/2212.00964, plus spectral-adjoint preprints such as
 https://arxiv.org/abs/2506.14792.
+
+The current FAX differentiable-design examples are not just performance
+demonstrations: they are intended to create result types that legacy
+non-differentiable AE workflows do not provide directly, including full
+frequency sensitivity matrices, linearized uncertainty propagation, inverse
+design of risk-window placement, and fast-ion growth changes along an
+optimization trajectory.
 
 Local External-Code Artifacts
 -----------------------------

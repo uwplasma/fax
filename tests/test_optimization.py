@@ -12,10 +12,18 @@ from fax.optimization import (
     boozer_global_mode_avoidance_objective,
     boozer_pipeline_mode_avoidance_objective,
     frequency_window_penalty,
+    gradient_descent_minimize,
+    linearized_radial_mode_uncertainty,
+    radial_fast_ion_growth_screen,
+    radial_fast_ion_risk_objective,
+    radial_mode_frequency_jacobian,
+    radial_mode_frequency_vector,
+    radial_mode_inverse_design,
     radial_mode_avoidance_objective,
     scaled_profile_geometry,
     shifted_boozer_geometry,
 )
+from fax.fast_ions import FastIonPopulation
 
 
 def test_frequency_window_penalty_is_larger_inside_window():
@@ -51,6 +59,130 @@ def test_radial_mode_avoidance_objective_is_differentiable():
     assert float(value) >= 0.0
     assert gradient.shape == (3,)
     assert np.all(np.isfinite(np.asarray(gradient)))
+
+
+def test_radial_frequency_jacobian_has_physical_signs():
+    geometry = analytic_circular_tokamak(radial_points=32, iota_axis=0.26, iota_edge=0.72)
+    parameters = jnp.zeros((3,))
+
+    frequencies = radial_mode_frequency_vector(
+        parameters,
+        geometry=geometry,
+        harmonic=(2, 1),
+        mode_count=4,
+        radial_coupling_fraction=0.02,
+    )
+    jacobian = radial_mode_frequency_jacobian(
+        parameters,
+        geometry=geometry,
+        harmonic=(2, 1),
+        mode_count=4,
+        radial_coupling_fraction=0.02,
+    )
+
+    assert frequencies.shape == (4,)
+    assert jacobian.shape == (4, 3)
+    assert np.all(np.asarray(jacobian[:, 0]) < 0.0)
+    assert np.all(np.asarray(jacobian[:, 2]) > 0.0)
+    np.testing.assert_allclose(np.asarray(jacobian[:, 2]), np.asarray(frequencies), rtol=5.0e-6)
+
+
+def test_linearized_radial_uncertainty_has_ordered_bands():
+    geometry = analytic_circular_tokamak(radial_points=32, iota_axis=0.26, iota_edge=0.72)
+    estimate = linearized_radial_mode_uncertainty(
+        jnp.zeros((3,)),
+        covariance=jnp.diag(jnp.asarray([0.04, 0.005, 0.02]) ** 2),
+        geometry=geometry,
+        harmonic=(2, 1),
+        mode_count=4,
+        sigma_multiplier=2.0,
+        radial_coupling_fraction=0.02,
+    )
+
+    assert estimate.jacobian_hz_per_parameter.shape == (4, 3)
+    assert np.all(np.asarray(estimate.sigma_hz) > 0.0)
+    assert np.all(np.asarray(estimate.lower_hz) < np.asarray(estimate.mean_hz))
+    assert np.all(np.asarray(estimate.upper_hz) > np.asarray(estimate.mean_hz))
+
+
+def test_radial_mode_inverse_design_reduces_frequency_mismatch():
+    geometry = analytic_circular_tokamak(radial_points=28, iota_axis=0.26, iota_edge=0.72)
+    initial = jnp.zeros((3,))
+    target = 1.03 * radial_mode_frequency_vector(
+        initial,
+        geometry=geometry,
+        harmonic=(2, 1),
+        mode_count=3,
+        radial_coupling_fraction=0.02,
+    )
+
+    result = radial_mode_inverse_design(
+        initial,
+        geometry=geometry,
+        harmonic=(2, 1),
+        target_frequencies_hz=target,
+        radial_coupling_fraction=0.02,
+        step_size=0.2,
+        steps=12,
+    )
+
+    assert result.parameter_history.shape == (13, 3)
+    assert float(result.objective_history[-1]) < 0.05 * float(result.objective_history[0])
+    assert np.all(np.isfinite(np.asarray(result.parameters)))
+
+
+def _fast_ion_population_for_geometry(geometry):
+    s = jnp.asarray(geometry.s)
+    return FastIonPopulation(
+        density_fraction=0.03,
+        pressure_gradient=-jnp.exp(-((s - 0.45) / 0.12) ** 2),
+        transit_frequency_hz=jnp.full_like(s, 83_000.0),
+        precession_frequency_hz=jnp.full_like(s, 5_000.0),
+        resonance_width_hz=jnp.full_like(s, 4_000.0),
+    )
+
+
+def test_radial_fast_ion_screen_and_risk_objective_are_differentiable():
+    geometry = analytic_circular_tokamak(radial_points=30, iota_axis=0.26, iota_edge=0.72)
+    population = _fast_ion_population_for_geometry(geometry)
+    parameters = jnp.zeros((4,))
+
+    screen = radial_fast_ion_growth_screen(
+        parameters,
+        geometry=geometry,
+        harmonic=(2, 1),
+        population=population,
+        toroidal_mode=1,
+        transit_harmonics=(1,),
+        mode_count=3,
+        drive_scale_hz=1_000.0,
+        damping_rate_hz=5.0,
+        radial_coupling_fraction=0.02,
+    )
+
+    def objective(params):
+        return radial_fast_ion_risk_objective(
+            params,
+            geometry=geometry,
+            harmonic=(2, 1),
+            population=population,
+            toroidal_mode=1,
+            transit_harmonics=(1,),
+            avoid_window_hz=(70_000.0, 120_000.0),
+            mode_count=3,
+            drive_scale_hz=1_000.0,
+            damping_rate_hz=5.0,
+            radial_coupling_fraction=0.02,
+        )
+
+    gradient = jax.grad(objective)(parameters)
+    optimized = gradient_descent_minimize(objective, parameters, step_size=0.1, steps=8)
+
+    assert screen.net_growth_rate_hz.shape == (3,)
+    assert np.max(np.asarray(screen.net_growth_rate_hz)) > 0.0
+    assert gradient.shape == (4,)
+    assert np.all(np.isfinite(np.asarray(gradient)))
+    assert float(optimized.objective_history[-1]) < float(optimized.objective_history[0])
 
 
 def _synthetic_boozer_geometry() -> BoozerGeometry:

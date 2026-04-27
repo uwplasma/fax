@@ -25,6 +25,7 @@ from .global_modes import (
 )
 from .metric import MetricGeometry
 from .modes import ModeFamily
+from .optimization import GradientDescentResult, LinearizedUncertaintyEstimate
 from .plotting import (
     ContinuumArtifacts,
     ConvergenceArtifacts,
@@ -66,6 +67,8 @@ __all__ = [
     "FaxConfig",
     "FastIonPopulation",
     "FastIonModeDriveResult",
+    "GradientDescentResult",
+    "LinearizedUncertaintyEstimate",
     "MetricGeometry",
     "ModeFamily",
     "RadialBlockEigenmodeProblem",

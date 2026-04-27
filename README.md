@@ -33,10 +33,12 @@ helpers, gap/sensitivity diagnostics, a first metric-matrix continuum scaffold,
 a reduced radial global-eigenmode operator, reduced fast-ion resonance screens,
 an optional Boozer adapter, real `boozmn` geometry/Jacobian readers, a local
 3-D Boozer continuum operator, a registered validation-gate inventory, and
-generated documentation figures. The first public STELLGAP CTOK
-local-continuum parity gate and AE3D public sparse-matrix/eigenmode parity gate
-are implemented. Broader FAX reduced-operator parity against AE3D/CAS3D/FAR3D
-and perturbative kinetic fast-ion growth-rate models are still planned work.
+generated documentation figures. It also has differentiable sensitivity,
+linearized uncertainty, inverse-design, and reduced fast-ion risk screens for
+the current radial model. The first public STELLGAP CTOK local-continuum parity
+gate and AE3D public sparse-matrix/eigenmode parity gate are implemented.
+Broader FAX reduced-operator parity against AE3D/CAS3D/FAR3D and perturbative
+kinetic fast-ion growth-rate models are still planned work.
 
 ![FAX input/operator/output workflow](docs/_static/workflow_io_diagram.png)
 
@@ -172,6 +174,14 @@ This dashboard checks the reduced radial global-mode eigensolve against an
 exact finite-difference spectrum, plots radial eigenfunctions, reports analytic
 TAE/EAE/HAE gap-center estimates, scans reduced fast-ion resonance drive, and
 shows a JAX gradient of the radial-mode avoidance objective.
+
+![Differentiable design study](docs/_static/differentiable_design_study.png)
+
+This dashboard is the first end-to-end design-facing FAX workflow: autodiff
+sensitivities of global radial eigenfrequencies, linearized UQ bands from
+parameter covariance, gradient-based inverse design moving a mode out of a
+risk window, and reduced fast-ion growth before/after the differentiable move.
+Generate it with `python examples/research/differentiable_design_study.py`.
 
 ![Boozer harmonic validation](docs/_static/boozer_harmonic_validation.png)
 

@@ -1155,6 +1155,12 @@ Needed docs:
     - Updated README, research examples, validation docs, and literature notes to distinguish: (1) STELLGAP CTOK local-continuum parity, (2) AE3D public matrix/eigenmode parity, and (3) still-open CAS3D/FAR3D and full AE3D/CAS3D/FAR3D operator-level physics parity.
     - Literature framing checked against AE3D (Spong, D'Azevedo & Todo 2010 / ORNL software record), STELLGAP (Spong, Sanchez & Weller 2003 / ORNL software record), recent quasisymmetric SAW continuum work, and FAR3D energetic-particle stability review literature.
     - Verified locally with `python -m ruff check .`, `python -m mypy src`, `python -m pytest -q` (153 passed), `python -m coverage run --source=fax -m pytest -q` plus coverage report/badge (153 passed, 95.7% exact / 96% rounded), `python tools/qa_figures.py`, `python tools/qa_figures.py --figure-dir docs/_static/publication_suite`, `sphinx-build -W -b html docs docs/_build/html`, `python -m build`, and `python -m twine check dist/*`.
+  - 2026-04-27 differentiable-research milestone:
+    - Added research-study APIs in `fax.optimization`: radial global-mode frequency maps, autodiff Jacobians, linearized uncertainty propagation, transparent gradient-descent minimization, inverse-design fitting to target frequencies, eigenfunction-projected fast-ion growth screens, and a combined fast-ion/frequency-window risk objective.
+    - Added `examples/research/differentiable_design_study.py`, generating a four-panel dashboard for sensitivity analysis, UQ bands, inverse-design objective history, and fast-ion growth before/after the differentiable design move.
+    - Generated `docs/_static/differentiable_design_study.{svg,png}` and `docs/_static/differentiable_design_study_summary.json`. Current reduced-model demonstration moves the second radial mode from about 88.4 kHz inside an 80-100 kHz risk window to about 114.8 kHz while reducing the peak reduced fast-ion growth screen from about +1.45 Hz to negative values for all plotted modes.
+    - Updated README, research-example docs, optimization docs, differentiability docs, and literature notes to frame these as FAX-native differentiable capabilities: sensitivity matrices, uncertainty quantification, inverse design, and optimization trajectories. This is a new research-workflow lane, not a replacement for the still-open full 3-D AE3D/CAS3D/FAR3D parity lane.
+    - Literature framing checked against differentiable scientific-computing practice: JAX custom derivatives/implicit solves, Lineax differentiable linear solvers, JAX-FEM inverse design, and recent spectral-adjoint preprints.
 
 ### Local Testing Policy Until GitHub Actions Resume
 
@@ -1202,12 +1208,14 @@ Sources:
 
 ### Next Recommended Step
 
-Turn the reduced physics layers into publication-grade stellarator validation:
+Turn the reduced physics layers into publication-grade stellarator validation
+and differentiable design studies that can produce new FAX-native results:
 
 1. Extend the first STELLGAP CTOK local-continuum parity gate to additional STELLGAP/literature geometries, then add true AE3D/CAS3D/FAR3D global-mode parity where input/output data and executable builds are available.
 2. Add convergence gates for real `boozmn` harmonic truncation, Boozer angular grids, radial surface sampling, radial block resolution, and local/global branch sensitivity.
 3. Add additional radial boundary-condition variants beyond Dirichlet/Neumann and validate them on analytic and cross-code targets.
 4. Upgrade perturbative fast-ion drive/damping from the current eigenfunction-weighted screen toward FAR3D/CAS3D-K comparable closures, with sign, resonance, and growth-rate gates.
 5. Wire `boozer_pipeline_mode_avoidance_objective` to a real differentiable `vmec_jax`/`booz_xform_jax` builder and add finite-difference/adjoint consistency plots for VMEC-to-stability gradients.
-6. Publish the staged `v0.0.1` GitHub release when GitHub Actions are available so the PyPI trusted-publishing workflow can complete.
-7. Extend `fax benchmark` with memory/process telemetry and separate compile/warm kernel timing once matrix-free kernels are introduced.
+6. Use the differentiable-design study API on real VMEC/Boozer geometries to produce novel design maps: sensitivity-ranked boundary/profile variables, UQ-aware AE risk bands, inverse-designed resonance avoidance, and alpha/beam resonance robustness scans.
+7. Publish the staged `v0.0.1` GitHub release when GitHub Actions are available so the PyPI trusted-publishing workflow can complete.
+8. Extend `fax benchmark` with memory/process telemetry and separate compile/warm kernel timing once matrix-free kernels are introduced.
