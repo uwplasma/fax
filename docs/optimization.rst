@@ -59,6 +59,12 @@ The next executable layer is built around publication-style design studies:
    Combine frequency-window avoidance with a reduced fast-ion resonance screen
    projected onto radial eigenfunctions.
 
+``boozer_global_mode_frequency_vector`` and related Boozer helpers
+   Apply the same differentiable study pattern to real ``boozmn`` global
+   radial operators. The design variables currently scale mass density, shift
+   rotational transform, and scale radial stiffness; a fourth optional
+   parameter scales fast-ion density in the growth-risk objective.
+
 The example
 
 .. code-block:: bash
@@ -75,6 +81,19 @@ quantification, inverse design, and fast-ion risk reduction:
    linearized UQ, optimization history, and fast-ion growth before and after
    the design move. This is intended as the first path toward results that
    legacy non-differentiable AE workflows do not provide directly.
+
+The real-Boozer counterpart is:
+
+.. code-block:: bash
+
+   python examples/research/boozmn_differentiable_design_study.py
+
+.. figure:: _static/boozmn_differentiable_design_study.svg
+   :alt: Real boozmn differentiable design dashboard.
+
+   Differentiable design on a real ``boozmn`` global 3-D radial operator. This
+   is the bridge from validated real-Boozer forward operators to FAX-native
+   optimization, UQ, and sensitivity studies on stellarator geometry.
 
 Power-Plant Assessment
 ----------------------

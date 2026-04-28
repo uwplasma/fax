@@ -1161,6 +1161,11 @@ Needed docs:
     - Generated `docs/_static/differentiable_design_study.{svg,png}` and `docs/_static/differentiable_design_study_summary.json`. Current reduced-model demonstration moves the second radial mode from about 88.4 kHz inside an 80-100 kHz risk window to about 114.8 kHz while reducing the peak reduced fast-ion growth screen from about +1.45 Hz to negative values for all plotted modes.
     - Updated README, research-example docs, optimization docs, differentiability docs, and literature notes to frame these as FAX-native differentiable capabilities: sensitivity matrices, uncertainty quantification, inverse design, and optimization trajectories. This is a new research-workflow lane, not a replacement for the still-open full 3-D AE3D/CAS3D/FAR3D parity lane.
     - Literature framing checked against differentiable scientific-computing practice: JAX custom derivatives/implicit solves, Lineax differentiable linear solvers, JAX-FEM inverse design, and recent spectral-adjoint preprints.
+  - 2026-04-28 real-Boozer differentiable design milestone:
+    - Extended `fax.optimization` with real-Boozer global-mode frequency maps, Jacobians, linearized uncertainty, inverse design, eigenfunction-projected fast-ion screens, and a combined frequency-window/fast-ion risk objective.
+    - Added `examples/research/boozmn_differentiable_design_study.py`, which reads a real `boozmn` file, differentiates through local Boozer matrices, metric-derived radial stiffness, global generalized eigenfrequencies, and fast-ion growth projected on radial/harmonic eigenfunctions.
+    - Generated `docs/_static/boozmn_differentiable_design_study.{svg,png}` and summary JSON. On the local Landreman-Sengupta-Plunk `boozmn` fixture, the example moves the first two modes below a 200-300 kHz risk window and reduces the peak reduced fast-ion growth screen from about `+8.87 Hz` to negative.
+    - This closes the first real-geometry differentiable-design lane for the current Boozer operator. It is still a reduced-parameter design screen; true shape-gradient publication claims require wiring those parameters to `vmec_jax` boundary/profile variables and validating optimized geometries against external-code/literature targets.
 
 ### Local Testing Policy Until GitHub Actions Resume
 

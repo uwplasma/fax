@@ -183,6 +183,14 @@ parameter covariance, gradient-based inverse design moving a mode out of a
 risk window, and reduced fast-ion growth before/after the differentiable move.
 Generate it with `python examples/research/differentiable_design_study.py`.
 
+![Real boozmn differentiable design study](docs/_static/boozmn_differentiable_design_study.png)
+
+This extends the same workflow to a real `boozmn` global 3-D radial operator.
+It differentiates through Boozer local matrices, metric-derived radial
+stiffness, generalized eigenfrequencies, and an eigenfunction-projected
+fast-ion risk screen. The plotted example moves modes out of a selected
+200-300 kHz risk window and turns the peak reduced growth screen negative.
+
 ![Boozer harmonic validation](docs/_static/boozer_harmonic_validation.png)
 
 This figure validates Boozer scalar-field representation conventions:

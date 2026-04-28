@@ -430,6 +430,291 @@ def boozer_global_mode_avoidance_objective(
     return penalty + float(regularization) * jnp.sum(params**2)
 
 
+def boozer_global_mode_frequency_vector(
+    parameters: Any,
+    *,
+    geometry: BoozerGeometry,
+    harmonics: Any,
+    mass_density: Any,
+    mode_count: int = 6,
+    theta_points: int = 16,
+    zeta_points: int = 16,
+    radial_stiffness_scale: Any = 1.0,
+    radial_stiffness_method: str = "metric",
+    boundary_condition: str = "dirichlet",
+) -> jax.Array:
+    """Return real-Boozer global radial eigenfrequencies for design variables.
+
+    ``parameters`` are ``[log_density_scale, iota_shift,
+    log_radial_stiffness_scale]``. The geometry can come from a real
+    ``boozmn`` artifact or a differentiable Boozer builder. This function is
+    the frequency map used by real-geometry sensitivity, UQ, and inverse-design
+    workflows.
+    """
+    problem = _boozer_design_problem(
+        parameters,
+        geometry=geometry,
+        harmonics=harmonics,
+        mass_density=mass_density,
+        theta_points=theta_points,
+        zeta_points=zeta_points,
+        radial_stiffness_scale=radial_stiffness_scale,
+        radial_stiffness_method=radial_stiffness_method,
+        boundary_condition=boundary_condition,
+    )
+    return solve_radial_block_eigenmodes(problem).frequencies_hz[: int(mode_count)]
+
+
+def boozer_global_mode_frequency_jacobian(
+    parameters: Any,
+    *,
+    geometry: BoozerGeometry,
+    harmonics: Any,
+    mass_density: Any,
+    mode_count: int = 6,
+    theta_points: int = 16,
+    zeta_points: int = 16,
+    radial_stiffness_scale: Any = 1.0,
+    radial_stiffness_method: str = "metric",
+    boundary_condition: str = "dirichlet",
+) -> jax.Array:
+    """Return ``d f_mode / d parameter`` for real-Boozer design variables."""
+
+    def frequency_map(params: jax.Array) -> jax.Array:
+        return boozer_global_mode_frequency_vector(
+            params,
+            geometry=geometry,
+            harmonics=harmonics,
+            mass_density=mass_density,
+            mode_count=mode_count,
+            theta_points=theta_points,
+            zeta_points=zeta_points,
+            radial_stiffness_scale=radial_stiffness_scale,
+            radial_stiffness_method=radial_stiffness_method,
+            boundary_condition=boundary_condition,
+        )
+
+    return jax.jacfwd(frequency_map)(jnp.asarray(parameters))
+
+
+def linearized_boozer_global_mode_uncertainty(
+    parameters: Any,
+    *,
+    covariance: Any,
+    geometry: BoozerGeometry,
+    harmonics: Any,
+    mass_density: Any,
+    mode_count: int = 6,
+    sigma_multiplier: float = 2.0,
+    theta_points: int = 16,
+    zeta_points: int = 16,
+    radial_stiffness_scale: Any = 1.0,
+    radial_stiffness_method: str = "metric",
+    boundary_condition: str = "dirichlet",
+) -> LinearizedUncertaintyEstimate:
+    """Propagate real-Boozer design covariance to eigenfrequency bands."""
+    params = jnp.asarray(parameters)
+    covariance_array = jnp.asarray(covariance)
+    mean = boozer_global_mode_frequency_vector(
+        params,
+        geometry=geometry,
+        harmonics=harmonics,
+        mass_density=mass_density,
+        mode_count=mode_count,
+        theta_points=theta_points,
+        zeta_points=zeta_points,
+        radial_stiffness_scale=radial_stiffness_scale,
+        radial_stiffness_method=radial_stiffness_method,
+        boundary_condition=boundary_condition,
+    )
+    jacobian = boozer_global_mode_frequency_jacobian(
+        params,
+        geometry=geometry,
+        harmonics=harmonics,
+        mass_density=mass_density,
+        mode_count=mode_count,
+        theta_points=theta_points,
+        zeta_points=zeta_points,
+        radial_stiffness_scale=radial_stiffness_scale,
+        radial_stiffness_method=radial_stiffness_method,
+        boundary_condition=boundary_condition,
+    )
+    variance = jnp.einsum("ip,pq,iq->i", jacobian, covariance_array, jacobian)
+    sigma = jnp.sqrt(jnp.maximum(variance, 0.0))
+    width = float(sigma_multiplier) * sigma
+    return LinearizedUncertaintyEstimate(
+        mean_hz=mean,
+        sigma_hz=sigma,
+        lower_hz=mean - width,
+        upper_hz=mean + width,
+        jacobian_hz_per_parameter=jacobian,
+        covariance=covariance_array,
+    )
+
+
+def boozer_global_mode_inverse_design(
+    initial_parameters: Any,
+    *,
+    geometry: BoozerGeometry,
+    harmonics: Any,
+    mass_density: Any,
+    target_frequencies_hz: Any,
+    mode_count: int | None = None,
+    step_size: float = 0.05,
+    steps: int = 32,
+    regularization: float = 1.0e-3,
+    parameter_prior: Any | None = None,
+    theta_points: int = 16,
+    zeta_points: int = 16,
+    radial_stiffness_scale: Any = 1.0,
+    radial_stiffness_method: str = "metric",
+    boundary_condition: str = "dirichlet",
+) -> GradientDescentResult:
+    """Fit real-Boozer design parameters to target global frequencies."""
+    targets = jnp.asarray(target_frequencies_hz)
+    count = int(mode_count if mode_count is not None else targets.shape[0])
+    prior = jnp.zeros_like(jnp.asarray(initial_parameters)) if parameter_prior is None else jnp.asarray(parameter_prior)
+    scale = jnp.maximum(jnp.mean(jnp.abs(targets[:count])), 1.0)
+
+    def objective(params: jax.Array) -> jax.Array:
+        frequencies = boozer_global_mode_frequency_vector(
+            params,
+            geometry=geometry,
+            harmonics=harmonics,
+            mass_density=mass_density,
+            mode_count=count,
+            theta_points=theta_points,
+            zeta_points=zeta_points,
+            radial_stiffness_scale=radial_stiffness_scale,
+            radial_stiffness_method=radial_stiffness_method,
+            boundary_condition=boundary_condition,
+        )
+        mismatch = (frequencies - targets[:count]) / scale
+        return jnp.mean(mismatch**2) + float(regularization) * jnp.mean((params - prior) ** 2)
+
+    return gradient_descent_minimize(
+        objective,
+        initial_parameters,
+        step_size=step_size,
+        steps=steps,
+        gradient_clip_norm=5.0,
+    )
+
+
+def boozer_fast_ion_growth_screen(
+    parameters: Any,
+    *,
+    geometry: BoozerGeometry,
+    harmonics: Any,
+    mass_density: Any,
+    population: FastIonPopulation,
+    toroidal_mode: int,
+    transit_harmonics: tuple[int, ...],
+    mode_count: int = 4,
+    drive_scale_hz: Any = 1.0,
+    damping_rate_hz: Any = 0.0,
+    theta_points: int = 16,
+    zeta_points: int = 16,
+    radial_stiffness_scale: Any = 1.0,
+    radial_stiffness_method: str = "metric",
+    boundary_condition: str = "dirichlet",
+) -> FastIonModeDriveResult:
+    """Project reduced fast-ion drive onto real-Boozer global eigenfunctions.
+
+    ``parameters`` may contain three or four entries. The first three define
+    mass-density, iota, and radial-stiffness perturbations; an optional fourth
+    entry is a log fast-ion-density scale.
+    """
+    params = jnp.asarray(parameters)
+    problem = _boozer_design_problem(
+        params[:3],
+        geometry=geometry,
+        harmonics=harmonics,
+        mass_density=mass_density,
+        theta_points=theta_points,
+        zeta_points=zeta_points,
+        radial_stiffness_scale=radial_stiffness_scale,
+        radial_stiffness_method=radial_stiffness_method,
+        boundary_condition=boundary_condition,
+    )
+    result = solve_radial_block_eigenmodes(problem)
+    density_scale = jnp.exp(params[3]) if params.shape[0] > 3 else 1.0
+    scaled_population = replace(population, density_fraction=population.density_fraction * density_scale)
+    return eigenfunction_fast_ion_drive(
+        result.frequencies_hz[: int(mode_count)],
+        result.mode_structures[: int(mode_count)],
+        problem.s,
+        toroidal_mode=toroidal_mode,
+        transit_harmonics=transit_harmonics,
+        population=scaled_population,
+        drive_scale_hz=drive_scale_hz,
+        damping_rate_hz=damping_rate_hz,
+    )
+
+
+def boozer_fast_ion_risk_objective(
+    parameters: Any,
+    *,
+    geometry: BoozerGeometry,
+    harmonics: Any,
+    mass_density: Any,
+    population: FastIonPopulation,
+    toroidal_mode: int,
+    transit_harmonics: tuple[int, ...],
+    avoid_window_hz: tuple[float, float],
+    mode_count: int = 4,
+    drive_scale_hz: Any = 1.0,
+    damping_rate_hz: Any = 0.0,
+    growth_softness_hz: float = 5.0,
+    frequency_softness_hz: float = 2.0e3,
+    regularization: float = 1.0e-3,
+    theta_points: int = 16,
+    zeta_points: int = 16,
+    radial_stiffness_scale: Any = 1.0,
+    radial_stiffness_method: str = "metric",
+    boundary_condition: str = "dirichlet",
+) -> jax.Array:
+    """Combine real-Boozer frequency-window avoidance with fast-ion risk."""
+    params = jnp.asarray(parameters)
+    frequencies = boozer_global_mode_frequency_vector(
+        params[:3],
+        geometry=geometry,
+        harmonics=harmonics,
+        mass_density=mass_density,
+        mode_count=mode_count,
+        theta_points=theta_points,
+        zeta_points=zeta_points,
+        radial_stiffness_scale=radial_stiffness_scale,
+        radial_stiffness_method=radial_stiffness_method,
+        boundary_condition=boundary_condition,
+    )
+    drive = boozer_fast_ion_growth_screen(
+        params,
+        geometry=geometry,
+        harmonics=harmonics,
+        mass_density=mass_density,
+        population=population,
+        toroidal_mode=toroidal_mode,
+        transit_harmonics=transit_harmonics,
+        mode_count=mode_count,
+        drive_scale_hz=drive_scale_hz,
+        damping_rate_hz=damping_rate_hz,
+        theta_points=theta_points,
+        zeta_points=zeta_points,
+        radial_stiffness_scale=radial_stiffness_scale,
+        radial_stiffness_method=radial_stiffness_method,
+        boundary_condition=boundary_condition,
+    )
+    window = frequency_window_penalty(
+        frequencies,
+        lower_hz=float(avoid_window_hz[0]),
+        upper_hz=float(avoid_window_hz[1]),
+        softness_hz=float(frequency_softness_hz),
+    )
+    growth_penalty = jnp.mean(jax.nn.softplus(drive.net_growth_rate_hz / float(growth_softness_hz)))
+    return window + growth_penalty + float(regularization) * jnp.mean(params**2)
+
+
 def boozer_pipeline_mode_avoidance_objective(
     parameters: Any,
     *,
@@ -486,3 +771,29 @@ def _evaluate_parameter_source(source: Any, parameters: jax.Array, geometry: Boo
     if callable(source):
         return source(parameters, geometry)
     return source
+
+
+def _boozer_design_problem(
+    parameters: Any,
+    *,
+    geometry: BoozerGeometry,
+    harmonics: Any,
+    mass_density: Any,
+    theta_points: int,
+    zeta_points: int,
+    radial_stiffness_scale: Any,
+    radial_stiffness_method: str,
+    boundary_condition: str,
+):
+    params = jnp.asarray(parameters)
+    adjusted = shifted_boozer_geometry(geometry, iota_shift=params[1])
+    return radial_block_problem_from_boozer_geometry(
+        adjusted,
+        harmonics,
+        mass_density=jnp.asarray(mass_density) * jnp.exp(params[0]),
+        radial_stiffness_method=radial_stiffness_method,
+        radial_stiffness_scale=jnp.asarray(radial_stiffness_scale) * jnp.exp(params[2]),
+        theta_points=theta_points,
+        zeta_points=zeta_points,
+        boundary_condition=boundary_condition,
+    )

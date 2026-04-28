@@ -16,6 +16,7 @@ python examples/research/differentiable_design_study.py
 python examples/research/boozer_harmonic_validation.py
 python examples/research/boozmn_3d_continuum.py
 python examples/research/boozmn_global_3d_eigenmodes.py
+python examples/research/boozmn_differentiable_design_study.py
 python examples/research/stellgap_ctok_comparison.py
 python examples/research/external_code_artifact_dashboard.py
 python examples/research/publication_figure_suite.py
@@ -36,6 +37,18 @@ autodiff sensitivity matrix, linearized frequency uncertainty bands,
 gradient-based inverse-design history, and reduced fast-ion growth before/after
 optimization. This is the first FAX example built around capabilities that are
 hard to reproduce in legacy non-differentiable AE workflows.
+
+## Real `boozmn` Differentiable Design Study
+
+```bash
+python examples/research/boozmn_differentiable_design_study.py --boozmn /path/to/boozmn.nc
+```
+
+This applies the same differentiable workflow to a real Boozer global-mode
+operator: frequency sensitivities, linearized UQ bands, a gradient-based design
+move, and fast-ion growth projected onto the optimized global eigenfunctions.
+It is the current bridge from validated real-Boozer operators toward
+publication-grade differentiable stellarator design studies.
 
 ## Basic Alfvén Gap Map
 

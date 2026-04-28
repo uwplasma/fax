@@ -191,6 +191,41 @@ def test_boozmn_global_3d_eigenmodes_example_runs(tmp_path):
     assert all(Path(path).exists() for path in payload["figure_files"])
 
 
+def test_boozmn_differentiable_design_study_example_runs(tmp_path):
+    fixture = Path("/Users/rogerio/local/booz_xform_jax/tests/test_files/boozmn_LandremanSenguptaPlunk_section5p3.nc")
+    if not fixture.exists():
+        return
+
+    result = subprocess.run(
+        [
+            sys.executable,
+            "examples/research/boozmn_differentiable_design_study.py",
+            "--boozmn",
+            str(fixture),
+            "--output-dir",
+            str(tmp_path),
+            "--format",
+            "png",
+            "--steps",
+            "5",
+            "--theta-points",
+            "8",
+            "--zeta-points",
+            "8",
+        ],
+        cwd=REPO_ROOT,
+        check=True,
+        text=True,
+        capture_output=True,
+    )
+    payload = json.loads(result.stdout)
+
+    assert payload["final_objective"] < payload["initial_objective"]
+    assert max(payload["initial_net_growth_hz"]) > max(payload["optimized_net_growth_hz"])
+    assert len(payload["frequency_jacobian_hz_per_parameter"]) == 4
+    assert all(Path(path).exists() for path in payload["figure_files"])
+
+
 def test_stellgap_ctok_comparison_example_runs(tmp_path):
     boozmn = Path("/Users/rogerio/local/Stellgap_test_inputs/boozmn_ctok.nc")
     alfven_post = Path("/Users/rogerio/local/Stellgap_test_problem/alfven_post")

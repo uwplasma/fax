@@ -95,3 +95,12 @@ This remains a reduced radial-model demonstration. The planned publication
 path is to preserve the same API while replacing the profile fixture with
 validated VMEC/Boozer operators and then cross-code benchmarking the resulting
 mode frequencies and structures.
+
+``examples/research/boozmn_differentiable_design_study.py`` now performs that
+same calculation on a real ``boozmn`` global radial operator. Its gradients
+pass through Boozer surface matrices, metric-derived radial stiffness,
+generalized eigenfrequencies, and eigenfunction-weighted fast-ion drive. This
+still treats mass density, rotational-transform offset, radial stiffness, and
+fast-ion density as reduced design coordinates; the next adapter step is to
+map those coordinates to actual ``vmec_jax`` boundary/profile variables and
+``booz_xform_jax`` transform outputs.

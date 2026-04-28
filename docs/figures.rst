@@ -63,6 +63,13 @@ Current Figures
    linearized UQ bands, inverse-design objective history, and reduced fast-ion
    growth before/after optimization.
 
+.. figure:: _static/boozmn_differentiable_design_study.svg
+   :alt: Real boozmn differentiable design study dashboard.
+
+   Real ``boozmn`` differentiable design dashboard: frequency sensitivities,
+   UQ bands, risk-objective history, and eigenfunction-projected fast-ion
+   growth before/after the design move.
+
 .. figure:: _static/boozer_harmonic_validation.svg
    :alt: Boozer harmonic reconstruction and straight-field-line validation.
 

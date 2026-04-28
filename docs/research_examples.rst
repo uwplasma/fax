@@ -174,6 +174,28 @@ boundaries, writes radial-envelope/harmonic-structure figures, and prints
 frequencies plus residuals as JSON. Use ``--boozmn path/to/boozmn.nc`` for a
 new geometry.
 
+Real ``boozmn`` Differentiable Design Study
+-------------------------------------------
+
+Run:
+
+.. code-block:: bash
+
+   python examples/research/boozmn_differentiable_design_study.py --boozmn path/to/boozmn.nc
+
+This applies the sensitivity/UQ/inverse-design workflow to the real-Boozer
+global radial operator. The differentiable path includes Boozer local matrices,
+metric-derived radial stiffness, generalized eigenfrequencies, radial/harmonic
+eigenfunctions, and a reduced fast-ion risk screen.
+
+.. figure:: _static/boozmn_differentiable_design_study.svg
+   :alt: Real boozmn differentiable design study dashboard.
+
+   Real ``boozmn`` differentiable design study. The current local fixture shows
+   frequency sensitivities, uncertainty bands, an optimized move away from a
+   selected risk window, and reduced fast-ion growth before/after the design
+   step.
+
 STELLGAP CTOK Cross-Code Comparison
 -----------------------------------
 

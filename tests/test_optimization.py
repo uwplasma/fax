@@ -9,10 +9,16 @@ import numpy as np
 from fax.boozer import BoozerGeometry
 from fax.equilibrium import analytic_circular_tokamak
 from fax.optimization import (
+    boozer_fast_ion_growth_screen,
+    boozer_fast_ion_risk_objective,
     boozer_global_mode_avoidance_objective,
+    boozer_global_mode_frequency_jacobian,
+    boozer_global_mode_frequency_vector,
+    boozer_global_mode_inverse_design,
     boozer_pipeline_mode_avoidance_objective,
     frequency_window_penalty,
     gradient_descent_minimize,
+    linearized_boozer_global_mode_uncertainty,
     linearized_radial_mode_uncertainty,
     radial_fast_ion_growth_screen,
     radial_fast_ion_risk_objective,
@@ -238,6 +244,100 @@ def test_boozer_global_mode_avoidance_objective_is_differentiable():
     assert float(value) >= 0.0
     assert gradient.shape == (3,)
     assert np.all(np.isfinite(np.asarray(gradient)))
+
+
+def test_boozer_global_frequency_uq_and_inverse_design_are_differentiable():
+    geometry = _synthetic_boozer_geometry()
+    harmonics = jnp.asarray([[1.0, 0.0], [2.0, 1.0]])
+    mass_density = 3.4e-8
+    parameters = jnp.zeros((3,))
+    kwargs = {
+        "geometry": geometry,
+        "harmonics": harmonics,
+        "mass_density": mass_density,
+        "mode_count": 3,
+        "theta_points": 10,
+        "zeta_points": 10,
+        "radial_stiffness_scale": 1.0e-4,
+    }
+
+    frequencies = boozer_global_mode_frequency_vector(parameters, **kwargs)
+    jacobian = boozer_global_mode_frequency_jacobian(parameters, **kwargs)
+    uncertainty = linearized_boozer_global_mode_uncertainty(
+        parameters,
+        covariance=jnp.diag(jnp.asarray([0.03, 0.01, 0.08]) ** 2),
+        **kwargs,
+    )
+    target = 1.02 * frequencies
+    design = boozer_global_mode_inverse_design(
+        parameters,
+        target_frequencies_hz=target,
+        step_size=0.05,
+        steps=8,
+        **kwargs,
+    )
+
+    assert frequencies.shape == (3,)
+    assert jacobian.shape == (3, 3)
+    assert uncertainty.sigma_hz.shape == (3,)
+    assert np.all(np.asarray(uncertainty.upper_hz) > np.asarray(uncertainty.lower_hz))
+    assert float(design.objective_history[-1]) < float(design.objective_history[0])
+
+
+def test_boozer_fast_ion_risk_objective_reduces_with_gradient_steps():
+    geometry = _synthetic_boozer_geometry()
+    harmonics = jnp.asarray([[1.0, 0.0], [2.0, 1.0]])
+    s = jnp.asarray(geometry.s)
+    population = FastIonPopulation(
+        density_fraction=0.03,
+        pressure_gradient=-jnp.exp(-((s - 0.5) / 0.2) ** 2),
+        transit_frequency_hz=jnp.full_like(s, 250_000.0),
+        precession_frequency_hz=jnp.full_like(s, 10_000.0),
+        resonance_width_hz=jnp.full_like(s, 15_000.0),
+    )
+    parameters = jnp.zeros((4,))
+
+    def objective(params):
+        return boozer_fast_ion_risk_objective(
+            params,
+            geometry=geometry,
+            harmonics=harmonics,
+            mass_density=3.4e-8,
+            population=population,
+            toroidal_mode=1,
+            transit_harmonics=(1,),
+            avoid_window_hz=(50_000.0, 350_000.0),
+            mode_count=3,
+            drive_scale_hz=1_000.0,
+            damping_rate_hz=5.0,
+            theta_points=10,
+            zeta_points=10,
+            radial_stiffness_scale=1.0e-4,
+            regularization=0.1,
+        )
+
+    screen = boozer_fast_ion_growth_screen(
+        parameters,
+        geometry=geometry,
+        harmonics=harmonics,
+        mass_density=3.4e-8,
+        population=population,
+        toroidal_mode=1,
+        transit_harmonics=(1,),
+        mode_count=3,
+        drive_scale_hz=1_000.0,
+        damping_rate_hz=5.0,
+        theta_points=10,
+        zeta_points=10,
+        radial_stiffness_scale=1.0e-4,
+    )
+    gradient = jax.grad(objective)(parameters)
+    optimized = gradient_descent_minimize(objective, parameters, step_size=0.05, steps=6, gradient_clip_norm=1.0)
+
+    assert screen.net_growth_rate_hz.shape == (3,)
+    assert gradient.shape == (4,)
+    assert np.all(np.isfinite(np.asarray(gradient)))
+    assert float(optimized.objective_history[-1]) < float(optimized.objective_history[0])
 
 
 def test_boozer_pipeline_mode_avoidance_objective_differentiates_through_builder():
