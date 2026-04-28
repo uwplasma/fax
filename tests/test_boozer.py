@@ -30,6 +30,7 @@ from fax.boozer import (
     read_boozmn,
     read_boozmn_geometry,
     reconstruct_boozer_field,
+    run_booz_xform_jax_geometry_from_wout,
     run_booz_xform_jax_from_wout,
     straight_field_line_phase_error,
 )
@@ -538,3 +539,29 @@ def test_run_booz_xform_jax_from_wout_smoke():
     assert spectrum.bmnc.shape[0] == 2
     assert spectrum.field_periods >= 1
     assert np.all(np.isfinite(np.asarray(spectrum.bmnc)))
+
+
+@pytest.mark.requires_booz_xform_jax
+def test_run_booz_xform_jax_geometry_from_wout_matches_asymmetric_reference():
+    wout_path = BOOZ_XFORM_TEST_FILES / "wout_up_down_asymmetric_tokamak.nc"
+    boozmn_path = BOOZ_XFORM_TEST_FILES / "boozmn_up_down_asymmetric_tokamak.nc"
+    if not wout_path.exists() or not boozmn_path.exists():
+        pytest.skip("missing local asymmetric booz_xform_jax fixtures")
+
+    reference = read_boozmn_geometry(boozmn_path)
+    geometry = run_booz_xform_jax_geometry_from_wout(
+        wout_path,
+        mboz=48,
+        nboz=0,
+        surfaces=tuple(float(value) for value in np.asarray(reference.s)),
+        jit=False,
+    )
+
+    for name in ("bmnc", "bmns", "rmnc", "rmns", "zmns", "zmnc", "pmns", "pmnc", "gmnc", "gmns"):
+        actual = getattr(geometry, name)
+        expected = getattr(reference, name)
+        assert actual is not None
+        assert expected is not None
+        np.testing.assert_allclose(np.asarray(actual), np.asarray(expected), rtol=5.0e-10, atol=5.0e-11)
+
+    assert float(boozer_geometry_jacobian_identity_error(geometry, theta_points=32, zeta_points=8)) < 2.0e-5

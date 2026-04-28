@@ -352,6 +352,76 @@ def run_booz_xform_jax_from_wout(
     )
 
 
+def run_booz_xform_jax_geometry_from_wout(
+    path: str | Path,
+    *,
+    mboz: int = 8,
+    nboz: int = 8,
+    surfaces: tuple[float, ...] = (0.25, 0.5, 0.75),
+    jit: bool = False,
+) -> BoozerGeometry:
+    """Run ``booz_xform_jax`` from a VMEC ``wout`` file and return geometry.
+
+    This is the live in-memory companion to :func:`read_boozmn_geometry`. It
+    consumes the JAX output dictionary directly, including asymmetric spectra
+    and Boozer-Jacobian harmonics when the upstream equilibrium has
+    ``lasym=True``.
+    """
+    try:
+        from booz_xform_jax import Booz_xform
+    except ImportError as exc:  # pragma: no cover - environment dependent
+        raise ImportError("booz_xform_jax is required for run_booz_xform_jax_geometry_from_wout") from exc
+
+    wout_path = Path(path).expanduser().resolve()
+    transform = Booz_xform()
+    transform.read_wout(str(wout_path))
+    transform.mboz = int(mboz)
+    transform.nboz = int(nboz)
+    transform.compute_surfs = []
+    transform.register_surfaces([float(surface) for surface in surfaces])
+    output = transform.run_jax(jit=bool(jit))
+    s = jnp.asarray(np.asarray(transform.s_in)[transform.compute_surfs])
+
+    zeros = jnp.zeros_like(jnp.asarray(output["bmnc_b"]))
+
+    def output_array(name: str, default: jax.Array | None = zeros) -> jax.Array | None:
+        if name in output:
+            return jnp.asarray(output[name])
+        return default
+
+    gmnc = output_array("gmnc_b", None)
+    if gmnc is None:
+        gmnc = output_array("gmn_b", None)
+
+    return BoozerGeometry(
+        source="booz_xform_jax",
+        s=s,
+        xm=jnp.asarray(output["ixm_b"]),
+        xn=jnp.asarray(output["ixn_b"]),
+        bmnc=jnp.asarray(output["bmnc_b"]),
+        bmns=output_array("bmns_b"),
+        rmnc=output_array("rmnc_b"),
+        rmns=output_array("rmns_b"),
+        zmns=output_array("zmns_b"),
+        zmnc=output_array("zmnc_b"),
+        pmns=output_array("pmns_b"),
+        pmnc=output_array("pmnc_b"),
+        gmnc=gmnc,
+        gmns=output_array("gmns_b"),
+        iota=jnp.asarray(output["iota_b"]),
+        boozer_i=jnp.asarray(output["buco_b"]),
+        boozer_g=jnp.asarray(output["bvco_b"]),
+        field_periods=int(transform.nfp),
+        metadata=(
+            ("wout", str(wout_path)),
+            ("mboz", int(mboz)),
+            ("nboz", int(nboz)),
+            ("surfaces", tuple(float(surface) for surface in surfaces)),
+            ("jlist", tuple(int(value) for value in np.asarray(output["jlist"]))),
+        ),
+    )
+
+
 def normalized_nonaxisymmetric_boozer_energy(spectrum: BoozerSpectrum) -> jax.Array:
     """Return non-axisymmetric ``|B|`` spectral energy normalized by total energy."""
     nonaxisymmetric = (jnp.asarray(spectrum.xn) != 0).astype(spectrum.bmnc.dtype)

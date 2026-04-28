@@ -62,6 +62,7 @@ def test_core_validation_gates_pass():
 def test_boozmn_validation_gates_pass_or_skip_cleanly():
     for gate_id in (
         "boozmn_geometry_jacobian_identity",
+        "booz_xform_jax_live_geometry_adapter",
         "boozmn_embedding_jacobian_shape",
         "boozmn_3d_continuum_finite",
         "boozmn_global_3d_eigenmode_finite",

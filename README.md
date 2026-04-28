@@ -79,8 +79,9 @@ M_{ij} =
 K(s)x = \omega^2(s) M(s)x.
 ```
 
-The newest Boozer path reads real `boozmn` geometry harmonics and uses the
-straight-field-line derivative
+The newest Boozer path reads real `boozmn` geometry harmonics, or builds the
+same `BoozerGeometry` object directly from a VMEC `wout` through
+`booz_xform_jax`, and uses the straight-field-line derivative
 
 ```math
 k_{\parallel,mn}(s,\theta_B,\zeta_B)=

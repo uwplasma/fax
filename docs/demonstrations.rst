@@ -51,7 +51,10 @@ Real Boozer 3-D continuum and global modes
    ``examples/research/boozmn_3d_continuum.py`` and
    ``examples/research/boozmn_global_3d_eigenmodes.py`` apply the real
    ``boozmn`` geometry path to local surface continuum matrices and global
-   radial block eigenmodes with plotted mode structures and residuals.
+   radial block eigenmodes with plotted mode structures and residuals. The
+   same ``BoozerGeometry`` contract can be populated directly from a VMEC
+   ``wout`` through ``run_booz_xform_jax_geometry_from_wout`` when
+   ``booz_xform_jax`` is available.
 
 Planned demonstrations include:
 

@@ -82,6 +82,10 @@ tags, and command. The current gates are:
   operator recovers ``omega=v_A |n-m*iota|/R`` in the constant-field limit.
 * ``boozmn_geometry_jacobian_identity``: reads a real ``boozmn`` fixture and
   checks ``sqrt(g)|B|^2 = G + iota I`` from file harmonics.
+* ``booz_xform_jax_live_geometry_adapter``: runs the live
+  ``booz_xform_jax`` VMEC-to-Boozer JAX adapter on an asymmetric fixture and
+  compares all field, embedding, shift, and Jacobian harmonics against the
+  BOOZ_XFORM ``boozmn`` reference.
 * ``boozmn_embedding_jacobian_shape``: compares the physical embedding
   Jacobian shape reconstructed from ``R``, ``Z``, and ``p`` against the
   ``boozmn`` Jacobian harmonics up to one surface-wise radial-coordinate scale.

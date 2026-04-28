@@ -25,6 +25,7 @@ from .boozer import (
     boozer_metric_continuum_matrices,
     boozer_projection_error,
     read_boozmn_geometry,
+    run_booz_xform_jax_geometry_from_wout,
     straight_field_line_phase_error,
 )
 from .continuum import continuum_branch_matrix, local_continuum_frequency_hz
@@ -783,6 +784,51 @@ def _gate_boozmn_geometry_jacobian_identity() -> GateResult:
     )
 
 
+def _gate_booz_xform_jax_live_geometry_adapter() -> GateResult:
+    gate_id = "booz_xform_jax_live_geometry_adapter"
+    tolerance = 5.0e-9
+    boozmn = _booz_xform_fixture("boozmn_up_down_asymmetric_tokamak.nc")
+    wout = _booz_xform_fixture("wout_up_down_asymmetric_tokamak.nc")
+    if boozmn is None or wout is None:
+        return GateResult(
+            gate_id=gate_id,
+            status="skipped",
+            metric=float("nan"),
+            tolerance=tolerance,
+            message="missing local asymmetric booz_xform_jax fixtures",
+        )
+
+    reference = read_boozmn_geometry(boozmn)
+    try:
+        geometry = run_booz_xform_jax_geometry_from_wout(
+            wout,
+            mboz=48,
+            nboz=0,
+            surfaces=tuple(float(value) for value in np.asarray(reference.s)),
+            jit=False,
+        )
+    except ImportError as exc:
+        return GateResult(
+            gate_id=gate_id,
+            status="skipped",
+            metric=float("nan"),
+            tolerance=tolerance,
+            message=str(exc),
+        )
+
+    errors = [
+        relative_l2_error(getattr(geometry, name), getattr(reference, name))
+        for name in ("bmnc", "bmns", "rmnc", "rmns", "zmns", "zmnc", "pmns", "pmnc", "gmnc", "gmns")
+    ]
+    metric = float(jnp.max(jnp.asarray(errors)))
+    return _pass_fail(
+        gate_id,
+        metric,
+        tolerance,
+        "live booz_xform_jax VMEC-to-Boozer geometry matches the asymmetric BOOZ_XFORM boozmn reference",
+    )
+
+
 def _gate_boozmn_embedding_jacobian_shape() -> GateResult:
     gate_id = "boozmn_embedding_jacobian_shape"
     tolerance = 4.0e-2
@@ -1483,6 +1529,17 @@ def registered_validation_gates() -> tuple[ValidationGate, ...]:
             command="python -m pytest -m requires_booz_xform_jax tests/test_boozer.py tests/test_validation_registry.py",
             tags=("boozer", "jacobian", "boozmn", "fixture"),
             _runner=_gate_boozmn_geometry_jacobian_identity,
+        ),
+        ValidationGate(
+            gate_id="booz_xform_jax_live_geometry_adapter",
+            title="Live booz_xform_jax geometry adapter",
+            layer="boozer",
+            quantity="relative asymmetric harmonic parity error",
+            tolerance=5.0e-9,
+            citation="BOOZ_XFORM asymmetric boozmn spectra provide a regression target for the live VMEC-to-Boozer JAX adapter",
+            command="python -m pytest -m requires_booz_xform_jax tests/test_boozer.py tests/test_validation_registry.py",
+            tags=("boozer", "jacobian", "boozmn", "booz_xform_jax", "asymmetry"),
+            _runner=_gate_booz_xform_jax_live_geometry_adapter,
         ),
         ValidationGate(
             gate_id="boozmn_embedding_jacobian_shape",
