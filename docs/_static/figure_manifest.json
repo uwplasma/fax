@@ -386,6 +386,22 @@
       ]
     },
     {
+      "id": "booz_xform_jax_live_geometry_adapter",
+      "title": "Live booz_xform_jax geometry adapter",
+      "layer": "boozer",
+      "quantity": "relative asymmetric harmonic parity error",
+      "tolerance": 5e-09,
+      "citation": "BOOZ_XFORM asymmetric boozmn spectra provide a regression target for the live VMEC-to-Boozer JAX adapter",
+      "command": "python -m pytest -m requires_booz_xform_jax tests/test_boozer.py tests/test_validation_registry.py",
+      "tags": [
+        "boozer",
+        "jacobian",
+        "boozmn",
+        "booz_xform_jax",
+        "asymmetry"
+      ]
+    },
+    {
       "id": "boozmn_embedding_jacobian_shape",
       "title": "Real boozmn embedding-Jacobian shape",
       "layer": "boozer",
@@ -523,6 +539,22 @@
         "ae3d",
         "artifact",
         "matrix"
+      ]
+    },
+    {
+      "id": "ae3d_public_matrix_eigenmode_parity",
+      "title": "AE3D public matrix/eigenmode parity",
+      "layer": "cross-code",
+      "quantity": "maximum generalized eigenpair residual/Rayleigh error",
+      "tolerance": 5e-06,
+      "citation": "ORNL AE3D public a_matrix.dat/b_matrix.dat/egn_mode_asci.dat artifacts; Spong, D'Azevedo & Todo, Phys. Plasmas 17, 022106 (2010)",
+      "command": "python -m pytest tests/test_validation_registry.py",
+      "tags": [
+        "cross-code",
+        "ae3d",
+        "matrix",
+        "eigenmode",
+        "parity"
       ]
     },
     {
