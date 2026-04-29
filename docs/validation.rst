@@ -126,6 +126,10 @@ tags, and command. The current gates are:
   intermediate file, and checks the resulting FAX Boozer geometry for a small
   Jacobian-identity error and finite local 3-D continuum branches. This is an
   integration smoke gate, not a converged VMEC physics benchmark.
+* ``landreman_paul_vmec_jax_boozer_truncation_convergence``: reuses one live
+  ``vmec_jax`` ``wout`` object, compares ``(mboz,nboz)=(4,4)`` against
+  ``(5,5)``, and gates sampled ``|B|`` error, local 3-D continuum frequency
+  error, and Boozer-Jacobian identity error.
 * ``landreman_paul_continuum_finite``: checks that the Landreman-Paul profile
   and metric continuum branches are finite and have small eigensolve residuals.
 * ``landreman_paul_radial_sampling_convergence``: checks VMEC-backed radial
@@ -190,6 +194,10 @@ low-resolution ``vmec_jax`` iteration so it can run in local development and
 exercise the end-to-end object handoff. Converged ``vmec_jax`` solves, Boozer
 truncation sweeps, and external-code continuum comparisons remain required
 before this path can support publication-level stellarator claims.
+The companion ``landreman_paul_vmec_jax_boozer_truncation_convergence`` gate
+starts that convergence ladder by holding the same VMEC state fixed and
+checking that the FAX Boozer geometry and local continuum are stable between
+nearby Boozer harmonic truncations.
 
 Current Smoke-Test Figures
 --------------------------
@@ -303,3 +311,11 @@ FAX radial operator reproduces AE3D's full physics operator.
    It checks artifact/report plumbing and current radial/angular/Fourier
    refinement behavior; full stellarator continuum validation still requires
    cross-code or literature comparison.
+
+.. figure:: _static/vmec_boozer_bridge_convergence.svg
+   :alt: Live VMEC-JAX to Boozer bridge truncation convergence dashboard.
+
+   Live Landreman-Paul ``vmec_jax`` to ``booz_xform_jax`` convergence smoke
+   test. The same one-iteration VMEC state is transformed at multiple Boozer
+   truncations; the gate checks sampled ``|B|`` reconstruction, local 3-D
+   continuum frequencies, and the Boozer-Jacobian identity.

@@ -95,6 +95,7 @@ def test_landreman_paul_validation_gate_passes_or_skips_cleanly():
     for gate_id in (
         "landreman_paul_adapter_smoke",
         "landreman_paul_vmec_jax_boozer_in_memory",
+        "landreman_paul_vmec_jax_boozer_truncation_convergence",
         "landreman_paul_continuum_finite",
         "landreman_paul_radial_sampling_convergence",
     ):

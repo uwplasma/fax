@@ -6,10 +6,13 @@ from .boozer import (
     BoozerGeometry,
     BoozerGeometryGrid,
     BoozerSpectrum,
+    VmecJaxBoozerConvergenceResult,
     run_booz_xform_jax_from_wout_data,
     run_booz_xform_jax_geometry_from_wout,
     run_booz_xform_jax_geometry_from_wout_data,
+    run_vmec_jax_boozer_truncation_convergence,
     run_vmec_jax_fixed_boundary_boozer_geometry,
+    run_vmec_jax_fixed_boundary_wout_data,
 )
 from .config import FaxConfig, load_config
 from .cross_code import (
@@ -67,6 +70,7 @@ __all__ = [
     "BoozerGeometry",
     "BoozerGeometryGrid",
     "BoozerSpectrum",
+    "VmecJaxBoozerConvergenceResult",
     "ConvergenceRunSummary",
     "ConvergenceArtifacts",
     "CrossCodeComparison",
@@ -101,7 +105,9 @@ __all__ = [
     "run_booz_xform_jax_from_wout_data",
     "run_booz_xform_jax_geometry_from_wout",
     "run_booz_xform_jax_geometry_from_wout_data",
+    "run_vmec_jax_boozer_truncation_convergence",
     "run_vmec_jax_fixed_boundary_boozer_geometry",
+    "run_vmec_jax_fixed_boundary_wout_data",
     "run_continuum",
     "run_convergence",
     "run_validation",

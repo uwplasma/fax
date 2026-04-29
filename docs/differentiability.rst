@@ -19,10 +19,13 @@ callable Boozer-geometry builder, which is the intended API boundary for
 ``BoozerGeometry`` contract and are validated against asymmetric Boozer
 harmonics. ``run_vmec_jax_fixed_boundary_boozer_geometry`` adds the first live
 ``vmec_jax`` fixed-boundary object handoff into the same path and is covered by
-a Landreman-Paul QA integration smoke gate. The dense objective test still
-differentiates through a synthetic builder; the next full-equilibrium gradient
-gate should replace that builder with a stable differentiable ``vmec_jax`` solve
-and ``booz_xform_jax`` transform artifact.
+a Landreman-Paul QA integration smoke gate. The companion
+``run_vmec_jax_boozer_truncation_convergence`` diagnostic reuses one VMEC state
+to compare nearby Boozer truncations before downstream operators are used for
+gradient claims. The dense objective test still differentiates through a
+synthetic builder; the next full-equilibrium gradient gate should replace that
+builder with a stable differentiable ``vmec_jax`` solve and ``booz_xform_jax``
+transform artifact.
 
 Generalized eigenvalue path
 ---------------------------

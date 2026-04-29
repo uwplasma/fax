@@ -28,6 +28,7 @@ from .boozer import (
     read_boozmn_geometry,
     run_booz_xform_jax_geometry_from_wout,
     run_booz_xform_jax_geometry_from_wout_data,
+    run_vmec_jax_boozer_truncation_convergence,
     run_vmec_jax_fixed_boundary_boozer_geometry,
     straight_field_line_phase_error,
 )
@@ -1355,6 +1356,52 @@ def _gate_landreman_paul_vmec_jax_boozer_in_memory() -> GateResult:
     )
 
 
+def _gate_landreman_paul_vmec_jax_boozer_truncation_convergence() -> GateResult:
+    gate_id = "landreman_paul_vmec_jax_boozer_truncation_convergence"
+    tolerance = 1.0e-2
+    case = landreman_paul_qa_lowres()
+    if not case.vmec_input.exists():
+        return GateResult(
+            gate_id=gate_id,
+            status="skipped",
+            metric=float("nan"),
+            tolerance=tolerance,
+            message=f"missing Landreman-Paul VMEC input: {case.vmec_input}",
+        )
+
+    try:
+        result = run_vmec_jax_boozer_truncation_convergence(
+            case.vmec_input,
+            coarse_mboz=4,
+            coarse_nboz=4,
+            reference_mboz=5,
+            reference_nboz=5,
+            surfaces=(0.25, 0.5),
+            max_iter=1,
+            theta_points=12,
+            zeta_points=4,
+            jit=False,
+        )
+    except ImportError as exc:
+        return GateResult(
+            gate_id=gate_id,
+            status="skipped",
+            metric=float("nan"),
+            tolerance=tolerance,
+            message=str(exc),
+        )
+
+    return _pass_fail(
+        gate_id,
+        result.max_metric,
+        tolerance,
+        (
+            "one-iteration Landreman-Paul VMEC-JAX bridge is stable between "
+            "(mboz,nboz)=(4,4) and (5,5) Boozer truncations"
+        ),
+    )
+
+
 def _coarsen_metric_geometry(metric: MetricGeometry, *, radial_points: int) -> MetricGeometry:
     indices = np.unique(np.rint(np.linspace(0, int(metric.s.shape[0]) - 1, int(radial_points))).astype(int))
     if indices.size < 4:
@@ -1830,6 +1877,20 @@ def registered_validation_gates() -> tuple[ValidationGate, ...]:
             command="python -m pytest -m requires_vmec_jax tests/test_boozer.py tests/test_validation_registry.py",
             tags=("vmec_jax", "booz_xform_jax", "landreman-paul", "adapter", "boozer", "in-memory"),
             _runner=_gate_landreman_paul_vmec_jax_boozer_in_memory,
+        ),
+        ValidationGate(
+            gate_id="landreman_paul_vmec_jax_boozer_truncation_convergence",
+            title="Landreman-Paul QA vmec_jax Boozer truncation convergence",
+            layer="convergence",
+            quantity="maximum field/frequency/Jacobian truncation error",
+            tolerance=1.0e-2,
+            citation=(
+                "Landreman & Paul, Phys. Rev. Lett. 128, 035001 (2022); "
+                "Boozer truncation convergence smoke gate on the live vmec_jax/booz_xform_jax/FAX bridge"
+            ),
+            command="python -m pytest -m requires_vmec_jax tests/test_boozer.py tests/test_validation_registry.py",
+            tags=("vmec_jax", "booz_xform_jax", "landreman-paul", "convergence", "boozer", "in-memory"),
+            _runner=_gate_landreman_paul_vmec_jax_boozer_truncation_convergence,
         ),
         ValidationGate(
             gate_id="landreman_paul_continuum_finite",

@@ -10,6 +10,7 @@ import jax
 from fax.boozer import (
     BoozerGeometry,
     BoozerSpectrum,
+    VmecJaxBoozerConvergenceResult,
     boozer_3d_continuum_frequencies_hz,
     boozer_3d_continuum_matrices,
     boozer_angle_grid,
@@ -17,6 +18,7 @@ from fax.boozer import (
     boozer_continuum_matrices,
     boozer_embedding_jacobian_shape_error,
     boozer_geometry_field_and_jacobian,
+    boozer_geometry_field_relative_error,
     boozer_geometry_jacobian_identity_error,
     boozer_harmonic_orthogonality_error,
     boozer_jacobian_identity_error,
@@ -35,6 +37,7 @@ from fax.boozer import (
     run_booz_xform_jax_from_wout_data,
     run_booz_xform_jax_geometry_from_wout,
     run_booz_xform_jax_geometry_from_wout_data,
+    run_vmec_jax_boozer_truncation_convergence,
     run_vmec_jax_fixed_boundary_boozer_geometry,
     straight_field_line_phase_error,
 )
@@ -173,6 +176,55 @@ def test_boozer_geometry_pytree_roundtrip_preserves_field_and_jacobian_identity(
         np.asarray(reconstructed.boozer_g[0] + reconstructed.iota[0] * reconstructed.boozer_i[0]),
         rtol=1.0e-12,
     )
+
+
+def test_boozer_geometry_field_relative_error_tracks_truncation():
+    reference = BoozerGeometry(
+        source="reference",
+        s=np.asarray([0.4]),
+        xm=np.asarray([0.0, 1.0, 2.0]),
+        xn=np.asarray([0.0, 1.0, 2.0]),
+        bmnc=np.asarray([[2.8, 0.10, 0.02]]),
+        bmns=None,
+        rmnc=None,
+        rmns=None,
+        zmns=None,
+        zmnc=None,
+        pmns=None,
+        pmnc=None,
+        gmnc=np.asarray([[1.2, 0.0, 0.0]]),
+        gmns=None,
+        iota=np.asarray([0.5]),
+        boozer_i=np.asarray([0.0]),
+        boozer_g=np.asarray([1.2]),
+        field_periods=1,
+    )
+    truncated = BoozerGeometry(
+        source="truncated",
+        s=np.asarray([0.4]),
+        xm=np.asarray([0.0, 1.0]),
+        xn=np.asarray([0.0, 1.0]),
+        bmnc=np.asarray([[2.8, 0.10]]),
+        bmns=None,
+        rmnc=None,
+        rmns=None,
+        zmns=None,
+        zmnc=None,
+        pmns=None,
+        pmnc=None,
+        gmnc=np.asarray([[1.2, 0.0]]),
+        gmns=None,
+        iota=np.asarray([0.5]),
+        boozer_i=np.asarray([0.0]),
+        boozer_g=np.asarray([1.2]),
+        field_periods=1,
+    )
+
+    identical = boozer_geometry_field_relative_error(reference, reference, theta_points=32, zeta_points=32)
+    truncated_error = boozer_geometry_field_relative_error(truncated, reference, theta_points=32, zeta_points=32)
+
+    np.testing.assert_allclose(np.asarray(identical), np.zeros(1), atol=1.0e-14)
+    assert 0.0 < float(truncated_error[0]) < 2.0e-2
 
 
 def test_normalized_nonaxisymmetric_boozer_energy_is_jittable():
@@ -695,3 +747,32 @@ def test_landreman_paul_vmec_jax_to_boozer_in_memory_smoke():
     assert np.all(np.isfinite(np.asarray(frequencies)))
     assert np.all(np.asarray(frequencies) >= 0.0)
     assert float(boozer_geometry_jacobian_identity_error(geometry, theta_points=12, zeta_points=8)) < 1.0e-2
+
+
+@pytest.mark.requires_vmec_jax
+@pytest.mark.requires_booz_xform_jax
+def test_landreman_paul_vmec_jax_boozer_truncation_convergence_smoke():
+    pytest.importorskip("vmec_jax")
+    pytest.importorskip("booz_xform_jax")
+    case = landreman_paul_qa_lowres()
+    if not case.vmec_input.exists():
+        pytest.skip(f"missing local Landreman-Paul VMEC input: {case.vmec_input}")
+
+    result = run_vmec_jax_boozer_truncation_convergence(
+        case.vmec_input,
+        coarse_mboz=4,
+        coarse_nboz=4,
+        reference_mboz=5,
+        reference_nboz=5,
+        max_iter=1,
+        theta_points=12,
+        zeta_points=4,
+        jit=False,
+    )
+
+    assert isinstance(result, VmecJaxBoozerConvergenceResult)
+    assert result.coarse_geometry.bmnc.shape[0] == result.reference_geometry.bmnc.shape[0] == 2
+    assert result.field_relative_error.shape == (2,)
+    assert np.all(np.asarray(result.field_relative_error) >= 0.0)
+    assert float(result.frequency_relative_error) >= 0.0
+    assert result.max_metric < 1.0e-2

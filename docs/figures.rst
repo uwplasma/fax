@@ -142,6 +142,14 @@ Current Figures
    and plotted through ``fax plot-convergence`` for radial, angular, Fourier,
    and residual smoke checks.
 
+.. figure:: _static/vmec_boozer_bridge_convergence.svg
+   :alt: Live VMEC-JAX to Boozer bridge truncation convergence dashboard.
+
+   Live Landreman-Paul ``vmec_jax`` to ``booz_xform_jax`` bridge convergence
+   dashboard. It holds one VMEC state fixed and compares Boozer truncations
+   through sampled ``|B|``, local 3-D continuum frequencies, and the
+   Boozer-Jacobian identity.
+
 .. figure:: _static/validation_gate_summary.svg
    :alt: Registered validation-gate summary.
 

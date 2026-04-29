@@ -606,6 +606,23 @@
       ]
     },
     {
+      "id": "landreman_paul_vmec_jax_boozer_truncation_convergence",
+      "title": "Landreman-Paul QA vmec_jax Boozer truncation convergence",
+      "layer": "convergence",
+      "quantity": "maximum field/frequency/Jacobian truncation error",
+      "tolerance": 0.01,
+      "citation": "Landreman & Paul, Phys. Rev. Lett. 128, 035001 (2022); Boozer truncation convergence smoke gate on the live vmec_jax/booz_xform_jax/FAX bridge",
+      "command": "python -m pytest -m requires_vmec_jax tests/test_boozer.py tests/test_validation_registry.py",
+      "tags": [
+        "vmec_jax",
+        "booz_xform_jax",
+        "landreman-paul",
+        "convergence",
+        "boozer",
+        "in-memory"
+      ]
+    },
+    {
       "id": "landreman_paul_continuum_finite",
       "title": "Landreman-Paul QA continuum finite-output check",
       "layer": "adapter",
@@ -837,6 +854,18 @@
     },
     {
       "file": "landreman_paul_convergence_dashboard.png",
+      "format": "png",
+      "status": "smoke-test",
+      "claim": "Development figure generated from analytic/local continuum formulas; not a full 3-D stellarator Alfvén-continuum validation."
+    },
+    {
+      "file": "vmec_boozer_bridge_convergence.svg",
+      "format": "svg",
+      "status": "smoke-test",
+      "claim": "Development figure generated from analytic/local continuum formulas; not a full 3-D stellarator Alfvén-continuum validation."
+    },
+    {
+      "file": "vmec_boozer_bridge_convergence.png",
       "format": "png",
       "status": "smoke-test",
       "claim": "Development figure generated from analytic/local continuum formulas; not a full 3-D stellarator Alfvén-continuum validation."

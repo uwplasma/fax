@@ -295,6 +295,14 @@ This dashboard is generated from `fax convergence` on the Landreman-Paul QA
 lowres adapter path. It shows radial refinement, angular refinement, mode
 truncation, and eigensolve residuals for a small VMEC-backed smoke sweep.
 
+![Live VMEC/Boozer bridge convergence](docs/_static/vmec_boozer_bridge_convergence.png)
+
+This figure uses the live `vmec_jax -> booz_xform_jax -> FAX` object bridge on
+the Landreman-Paul QA input. It holds the same one-iteration VMEC state fixed,
+then compares Boozer truncations through sampled `|B|`, local 3-D continuum
+frequencies, and the Boozer-Jacobian identity. This is the first convergence
+gate on the live bridge, not a converged VMEC physics claim.
+
 ![Registered validation gates](docs/_static/validation_gate_summary.png)
 
 The validation-gate plot summarizes scaffold acceptance gates. A gate below the
@@ -454,6 +462,7 @@ Current figures:
 - `continuum_artifact_dashboard.svg`: dashboard generated from `fax continuum` artifacts.
 - `metric_residual_convergence.svg`: metric-matrix residual and angular-grid check.
 - `landreman_paul_convergence_dashboard.svg`: VMEC-backed radial/angular/Fourier convergence smoke-test dashboard.
+- `vmec_boozer_bridge_convergence.svg`: live `vmec_jax -> booz_xform_jax -> FAX` Boozer truncation convergence smoke-test dashboard.
 - `validation_gate_summary.svg`: current validation-gate status plot.
 
 ## Validation Gates
@@ -527,6 +536,8 @@ It currently establishes:
 - a live one-iteration `vmec_jax -> booz_xform_jax -> FAX` Landreman-Paul QA
   bridge gate that verifies object handoff, the Boozer Jacobian identity, and
   finite local 3-D continuum branches without claiming converged VMEC physics,
+- a live-bridge Boozer truncation convergence gate comparing `(mboz,nboz)=(4,4)`
+  against `(5,5)` on the same in-memory VMEC state,
 - a global radial 3-D Boozer block eigenmode operator with radial envelopes,
   harmonic mode structures, residual diagnostics, and analytic constant-limit
   gates,

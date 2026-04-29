@@ -19,6 +19,7 @@ from fax.boozer import (
     boozer_continuum_frequencies_hz,
     boozer_continuum_matrices,
     boozer_embedding_jacobian_shape_error,
+    boozer_geometry_field_relative_error,
     boozer_geometry_grid,
     boozer_geometry_jacobian_identity_error,
     boozer_harmonic_orthogonality_error,
@@ -29,6 +30,8 @@ from fax.boozer import (
     normalized_nonaxisymmetric_boozer_energy,
     read_boozmn_geometry,
     reconstruct_boozer_field,
+    run_booz_xform_jax_geometry_from_wout_data,
+    run_vmec_jax_fixed_boundary_wout_data,
     straight_field_line_phase_error,
 )
 from fax.config import EquilibriumConfig, FaxConfig, GridConfig, RunConfig
@@ -1191,6 +1194,124 @@ def generate_landreman_convergence_dashboard(output_dir: Path) -> list[Path]:
         )
 
 
+def generate_vmec_boozer_bridge_convergence(output_dir: Path) -> list[Path]:
+    """Generate convergence evidence for the live VMEC-JAX/Boozer bridge."""
+    plt = _setup_matplotlib()
+    case = landreman_paul_qa_lowres()
+    if not case.vmec_input.exists():
+        raise FileNotFoundError(f"Landreman-Paul QA VMEC input not found: {case.vmec_input}")
+
+    wout = run_vmec_jax_fixed_boundary_wout_data(
+        case.vmec_input,
+        max_iter=1,
+        theta_points=12,
+        zeta_points=4,
+    )
+    truncations = [(2, 2), (3, 3), (4, 4), (5, 5)]
+    geometries = [
+        run_booz_xform_jax_geometry_from_wout_data(
+            wout,
+            mboz=mboz,
+            nboz=nboz,
+            surfaces=(0.25, 0.5),
+            jit=False,
+        )
+        for mboz, nboz in truncations
+    ]
+    reference = geometries[-1]
+    harmonics = jnp.asarray([[1.0, 0.0], [2.0, 1.0]])
+    reference_frequencies = boozer_3d_continuum_frequencies_hz(
+        reference,
+        harmonics,
+        mass_density=3.4e-8,
+        theta_points=16,
+        zeta_points=16,
+    )
+
+    mode_counts: list[int] = []
+    field_errors: list[float] = []
+    frequency_errors: list[float] = []
+    identity_errors: list[float] = []
+    frequencies_by_truncation = []
+    for geometry in geometries:
+        mode_counts.append(int(geometry.bmnc.shape[1]))
+        field_errors.append(
+            float(
+                jnp.max(
+                    boozer_geometry_field_relative_error(
+                        geometry,
+                        reference,
+                        theta_points=24,
+                        zeta_points=16,
+                    )
+                )
+            )
+        )
+        frequencies = boozer_3d_continuum_frequencies_hz(
+            geometry,
+            harmonics,
+            mass_density=3.4e-8,
+            theta_points=16,
+            zeta_points=16,
+        )
+        frequencies_by_truncation.append(np.asarray(frequencies) / 1.0e3)
+        frequency_errors.append(
+            float(
+                jnp.linalg.norm(frequencies - reference_frequencies)
+                / jnp.maximum(jnp.linalg.norm(reference_frequencies), 1.0e-30)
+            )
+        )
+        identity_errors.append(float(boozer_geometry_jacobian_identity_error(geometry, theta_points=16, zeta_points=16)))
+
+    grid = boozer_geometry_grid(reference, theta_points=64, zeta_points=64)
+    surface_index = int(np.argmin(np.abs(np.asarray(reference.s) - 0.5)))
+    fig, axes = plt.subplots(1, 3, figsize=(12.8, 3.6), constrained_layout=True)
+
+    ax = axes[0]
+    image = ax.imshow(
+        np.asarray(grid.magnetic_field[surface_index]),
+        origin="lower",
+        extent=(0.0, 2.0 * np.pi, 0.0, 2.0 * np.pi),
+        aspect="auto",
+        cmap="viridis",
+    )
+    ax.set_title(r"reference $(m_{boz},n_{boz})=(5,5)$")
+    ax.set_xlabel(r"$\zeta_B$")
+    ax.set_ylabel(r"$\theta_B$")
+    fig.colorbar(image, ax=ax, fraction=0.046, pad=0.04, label=r"$|B|$ [T]")
+
+    ax = axes[1]
+    positive_floor = 1.0e-8
+    ax.semilogy(mode_counts, np.maximum(field_errors, positive_floor), marker="o", linewidth=1.5, label=r"sampled $|B|$")
+    ax.semilogy(mode_counts, np.maximum(frequency_errors, positive_floor), marker="s", linewidth=1.5, label="local continuum")
+    ax.semilogy(mode_counts, np.maximum(identity_errors, positive_floor), marker="^", linewidth=1.5, label="Jacobian identity")
+    ax.axhline(1.0e-2, color="#222222", linestyle="--", linewidth=1.0, label="gate")
+    ax.set_title("Boozer truncation convergence")
+    ax.set_xlabel("Boozer harmonic count")
+    ax.set_ylabel("relative error")
+    ax.set_ylim(positive_floor, 3.0e-2)
+    ax.legend(fontsize=7)
+
+    ax = axes[2]
+    s = np.asarray(reference.s)
+    coarse_freq = frequencies_by_truncation[-2]
+    reference_freq = frequencies_by_truncation[-1]
+    for branch in range(reference_freq.shape[1]):
+        ax.plot(s, reference_freq[:, branch], marker="o", linewidth=1.7, label=f"ref branch {branch + 1}")
+        ax.plot(s, coarse_freq[:, branch], marker="s", linestyle="--", linewidth=1.2, label=f"4/4 branch {branch + 1}")
+    ax.set_title("continuum stability under truncation")
+    ax.set_xlabel("normalized toroidal flux s")
+    ax.set_ylabel("frequency [kHz]")
+    ax.set_xlim(float(np.min(s)), float(np.max(s)))
+    ax.set_ylim(bottom=0.0)
+    ax.legend(fontsize=7, ncol=2)
+
+    fig.suptitle("Live Landreman-Paul VMEC-JAX to Boozer bridge convergence smoke test", fontsize=12, weight="bold")
+    paths = _save_figure(fig, output_dir, "vmec_boozer_bridge_convergence")
+    plt.close(fig)
+    return paths
+
+
 def write_figure_manifest(output_dir: Path, paths: list[Path]) -> Path:
     """Write a JSON manifest describing generated figures and their claims."""
     manifest = {
@@ -1253,6 +1374,7 @@ def main(argv: list[str] | None = None) -> int:
         generate_continuum_artifact_dashboard(output_dir),
         generate_metric_residual_convergence(output_dir),
         generate_landreman_convergence_dashboard(output_dir),
+        generate_vmec_boozer_bridge_convergence(output_dir),
         generate_validation_gate_summary(output_dir),
     ]:
         paths.extend(generated)

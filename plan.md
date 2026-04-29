@@ -1179,6 +1179,13 @@ Needed docs:
     - Reworked the validation-gate summary figure layout after visual QA showed label overlap with the larger registry; regenerated the figure manifest and coverage badge.
     - Verified locally with the targeted bridge gate (`metric=2.1307e-3 < 1.0e-2`), `python -m pytest -q` (164 passed), coverage (`95.6%` FAX source coverage, fail-under 95 passed), `python -m ruff check .`, `python -m mypy src/fax`, `python tools/generate_validation_figures.py`, `python tools/qa_figures.py`, `python -m sphinx -W --keep-going -b html docs docs/_build/html`, `python -m build`, `python -m twine check dist/*`, and `git diff --check`.
     - Scope note: this proves the end-to-end object bridge is live. It is not yet a converged VMEC/Boozer/continuum publication validation and must be followed by VMEC convergence, Boozer truncation, angular/radial convergence, and cross-code/literature comparisons.
+  - 2026-04-29 live VMEC/Boozer convergence milestone:
+    - Added `run_vmec_jax_fixed_boundary_wout_data` so FAX can reuse one live `vmec_jax` state across multiple downstream Boozer transforms.
+    - Added `run_vmec_jax_boozer_truncation_convergence`, `VmecJaxBoozerConvergenceResult`, and `boozer_geometry_field_relative_error` to check sampled `|B|`, local 3-D continuum frequencies, and Boozer-Jacobian identity under Boozer truncation changes.
+    - Added registered gate `landreman_paul_vmec_jax_boozer_truncation_convergence`, comparing `(mboz,nboz)=(4,4)` against `(5,5)` on the same one-iteration Landreman-Paul QA VMEC state. Current local metric: `6.3707e-3 < 1.0e-2`.
+    - Added the dedicated `vmec_boozer_bridge_convergence` README/docs figure to make the live bridge convergence evidence visible.
+    - Verified locally with `python -m pytest -q` (166 passed), coverage (`95.6%` FAX source coverage, fail-under 95 passed), `python -m ruff check .`, `python -m mypy src/fax`, `python tools/generate_validation_figures.py`, `python tools/qa_figures.py`, `python -m sphinx -W --keep-going -b html docs docs/_build/html`, `python -m build`, `python -m twine check dist/*`, and `git diff --check`.
+    - Scope note: this starts the live-bridge convergence ladder. Next required steps are converged VMEC residual/iteration studies, Boozer angular and surface-resolution sweeps, and external-code/literature continuum comparisons on the same geometry family.
 
 ### Local Testing Policy Until GitHub Actions Resume
 

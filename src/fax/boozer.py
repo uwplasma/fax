@@ -227,6 +227,29 @@ class BoozerGeometryGrid:
     phi: jax.Array
 
 
+@dataclass(frozen=True)
+class VmecJaxBoozerConvergenceResult:
+    """Truncation-convergence diagnostics for the live VMEC-JAX/Boozer bridge."""
+
+    coarse_geometry: BoozerGeometry
+    reference_geometry: BoozerGeometry
+    field_relative_error: jax.Array
+    frequency_relative_error: jax.Array
+    coarse_jacobian_identity_error: float
+    reference_jacobian_identity_error: float
+    metadata: tuple[tuple[str, Any], ...] = ()
+
+    @property
+    def max_metric(self) -> float:
+        """Return the largest scalar convergence diagnostic."""
+        return max(
+            float(jnp.max(self.field_relative_error)),
+            float(self.frequency_relative_error),
+            float(self.coarse_jacobian_identity_error),
+            float(self.reference_jacobian_identity_error),
+        )
+
+
 def read_boozmn(path: str | Path) -> BoozerSpectrum:
     """Read a minimal Boozer magnetic-field spectrum from a ``boozmn`` netCDF file."""
     from netCDF4 import Dataset
@@ -441,6 +464,56 @@ def run_booz_xform_jax_geometry_from_wout_data(
     return _geometry_from_booz_xform_output(transform, output, s, metadata)
 
 
+def run_vmec_jax_fixed_boundary_wout_data(
+    input_path: str | Path,
+    *,
+    max_iter: int = 1,
+    theta_points: int = 12,
+    zeta_points: int = 4,
+    use_initial_guess: bool = False,
+    vmec_project: bool = False,
+    fast_bcovar: bool = True,
+    solver_kwargs: dict[str, Any] | None = None,
+) -> Any:
+    """Run a short ``vmec_jax`` fixed-boundary solve and return ``wout`` data.
+
+    The defaults are intentionally small so the function can serve as an
+    integration smoke-test path in local validation. Production studies should
+    raise the VMEC iteration count and grid resolution, then run convergence
+    gates before using the result for physics claims.
+    """
+    try:
+        import vmec_jax as vj
+        from vmec_jax.driver import run_fixed_boundary, wout_from_fixed_boundary_run
+        from vmec_jax.vmec_tomnsp import vmec_angle_grid
+    except ImportError as exc:  # pragma: no cover - environment dependent
+        raise ImportError("vmec_jax is required for run_vmec_jax_fixed_boundary_wout_data") from exc
+
+    vmec_input = Path(input_path).expanduser().resolve()
+    cfg, _ = vj.load_input(str(vmec_input))
+    grid = vmec_angle_grid(
+        ntheta=int(theta_points),
+        nzeta=int(zeta_points),
+        nfp=int(cfg.nfp),
+        lasym=bool(cfg.lasym),
+    )
+    run_options: dict[str, Any] = {
+        "max_iter": int(max_iter),
+        "use_initial_guess": bool(use_initial_guess),
+        "vmec_project": bool(vmec_project),
+        "verbose": False,
+        "grid": grid,
+        "jit_forces": False,
+        "use_scan": False,
+        "multigrid": False,
+    }
+    if solver_kwargs:
+        run_options.update(solver_kwargs)
+
+    run = run_fixed_boundary(vmec_input, **run_options)
+    return wout_from_fixed_boundary_run(run, include_fsq=False, fast_bcovar=bool(fast_bcovar))
+
+
 def run_vmec_jax_fixed_boundary_boozer_geometry(
     input_path: str | Path,
     *,
@@ -465,39 +538,20 @@ def run_vmec_jax_fixed_boundary_boozer_geometry(
     """
     import importlib.util
 
-    try:
-        import vmec_jax as vj
-        from vmec_jax.driver import run_fixed_boundary, wout_from_fixed_boundary_run
-        from vmec_jax.vmec_tomnsp import vmec_angle_grid
-    except ImportError as exc:  # pragma: no cover - environment dependent
-        raise ImportError("vmec_jax is required for run_vmec_jax_fixed_boundary_boozer_geometry") from exc
-
     if importlib.util.find_spec("booz_xform_jax") is None:  # pragma: no cover - environment dependent
         raise ImportError("booz_xform_jax is required for run_vmec_jax_fixed_boundary_boozer_geometry")
 
     vmec_input = Path(input_path).expanduser().resolve()
-    cfg, _ = vj.load_input(str(vmec_input))
-    grid = vmec_angle_grid(
-        ntheta=int(theta_points),
-        nzeta=int(zeta_points),
-        nfp=int(cfg.nfp),
-        lasym=bool(cfg.lasym),
+    wout = run_vmec_jax_fixed_boundary_wout_data(
+        vmec_input,
+        max_iter=max_iter,
+        theta_points=theta_points,
+        zeta_points=zeta_points,
+        use_initial_guess=use_initial_guess,
+        vmec_project=vmec_project,
+        fast_bcovar=fast_bcovar,
+        solver_kwargs=solver_kwargs,
     )
-    run_options: dict[str, Any] = {
-        "max_iter": int(max_iter),
-        "use_initial_guess": bool(use_initial_guess),
-        "vmec_project": bool(vmec_project),
-        "verbose": False,
-        "grid": grid,
-        "jit_forces": False,
-        "use_scan": False,
-        "multigrid": False,
-    }
-    if solver_kwargs:
-        run_options.update(solver_kwargs)
-
-    run = run_fixed_boundary(vmec_input, **run_options)
-    wout = wout_from_fixed_boundary_run(run, include_fsq=False, fast_bcovar=bool(fast_bcovar))
     geometry = run_booz_xform_jax_geometry_from_wout_data(
         wout,
         mboz=mboz,
@@ -507,15 +561,127 @@ def run_vmec_jax_fixed_boundary_boozer_geometry(
     )
     metadata = (
         ("vmec_input", str(vmec_input)),
-        ("vmec_max_iter", int(run_options.get("max_iter", max_iter))),
+        ("vmec_max_iter", int(max_iter)),
         ("vmec_theta_points", int(theta_points)),
         ("vmec_zeta_points", int(zeta_points)),
-        ("vmec_use_initial_guess", bool(run_options.get("use_initial_guess", use_initial_guess))),
-        ("vmec_project", bool(run_options.get("vmec_project", vmec_project))),
+        ("vmec_use_initial_guess", bool(use_initial_guess)),
+        ("vmec_project", bool(vmec_project)),
         ("vmec_fast_bcovar", bool(fast_bcovar)),
         *geometry.metadata,
     )
     return replace(geometry, source="vmec_jax_booz_xform_jax", metadata=metadata)
+
+
+def run_vmec_jax_boozer_truncation_convergence(
+    input_path: str | Path,
+    *,
+    coarse_mboz: int = 4,
+    coarse_nboz: int = 4,
+    reference_mboz: int = 5,
+    reference_nboz: int = 5,
+    surfaces: tuple[float, ...] = (0.25, 0.5),
+    max_iter: int = 1,
+    theta_points: int = 12,
+    zeta_points: int = 4,
+    field_theta_points: int = 24,
+    field_zeta_points: int = 16,
+    frequency_theta_points: int = 16,
+    frequency_zeta_points: int = 16,
+    harmonics: Any = ((1.0, 0.0), (2.0, 1.0)),
+    mass_density: float = 3.4e-8,
+    use_initial_guess: bool = False,
+    vmec_project: bool = False,
+    fast_bcovar: bool = True,
+    jit: bool = False,
+    solver_kwargs: dict[str, Any] | None = None,
+) -> VmecJaxBoozerConvergenceResult:
+    """Compare two Boozer truncations from one live ``vmec_jax`` solve.
+
+    This diagnostic isolates Boozer-transform and FAX surface-operator
+    truncation behavior by reusing one in-memory VMEC ``wout`` object for both
+    the coarse and reference Boozer runs.
+    """
+    import importlib.util
+
+    if importlib.util.find_spec("booz_xform_jax") is None:  # pragma: no cover - environment dependent
+        raise ImportError("booz_xform_jax is required for run_vmec_jax_boozer_truncation_convergence")
+
+    vmec_input = Path(input_path).expanduser().resolve()
+    wout = run_vmec_jax_fixed_boundary_wout_data(
+        vmec_input,
+        max_iter=max_iter,
+        theta_points=theta_points,
+        zeta_points=zeta_points,
+        use_initial_guess=use_initial_guess,
+        vmec_project=vmec_project,
+        fast_bcovar=fast_bcovar,
+        solver_kwargs=solver_kwargs,
+    )
+    coarse = run_booz_xform_jax_geometry_from_wout_data(
+        wout,
+        mboz=coarse_mboz,
+        nboz=coarse_nboz,
+        surfaces=surfaces,
+        jit=jit,
+    )
+    reference = run_booz_xform_jax_geometry_from_wout_data(
+        wout,
+        mboz=reference_mboz,
+        nboz=reference_nboz,
+        surfaces=surfaces,
+        jit=jit,
+    )
+    harmonics_array = jnp.asarray(harmonics, dtype=float)
+    coarse_frequencies = boozer_3d_continuum_frequencies_hz(
+        coarse,
+        harmonics_array,
+        mass_density=mass_density,
+        theta_points=frequency_theta_points,
+        zeta_points=frequency_zeta_points,
+    )
+    reference_frequencies = boozer_3d_continuum_frequencies_hz(
+        reference,
+        harmonics_array,
+        mass_density=mass_density,
+        theta_points=frequency_theta_points,
+        zeta_points=frequency_zeta_points,
+    )
+    metadata = (
+        ("vmec_input", str(vmec_input)),
+        ("vmec_max_iter", int(max_iter)),
+        ("coarse_mboz", int(coarse_mboz)),
+        ("coarse_nboz", int(coarse_nboz)),
+        ("reference_mboz", int(reference_mboz)),
+        ("reference_nboz", int(reference_nboz)),
+        ("surfaces", tuple(float(surface) for surface in surfaces)),
+    )
+    return VmecJaxBoozerConvergenceResult(
+        coarse_geometry=replace(coarse, source="vmec_jax_booz_xform_jax", metadata=(*metadata, *coarse.metadata)),
+        reference_geometry=replace(reference, source="vmec_jax_booz_xform_jax", metadata=(*metadata, *reference.metadata)),
+        field_relative_error=boozer_geometry_field_relative_error(
+            coarse,
+            reference,
+            theta_points=field_theta_points,
+            zeta_points=field_zeta_points,
+        ),
+        frequency_relative_error=jnp.linalg.norm(coarse_frequencies - reference_frequencies)
+        / jnp.maximum(jnp.linalg.norm(reference_frequencies), 1.0e-30),
+        coarse_jacobian_identity_error=float(
+            boozer_geometry_jacobian_identity_error(
+                coarse,
+                theta_points=frequency_theta_points,
+                zeta_points=frequency_zeta_points,
+            )
+        ),
+        reference_jacobian_identity_error=float(
+            boozer_geometry_jacobian_identity_error(
+                reference,
+                theta_points=frequency_theta_points,
+                zeta_points=frequency_zeta_points,
+            )
+        ),
+        metadata=metadata,
+    )
 
 
 def _run_booz_xform_transform(
@@ -691,6 +857,24 @@ def reconstruct_boozer_field(
     if spectrum.bmns is not None:
         field = field + jnp.sum(spectrum.bmns[int(surface_index)] * jnp.sin(phase), axis=-1)
     return field
+
+
+def boozer_geometry_field_relative_error(
+    actual: BoozerGeometry,
+    reference: BoozerGeometry,
+    *,
+    theta_points: int = 64,
+    zeta_points: int = 64,
+) -> jax.Array:
+    """Return sampled per-surface relative ``|B|`` errors between geometries."""
+    if actual.s.shape != reference.s.shape:
+        raise ValueError("actual and reference geometries must use the same number of surfaces")
+    theta, zeta = boozer_angle_grid(theta_points=theta_points, zeta_points=zeta_points)
+    actual_field = reconstruct_boozer_modes(actual.bmnc, actual.bmns, actual.xm, actual.xn, theta, zeta)
+    reference_field = reconstruct_boozer_modes(reference.bmnc, reference.bmns, reference.xm, reference.xn, theta, zeta)
+    numerator = jnp.linalg.norm(actual_field - reference_field, axis=(1, 2))
+    denominator = jnp.maximum(jnp.linalg.norm(reference_field, axis=(1, 2)), 1.0e-30)
+    return numerator / denominator
 
 
 def boozer_geometry_field_and_jacobian(
