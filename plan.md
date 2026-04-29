@@ -1225,6 +1225,11 @@ Needed docs:
     - Added matrix-free generalized residual and Rayleigh-quotient diagnostics. These are the immediate building blocks for future JAX-native Krylov, shift-invert, Lineax, and custom-adjoint paths.
     - Added Dirichlet and Neumann parity tests against dense assembly, eigenpair residual/Rayleigh tests, and a density-scaling gradient gate through the matrix-free Rayleigh quotient.
     - Added the `global-matrix-free` benchmark family and included it in the generated benchmark packet so runtime claims include dense-matvec and exact-Rayleigh physics gates.
+  - 2026-04-29 generalized-eigenvalue sensitivity milestone:
+    - Added `generalized_hermitian_eigenvalue_sensitivity`, implementing the isolated Hermitian generalized-eigenvalue formula `x^H(dK - lambda dM)x/(x^H M x)` with an explicit normalization denominator.
+    - Added `radial_block_eigenvalue_sensitivity`, which assembles `dK` and `dM` from a radial-block tangent problem so mass, continuum-stiffness, and radial-stiffness tangent directions can be checked without relying on autodiff through the eigensolver.
+    - Added tests against direct JAX autodiff and centered finite differences, including normalization-invariance checks and tangent-contract errors.
+    - Added registered gate `global_3d_block_eigenvalue_sensitivity` for reviewer-facing adjoint/autodiff agreement on the block radial shear-Alfven eigenproblem.
 
 ### Local Testing Policy Until GitHub Actions Resume
 

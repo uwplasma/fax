@@ -18,6 +18,7 @@ from fax.global_modes import (
     eigenpair_residual_norm,
     lowest_radial_block_frequency_hz,
     lowest_radial_frequency_hz,
+    radial_block_eigenvalue_sensitivity,
     radial_block_mass_matvec,
     radial_block_matrix_free_residual_norm,
     radial_block_mode_structures,
@@ -267,6 +268,91 @@ def test_radial_block_matrix_free_rayleigh_density_gradient_matches_scaling():
     expected = -0.5 * frequency(scale0) / scale0
 
     np.testing.assert_allclose(float(autodiff), float(expected), rtol=8.0e-6)
+
+
+def test_radial_block_eigenvalue_sensitivity_matches_autodiff_tangents():
+    problem = constant_radial_block_problem(
+        radial_points=18,
+        continuum_frequency_hz=(92_000.0, 150_000.0),
+        radial_coupling_omega2=(2.2e9, 3.4e9),
+    )
+    result = solve_radial_block_eigenmodes(problem)
+    zero_stiffness = jnp.zeros_like(problem.local_stiffness)
+    zero_mass = jnp.zeros_like(problem.local_mass)
+    zero_radial = jnp.zeros_like(problem.radial_stiffness)
+    mass_tangent_problem = RadialBlockEigenmodeProblem(
+        s=problem.s,
+        local_stiffness=zero_stiffness,
+        local_mass=problem.local_mass,
+        radial_stiffness=zero_radial,
+        harmonics=problem.harmonics,
+        boundary_condition=problem.boundary_condition,
+    )
+    radial_tangent_problem = RadialBlockEigenmodeProblem(
+        s=problem.s,
+        local_stiffness=zero_stiffness,
+        local_mass=zero_mass,
+        radial_stiffness=problem.radial_stiffness,
+        harmonics=problem.harmonics,
+        boundary_condition=problem.boundary_condition,
+    )
+
+    def mass_scaled_omega2(alpha):
+        scaled = RadialBlockEigenmodeProblem(
+            s=problem.s,
+            local_stiffness=problem.local_stiffness,
+            local_mass=(1.0 + alpha) * problem.local_mass,
+            radial_stiffness=problem.radial_stiffness,
+            harmonics=problem.harmonics,
+            boundary_condition=problem.boundary_condition,
+        )
+        return solve_radial_block_eigenmodes(scaled).omega2[0]
+
+    def radial_scaled_omega2(alpha):
+        scaled = RadialBlockEigenmodeProblem(
+            s=problem.s,
+            local_stiffness=problem.local_stiffness,
+            local_mass=problem.local_mass,
+            radial_stiffness=(1.0 + alpha) * problem.radial_stiffness,
+            harmonics=problem.harmonics,
+            boundary_condition=problem.boundary_condition,
+        )
+        return solve_radial_block_eigenmodes(scaled).omega2[0]
+
+    mass_sensitivity = radial_block_eigenvalue_sensitivity(
+        problem,
+        mass_tangent_problem,
+        result.omega2[0],
+        2.3 * result.eigenvectors[:, 0],
+    )
+    radial_sensitivity = radial_block_eigenvalue_sensitivity(
+        problem,
+        radial_tangent_problem,
+        result.omega2[0],
+        result.eigenvectors[:, 0],
+    )
+    mass_autodiff = jax.grad(mass_scaled_omega2)(0.0)
+    radial_autodiff = jax.grad(radial_scaled_omega2)(0.0)
+    step = 2.0e-5
+    radial_finite_difference = (radial_scaled_omega2(step) - radial_scaled_omega2(-step)) / (2.0 * step)
+
+    np.testing.assert_allclose(float(mass_sensitivity), float(mass_autodiff), rtol=3.0e-10)
+    np.testing.assert_allclose(float(mass_sensitivity), float(-result.omega2[0]), rtol=3.0e-10)
+    np.testing.assert_allclose(float(radial_sensitivity), float(radial_autodiff), rtol=3.0e-7)
+    np.testing.assert_allclose(float(radial_sensitivity), float(radial_finite_difference), rtol=3.0e-7)
+
+
+def test_radial_block_eigenvalue_sensitivity_rejects_mismatched_tangent_problem():
+    problem = constant_radial_block_problem(radial_points=8, continuum_frequency_hz=(90_000.0, 140_000.0))
+    result = solve_radial_block_eigenmodes(problem)
+    mismatched = constant_radial_block_problem(
+        radial_points=8,
+        continuum_frequency_hz=(90_000.0, 140_000.0),
+        boundary_condition="neumann",
+    )
+
+    with pytest.raises(ValueError, match="boundary_condition"):
+        radial_block_eigenvalue_sensitivity(problem, mismatched, result.omega2[0], result.eigenvectors[:, 0])
 
 
 def test_sparse_radial_block_assembly_matches_dense_and_exact_spectrum():

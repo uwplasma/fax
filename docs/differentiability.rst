@@ -41,11 +41,15 @@ sensitivity is
 
    d\lambda = x^\dagger (dK - \lambda dM) x.
 
-This formula should be implemented as a custom derivative rule and checked
-against direct autodiff and finite differences. Until that custom rule is
-added, the dense JAX eigensolve path remains the correctness oracle for small
-matrices and the local test suite compares selected gradients with centered
-finite differences.
+The implemented helper ``generalized_hermitian_eigenvalue_sensitivity`` keeps
+the normalization denominator explicitly,
+``x.H @ (dK - lambda*dM) @ x / (x.H @ M @ x)``, so it works with eigenvectors
+from FAX, SciPy, or cross-code artifacts. ``radial_block_eigenvalue_sensitivity``
+applies the same formula to the global radial block operator by assembling
+``dK`` and ``dM`` from a tangent problem. Current tests and validation gates
+compare the formula against direct autodiff and centered finite differences for
+isolated eigenvalues. Repeated/near-crossing eigenvalues remain a subspace
+problem and should not be reported as single-mode sensitivities.
 
 Implicit and matrix-free path
 -----------------------------

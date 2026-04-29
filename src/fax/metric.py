@@ -421,6 +421,47 @@ def generalized_hermitian_eigenvalues(stiffness: Any, mass: Any, *, mass_floor: 
     return generalized_hermitian_eigensystem(stiffness, mass, mass_floor=mass_floor).eigenvalues
 
 
+def generalized_hermitian_eigenvalue_sensitivity(
+    stiffness: Any,
+    mass: Any,
+    eigenvalue: Any,
+    eigenvector: Any,
+    stiffness_tangent: Any,
+    mass_tangent: Any,
+    *,
+    floor: float = 1.0e-30,
+) -> jax.Array:
+    """Return first-order sensitivity of an isolated Hermitian eigenvalue.
+
+    For ``K x = lambda M x`` and an isolated eigenpair, the derivative in a
+    parameter direction is
+
+    ``d lambda = x.H @ (dK - lambda dM) @ x / (x.H @ M @ x)``.
+
+    The denominator is kept explicitly so callers may pass eigenvectors from
+    FAX, SciPy, AE3D artifacts, or matrix-free prototypes without relying on a
+    particular normalization convention. Repeated or nearly crossing
+    eigenvalues require a subspace derivative and should not use this
+    single-eigenvector formula for publication claims.
+    """
+    stiffness_array = jnp.asarray(stiffness)
+    mass_array = jnp.asarray(mass)
+    stiffness_tangent_array = jnp.asarray(stiffness_tangent)
+    mass_tangent_array = jnp.asarray(mass_tangent)
+    vector = jnp.asarray(eigenvector)
+    if stiffness_array.shape != mass_array.shape:
+        raise ValueError("stiffness and mass must have matching shapes")
+    if stiffness_tangent_array.shape != stiffness_array.shape or mass_tangent_array.shape != mass_array.shape:
+        raise ValueError("tangent matrices must match stiffness and mass shapes")
+    if stiffness_array.ndim != 2 or vector.ndim != 1 or vector.shape[0] != stiffness_array.shape[0]:
+        raise ValueError("sensitivity expects rank-2 matrices and one eigenvector")
+    tangent_action = (stiffness_tangent_array - jnp.asarray(eigenvalue) * mass_tangent_array) @ vector
+    numerator = jnp.vdot(vector, tangent_action)
+    denominator = jnp.vdot(vector, mass_array @ vector)
+    denominator = jnp.where(jnp.abs(denominator) < float(floor), float(floor) + 0.0j, denominator)
+    return jnp.real(numerator / denominator)
+
+
 def generalized_eigen_residual_norms(stiffness: Any, mass: Any, eigensystem: GeneralizedEigensystem, *, floor: float = 1.0e-30) -> jax.Array:
     """Return relative residual norms for ``Kx = lambda Mx`` eigenpairs."""
     stiffness_array = jnp.asarray(stiffness)

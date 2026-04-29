@@ -29,6 +29,7 @@ from .continuum import continuum_branch_matrix
 from .equilibrium import EquilibriumGeometry
 from .metric import (
     generalized_eigen_residual_norms,
+    generalized_hermitian_eigenvalue_sensitivity,
     generalized_hermitian_eigensystem,
     generalized_hermitian_eigenvalues,
 )
@@ -588,6 +589,36 @@ def radial_block_rayleigh_omega2(problem: RadialBlockEigenmodeProblem, vector: A
     numerator = jnp.vdot(vector_array, stiffness_vector)
     denominator = jnp.vdot(vector_array, mass_vector)
     return jnp.real(numerator / denominator)
+
+
+def radial_block_eigenvalue_sensitivity(
+    problem: RadialBlockEigenmodeProblem,
+    tangent_problem: RadialBlockEigenmodeProblem,
+    omega2: Any,
+    eigenvector: Any,
+) -> jax.Array:
+    """Return isolated radial-block eigenvalue sensitivity in one direction.
+
+    ``tangent_problem`` stores ``dK`` and ``dM`` ingredients in the same
+    radial-block layout as ``problem``. Its ``local_stiffness`` and
+    ``radial_stiffness`` are assembled into ``dK``; its ``local_mass`` is
+    assembled into ``dM``. The formula is the Hermitian generalized-eigenvalue
+    adjoint identity ``x.H (dK - omega2 dM) x / x.H M x``.
+    """
+    if tangent_problem.boundary_condition != problem.boundary_condition:
+        raise ValueError("tangent_problem must use the same boundary_condition")
+    if tangent_problem.s.shape != problem.s.shape or tangent_problem.harmonics.shape != problem.harmonics.shape:
+        raise ValueError("tangent_problem must use the same radial grid and harmonics")
+    stiffness, mass = assemble_radial_block_matrices(problem)
+    stiffness_tangent, mass_tangent = assemble_radial_block_matrices(tangent_problem)
+    return generalized_hermitian_eigenvalue_sensitivity(
+        stiffness,
+        mass,
+        omega2,
+        eigenvector,
+        stiffness_tangent,
+        mass_tangent,
+    )
 
 
 def solve_radial_block_eigenmodes(problem: RadialBlockEigenmodeProblem) -> RadialBlockEigenmodeResult:

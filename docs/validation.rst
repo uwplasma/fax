@@ -51,6 +51,10 @@ tags, and command. The current gates are:
   zero-gradient Neumann radial boundaries against the exact spectrum.
 * ``global_3d_block_density_gradient``: checks JAX autodiff through the block
   radial generalized eigenproblem against the analytic ``rho^(-1/2)`` scaling.
+* ``global_3d_block_eigenvalue_sensitivity``: checks the isolated Hermitian
+  generalized-eigenvalue adjoint formula
+  ``x^H(dK-lambda dM)x/(x^H M x)`` against direct JAX autodiff for mass and
+  radial-stiffness tangent directions.
 * ``analytic_tae_gap_center``: checks the analytic TAE crossing condition
   ``iota=2n/(2m+1)``.
 * ``basic_gap_map_ordering``: checks that the fast BAE/TAE/EAE example places

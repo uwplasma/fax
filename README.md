@@ -531,10 +531,11 @@ real `boozmn` Jacobian/embedding/local-3-D gates, and Landreman-Paul QA VMEC
 adapter plus continuum finite-output/radial-sampling smoke tests. The new
 global radial block gates validate a multi-harmonic radial eigenproblem with
 Dirichlet and Neumann boundaries, exact constant-coefficient spectra, AD
-density scaling, metric-derived Boozer radial stiffness, eigenfunction-weighted
-fast-ion drive, file-backed and in-memory `booz_xform_jax` adapter parity,
-real-`boozmn` residual checks, and the first public STELLGAP CTOK continuum
-comparison. The AE3D public answer table is parsed as an
+density scaling, isolated-eigenvalue adjoint sensitivities, metric-derived
+Boozer radial stiffness, eigenfunction-weighted fast-ion drive, file-backed and
+in-memory `booz_xform_jax` adapter parity, real-`boozmn` residual checks, and
+the first public STELLGAP CTOK continuum comparison. The AE3D public answer
+table is parsed as an
 artifact/residual smoke gate, but not yet as a FAX eigenmode parity claim.
 These are acceptance gates for the current operators, not yet full
 AE3D/CAS3D/FAR3D stellarator validation.
@@ -582,8 +583,9 @@ It currently establishes:
   harmonic mode structures, residual diagnostics, and analytic constant-limit
   gates,
 - metric-derived Boozer radial stiffness, Dirichlet/Neumann block boundary
-  gates, eigenfunction-weighted fast-ion drive diagnostics, and a differentiable
-  Boozer global-mode avoidance objective with a builder-based API for future
+  gates, isolated generalized-eigenvalue adjoint sensitivity checks,
+  eigenfunction-weighted fast-ion drive diagnostics, and a differentiable Boozer
+  global-mode avoidance objective with a builder-based API for future
   `vmec_jax`/`booz_xform_jax` end-to-end pipelines,
 - a public STELLGAP CTOK local-continuum comparison gate and figure, plus AE3D
   public matrix/eigenmode and independent dense-spectrum parity gates,

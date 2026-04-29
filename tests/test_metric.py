@@ -10,6 +10,7 @@ from fax.equilibrium import analytic_circular_tokamak, analytic_cylinder
 from fax.metric import (
     diagonal_continuum_frequencies_hz,
     generalized_eigen_residual_norms,
+    generalized_hermitian_eigenvalue_sensitivity,
     generalized_hermitian_eigensystem,
     generalized_hermitian_eigenvalues,
     metric_continuum_frequencies_hz,
@@ -85,6 +86,66 @@ def test_generalized_eigenvalues_satisfy_known_diagonal_problem():
         np.asarray([1.0, 4.0]),
         rtol=1.0e-6,
     )
+
+
+def test_generalized_eigenvalue_sensitivity_matches_autodiff_and_finite_difference():
+    stiffness = jnp.asarray([[4.0, 0.15], [0.15, 9.0]])
+    mass = jnp.asarray([[2.0, 0.05], [0.05, 1.2]])
+    stiffness_tangent = jnp.asarray([[0.3, -0.04], [-0.04, 0.8]])
+    mass_tangent = jnp.asarray([[0.1, 0.02], [0.02, -0.03]])
+    eigensystem = generalized_hermitian_eigensystem(stiffness, mass)
+
+    def eigenvalue(alpha):
+        return generalized_hermitian_eigenvalues(stiffness + alpha * stiffness_tangent, mass + alpha * mass_tangent)[0]
+
+    sensitivity = generalized_hermitian_eigenvalue_sensitivity(
+        stiffness,
+        mass,
+        eigensystem.eigenvalues[0],
+        3.7 * eigensystem.eigenvectors[:, 0],
+        stiffness_tangent,
+        mass_tangent,
+    )
+    autodiff = jax.grad(eigenvalue)(0.0)
+    step = 2.0e-5
+    finite_difference = (eigenvalue(step) - eigenvalue(-step)) / (2.0 * step)
+
+    np.testing.assert_allclose(float(sensitivity), float(autodiff), rtol=2.0e-10)
+    np.testing.assert_allclose(float(sensitivity), float(finite_difference), rtol=2.0e-7)
+
+
+def test_generalized_eigenvalue_sensitivity_contracts():
+    stiffness = jnp.eye(2)
+    mass = jnp.eye(2)
+    eigensystem = generalized_hermitian_eigensystem(stiffness, mass)
+
+    with pytest.raises(ValueError, match="matching shapes"):
+        generalized_hermitian_eigenvalue_sensitivity(
+            stiffness,
+            jnp.eye(3),
+            eigensystem.eigenvalues[0],
+            eigensystem.eigenvectors[:, 0],
+            stiffness,
+            mass,
+        )
+    with pytest.raises(ValueError, match="tangent matrices"):
+        generalized_hermitian_eigenvalue_sensitivity(
+            stiffness,
+            mass,
+            eigensystem.eigenvalues[0],
+            eigensystem.eigenvectors[:, 0],
+            jnp.eye(3),
+            mass,
+        )
+    with pytest.raises(ValueError, match="one eigenvector"):
+        generalized_hermitian_eigenvalue_sensitivity(
+            stiffness,
+            mass,
+            eigensystem.eigenvalues[0],
+            eigensystem.eigenvectors,
+            stiffness,
+            mass,
+        )
 
 
 def test_generalized_eigenpair_residuals_are_small():
