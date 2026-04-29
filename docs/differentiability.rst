@@ -52,7 +52,15 @@ Implicit and matrix-free path
 
 Large problems should avoid differentiating through every Krylov iteration.
 Instead, use implicit differentiation or custom VJP/JVP rules that solve the
-adjoint linear system directly.
+adjoint linear system directly. The first production-facing pieces are now in
+``fax.global_modes``: ``radial_block_stiffness_matvec``,
+``radial_block_mass_matvec``, ``radial_block_matrix_free_residual_norm``, and
+``radial_block_rayleigh_omega2``. These functions apply the same finite-
+difference radial energy as the dense and sparse assemblies, but keep the
+operator as JAX transformations over arrays. The validation tests compare
+matrix-free application to dense assembly for Dirichlet and Neumann boundaries,
+check eigenpair residuals and Rayleigh quotients, and differentiate a
+density-scaling Rayleigh frequency gate.
 
 JAX ecosystem trials
 --------------------

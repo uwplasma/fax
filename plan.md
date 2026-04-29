@@ -1220,6 +1220,11 @@ Needed docs:
     - Added `solve_radial_block_eigenmodes_sparse` as a SciPy sparse/Krylov scale-up path. This is intentionally a non-differentiable benchmark/reference solver; the dense JAX eigensolve remains the differentiable truth path.
     - Added exact-spectrum and dense-assembly parity tests for the sparse matrices and Krylov eigenpairs.
     - Added the `global-krylov` benchmark family, reporting cold/warm runtime, sparse matrix dimension/nonzeros, residuals, and exact-spectrum error.
+  - 2026-04-29 matrix-free global radial operator milestone:
+    - Added JAX-native matrix-free applications of the block radial stiffness and generalized mass operators. These use the same active degrees of freedom and finite-difference energy as the dense and sparse assemblies, but avoid forming a matrix.
+    - Added matrix-free generalized residual and Rayleigh-quotient diagnostics. These are the immediate building blocks for future JAX-native Krylov, shift-invert, Lineax, and custom-adjoint paths.
+    - Added Dirichlet and Neumann parity tests against dense assembly, eigenpair residual/Rayleigh tests, and a density-scaling gradient gate through the matrix-free Rayleigh quotient.
+    - Added the `global-matrix-free` benchmark family and included it in the generated benchmark packet so runtime claims include dense-matvec and exact-Rayleigh physics gates.
 
 ### Local Testing Policy Until GitHub Actions Resume
 
@@ -1308,9 +1313,10 @@ validated comparison family:
    warmed runtime and include derivative accuracy/error bars.
 
 Implementation status: `fax benchmark` now supports named benchmark families
-(`analytic-local`, `global-block`, `global-krylov`, `vmec-boozer`,
-`ae3d-artifact`, `stellgap-ctok`) and writes JSON/CSV artifacts plus the first
-`benchmark_family_packet` docs plot. Next, add Markdown reports, JAX-native
-matrix-free families, executable STELLGAP/AE3D timings once portable builds are
-stable, and GPU memory telemetry. Do not claim a speedup unless the physics
-metric also passes the corresponding validation gate.
+(`analytic-local`, `global-block`, `global-matrix-free`, `global-krylov`,
+`vmec-boozer`, `ae3d-artifact`, `stellgap-ctok`) and writes JSON/CSV artifacts
+plus the first `benchmark_family_packet` docs plot. Next, add Markdown reports,
+JAX-native matrix-free eigensolver families, executable STELLGAP/AE3D timings
+once portable builds are stable, and GPU memory telemetry. Do not claim a
+speedup unless the physics metric also passes the corresponding validation
+gate.

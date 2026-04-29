@@ -18,8 +18,12 @@ from fax.global_modes import (
     eigenpair_residual_norm,
     lowest_radial_block_frequency_hz,
     lowest_radial_frequency_hz,
+    radial_block_mass_matvec,
+    radial_block_matrix_free_residual_norm,
     radial_block_mode_structures,
     radial_block_problem_from_boozer_geometry,
+    radial_block_rayleigh_omega2,
+    radial_block_stiffness_matvec,
     radial_problem_from_equilibrium,
     solve_radial_block_eigenmodes,
     solve_radial_block_eigenmodes_sparse,
@@ -188,6 +192,81 @@ def test_radial_block_problem_is_jittable_and_hermitian():
     np.testing.assert_allclose(np.asarray(mass), np.conjugate(np.asarray(mass).T), rtol=1.0e-6, atol=1.0e-12)
     assert frequencies.shape == (4,)
     assert structures.shape[1:] == (14, 2)
+
+
+@pytest.mark.parametrize("boundary_condition", ["dirichlet", "neumann"])
+def test_radial_block_matrix_free_matvec_matches_dense_assembly(boundary_condition: str):
+    problem = constant_radial_block_problem(
+        radial_points=16,
+        continuum_frequency_hz=(80_000.0, 120_000.0, 165_000.0),
+        radial_coupling_omega2=(1.8e9, 2.4e9, 3.1e9),
+        boundary_condition=boundary_condition,
+    )
+    stiffness, mass = assemble_radial_block_matrices(problem)
+    matrix_size = int(stiffness.shape[0])
+    vector = jnp.linspace(0.1, 1.0, matrix_size) + 0.02j * jnp.linspace(1.0, 0.2, matrix_size)
+
+    stiffness_vector = radial_block_stiffness_matvec(problem, vector)
+    mass_vector = radial_block_mass_matvec(problem, vector)
+    jit_stiffness_vector, jit_mass_vector = jax.jit(
+        lambda p, v: (radial_block_stiffness_matvec(p, v), radial_block_mass_matvec(p, v))
+    )(problem, vector)
+
+    np.testing.assert_allclose(np.asarray(stiffness_vector), np.asarray(stiffness @ vector), rtol=1.0e-12, atol=1.0e-7)
+    np.testing.assert_allclose(np.asarray(mass_vector), np.asarray(mass @ vector), rtol=1.0e-12, atol=1.0e-12)
+    np.testing.assert_allclose(np.asarray(jit_stiffness_vector), np.asarray(stiffness_vector), rtol=1.0e-12, atol=1.0e-7)
+    np.testing.assert_allclose(np.asarray(jit_mass_vector), np.asarray(mass_vector), rtol=1.0e-12, atol=1.0e-12)
+    np.testing.assert_allclose(
+        np.asarray(radial_block_stiffness_matvec(problem, jnp.reshape(vector, (-1, 3)))),
+        np.asarray(jnp.reshape(stiffness @ vector, (-1, 3))),
+        rtol=1.0e-12,
+        atol=1.0e-7,
+    )
+
+
+def test_radial_block_matrix_free_residual_and_rayleigh_match_eigenpair():
+    problem = constant_radial_block_problem(
+        radial_points=18,
+        continuum_frequency_hz=(95_000.0, 145_000.0),
+        radial_coupling_omega2=(2.4e9, 3.1e9),
+    )
+    result = solve_radial_block_eigenmodes(problem)
+    vector = result.eigenvectors[:, 0]
+
+    dense_residual = eigenpair_residual_norm(result.stiffness, result.mass, result.omega2[0], vector)
+    matrix_free_residual = radial_block_matrix_free_residual_norm(problem, result.omega2[0], vector)
+    rayleigh = radial_block_rayleigh_omega2(problem, vector)
+
+    np.testing.assert_allclose(float(matrix_free_residual), float(dense_residual), rtol=1.0e-9, atol=1.0e-14)
+    np.testing.assert_allclose(float(rayleigh), float(result.omega2[0]), rtol=1.0e-12)
+    with pytest.raises(ValueError, match="active radial-block"):
+        radial_block_stiffness_matvec(problem, jnp.ones((3,)))
+
+
+def test_radial_block_matrix_free_rayleigh_density_gradient_matches_scaling():
+    problem = constant_radial_block_problem(
+        radial_points=18,
+        continuum_frequency_hz=(95_000.0, 145_000.0),
+        radial_coupling_omega2=(2.4e9, 3.1e9),
+    )
+    vector = solve_radial_block_eigenmodes(problem).eigenvectors[:, 0]
+
+    def frequency(scale):
+        scaled = RadialBlockEigenmodeProblem(
+            s=problem.s,
+            local_stiffness=problem.local_stiffness,
+            local_mass=problem.local_mass * scale,
+            radial_stiffness=problem.radial_stiffness,
+            harmonics=problem.harmonics,
+            boundary_condition=problem.boundary_condition,
+        )
+        return jnp.sqrt(radial_block_rayleigh_omega2(scaled, vector)) / (2.0 * jnp.pi)
+
+    scale0 = 1.2
+    autodiff = jax.grad(frequency)(scale0)
+    expected = -0.5 * frequency(scale0) / scale0
+
+    np.testing.assert_allclose(float(autodiff), float(expected), rtol=8.0e-6)
 
 
 def test_sparse_radial_block_assembly_matches_dense_and_exact_spectrum():

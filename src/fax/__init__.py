@@ -48,6 +48,10 @@ from .global_modes import (
     SparseRadialBlockEigenmodeResult,
     assemble_radial_block_sparse_matrices,
     boozer_radial_stiffness_matrices,
+    radial_block_mass_matvec,
+    radial_block_matrix_free_residual_norm,
+    radial_block_rayleigh_omega2,
+    radial_block_stiffness_matvec,
     solve_radial_block_eigenmodes_sparse,
 )
 from .metric import MetricGeometry
@@ -126,6 +130,10 @@ __all__ = [
     "plot_continuum_artifacts",
     "plot_basic_alfven_gap_map",
     "plot_convergence_artifacts",
+    "radial_block_mass_matvec",
+    "radial_block_matrix_free_residual_norm",
+    "radial_block_rayleigh_omega2",
+    "radial_block_stiffness_matvec",
     "run",
     "run_benchmark",
     "run_named_benchmark_family",

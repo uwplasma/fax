@@ -67,7 +67,10 @@ def test_named_benchmark_family_rejects_invalid_controls():
         run_named_benchmark_family("not-a-family", warmups=0, repeats=1)
 
 
-@pytest.mark.parametrize("family", ["global-block", "global-krylov", "ae3d-artifact", "stellgap-ctok"])
+@pytest.mark.parametrize(
+    "family",
+    ["global-block", "global-matrix-free", "global-krylov", "ae3d-artifact", "stellgap-ctok"],
+)
 def test_named_benchmark_family_physics_parity_or_clean_skip(family: str):
     result = run_named_benchmark_family(family, warmups=0, repeats=1)
 

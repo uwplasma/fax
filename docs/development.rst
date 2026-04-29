@@ -47,7 +47,7 @@ Local workflow smoke checks:
 
    fax convergence examples/minimal.toml --radial-points 16 --radial-points 32 --angular-points 8 --angular-points 12 --mode-max 1 --mode-max 2
    fax benchmark examples/minimal.toml --repeats 1 --warmups 0
-   fax benchmark examples/minimal.toml --repeats 1 --warmups 0 --family analytic-local --family global-block --family global-krylov
+   fax benchmark examples/minimal.toml --repeats 1 --warmups 0 --family analytic-local --family global-block --family global-matrix-free --family global-krylov
 
 Benchmark packets
 -----------------

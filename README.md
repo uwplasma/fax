@@ -326,9 +326,10 @@ reference grid.
 This benchmark packet separates cold and warm runtime and reports the physics
 gate margin for each timed family. The first packet covers the public continuum
 workflow, the analytic density-scaling continuum kernel, the dense global radial
-block eigensolve, and the sparse Krylov global radial eigensolve against exact
-discrete spectra. External-code benchmark families are available from the CLI
-when their public artifacts are present.
+block eigensolve, the JAX matrix-free radial-block apply/Rayleigh gate, and the
+sparse Krylov global radial eigensolve against exact discrete spectra.
+External-code benchmark families are available from the CLI when their public
+artifacts are present.
 
 ![Registered validation gates](docs/_static/validation_gate_summary.png)
 
@@ -381,7 +382,7 @@ fax plot-continuum outputs/landreman_paul_qa_lowres --output-dir outputs/landrem
 fax convergence examples/landreman_paul_qa_lowres.toml --radial-points 24 --radial-points 40
 fax plot-convergence outputs/landreman_paul_qa_lowres/convergence --output-dir outputs/landreman_paul_qa_lowres/figures
 fax benchmark examples/landreman_paul_qa_lowres.toml --repeats 3
-fax benchmark examples/minimal.toml --repeats 1 --warmups 0 --family analytic-local --family global-block --family global-krylov
+fax benchmark examples/minimal.toml --repeats 1 --warmups 0 --family analytic-local --family global-block --family global-matrix-free --family global-krylov
 python examples/research/basic_alfven_gap_map.py
 python examples/research/global_gap_fastion_screen.py
 python examples/research/boozer_harmonic_validation.py
@@ -407,7 +408,7 @@ truncation, then writes a CSV/Markdown/JSON convergence report.
 convergence dashboards. `fax benchmark` records cold runtime, warm runtime, and
 artifact size for local performance tracking. Repeated `--family` options add
 physics-tied benchmark packets such as `analytic-local`, `global-block`,
-`global-krylov`, `stellgap-ctok`, `ae3d-artifact`, and `vmec-boozer`; speed
+`global-matrix-free`, `global-krylov`, `stellgap-ctok`, `ae3d-artifact`, and `vmec-boozer`; speed
 numbers are reported beside the relevant physics metric and tolerance.
 
 For machine-readable output:

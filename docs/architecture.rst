@@ -22,8 +22,10 @@ Operators
    validation.
 
 Solvers
-   Provide dense reference eigensolvers first, then matrix-free Krylov and
-   block-sparse paths with custom differentiation rules where required.
+   Provide dense JAX reference eigensolvers first, matrix-free JAX operator
+   application and Rayleigh/residual diagnostics next, and sparse/Krylov
+   reference solves for larger benchmark cases. Custom differentiation rules
+   remain required before production-scale shift-invert gradients are claimed.
 
 Validation
    Treat reference cases as first-class artifacts: exact analytic cases,

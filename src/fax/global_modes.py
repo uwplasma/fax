@@ -517,6 +517,79 @@ def assemble_radial_matrices(problem: RadialEigenmodeProblem) -> tuple[jax.Array
     return stiffness, mass
 
 
+def radial_block_stiffness_matvec(problem: RadialBlockEigenmodeProblem, vector: Any) -> jax.Array:
+    """Apply the block radial stiffness operator without assembling it.
+
+    ``vector`` contains the same active degrees of freedom used by
+    :func:`assemble_radial_block_matrices`: interior radial nodes for
+    Dirichlet boundaries and all radial nodes for Neumann boundaries. The
+    returned array has the same shape as ``vector``. This is the JAX-native
+    matrix-free operator path for future Krylov, adjoint, and implicit
+    differentiation work.
+    """
+    vector_array = jnp.asarray(vector)
+    original_shape = vector_array.shape
+    blocks = _radial_block_vector_blocks(problem, vector_array)
+    surface_count = int(problem.s.shape[0])
+    active_surfaces = _active_radial_surfaces(problem)
+    spacing = problem.s[1:] - problem.s[:-1]
+    inverse_face_ds2 = 1.0 / spacing**2
+    face_stiffness = 0.5 * (problem.radial_stiffness[1:] + problem.radial_stiffness[:-1])
+    output = jnp.zeros_like(blocks)
+    for local_index, surface_index in enumerate(active_surfaces):
+        block_value = problem.local_stiffness[surface_index] @ blocks[local_index]
+        if surface_index > 0:
+            left = face_stiffness[surface_index - 1] * inverse_face_ds2[surface_index - 1]
+            block_value = block_value + left @ blocks[local_index]
+            if local_index > 0:
+                block_value = block_value - left @ blocks[local_index - 1]
+        if surface_index < surface_count - 1:
+            right = face_stiffness[surface_index] * inverse_face_ds2[surface_index]
+            block_value = block_value + right @ blocks[local_index]
+            if local_index < len(active_surfaces) - 1:
+                block_value = block_value - right @ blocks[local_index + 1]
+        output = output.at[local_index].set(block_value)
+    return jnp.reshape(output, original_shape)
+
+
+def radial_block_mass_matvec(problem: RadialBlockEigenmodeProblem, vector: Any) -> jax.Array:
+    """Apply the block radial generalized mass operator without assembly."""
+    vector_array = jnp.asarray(vector)
+    original_shape = vector_array.shape
+    blocks = _radial_block_vector_blocks(problem, vector_array)
+    active_surfaces = jnp.asarray(_active_radial_surfaces(problem), dtype=int)
+    mass_blocks = jnp.take(problem.local_mass, active_surfaces, axis=0)
+    return jnp.reshape(jnp.einsum("sij,sj->si", mass_blocks, blocks), original_shape)
+
+
+def radial_block_matrix_free_residual_norm(
+    problem: RadialBlockEigenmodeProblem,
+    omega2: Any,
+    vector: Any,
+    *,
+    floor: float = 1.0e-30,
+) -> jax.Array:
+    """Return a relative generalized residual using matrix-free matvecs."""
+    stiffness_vector = radial_block_stiffness_matvec(problem, vector)
+    mass_vector = radial_block_mass_matvec(problem, vector)
+    residual = stiffness_vector - jnp.asarray(omega2) * mass_vector
+    denominator = jnp.maximum(
+        jnp.linalg.norm(stiffness_vector) + jnp.abs(omega2) * jnp.linalg.norm(mass_vector),
+        float(floor),
+    )
+    return jnp.linalg.norm(residual) / denominator
+
+
+def radial_block_rayleigh_omega2(problem: RadialBlockEigenmodeProblem, vector: Any) -> jax.Array:
+    """Return the generalized Rayleigh quotient from matrix-free matvecs."""
+    vector_array = jnp.ravel(jnp.asarray(vector))
+    stiffness_vector = jnp.ravel(radial_block_stiffness_matvec(problem, vector_array))
+    mass_vector = jnp.ravel(radial_block_mass_matvec(problem, vector_array))
+    numerator = jnp.vdot(vector_array, stiffness_vector)
+    denominator = jnp.vdot(vector_array, mass_vector)
+    return jnp.real(numerator / denominator)
+
+
 def solve_radial_block_eigenmodes(problem: RadialBlockEigenmodeProblem) -> RadialBlockEigenmodeResult:
     """Solve the block radial generalized Hermitian eigenproblem."""
     stiffness, mass = assemble_radial_block_matrices(problem)
@@ -730,6 +803,15 @@ def _active_radial_surfaces(problem: RadialBlockEigenmodeProblem) -> tuple[int, 
     if problem.boundary_condition == "dirichlet":
         return tuple(range(1, surface_count - 1))
     return tuple(range(surface_count))
+
+
+def _radial_block_vector_blocks(problem: RadialBlockEigenmodeProblem, vector: jax.Array) -> jax.Array:
+    harmonic_count = int(problem.harmonics.shape[0])
+    active_count = len(_active_radial_surfaces(problem))
+    expected_size = active_count * harmonic_count
+    if int(vector.size) != expected_size:
+        raise ValueError(f"vector must contain {expected_size} active radial-block degrees of freedom")
+    return jnp.reshape(vector, (active_count, harmonic_count))
 
 
 def _broadcast_mode_profile(value: jax.Array, count: int, *, name: str) -> jax.Array:

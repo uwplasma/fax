@@ -52,6 +52,7 @@ class BenchmarkFamilyResult:
 BENCHMARK_FAMILY_DESCRIPTIONS: dict[str, str] = {
     "analytic-local": "profile-limit continuum matrix with analytic density-scaling gate",
     "global-block": "global radial block eigensolve with exact finite-difference spectrum gate",
+    "global-matrix-free": "JAX matrix-free global radial operator with dense/Rayleigh parity gates",
     "global-krylov": "sparse Krylov global radial block eigensolve with exact-spectrum gate",
     "ae3d-artifact": "public AE3D generalized matrix dense-spectrum parity gate",
     "stellgap-ctok": "public STELLGAP CTOK local Boozer continuum parity gate",
@@ -151,6 +152,8 @@ def run_named_benchmark_family(
         return _run_analytic_local_family(repeats=repeats, warmups=warmups)
     if family == "global-block":
         return _run_global_block_family(repeats=repeats, warmups=warmups)
+    if family == "global-matrix-free":
+        return _run_global_matrix_free_family(repeats=repeats, warmups=warmups)
     if family == "global-krylov":
         return _run_global_krylov_family(repeats=repeats, warmups=warmups)
     if family == "ae3d-artifact":
@@ -359,6 +362,76 @@ def _run_global_krylov_family(*, repeats: int, warmups: int) -> BenchmarkFamilyR
             "matrix_nonzeros": int(result.stiffness.nnz),
             "checked_modes": mode_count,
             "max_residual": residual_max,
+        },
+    )
+
+
+def _run_global_matrix_free_family(*, repeats: int, warmups: int) -> BenchmarkFamilyResult:
+    from .global_modes import (
+        assemble_radial_block_matrices,
+        constant_block_problem_discrete_omega2,
+        constant_radial_block_problem,
+        radial_block_mass_matvec,
+        radial_block_rayleigh_omega2,
+        radial_block_stiffness_matvec,
+    )
+
+    problem = constant_radial_block_problem(
+        radial_points=220,
+        continuum_frequency_hz=(90_000.0, 135_000.0, 210_000.0, 275_000.0),
+        radial_coupling_omega2=(2.0e9, 3.5e9, 4.2e9, 5.0e9),
+        boundary_condition="dirichlet",
+    )
+    stiffness, mass = assemble_radial_block_matrices(problem)
+    active_count = int(problem.s.shape[0]) - 2
+    harmonic_count = int(problem.harmonics.shape[0])
+    envelope = jnp.sin(jnp.arange(1, active_count + 1, dtype=problem.s.dtype) * jnp.pi / (active_count + 1))
+    vector_blocks = jnp.zeros((active_count, harmonic_count), dtype=stiffness.dtype).at[:, 0].set(envelope)
+    vector = jnp.ravel(vector_blocks)
+
+    @jax.jit
+    def kernel():
+        return (
+            radial_block_stiffness_matvec(problem, vector),
+            radial_block_mass_matvec(problem, vector),
+            radial_block_rayleigh_omega2(problem, vector),
+        )
+
+    cold_seconds, warm_result, result = _timed_family_call(
+        "global_radial_matrix_free_apply",
+        kernel,
+        repeats=repeats,
+        warmups=warmups,
+    )
+
+    stiffness_vector, mass_vector, rayleigh = result
+    dense_stiffness_vector = stiffness @ vector
+    dense_mass_vector = mass @ vector
+    stiffness_error = jnp.linalg.norm(stiffness_vector - dense_stiffness_vector) / jnp.maximum(
+        jnp.linalg.norm(dense_stiffness_vector), 1.0e-30
+    )
+    mass_error = jnp.linalg.norm(mass_vector - dense_mass_vector) / jnp.maximum(jnp.linalg.norm(dense_mass_vector), 1.0e-30)
+    expected = constant_block_problem_discrete_omega2(problem)[0]
+    rayleigh_error = jnp.abs(rayleigh - expected) / jnp.maximum(jnp.abs(expected), 1.0e-30)
+    error = float(jnp.max(jnp.asarray([stiffness_error, mass_error, rayleigh_error])))
+    tolerance = 1.0e-10
+    return _family_result(
+        family="global-matrix-free",
+        label=BENCHMARK_FAMILY_DESCRIPTIONS["global-matrix-free"],
+        status="completed",
+        gate_passed=error < tolerance,
+        physics_metric="max dense-matvec/Rayleigh relative error",
+        metric_value=error,
+        tolerance=tolerance,
+        cold_seconds=cold_seconds,
+        warm_result=warm_result,
+        details={
+            "radial_points": int(problem.s.shape[0]),
+            "harmonic_count": harmonic_count,
+            "matrix_dimension": int(stiffness.shape[0]),
+            "stiffness_matvec_relative_error": float(stiffness_error),
+            "mass_matvec_relative_error": float(mass_error),
+            "rayleigh_relative_error": float(rayleigh_error),
         },
     )
 

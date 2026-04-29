@@ -1512,13 +1512,14 @@ def generate_benchmark_family_packet(output_dir: Path) -> list[Path]:
             progress=False,
             repeats=1,
             warmups=0,
-            families=("analytic-local", "global-block", "global-krylov"),
+            families=("analytic-local", "global-block", "global-matrix-free", "global-krylov"),
         )
     results = summary.family_results
     label_map = {
-        "continuum": "continuum",
+        "continuum": "cont.\nworkflow",
         "analytic-local": "analytic\nlocal",
         "global-block": "dense\nglobal",
+        "global-matrix-free": "matrix\nfree",
         "global-krylov": "sparse\nKrylov",
     }
     labels = [label_map.get(str(result["family"]), str(result["family"]).replace("-", "\n")) for result in results]
@@ -1544,7 +1545,7 @@ def generate_benchmark_family_packet(output_dir: Path) -> list[Path]:
     }
     summary_path.write_text(json.dumps(summary_payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
 
-    fig, axes = plt.subplots(1, 3, figsize=(11.0, 3.2), constrained_layout=True)
+    fig, axes = plt.subplots(1, 3, figsize=(12.0, 3.2), constrained_layout=True)
     x = np.arange(len(labels))
 
     ax = axes[0]
@@ -1552,6 +1553,7 @@ def generate_benchmark_family_packet(output_dir: Path) -> list[Path]:
     ax.bar(x - width / 2.0, cold, width=width, color="#4c78a8", label="cold")
     ax.bar(x + width / 2.0, warm, width=width, color="#f58518", label="warm")
     ax.set_xticks(x, labels)
+    ax.tick_params(axis="x", labelsize=8)
     ax.set_ylabel("runtime [s]")
     ax.set_title("cold vs warm")
     ax.legend(fontsize=8)
@@ -1561,6 +1563,7 @@ def generate_benchmark_family_packet(output_dir: Path) -> list[Path]:
     ax.bar(x, ratios, color=colors)
     ax.axhline(1.0, color="#222222", linestyle="--", linewidth=1.0, label="gate")
     ax.set_xticks(x, labels)
+    ax.tick_params(axis="x", labelsize=8)
     ax.set_yscale("log")
     ax.set_ylabel("metric / tolerance")
     ax.set_title("physics gate margin")

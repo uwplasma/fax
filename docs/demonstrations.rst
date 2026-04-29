@@ -59,9 +59,9 @@ Real Boozer 3-D continuum and global modes
 Runtime
    ``fax benchmark`` reports cold runtime, warmed runtime, artifact size,
    process memory, JAX backend metadata, and physics-gate margins. The first
-   named families cover the analytic continuum limit, dense and sparse-Krylov
-   global radial block operators, public STELLGAP CTOK artifact path, public
-   AE3D matrix path, and the live ``vmec_jax -> booz_xform_jax -> FAX``
+   named families cover the analytic continuum limit, dense, matrix-free, and
+   sparse-Krylov global radial block operators, public STELLGAP CTOK artifact
+   path, public AE3D matrix path, and the live ``vmec_jax -> booz_xform_jax -> FAX``
    convergence bridge.
 
 Planned demonstrations include:
