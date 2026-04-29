@@ -1240,6 +1240,11 @@ Needed docs:
     - Added `boozer_pipeline_isolated_mode_avoidance_objective` for callable Boozer-geometry builders, preserving the API needed for future differentiable `vmec_jax -> booz_xform_jax -> FAX` shape/profile objectives.
     - Added tests comparing isolated-mode values against the dense frequency vector and gradients against centered finite differences, plus a pipeline-builder differentiation test.
     - Added registered gate `boozer_global_custom_jvp_design_gradient` for reviewer-facing custom-JVP/finite-difference agreement on Boozer design variables.
+  - 2026-04-29 degenerate-cluster sensitivity milestone:
+    - Added `GeneralizedEigenclusterSensitivity`, `generalized_hermitian_eigencluster_sensitivity`, and `generalized_hermitian_cluster_mean_eigenvalue` for subspace derivatives at exact degeneracy and near crossings.
+    - Added `radial_block_cluster_mean_omega2` and `radial_block_cluster_mean_frequency_hz` so global radial block studies can optimize/report a reviewer-safe cluster mean rather than an invalid single-mode gradient through a crossing.
+    - Added tests for exact degenerate splitting directions, cluster-mean finite differences, JIT/value parity, and radial-block duplicate-harmonic degeneracy.
+    - Added registered gate `global_3d_block_degenerate_cluster_mean`.
 
 ### Local Testing Policy Until GitHub Actions Resume
 

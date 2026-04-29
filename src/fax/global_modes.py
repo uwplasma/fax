@@ -29,6 +29,7 @@ from .continuum import continuum_branch_matrix
 from .equilibrium import EquilibriumGeometry
 from .metric import (
     generalized_eigen_residual_norms,
+    generalized_hermitian_cluster_mean_eigenvalue,
     generalized_hermitian_eigenvalue_sensitivity,
     generalized_hermitian_eigensystem,
     generalized_hermitian_eigenvalues,
@@ -631,6 +632,28 @@ def radial_block_isolated_omega2(problem: RadialBlockEigenmodeProblem, *, mode_i
 def radial_block_isolated_frequency_hz(problem: RadialBlockEigenmodeProblem, *, mode_index: int = 0) -> jax.Array:
     """Return one radial-block frequency using the custom-JVP eigenvalue path."""
     omega2 = radial_block_isolated_omega2(problem, mode_index=mode_index)
+    return jnp.sqrt(jnp.maximum(omega2, 0.0)) / (2.0 * jnp.pi)
+
+
+def radial_block_cluster_mean_omega2(
+    problem: RadialBlockEigenmodeProblem,
+    *,
+    start_index: int = 0,
+    stop_index: int = 1,
+) -> jax.Array:
+    """Return a radial-block cluster-mean ``omega^2`` with a subspace JVP."""
+    stiffness, mass = assemble_radial_block_matrices(problem)
+    return generalized_hermitian_cluster_mean_eigenvalue(stiffness, mass, int(start_index), int(stop_index))
+
+
+def radial_block_cluster_mean_frequency_hz(
+    problem: RadialBlockEigenmodeProblem,
+    *,
+    start_index: int = 0,
+    stop_index: int = 1,
+) -> jax.Array:
+    """Return the frequency from a radial-block cluster-mean ``omega^2``."""
+    omega2 = radial_block_cluster_mean_omega2(problem, start_index=start_index, stop_index=stop_index)
     return jnp.sqrt(jnp.maximum(omega2, 0.0)) / (2.0 * jnp.pi)
 
 

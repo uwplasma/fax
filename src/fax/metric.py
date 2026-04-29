@@ -174,6 +174,17 @@ class GeneralizedEigensystem:
     eigenvectors: jax.Array
 
 
+@dataclass(frozen=True)
+class GeneralizedEigenclusterSensitivity:
+    """Subspace sensitivity diagnostics for a generalized-eigenvalue cluster."""
+
+    cluster_center: jax.Array
+    mean_sensitivity: jax.Array
+    projected_sensitivities: jax.Array
+    relative_cluster_spread: jax.Array
+    mass_orthonormality_error: jax.Array
+
+
 def periodic_grid(count: int, *, period: float = 2.0 * np.pi) -> jax.Array:
     """Return a periodic grid without duplicating the endpoint."""
     if int(count) < 1:
@@ -455,6 +466,54 @@ def _generalized_hermitian_isolated_eigenvalue_jvp(mode_index: int, primals: tup
     return eigenvalue, tangent
 
 
+@partial(jax.custom_jvp, nondiff_argnums=(2, 3))
+def generalized_hermitian_cluster_mean_eigenvalue(
+    stiffness: Any,
+    mass: Any,
+    start_index: int = 0,
+    stop_index: int = 1,
+) -> jax.Array:
+    """Return the mean eigenvalue of a tracked cluster with a subspace JVP.
+
+    The value is the arithmetic mean of sorted generalized eigenvalues in the
+    half-open interval ``[start_index, stop_index)``. The JVP differentiates the
+    invariant cluster mean rather than a single eigenvector, which is the
+    appropriate quantity at exact degeneracy and near crossings.
+    """
+    eigensystem = generalized_hermitian_eigensystem(stiffness, mass)
+    start = int(start_index)
+    stop = int(stop_index)
+    if stop <= start:
+        raise ValueError("stop_index must be greater than start_index")
+    return jnp.mean(jnp.real(eigensystem.eigenvalues[start:stop]))
+
+
+@generalized_hermitian_cluster_mean_eigenvalue.defjvp
+def _generalized_hermitian_cluster_mean_eigenvalue_jvp(
+    start_index: int,
+    stop_index: int,
+    primals: tuple[Any, Any],
+    tangents: tuple[Any, Any],
+) -> tuple[jax.Array, jax.Array]:
+    stiffness, mass = primals
+    stiffness_tangent, mass_tangent = tangents
+    eigensystem = generalized_hermitian_eigensystem(stiffness, mass)
+    start = int(start_index)
+    stop = int(stop_index)
+    if stop <= start:
+        raise ValueError("stop_index must be greater than start_index")
+    cluster = generalized_hermitian_eigencluster_sensitivity(
+        stiffness,
+        mass,
+        eigensystem,
+        tuple(range(start, stop)),
+        stiffness_tangent,
+        mass_tangent,
+    )
+    value = jnp.mean(jnp.real(eigensystem.eigenvalues[start:stop]))
+    return value, cluster.mean_sensitivity
+
+
 def generalized_hermitian_eigenvalue_sensitivity(
     stiffness: Any,
     mass: Any,
@@ -494,6 +553,80 @@ def generalized_hermitian_eigenvalue_sensitivity(
     denominator = jnp.vdot(vector, mass_array @ vector)
     denominator = jnp.where(jnp.abs(denominator) < float(floor), float(floor) + 0.0j, denominator)
     return jnp.real(numerator / denominator)
+
+
+def generalized_hermitian_eigencluster_sensitivity(
+    stiffness: Any,
+    mass: Any,
+    eigensystem: GeneralizedEigensystem,
+    cluster_indices: tuple[int, ...],
+    stiffness_tangent: Any,
+    mass_tangent: Any,
+    *,
+    floor: float = 1.0e-30,
+) -> GeneralizedEigenclusterSensitivity:
+    """Return reviewer-safe first-order diagnostics for an eigenvalue cluster.
+
+    For an exact degenerate cluster, individual sorted eigenvectors are not
+    differentiable. The projected subspace matrix
+    ``Q.H @ (dK - lambda_c*dM) @ Q`` gives the first-order splitting
+    directions, while the trace divided by cluster size gives the invariant
+    cluster-mean derivative. For a well separated non-degenerate group, the
+    same mean derivative equals the average of the selected isolated-eigenpair
+    sensitivities.
+    """
+    stiffness_array = jnp.asarray(stiffness)
+    mass_array = jnp.asarray(mass)
+    stiffness_tangent_array = jnp.asarray(stiffness_tangent)
+    mass_tangent_array = jnp.asarray(mass_tangent)
+    eigenvalues = jnp.asarray(eigensystem.eigenvalues)
+    eigenvectors = jnp.asarray(eigensystem.eigenvectors)
+    if stiffness_array.shape != mass_array.shape:
+        raise ValueError("stiffness and mass must have matching shapes")
+    if stiffness_tangent_array.shape != stiffness_array.shape or mass_tangent_array.shape != mass_array.shape:
+        raise ValueError("tangent matrices must match stiffness and mass shapes")
+    if stiffness_array.ndim != 2 or eigenvectors.ndim != 2:
+        raise ValueError("cluster sensitivity expects rank-2 matrices and eigenvectors")
+    if not cluster_indices:
+        raise ValueError("cluster_indices must not be empty")
+    indices = jnp.asarray(cluster_indices, dtype=int)
+    values = jnp.take(eigenvalues, indices, axis=0)
+    vectors = jnp.take(eigenvectors, indices, axis=1)
+    center = jnp.mean(jnp.real(values))
+
+    gram = jnp.conjugate(vectors.T) @ mass_array @ vectors
+    gram = 0.5 * (gram + jnp.conjugate(gram.T))
+    factor = jnp.linalg.cholesky(gram + float(floor) * jnp.eye(gram.shape[0], dtype=gram.dtype))
+    q_basis = vectors @ jnp.linalg.inv(jnp.conjugate(factor.T))
+    identity = jnp.eye(q_basis.shape[1], dtype=gram.dtype)
+    mass_orthonormality_error = jnp.linalg.norm(jnp.conjugate(q_basis.T) @ mass_array @ q_basis - identity)
+
+    projected_operator = jnp.conjugate(q_basis.T) @ (stiffness_tangent_array - center * mass_tangent_array) @ q_basis
+    projected_operator = 0.5 * (projected_operator + jnp.conjugate(projected_operator.T))
+    projected_sensitivities = jnp.linalg.eigvalsh(projected_operator)
+    isolated_sensitivities = jnp.asarray(
+        [
+            generalized_hermitian_eigenvalue_sensitivity(
+                stiffness_array,
+                mass_array,
+                values[index],
+                vectors[:, index],
+                stiffness_tangent_array,
+                mass_tangent_array,
+                floor=floor,
+            )
+            for index in range(len(cluster_indices))
+        ]
+    )
+    mean_sensitivity = jnp.mean(isolated_sensitivities)
+    spread = jnp.max(jnp.abs(jnp.real(values) - center)) / jnp.maximum(jnp.abs(center), float(floor))
+    return GeneralizedEigenclusterSensitivity(
+        cluster_center=center,
+        mean_sensitivity=mean_sensitivity,
+        projected_sensitivities=projected_sensitivities,
+        relative_cluster_spread=spread,
+        mass_orthonormality_error=mass_orthonormality_error,
+    )
 
 
 def generalized_eigen_residual_norms(stiffness: Any, mass: Any, eigensystem: GeneralizedEigensystem, *, floor: float = 1.0e-30) -> jax.Array:

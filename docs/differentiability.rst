@@ -54,8 +54,23 @@ finite differences for isolated eigenvalues. The Boozer design helpers
 ``boozer_global_isolated_mode_avoidance_objective`` now use that custom-JVP
 path for one tracked real-Boozer global mode, and the validation registry checks
 its design-parameter gradient against centered finite differences.
-Repeated/near-crossing eigenvalues remain a subspace problem and should not be
-reported as single-mode sensitivities.
+
+Repeated or nearly crossing eigenvalues are handled by the cluster path.
+``generalized_hermitian_eigencluster_sensitivity`` forms an
+``M``-orthonormal basis for a selected eigenspace and evaluates the projected
+subspace perturbation
+
+.. math::
+
+   Q^\dagger (dK - \lambda_c dM) Q.
+
+For an exact degenerate cluster, the eigenvalues of this projected matrix are
+the first-order splitting directions and the trace divided by cluster size is
+the invariant cluster-mean derivative. ``generalized_hermitian_cluster_mean_eigenvalue``
+and ``radial_block_cluster_mean_omega2`` expose this as a custom-JVP value path
+for global-mode studies. FAX should report single-mode gradients only for
+isolated modes; near crossings should use cluster means, subspace splittings,
+or an explicit mode-tracking rule.
 
 Implicit and matrix-free path
 -----------------------------

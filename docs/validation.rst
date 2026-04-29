@@ -61,6 +61,9 @@ tags, and command. The current gates are:
 * ``boozer_global_custom_jvp_design_gradient``: checks the custom-JVP
   isolated-mode gradient for real-Boozer global design variables against
   centered finite differences.
+* ``global_3d_block_degenerate_cluster_mean``: checks that a degenerate
+  two-harmonic radial block cluster has a finite-difference-consistent
+  cluster-mean gradient.
 * ``analytic_tae_gap_center``: checks the analytic TAE crossing condition
   ``iota=2n/(2m+1)``.
 * ``basic_gap_map_ordering``: checks that the fast BAE/TAE/EAE example places

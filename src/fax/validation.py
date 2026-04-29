@@ -56,6 +56,7 @@ from .global_modes import (
     constant_radial_problem,
     lowest_radial_block_frequency_hz,
     lowest_radial_frequency_hz,
+    radial_block_cluster_mean_omega2,
     radial_block_eigenvalue_sensitivity,
     radial_block_isolated_omega2,
     radial_block_problem_from_boozer_geometry,
@@ -515,6 +516,47 @@ def _gate_boozer_global_custom_jvp_design_gradient() -> GateResult:
         float(metric),
         tolerance,
         "real-Boozer isolated-mode custom-JVP design gradient matches centered finite differences",
+    )
+
+
+def _gate_global_3d_block_degenerate_cluster_mean() -> GateResult:
+    gate_id = "global_3d_block_degenerate_cluster_mean"
+    tolerance = 2.0e-6
+    problem = constant_radial_block_problem(
+        radial_points=14,
+        continuum_frequency_hz=(92_000.0, 92_000.0),
+        radial_coupling_omega2=(2.2e9, 2.2e9),
+    )
+    result = solve_radial_block_eigenmodes(problem)
+
+    def mean_omega2(alpha: float) -> jnp.ndarray:
+        scaled = RadialBlockEigenmodeProblem(
+            s=problem.s,
+            local_stiffness=problem.local_stiffness,
+            local_mass=problem.local_mass,
+            radial_stiffness=(1.0 + alpha) * problem.radial_stiffness,
+            harmonics=problem.harmonics,
+            boundary_condition=problem.boundary_condition,
+        )
+        return radial_block_cluster_mean_omega2(scaled, start_index=0, stop_index=2)
+
+    autodiff = jax.grad(mean_omega2)(0.0)
+    step = 2.0e-5
+    finite_difference = (mean_omega2(step) - mean_omega2(-step)) / (2.0 * step)
+    degeneracy_error = jnp.abs(result.omega2[1] - result.omega2[0]) / jnp.maximum(jnp.abs(result.omega2[0]), 1.0e-30)
+    metric = jnp.max(
+        jnp.asarray(
+            [
+                degeneracy_error,
+                jnp.abs(autodiff - finite_difference) / jnp.maximum(jnp.abs(finite_difference), 1.0e-30),
+            ]
+        )
+    )
+    return _pass_fail(
+        gate_id,
+        float(metric),
+        tolerance,
+        "degenerate block radial cluster mean has a finite-difference-consistent subspace derivative",
     )
 
 
@@ -1904,6 +1946,17 @@ def registered_validation_gates() -> tuple[ValidationGate, ...]:
             command="python -m pytest tests/test_optimization.py tests/test_validation_registry.py",
             tags=("boozer", "global", "eigenmode", "autodiff", "custom-jvp", "optimization"),
             _runner=_gate_boozer_global_custom_jvp_design_gradient,
+        ),
+        ValidationGate(
+            gate_id="global_3d_block_degenerate_cluster_mean",
+            title="Global radial 3-D degenerate-cluster mean",
+            layer="differentiability",
+            quantity="relative cluster-mean gradient error",
+            tolerance=2.0e-6,
+            citation="Hermitian degenerate-eigenvalue subspace sensitivity for block radial shear-Alfven eigenvalue clusters",
+            command="python -m pytest tests/test_metric.py tests/test_global_modes.py tests/test_validation_registry.py",
+            tags=("global", "eigenmode", "3d", "autodiff", "cluster", "degeneracy"),
+            _runner=_gate_global_3d_block_degenerate_cluster_mean,
         ),
         ValidationGate(
             gate_id="analytic_tae_gap_center",

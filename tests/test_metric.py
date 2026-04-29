@@ -8,6 +8,8 @@ import pytest
 from fax.continuum import continuum_branch_matrix
 from fax.equilibrium import analytic_circular_tokamak, analytic_cylinder
 from fax.metric import (
+    generalized_hermitian_cluster_mean_eigenvalue,
+    generalized_hermitian_eigencluster_sensitivity,
     diagonal_continuum_frequencies_hz,
     generalized_eigen_residual_norms,
     generalized_hermitian_eigenvalue_sensitivity,
@@ -149,6 +151,61 @@ def test_generalized_isolated_eigenvalue_custom_jvp_matches_adjoint_formula():
     np.testing.assert_allclose(float(custom_jvp), float(finite_difference), rtol=2.0e-7)
 
 
+def test_generalized_eigencluster_sensitivity_handles_exact_degeneracy():
+    stiffness = jnp.asarray(
+        [
+            [2.0, 0.0, 0.0],
+            [0.0, 2.0, 0.0],
+            [0.0, 0.0, 7.0],
+        ]
+    )
+    mass = jnp.eye(3)
+    stiffness_tangent = jnp.asarray(
+        [
+            [0.3, 0.2, 0.0],
+            [0.2, -0.1, 0.0],
+            [0.0, 0.0, 1.0],
+        ]
+    )
+    mass_tangent = jnp.asarray(
+        [
+            [0.04, 0.01, 0.0],
+            [0.01, -0.02, 0.0],
+            [0.0, 0.0, 0.0],
+        ]
+    )
+    eigensystem = generalized_hermitian_eigensystem(stiffness, mass)
+    cluster = generalized_hermitian_eigencluster_sensitivity(
+        stiffness,
+        mass,
+        eigensystem,
+        (0, 1),
+        stiffness_tangent,
+        mass_tangent,
+    )
+    projected = stiffness_tangent[:2, :2] - 2.0 * mass_tangent[:2, :2]
+
+    def cluster_mean(alpha):
+        return generalized_hermitian_cluster_mean_eigenvalue(
+            stiffness + alpha * stiffness_tangent,
+            mass + alpha * mass_tangent,
+            0,
+            2,
+        )
+
+    custom_jvp = jax.grad(cluster_mean)(0.0)
+    step = 2.0e-5
+    finite_difference = (cluster_mean(step) - cluster_mean(-step)) / (2.0 * step)
+
+    np.testing.assert_allclose(float(cluster.cluster_center), 2.0, rtol=1.0e-12)
+    np.testing.assert_allclose(np.asarray(cluster.projected_sensitivities), np.linalg.eigvalsh(np.asarray(projected)), rtol=1.0e-12)
+    np.testing.assert_allclose(float(cluster.mean_sensitivity), float(jnp.trace(projected) / 2.0), rtol=1.0e-12)
+    np.testing.assert_allclose(float(custom_jvp), float(cluster.mean_sensitivity), rtol=1.0e-12)
+    np.testing.assert_allclose(float(custom_jvp), float(finite_difference), rtol=3.0e-7)
+    assert float(cluster.relative_cluster_spread) == 0.0
+    assert float(cluster.mass_orthonormality_error) < 1.0e-12
+
+
 def test_generalized_eigenvalue_sensitivity_contracts():
     stiffness = jnp.eye(2)
     mass = jnp.eye(2)
@@ -181,6 +238,18 @@ def test_generalized_eigenvalue_sensitivity_contracts():
             stiffness,
             mass,
         )
+
+    with pytest.raises(ValueError, match="cluster_indices"):
+        generalized_hermitian_eigencluster_sensitivity(
+            stiffness,
+            mass,
+            eigensystem,
+            (),
+            stiffness,
+            mass,
+        )
+    with pytest.raises(ValueError, match="stop_index"):
+        generalized_hermitian_cluster_mean_eigenvalue(stiffness, mass, 1, 1)
 
 
 def test_generalized_eigenpair_residuals_are_small():

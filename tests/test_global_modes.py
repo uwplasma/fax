@@ -18,6 +18,8 @@ from fax.global_modes import (
     eigenpair_residual_norm,
     lowest_radial_block_frequency_hz,
     lowest_radial_frequency_hz,
+    radial_block_cluster_mean_frequency_hz,
+    radial_block_cluster_mean_omega2,
     radial_block_eigenvalue_sensitivity,
     radial_block_isolated_frequency_hz,
     radial_block_isolated_omega2,
@@ -398,6 +400,39 @@ def test_radial_block_isolated_omega2_custom_jvp_matches_explicit_sensitivity():
     np.testing.assert_allclose(float(jit_frequency), float(frequency), rtol=1.0e-12)
     np.testing.assert_allclose(float(custom_jvp), float(explicit), rtol=3.0e-7)
     np.testing.assert_allclose(float(custom_jvp), float(finite_difference), rtol=3.0e-7)
+
+
+def test_radial_block_cluster_mean_omega2_is_stable_through_degeneracy():
+    problem = constant_radial_block_problem(
+        radial_points=14,
+        continuum_frequency_hz=(92_000.0, 92_000.0),
+        radial_coupling_omega2=(2.2e9, 2.2e9),
+    )
+    result = solve_radial_block_eigenmodes(problem)
+
+    def omega2(alpha):
+        scaled = RadialBlockEigenmodeProblem(
+            s=problem.s,
+            local_stiffness=problem.local_stiffness,
+            local_mass=problem.local_mass,
+            radial_stiffness=(1.0 + alpha) * problem.radial_stiffness,
+            harmonics=problem.harmonics,
+            boundary_condition=problem.boundary_condition,
+        )
+        return radial_block_cluster_mean_omega2(scaled, start_index=0, stop_index=2)
+
+    value = radial_block_cluster_mean_omega2(problem, start_index=0, stop_index=2)
+    frequency = radial_block_cluster_mean_frequency_hz(problem, start_index=0, stop_index=2)
+    jit_value = jax.jit(lambda p: radial_block_cluster_mean_omega2(p, start_index=0, stop_index=2))(problem)
+    custom_jvp = jax.grad(omega2)(0.0)
+    step = 2.0e-5
+    finite_difference = (omega2(step) - omega2(-step)) / (2.0 * step)
+
+    np.testing.assert_allclose(float(result.omega2[0]), float(result.omega2[1]), rtol=1.0e-12)
+    np.testing.assert_allclose(float(value), float(jnp.mean(result.omega2[:2])), rtol=1.0e-12)
+    np.testing.assert_allclose(float(frequency), float(jnp.sqrt(jnp.maximum(value, 0.0)) / (2.0 * jnp.pi)), rtol=1.0e-12)
+    np.testing.assert_allclose(float(jit_value), float(value), rtol=1.0e-12)
+    np.testing.assert_allclose(float(custom_jvp), float(finite_difference), rtol=5.0e-7)
 
 
 def test_sparse_radial_block_assembly_matches_dense_and_exact_spectrum():

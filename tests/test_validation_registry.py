@@ -39,6 +39,7 @@ def test_core_validation_gates_pass():
         "global_3d_block_eigenvalue_sensitivity",
         "global_3d_block_custom_jvp_eigenvalue",
         "boozer_global_custom_jvp_design_gradient",
+        "global_3d_block_degenerate_cluster_mean",
         "analytic_tae_gap_center",
         "basic_gap_map_ordering",
         "bae_temperature_scaling",
