@@ -1235,6 +1235,11 @@ Needed docs:
     - Added `radial_block_isolated_omega2` and `radial_block_isolated_frequency_hz` so global radial objectives can use the custom-JVP path after matrix assembly.
     - Added tests comparing custom-JVP gradients with explicit adjoint sensitivities and centered finite differences, plus JIT/value parity against the dense solve.
     - Added registered gate `global_3d_block_custom_jvp_eigenvalue`.
+  - 2026-04-29 isolated Boozer design-gradient milestone:
+    - Added `boozer_global_isolated_mode_omega2`, `boozer_global_isolated_mode_frequency_hz`, and `boozer_global_isolated_mode_avoidance_objective` so real-Boozer global design studies can track one isolated mode through the custom-JVP eigenvalue path.
+    - Added `boozer_pipeline_isolated_mode_avoidance_objective` for callable Boozer-geometry builders, preserving the API needed for future differentiable `vmec_jax -> booz_xform_jax -> FAX` shape/profile objectives.
+    - Added tests comparing isolated-mode values against the dense frequency vector and gradients against centered finite differences, plus a pipeline-builder differentiation test.
+    - Added registered gate `boozer_global_custom_jvp_design_gradient` for reviewer-facing custom-JVP/finite-difference agreement on Boozer design variables.
 
 ### Local Testing Policy Until GitHub Actions Resume
 

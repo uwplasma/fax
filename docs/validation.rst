@@ -58,6 +58,9 @@ tags, and command. The current gates are:
 * ``global_3d_block_custom_jvp_eigenvalue``: checks that the custom-JVP
   isolated-eigenvalue path returns the same radial-block gradient as the
   explicit adjoint formula.
+* ``boozer_global_custom_jvp_design_gradient``: checks the custom-JVP
+  isolated-mode gradient for real-Boozer global design variables against
+  centered finite differences.
 * ``analytic_tae_gap_center``: checks the analytic TAE crossing condition
   ``iota=2n/(2m+1)``.
 * ``basic_gap_map_ordering``: checks that the fast BAE/TAE/EAE example places

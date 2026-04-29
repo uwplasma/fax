@@ -49,9 +49,13 @@ wraps the dense generalized eigensolver with a custom JVP using that formula.
 ``radial_block_eigenvalue_sensitivity`` and ``radial_block_isolated_omega2``
 apply the same pattern to the global radial block operator. Current tests and
 validation gates compare the formula against direct autodiff and centered
-finite differences for isolated eigenvalues. Repeated/near-crossing eigenvalues
-remain a subspace problem and should not be reported as single-mode
-sensitivities.
+finite differences for isolated eigenvalues. The Boozer design helpers
+``boozer_global_isolated_mode_frequency_hz`` and
+``boozer_global_isolated_mode_avoidance_objective`` now use that custom-JVP
+path for one tracked real-Boozer global mode, and the validation registry checks
+its design-parameter gradient against centered finite differences.
+Repeated/near-crossing eigenvalues remain a subspace problem and should not be
+reported as single-mode sensitivities.
 
 Implicit and matrix-free path
 -----------------------------

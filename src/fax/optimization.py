@@ -13,6 +13,8 @@ from .boozer import BoozerGeometry
 from .equilibrium import EquilibriumGeometry
 from .fast_ions import FastIonModeDriveResult, FastIonPopulation, eigenfunction_fast_ion_drive
 from .global_modes import (
+    radial_block_isolated_frequency_hz,
+    radial_block_isolated_omega2,
     radial_block_problem_from_boozer_geometry,
     radial_problem_from_equilibrium,
     solve_radial_block_eigenmodes,
@@ -430,6 +432,107 @@ def boozer_global_mode_avoidance_objective(
     return penalty + float(regularization) * jnp.sum(params**2)
 
 
+def boozer_global_isolated_mode_omega2(
+    parameters: Any,
+    *,
+    geometry: BoozerGeometry,
+    harmonics: Any,
+    mass_density: Any,
+    mode_index: int = 0,
+    theta_points: int = 16,
+    zeta_points: int = 16,
+    radial_stiffness_scale: Any = 1.0,
+    radial_stiffness_method: str = "metric",
+    boundary_condition: str = "dirichlet",
+) -> jax.Array:
+    """Return one real-Boozer global ``omega^2`` through the custom-JVP path.
+
+    ``parameters`` are ``[log_density_scale, iota_shift,
+    log_radial_stiffness_scale]``. The selected eigenvalue should be isolated;
+    near crossings require a subspace treatment rather than a single-mode
+    derivative.
+    """
+    problem = _boozer_design_problem(
+        parameters,
+        geometry=geometry,
+        harmonics=harmonics,
+        mass_density=mass_density,
+        theta_points=theta_points,
+        zeta_points=zeta_points,
+        radial_stiffness_scale=radial_stiffness_scale,
+        radial_stiffness_method=radial_stiffness_method,
+        boundary_condition=boundary_condition,
+    )
+    return radial_block_isolated_omega2(problem, mode_index=int(mode_index))
+
+
+def boozer_global_isolated_mode_frequency_hz(
+    parameters: Any,
+    *,
+    geometry: BoozerGeometry,
+    harmonics: Any,
+    mass_density: Any,
+    mode_index: int = 0,
+    theta_points: int = 16,
+    zeta_points: int = 16,
+    radial_stiffness_scale: Any = 1.0,
+    radial_stiffness_method: str = "metric",
+    boundary_condition: str = "dirichlet",
+) -> jax.Array:
+    """Return one real-Boozer global frequency through the custom-JVP path."""
+    problem = _boozer_design_problem(
+        parameters,
+        geometry=geometry,
+        harmonics=harmonics,
+        mass_density=mass_density,
+        theta_points=theta_points,
+        zeta_points=zeta_points,
+        radial_stiffness_scale=radial_stiffness_scale,
+        radial_stiffness_method=radial_stiffness_method,
+        boundary_condition=boundary_condition,
+    )
+    return radial_block_isolated_frequency_hz(problem, mode_index=int(mode_index))
+
+
+def boozer_global_isolated_mode_avoidance_objective(
+    parameters: Any,
+    *,
+    geometry: BoozerGeometry,
+    harmonics: Any,
+    mass_density: Any,
+    avoid_window_hz: tuple[float, float],
+    mode_index: int = 0,
+    theta_points: int = 16,
+    zeta_points: int = 16,
+    radial_stiffness_scale: Any = 1.0,
+    radial_stiffness_method: str = "metric",
+    boundary_condition: str = "dirichlet",
+    softness_hz: float = 2.0e3,
+    regularization: float = 1.0e-3,
+) -> jax.Array:
+    """Penalize one isolated global mode entering a dangerous frequency window."""
+    params = jnp.asarray(parameters)
+    frequency = boozer_global_isolated_mode_frequency_hz(
+        params,
+        geometry=geometry,
+        harmonics=harmonics,
+        mass_density=mass_density,
+        mode_index=mode_index,
+        theta_points=theta_points,
+        zeta_points=zeta_points,
+        radial_stiffness_scale=radial_stiffness_scale,
+        radial_stiffness_method=radial_stiffness_method,
+        boundary_condition=boundary_condition,
+    )
+    penalty = frequency_window_penalty(
+        jnp.asarray([frequency]),
+        lower_hz=float(avoid_window_hz[0]),
+        upper_hz=float(avoid_window_hz[1]),
+        softness_hz=float(softness_hz),
+    )
+    return penalty + float(regularization) * jnp.sum(params**2)
+
+
 def boozer_global_mode_frequency_vector(
     parameters: Any,
     *,
@@ -760,6 +863,52 @@ def boozer_pipeline_mode_avoidance_objective(
     frequencies = solve_radial_block_eigenmodes(problem).frequencies_hz[: int(mode_count)]
     penalty = frequency_window_penalty(
         frequencies,
+        lower_hz=float(avoid_window_hz[0]),
+        upper_hz=float(avoid_window_hz[1]),
+        softness_hz=float(softness_hz),
+    )
+    return penalty + float(regularization) * jnp.sum(params**2)
+
+
+def boozer_pipeline_isolated_mode_avoidance_objective(
+    parameters: Any,
+    *,
+    geometry_builder: Callable[[jax.Array], BoozerGeometry],
+    harmonics: Any,
+    mass_density: Any,
+    avoid_window_hz: tuple[float, float],
+    mode_index: int = 0,
+    radial_stiffness_scale: Any = 1.0,
+    theta_points: int = 16,
+    zeta_points: int = 16,
+    softness_hz: float = 2.0e3,
+    regularization: float = 1.0e-3,
+    boundary_condition: str = "dirichlet",
+) -> jax.Array:
+    """Return a custom-JVP isolated-mode objective for pipeline builders.
+
+    This is the single-mode counterpart of
+    :func:`boozer_pipeline_mode_avoidance_objective`. It is intended for
+    VMEC/Boozer design loops where a tracked, isolated global mode is the
+    optimization target.
+    """
+    params = jnp.asarray(parameters)
+    geometry = geometry_builder(params)
+    density = _evaluate_parameter_source(mass_density, params, geometry)
+    stiffness_scale = _evaluate_parameter_source(radial_stiffness_scale, params, geometry)
+    problem = radial_block_problem_from_boozer_geometry(
+        geometry,
+        harmonics,
+        mass_density=density,
+        radial_stiffness_method="metric",
+        radial_stiffness_scale=stiffness_scale,
+        theta_points=theta_points,
+        zeta_points=zeta_points,
+        boundary_condition=boundary_condition,
+    )
+    frequency = radial_block_isolated_frequency_hz(problem, mode_index=int(mode_index))
+    penalty = frequency_window_penalty(
+        jnp.asarray([frequency]),
         lower_hz=float(avoid_window_hz[0]),
         upper_hz=float(avoid_window_hz[1]),
         softness_hz=float(softness_hz),

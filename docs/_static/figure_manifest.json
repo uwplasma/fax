@@ -216,6 +216,23 @@
       ]
     },
     {
+      "id": "boozer_global_custom_jvp_design_gradient",
+      "title": "Boozer global custom-JVP design gradient",
+      "layer": "differentiability",
+      "quantity": "relative custom-JVP/finite-difference gradient error",
+      "tolerance": 0.005,
+      "citation": "Custom-JVP isolated Hermitian generalized-eigenvalue derivative applied to Boozer global-mode design variables",
+      "command": "python -m pytest tests/test_optimization.py tests/test_validation_registry.py",
+      "tags": [
+        "boozer",
+        "global",
+        "eigenmode",
+        "autodiff",
+        "custom-jvp",
+        "optimization"
+      ]
+    },
+    {
       "id": "analytic_tae_gap_center",
       "title": "Analytic TAE gap-center crossing",
       "layer": "gap-physics",

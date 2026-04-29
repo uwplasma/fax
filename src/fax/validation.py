@@ -73,6 +73,7 @@ from .metric import (
     metric_from_vmec_wout,
 )
 from .modes import stellarator_mode_family
+from .optimization import boozer_global_isolated_mode_frequency_hz
 from .reference_cases import landreman_paul_qa_lowres
 from .units import MU0, PROTON_MASS
 
@@ -483,6 +484,40 @@ def _gate_global_3d_block_custom_jvp_eigenvalue() -> GateResult:
     )
 
 
+def _gate_boozer_global_custom_jvp_design_gradient() -> GateResult:
+    gate_id = "boozer_global_custom_jvp_design_gradient"
+    tolerance = 5.0e-3
+    geometry = _synthetic_global_boozer_geometry()
+    harmonics = jnp.asarray([[1.0, 0.0], [2.0, 1.0]], dtype=float)
+    params = jnp.asarray([0.03, -0.004, 0.02])
+
+    def frequency(parameter_vector: jax.Array) -> jnp.ndarray:
+        return boozer_global_isolated_mode_frequency_hz(
+            parameter_vector,
+            geometry=geometry,
+            harmonics=harmonics,
+            mass_density=3.4e-8,
+            mode_index=0,
+            theta_points=10,
+            zeta_points=10,
+            radial_stiffness_scale=1.0e-4,
+        )
+
+    custom_jvp = jax.grad(frequency)(params)
+    step = 2.0e-4
+    finite_difference = []
+    for index in range(int(params.shape[0])):
+        direction = jnp.zeros_like(params).at[index].set(step)
+        finite_difference.append((frequency(params + direction) - frequency(params - direction)) / (2.0 * step))
+    metric = relative_l2_error(custom_jvp, jnp.asarray(finite_difference))
+    return _pass_fail(
+        gate_id,
+        float(metric),
+        tolerance,
+        "real-Boozer isolated-mode custom-JVP design gradient matches centered finite differences",
+    )
+
+
 def _gate_analytic_tae_gap_center() -> GateResult:
     gate_id = "analytic_tae_gap_center"
     tolerance = 2.0e-2
@@ -645,6 +680,35 @@ def _constant_boozer_geometry() -> BoozerGeometry:
         iota=jnp.asarray([iota, iota]),
         boozer_i=jnp.asarray([0.0, 0.0]),
         boozer_g=jnp.asarray([numerator, numerator]),
+        field_periods=1,
+    )
+
+
+def _synthetic_global_boozer_geometry() -> BoozerGeometry:
+    s = jnp.linspace(0.2, 0.8, 5)
+    minor_radius = 0.35 * s
+    magnetic_field = 2.7
+    major_radius = 5.5
+    numerator = magnetic_field * major_radius
+    zeros = jnp.zeros((int(s.shape[0]), 2))
+    return BoozerGeometry(
+        source="synthetic_global_boozer_validation",
+        s=s,
+        xm=jnp.asarray([0.0, 1.0]),
+        xn=jnp.asarray([0.0, 0.0]),
+        bmnc=jnp.column_stack([jnp.full_like(s, magnetic_field), jnp.zeros_like(s)]),
+        bmns=zeros,
+        rmnc=jnp.column_stack([jnp.full_like(s, major_radius), minor_radius]),
+        rmns=zeros,
+        zmns=jnp.column_stack([jnp.zeros_like(s), minor_radius]),
+        zmnc=zeros,
+        pmns=zeros,
+        pmnc=zeros,
+        gmnc=jnp.column_stack([jnp.full_like(s, numerator / magnetic_field**2), jnp.zeros_like(s)]),
+        gmns=zeros,
+        iota=jnp.full_like(s, 0.61),
+        boozer_i=jnp.zeros_like(s),
+        boozer_g=jnp.full_like(s, numerator),
         field_periods=1,
     )
 
@@ -1829,6 +1893,17 @@ def registered_validation_gates() -> tuple[ValidationGate, ...]:
             command="python -m pytest tests/test_metric.py tests/test_global_modes.py tests/test_validation_registry.py",
             tags=("global", "eigenmode", "3d", "autodiff", "adjoint", "custom-jvp"),
             _runner=_gate_global_3d_block_custom_jvp_eigenvalue,
+        ),
+        ValidationGate(
+            gate_id="boozer_global_custom_jvp_design_gradient",
+            title="Boozer global custom-JVP design gradient",
+            layer="differentiability",
+            quantity="relative custom-JVP/finite-difference gradient error",
+            tolerance=5.0e-3,
+            citation="Custom-JVP isolated Hermitian generalized-eigenvalue derivative applied to Boozer global-mode design variables",
+            command="python -m pytest tests/test_optimization.py tests/test_validation_registry.py",
+            tags=("boozer", "global", "eigenmode", "autodiff", "custom-jvp", "optimization"),
+            _runner=_gate_boozer_global_custom_jvp_design_gradient,
         ),
         ValidationGate(
             gate_id="analytic_tae_gap_center",

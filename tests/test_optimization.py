@@ -11,10 +11,14 @@ from fax.equilibrium import analytic_circular_tokamak
 from fax.optimization import (
     boozer_fast_ion_growth_screen,
     boozer_fast_ion_risk_objective,
+    boozer_global_isolated_mode_avoidance_objective,
+    boozer_global_isolated_mode_frequency_hz,
+    boozer_global_isolated_mode_omega2,
     boozer_global_mode_avoidance_objective,
     boozer_global_mode_frequency_jacobian,
     boozer_global_mode_frequency_vector,
     boozer_global_mode_inverse_design,
+    boozer_pipeline_isolated_mode_avoidance_objective,
     boozer_pipeline_mode_avoidance_objective,
     frequency_window_penalty,
     gradient_descent_minimize,
@@ -284,6 +288,59 @@ def test_boozer_global_frequency_uq_and_inverse_design_are_differentiable():
     assert float(design.objective_history[-1]) < float(design.objective_history[0])
 
 
+def test_boozer_isolated_mode_custom_jvp_design_gradient_matches_finite_difference():
+    geometry = _synthetic_boozer_geometry()
+    harmonics = jnp.asarray([[1.0, 0.0], [2.0, 1.0]])
+    parameters = jnp.asarray([0.03, -0.004, 0.02])
+    kwargs = {
+        "geometry": geometry,
+        "harmonics": harmonics,
+        "mass_density": 3.4e-8,
+        "mode_index": 0,
+        "theta_points": 10,
+        "zeta_points": 10,
+        "radial_stiffness_scale": 1.0e-4,
+    }
+
+    def frequency(params):
+        return boozer_global_isolated_mode_frequency_hz(params, **kwargs)
+
+    isolated_frequency = frequency(parameters)
+    isolated_omega2 = boozer_global_isolated_mode_omega2(parameters, **kwargs)
+    dense_frequency = boozer_global_mode_frequency_vector(
+        parameters,
+        geometry=geometry,
+        harmonics=harmonics,
+        mass_density=3.4e-8,
+        mode_count=1,
+        theta_points=10,
+        zeta_points=10,
+        radial_stiffness_scale=1.0e-4,
+    )[0]
+    gradient = jax.grad(frequency)(parameters)
+    step = 2.0e-4
+    finite_difference = []
+    for index in range(parameters.shape[0]):
+        direction = jnp.zeros_like(parameters).at[index].set(step)
+        finite_difference.append((frequency(parameters + direction) - frequency(parameters - direction)) / (2.0 * step))
+    finite_difference = jnp.asarray(finite_difference)
+    objective_gradient = jax.grad(
+        lambda params: boozer_global_isolated_mode_avoidance_objective(
+            params,
+            avoid_window_hz=(50_000.0, 350_000.0),
+            **kwargs,
+        )
+    )(parameters)
+    jit_frequency = jax.jit(frequency)(parameters)
+
+    np.testing.assert_allclose(float(isolated_frequency), float(dense_frequency), rtol=1.0e-10)
+    np.testing.assert_allclose(float(isolated_omega2), float((2.0 * jnp.pi * dense_frequency) ** 2), rtol=1.0e-10)
+    np.testing.assert_allclose(np.asarray(gradient), np.asarray(finite_difference), rtol=4.0e-3, atol=5.0e-2)
+    np.testing.assert_allclose(float(jit_frequency), float(isolated_frequency), rtol=1.0e-12)
+    assert objective_gradient.shape == (3,)
+    assert np.all(np.isfinite(np.asarray(objective_gradient)))
+
+
 def test_boozer_fast_ion_risk_objective_reduces_with_gradient_steps():
     geometry = _synthetic_boozer_geometry()
     harmonics = jnp.asarray([[1.0, 0.0], [2.0, 1.0]])
@@ -367,6 +424,43 @@ def test_boozer_pipeline_mode_avoidance_objective_differentiates_through_builder
             theta_points=12,
             zeta_points=12,
             mode_count=3,
+        )
+
+    value = objective(params)
+    gradient = jax.grad(objective)(params)
+
+    assert float(value) >= 0.0
+    assert gradient.shape == (3,)
+    assert np.all(np.isfinite(np.asarray(gradient)))
+
+
+def test_boozer_pipeline_isolated_objective_differentiates_through_builder():
+    geometry = _synthetic_boozer_geometry()
+    params = jnp.asarray([0.01, -0.02, 0.03])
+
+    def geometry_builder(x):
+        field_scale = 1.0 + 0.02 * x[1]
+        return replace(
+            geometry,
+            iota=geometry.iota + 0.015 * x[0],
+            bmnc=geometry.bmnc * field_scale,
+            boozer_g=geometry.boozer_g * field_scale,
+        )
+
+    def density_builder(x, built_geometry):
+        return jnp.full_like(built_geometry.s, 3.4e-8 * jnp.exp(x[2]))
+
+    def objective(x):
+        return boozer_pipeline_isolated_mode_avoidance_objective(
+            x,
+            geometry_builder=geometry_builder,
+            harmonics=jnp.asarray([[1.0, 0.0], [2.0, 1.0]]),
+            mass_density=density_builder,
+            radial_stiffness_scale=lambda x, _geometry: 1.0e-4 * jnp.exp(0.1 * x[1]),
+            avoid_window_hz=(50_000.0, 350_000.0),
+            mode_index=0,
+            theta_points=12,
+            zeta_points=12,
         )
 
     value = objective(params)

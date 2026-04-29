@@ -65,6 +65,17 @@ The next executable layer is built around publication-style design studies:
    rotational transform, and scale radial stiffness; a fourth optional
    parameter scales fast-ion density in the growth-risk objective.
 
+``boozer_global_isolated_mode_frequency_hz`` and ``boozer_global_isolated_mode_avoidance_objective``
+   Track a single isolated real-Boozer global mode through the custom-JVP
+   generalized-eigenvalue path. This is the preferred objective form when a
+   publication study follows one mode away from a resonance window and needs a
+   finite-difference reviewer check.
+
+``boozer_pipeline_isolated_mode_avoidance_objective``
+   Applies the same isolated-mode objective to a callable Boozer-geometry
+   builder, which is the API boundary for differentiable ``vmec_jax`` and
+   ``booz_xform_jax`` pipelines.
+
 The example
 
 .. code-block:: bash

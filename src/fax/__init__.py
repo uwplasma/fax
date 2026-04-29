@@ -63,7 +63,14 @@ from .metric import (
     generalized_hermitian_isolated_eigenvalue,
 )
 from .modes import ModeFamily
-from .optimization import GradientDescentResult, LinearizedUncertaintyEstimate
+from .optimization import (
+    GradientDescentResult,
+    LinearizedUncertaintyEstimate,
+    boozer_global_isolated_mode_avoidance_objective,
+    boozer_global_isolated_mode_frequency_hz,
+    boozer_global_isolated_mode_omega2,
+    boozer_pipeline_isolated_mode_avoidance_objective,
+)
 from .plotting import (
     ContinuumArtifacts,
     ConvergenceArtifacts,
@@ -129,6 +136,10 @@ __all__ = [
     "assemble_radial_block_sparse_matrices",
     "boozer_radial_stiffness_matrices",
     "boozer_3d_operator_angular_convergence",
+    "boozer_global_isolated_mode_avoidance_objective",
+    "boozer_global_isolated_mode_frequency_hz",
+    "boozer_global_isolated_mode_omega2",
+    "boozer_pipeline_isolated_mode_avoidance_objective",
     "landreman_paul_qa_lowres",
     "load_continuum_artifacts",
     "load_convergence_artifacts",
