@@ -9,6 +9,7 @@ from .boozer import (
     run_booz_xform_jax_from_wout_data,
     run_booz_xform_jax_geometry_from_wout,
     run_booz_xform_jax_geometry_from_wout_data,
+    run_vmec_jax_fixed_boundary_boozer_geometry,
 )
 from .config import FaxConfig, load_config
 from .cross_code import (
@@ -100,6 +101,7 @@ __all__ = [
     "run_booz_xform_jax_from_wout_data",
     "run_booz_xform_jax_geometry_from_wout",
     "run_booz_xform_jax_geometry_from_wout_data",
+    "run_vmec_jax_fixed_boundary_boozer_geometry",
     "run_continuum",
     "run_convergence",
     "run_validation",

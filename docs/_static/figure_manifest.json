@@ -589,6 +589,23 @@
       ]
     },
     {
+      "id": "landreman_paul_vmec_jax_boozer_in_memory",
+      "title": "Landreman-Paul QA vmec_jax-to-Boozer bridge",
+      "layer": "adapter",
+      "quantity": "relative Boozer Jacobian identity error",
+      "tolerance": 0.01,
+      "citation": "Landreman & Paul, Phys. Rev. Lett. 128, 035001 (2022); one-iteration vmec_jax/booz_xform_jax/FAX in-memory integration smoke gate",
+      "command": "python -m pytest -m requires_vmec_jax tests/test_boozer.py tests/test_validation_registry.py",
+      "tags": [
+        "vmec_jax",
+        "booz_xform_jax",
+        "landreman-paul",
+        "adapter",
+        "boozer",
+        "in-memory"
+      ]
+    },
+    {
       "id": "landreman_paul_continuum_finite",
       "title": "Landreman-Paul QA continuum finite-output check",
       "layer": "adapter",

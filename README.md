@@ -82,8 +82,11 @@ K(s)x = \omega^2(s) M(s)x.
 The newest Boozer path reads real `boozmn` geometry harmonics, builds the same
 `BoozerGeometry` object directly from a VMEC `wout` through `booz_xform_jax`,
 or accepts an in-memory VMEC `wout`-like object for the no-intermediate-file
-`vmec_jax -> booz_xform_jax -> FAX` route. It uses the straight-field-line
-derivative
+`vmec_jax -> booz_xform_jax -> FAX` route. The
+`run_vmec_jax_fixed_boundary_boozer_geometry` helper now runs a short
+`vmec_jax` fixed-boundary solve and hands the live `wout` object to the same
+adapter. That path is currently a Landreman-Paul QA integration smoke gate, not
+a converged equilibrium validation. It uses the straight-field-line derivative
 
 ```math
 k_{\parallel,mn}(s,\theta_B,\zeta_B)=
@@ -521,6 +524,9 @@ It currently establishes:
   Jacobian shape, and local 3-D surface continuum matrices,
 - file-backed and in-memory `booz_xform_jax` adapters that populate the same
   FAX `BoozerGeometry` contract from VMEC `wout` data,
+- a live one-iteration `vmec_jax -> booz_xform_jax -> FAX` Landreman-Paul QA
+  bridge gate that verifies object handoff, the Boozer Jacobian identity, and
+  finite local 3-D continuum branches without claiming converged VMEC physics,
 - a global radial 3-D Boozer block eigenmode operator with radial envelopes,
   harmonic mode structures, residual diagnostics, and analytic constant-limit
   gates,

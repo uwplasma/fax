@@ -1089,7 +1089,7 @@ def generate_validation_gate_summary(output_dir: Path) -> list[Path]:
     plt = _setup_matplotlib()
     gates = registered_validation_gates()
     results_by_id = {result.gate_id: result for result in run_validation_suite()}
-    labels = [gate.gate_id.replace("_", "\n") for gate in gates]
+    labels = [f"{gate.layer}: {gate.gate_id}".replace("_", " ") for gate in gates]
     ratios = []
     colors = []
     statuses = []
@@ -1104,16 +1104,23 @@ def generate_validation_gate_summary(output_dir: Path) -> list[Path]:
             colors.append("#2e7d32" if result.status == "passed" else "#b3261e")
 
     y = np.arange(len(gates))
-    fig, ax = plt.subplots(figsize=(8.6, 4.4), constrained_layout=True)
-    ax.barh(y, ratios, color=colors)
+    fig_height = max(7.0, 0.28 * len(gates))
+    fig, ax = plt.subplots(figsize=(12.0, fig_height))
+    ax.barh(y, ratios, color=colors, height=0.68)
     ax.axvline(1.0, color="#222222", linewidth=1.0, linestyle="--", label="tolerance")
-    ax.set_yticks(y, labels, fontsize=8)
+    for index in range(1, len(gates)):
+        if gates[index].layer != gates[index - 1].layer:
+            ax.axhline(index - 0.5, color="#bdbdbd", linewidth=0.7, alpha=0.75)
+    ax.set_yticks(y, labels, fontsize=6.2)
+    ax.tick_params(axis="y", length=0)
+    ax.invert_yaxis()
     ax.set_xlabel("metric / tolerance")
     ax.set_title("Registered validation gates")
     ax.set_xlim(0.0, max(1.2, float(np.nanmax(ratios)) * 1.15))
     for idx, (ratio, status) in enumerate(zip(ratios, statuses, strict=True)):
-        ax.text(min(ratio + 0.03, ax.get_xlim()[1] * 0.96), idx, status, va="center", fontsize=8)
+        ax.text(min(ratio + 0.025, ax.get_xlim()[1] * 0.96), idx, status, va="center", fontsize=6.4)
     ax.legend(loc="lower right")
+    fig.subplots_adjust(left=0.42, right=0.98, top=0.965, bottom=0.05)
 
     paths = _save_figure(fig, output_dir, "validation_gate_summary")
     plt.close(fig)

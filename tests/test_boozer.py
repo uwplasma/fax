@@ -31,13 +31,15 @@ from fax.boozer import (
     read_boozmn,
     read_boozmn_geometry,
     reconstruct_boozer_field,
+    run_booz_xform_jax_from_wout,
     run_booz_xform_jax_from_wout_data,
     run_booz_xform_jax_geometry_from_wout,
     run_booz_xform_jax_geometry_from_wout_data,
-    run_booz_xform_jax_from_wout,
+    run_vmec_jax_fixed_boundary_boozer_geometry,
     straight_field_line_phase_error,
 )
 from fax.global_modes import radial_block_problem_from_boozer_geometry, solve_radial_block_eigenmodes
+from fax.reference_cases import landreman_paul_qa_lowres
 from fax.units import MU0
 
 
@@ -655,3 +657,41 @@ def test_run_booz_xform_jax_geometry_from_wout_data_matches_file_adapter():
 
     assert dict(object_geometry.metadata)["wout_data_type"] == "SimpleNamespace"
     assert float(boozer_geometry_jacobian_identity_error(object_geometry, theta_points=32, zeta_points=8)) < 2.0e-5
+
+
+@pytest.mark.requires_vmec_jax
+@pytest.mark.requires_booz_xform_jax
+def test_landreman_paul_vmec_jax_to_boozer_in_memory_smoke():
+    pytest.importorskip("vmec_jax")
+    pytest.importorskip("booz_xform_jax")
+    case = landreman_paul_qa_lowres()
+    if not case.vmec_input.exists():
+        pytest.skip(f"missing local Landreman-Paul VMEC input: {case.vmec_input}")
+
+    geometry = run_vmec_jax_fixed_boundary_boozer_geometry(
+        case.vmec_input,
+        mboz=4,
+        nboz=4,
+        surfaces=(0.25, 0.5),
+        max_iter=1,
+        theta_points=12,
+        zeta_points=4,
+        jit=False,
+    )
+    harmonics = np.asarray([[1.0, 0.0], [2.0, 1.0]])
+    frequencies = boozer_3d_continuum_frequencies_hz(
+        geometry,
+        harmonics,
+        mass_density=3.4e-8,
+        theta_points=8,
+        zeta_points=8,
+    )
+
+    assert geometry.source == "vmec_jax_booz_xform_jax"
+    assert geometry.field_periods == 2
+    assert geometry.bmnc.shape[0] == 2
+    assert np.all(np.isfinite(np.asarray(geometry.bmnc)))
+    assert np.all(np.asarray(geometry.bmnc[:, 0]) > 0.0)
+    assert np.all(np.isfinite(np.asarray(frequencies)))
+    assert np.all(np.asarray(frequencies) >= 0.0)
+    assert float(boozer_geometry_jacobian_identity_error(geometry, theta_points=12, zeta_points=8)) < 1.0e-2

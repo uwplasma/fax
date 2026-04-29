@@ -1172,6 +1172,13 @@ Needed docs:
     - Strengthened neighboring `booz_xform_jax` with `read_wout_data(...).run_jax(...)` parity tests against file-backed `read_wout(...).run_jax(...)` for stellarator-symmetric and asymmetric fixtures, including Jacobian harmonics.
     - Regenerated the validation gate summary figures and manifest so docs/README artifacts include the new in-memory bridge gate.
     - This closes the no-intermediate-file handoff layer needed for `vmec_jax -> booz_xform_jax -> FAX` applications. The next hard step is differentiating through an actual `vmec_jax` solve/transform builder, not only through downstream FAX objectives.
+  - 2026-04-28 live Landreman-Paul VMEC-JAX bridge milestone:
+    - Added `run_vmec_jax_fixed_boundary_boozer_geometry`, a public integration helper that runs a short `vmec_jax` fixed-boundary solve, converts the live VMEC state to an in-memory `wout`, passes it through `booz_xform_jax`, and returns the normal FAX `BoozerGeometry` contract.
+    - Added the registered validation gate `landreman_paul_vmec_jax_boozer_in_memory`, using the local Landreman-Paul QA low-resolution VMEC input with one VMEC iteration as a fast object-handoff smoke test. The gate checks the Boozer Jacobian identity at the percent level and verifies finite non-negative local 3-D Boozer continuum branches.
+    - Added a matching physics test in `tests/test_boozer.py` and documented the gate in the README, validation docs, and differentiability notes.
+    - Reworked the validation-gate summary figure layout after visual QA showed label overlap with the larger registry; regenerated the figure manifest and coverage badge.
+    - Verified locally with the targeted bridge gate (`metric=2.1307e-3 < 1.0e-2`), `python -m pytest -q` (164 passed), coverage (`95.6%` FAX source coverage, fail-under 95 passed), `python -m ruff check .`, `python -m mypy src/fax`, `python tools/generate_validation_figures.py`, `python tools/qa_figures.py`, `python -m sphinx -W --keep-going -b html docs docs/_build/html`, `python -m build`, `python -m twine check dist/*`, and `git diff --check`.
+    - Scope note: this proves the end-to-end object bridge is live. It is not yet a converged VMEC/Boozer/continuum publication validation and must be followed by VMEC convergence, Boozer truncation, angular/radial convergence, and cross-code/literature comparisons.
 
 ### Local Testing Policy Until GitHub Actions Resume
 

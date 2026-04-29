@@ -120,6 +120,12 @@ tags, and command. The current gates are:
   quotient errors for the first modes.
 * ``landreman_paul_adapter_smoke``: checks the Landreman-Paul QA VMEC ``wout``
   profile and metric adapters when local data are available.
+* ``landreman_paul_vmec_jax_boozer_in_memory``: runs a one-iteration
+  ``vmec_jax`` fixed-boundary solve on the Landreman-Paul QA input, passes the
+  live ``wout`` object through ``booz_xform_jax`` without writing an
+  intermediate file, and checks the resulting FAX Boozer geometry for a small
+  Jacobian-identity error and finite local 3-D continuum branches. This is an
+  integration smoke gate, not a converged VMEC physics benchmark.
 * ``landreman_paul_continuum_finite``: checks that the Landreman-Paul profile
   and metric continuum branches are finite and have small eigensolve residuals.
 * ``landreman_paul_radial_sampling_convergence``: checks VMEC-backed radial
@@ -177,6 +183,13 @@ This case should be used first for adapter smoke tests, continuum-map
 development, Boozer-pipeline checks, and early performance measurements. It is
 not a validation by itself until the relevant continuum/eigenmode metrics are
 compared with analytic limits or literature/cross-code references.
+
+The first live-equilibrium path is the
+``landreman_paul_vmec_jax_boozer_in_memory`` gate. It intentionally uses one
+low-resolution ``vmec_jax`` iteration so it can run in local development and
+exercise the end-to-end object handoff. Converged ``vmec_jax`` solves, Boozer
+truncation sweeps, and external-code continuum comparisons remain required
+before this path can support publication-level stellarator claims.
 
 Current Smoke-Test Figures
 --------------------------

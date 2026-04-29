@@ -9,7 +9,7 @@ publication path.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import Any
 
@@ -439,6 +439,83 @@ def run_booz_xform_jax_geometry_from_wout_data(
         metadata=(("wout_data_type", type(wout).__name__),),
     )
     return _geometry_from_booz_xform_output(transform, output, s, metadata)
+
+
+def run_vmec_jax_fixed_boundary_boozer_geometry(
+    input_path: str | Path,
+    *,
+    mboz: int = 4,
+    nboz: int = 4,
+    surfaces: tuple[float, ...] = (0.25, 0.5),
+    max_iter: int = 1,
+    theta_points: int = 12,
+    zeta_points: int = 4,
+    use_initial_guess: bool = False,
+    vmec_project: bool = False,
+    fast_bcovar: bool = True,
+    jit: bool = False,
+    solver_kwargs: dict[str, Any] | None = None,
+) -> BoozerGeometry:
+    """Run a short ``vmec_jax -> booz_xform_jax -> FAX`` in-memory pipeline.
+
+    The defaults are intentionally small so the function can serve as an
+    integration smoke-test path in local validation.  Production studies should
+    raise the VMEC iteration count, grid resolution, and Boozer truncation, then
+    run convergence gates before using the result for physics claims.
+    """
+    import importlib.util
+
+    try:
+        import vmec_jax as vj
+        from vmec_jax.driver import run_fixed_boundary, wout_from_fixed_boundary_run
+        from vmec_jax.vmec_tomnsp import vmec_angle_grid
+    except ImportError as exc:  # pragma: no cover - environment dependent
+        raise ImportError("vmec_jax is required for run_vmec_jax_fixed_boundary_boozer_geometry") from exc
+
+    if importlib.util.find_spec("booz_xform_jax") is None:  # pragma: no cover - environment dependent
+        raise ImportError("booz_xform_jax is required for run_vmec_jax_fixed_boundary_boozer_geometry")
+
+    vmec_input = Path(input_path).expanduser().resolve()
+    cfg, _ = vj.load_input(str(vmec_input))
+    grid = vmec_angle_grid(
+        ntheta=int(theta_points),
+        nzeta=int(zeta_points),
+        nfp=int(cfg.nfp),
+        lasym=bool(cfg.lasym),
+    )
+    run_options: dict[str, Any] = {
+        "max_iter": int(max_iter),
+        "use_initial_guess": bool(use_initial_guess),
+        "vmec_project": bool(vmec_project),
+        "verbose": False,
+        "grid": grid,
+        "jit_forces": False,
+        "use_scan": False,
+        "multigrid": False,
+    }
+    if solver_kwargs:
+        run_options.update(solver_kwargs)
+
+    run = run_fixed_boundary(vmec_input, **run_options)
+    wout = wout_from_fixed_boundary_run(run, include_fsq=False, fast_bcovar=bool(fast_bcovar))
+    geometry = run_booz_xform_jax_geometry_from_wout_data(
+        wout,
+        mboz=mboz,
+        nboz=nboz,
+        surfaces=surfaces,
+        jit=jit,
+    )
+    metadata = (
+        ("vmec_input", str(vmec_input)),
+        ("vmec_max_iter", int(run_options.get("max_iter", max_iter))),
+        ("vmec_theta_points", int(theta_points)),
+        ("vmec_zeta_points", int(zeta_points)),
+        ("vmec_use_initial_guess", bool(run_options.get("use_initial_guess", use_initial_guess))),
+        ("vmec_project", bool(run_options.get("vmec_project", vmec_project))),
+        ("vmec_fast_bcovar", bool(fast_bcovar)),
+        *geometry.metadata,
+    )
+    return replace(geometry, source="vmec_jax_booz_xform_jax", metadata=metadata)
 
 
 def _run_booz_xform_transform(

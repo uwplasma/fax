@@ -17,10 +17,12 @@ callable Boozer-geometry builder, which is the intended API boundary for
 ``vmec_jax``/``booz_xform_jax`` pipelines. The file-backed and in-memory
 ``run_booz_xform_jax_geometry_from_wout*`` adapters now share the same
 ``BoozerGeometry`` contract and are validated against asymmetric Boozer
-harmonics. The dense objective test still differentiates through a synthetic
-builder; the next full-equilibrium gradient gate should replace that builder
-with a stable differentiable ``vmec_jax`` solve and ``booz_xform_jax`` transform
-artifact.
+harmonics. ``run_vmec_jax_fixed_boundary_boozer_geometry`` adds the first live
+``vmec_jax`` fixed-boundary object handoff into the same path and is covered by
+a Landreman-Paul QA integration smoke gate. The dense objective test still
+differentiates through a synthetic builder; the next full-equilibrium gradient
+gate should replace that builder with a stable differentiable ``vmec_jax`` solve
+and ``booz_xform_jax`` transform artifact.
 
 Generalized eigenvalue path
 ---------------------------
@@ -107,3 +109,10 @@ still treats mass density, rotational-transform offset, radial stiffness, and
 fast-ion density as reduced design coordinates; the next adapter step is to
 map those coordinates to actual ``vmec_jax`` boundary/profile variables and
 ``booz_xform_jax`` transform outputs.
+
+The live Landreman-Paul ``vmec_jax`` bridge is intentionally a smoke test today:
+it verifies object compatibility and finite downstream operators, but it uses a
+single VMEC iteration. Differentiable shape-gradient claims require a converged
+or otherwise controlled equilibrium solve, a Boozer-transform convergence
+study, and finite-difference or adjoint checks against actual VMEC boundary and
+profile variables.

@@ -28,6 +28,7 @@ from .boozer import (
     read_boozmn_geometry,
     run_booz_xform_jax_geometry_from_wout,
     run_booz_xform_jax_geometry_from_wout_data,
+    run_vmec_jax_fixed_boundary_boozer_geometry,
     straight_field_line_phase_error,
 )
 from .continuum import continuum_branch_matrix, local_continuum_frequency_hz
@@ -1301,6 +1302,59 @@ def _gate_landreman_paul_radial_sampling_convergence() -> GateResult:
     )
 
 
+def _gate_landreman_paul_vmec_jax_boozer_in_memory() -> GateResult:
+    gate_id = "landreman_paul_vmec_jax_boozer_in_memory"
+    tolerance = 1.0e-2
+    case = landreman_paul_qa_lowres()
+    if not case.vmec_input.exists():
+        return GateResult(
+            gate_id=gate_id,
+            status="skipped",
+            metric=float("nan"),
+            tolerance=tolerance,
+            message=f"missing Landreman-Paul VMEC input: {case.vmec_input}",
+        )
+
+    try:
+        geometry = run_vmec_jax_fixed_boundary_boozer_geometry(
+            case.vmec_input,
+            mboz=4,
+            nboz=4,
+            surfaces=(0.25, 0.5),
+            max_iter=1,
+            theta_points=12,
+            zeta_points=4,
+            jit=False,
+        )
+    except ImportError as exc:
+        return GateResult(
+            gate_id=gate_id,
+            status="skipped",
+            metric=float("nan"),
+            tolerance=tolerance,
+            message=str(exc),
+        )
+
+    harmonics = jnp.asarray([[1.0, 0.0], [2.0, 1.0]])
+    frequencies = boozer_3d_continuum_frequencies_hz(
+        geometry,
+        harmonics,
+        mass_density=3.4e-8,
+        theta_points=8,
+        zeta_points=8,
+    )
+    identity_error = float(boozer_geometry_jacobian_identity_error(geometry, theta_points=12, zeta_points=8))
+    finite = bool(jnp.all(jnp.isfinite(frequencies)))
+    non_negative = bool(jnp.all(frequencies >= 0.0))
+    metric = identity_error if finite and non_negative and geometry.field_periods == 2 else 1.0
+    return _pass_fail(
+        gate_id,
+        metric,
+        tolerance,
+        "one-iteration VMEC-JAX to Boozer/FAX in-memory smoke path gives a finite local 3-D continuum",
+    )
+
+
 def _coarsen_metric_geometry(metric: MetricGeometry, *, radial_points: int) -> MetricGeometry:
     indices = np.unique(np.rint(np.linspace(0, int(metric.s.shape[0]) - 1, int(radial_points))).astype(int))
     if indices.size < 4:
@@ -1762,6 +1816,20 @@ def registered_validation_gates() -> tuple[ValidationGate, ...]:
             command="python -m pytest -m requires_vmec_jax tests/test_metric.py tests/test_validation_registry.py",
             tags=("vmec", "landreman-paul", "adapter"),
             _runner=_gate_landreman_paul_adapter_smoke,
+        ),
+        ValidationGate(
+            gate_id="landreman_paul_vmec_jax_boozer_in_memory",
+            title="Landreman-Paul QA vmec_jax-to-Boozer bridge",
+            layer="adapter",
+            quantity="relative Boozer Jacobian identity error",
+            tolerance=1.0e-2,
+            citation=(
+                "Landreman & Paul, Phys. Rev. Lett. 128, 035001 (2022); "
+                "one-iteration vmec_jax/booz_xform_jax/FAX in-memory integration smoke gate"
+            ),
+            command="python -m pytest -m requires_vmec_jax tests/test_boozer.py tests/test_validation_registry.py",
+            tags=("vmec_jax", "booz_xform_jax", "landreman-paul", "adapter", "boozer", "in-memory"),
+            _runner=_gate_landreman_paul_vmec_jax_boozer_in_memory,
         ),
         ValidationGate(
             gate_id="landreman_paul_continuum_finite",
