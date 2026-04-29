@@ -118,8 +118,9 @@ Current Figures
 
    Artifact-level public-code checks: FAX reproduces STELLGAP
    ``alfven_spec`` to ``alfven_post`` post-processing, reproduces AE3D
-   ``omega2.dat`` to ``egn_values.dat`` conventions, and checks AE3D sparse
-   matrix symmetry/residual metrics. These are convention gates that precede
+   ``omega2.dat`` to ``egn_values.dat`` conventions, checks AE3D sparse
+   matrix symmetry/residual metrics, and independently re-solves the public
+   AE3D generalized matrix problem. These are convention gates that precede
    full global-mode physics parity.
 
 .. figure:: _static/continuum_artifact_dashboard.svg

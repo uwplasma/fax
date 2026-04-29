@@ -38,6 +38,7 @@ from fax.boozer import (
 from fax.config import EquilibriumConfig, FaxConfig, GridConfig, RunConfig
 from fax.continuum import continuum_branch_matrix
 from fax.cross_code import (
+    ae3d_dense_spectrum_parity,
     ae3d_eigenvalue_residual_summary,
     ae3d_matrix_symmetry_summary,
     ae3d_omega2_eigenvalue_error,
@@ -867,9 +868,13 @@ def generate_external_code_artifact_dashboard(output_dir: Path) -> list[Path]:
     alfven_post = stellgap_dir / "alfven_post"
     omega2_path = ae3d_dir / "omega2.dat"
     egn_values_path = ae3d_dir / "egn_values.dat"
+    egn_mode_path = ae3d_dir / "egn_mode_asci.dat"
     a_matrix = ae3d_dir / "a_matrix.dat"
     b_matrix = ae3d_dir / "b_matrix.dat"
-    if not all(path.exists() for path in (alfven_spec, alfven_post, omega2_path, egn_values_path, a_matrix, b_matrix)):
+    if not all(
+        path.exists()
+        for path in (alfven_spec, alfven_post, omega2_path, egn_values_path, egn_mode_path, a_matrix, b_matrix)
+    ):
         return []
     plt = _setup_matplotlib()
     stellgap_comparison = stellgap_postprocess_error(alfven_spec_path=alfven_spec, alfven_post_path=alfven_post)
@@ -877,6 +882,12 @@ def generate_external_code_artifact_dashboard(output_dir: Path) -> list[Path]:
     ae3d_residual = ae3d_eigenvalue_residual_summary(egn_values_path)
     a_summary = ae3d_matrix_symmetry_summary(a_matrix)
     b_summary = ae3d_matrix_symmetry_summary(b_matrix)
+    dense_parity = ae3d_dense_spectrum_parity(
+        a_matrix_path=a_matrix,
+        b_matrix_path=b_matrix,
+        egn_mode_path=egn_mode_path,
+        max_modes=16,
+    )
     stellgap_processed = stellgap_spec_postprocessed_continuum(alfven_spec)
     stellgap_reference = read_stellgap_alfven_post(alfven_post)
     predicted = np.asarray(stellgap_processed.frequency_khz)
@@ -913,18 +924,19 @@ def generate_external_code_artifact_dashboard(output_dir: Path) -> list[Path]:
     axes[1, 0].set_xlabel("AE3D egn_values")
     axes[1, 0].set_ylabel("FAX reproduction")
 
-    labels = ["A asym.", "B asym.", "AE3D residual", "omega2 error"]
+    labels = ["A asym.", "B asym.", "AE3D residual", "omega2 error", "dense eig."]
     values = [
         a_summary.relative_asymmetry,
         b_summary.relative_asymmetry,
         ae3d_residual.max_residual,
         ae3d_comparison.max_relative_error,
+        dense_parity.max_eigenvalue_relative_error,
     ]
-    axes[1, 1].bar(labels, values, color=["#4c78a8", "#72b7b2", "#f58518", "#54a24b"])
+    axes[1, 1].bar(labels, values, color=["#4c78a8", "#72b7b2", "#f58518", "#54a24b", "#b279a2"])
     axes[1, 1].set_yscale("log")
     axes[1, 1].axhline(1.0e-5, color="black", linestyle="--", linewidth=1.0, label="matrix/eigenvalue gate")
     axes[1, 1].axhline(1.0e-2, color="#777777", linestyle=":", linewidth=1.0, label="residual gate")
-    axes[1, 1].set_title(f"AE3D matrices: N={a_summary.dimension}, nnz={a_summary.nonzero_count}")
+    axes[1, 1].set_title(f"AE3D matrices: N={a_summary.dimension}, dense err={dense_parity.max_eigenvalue_relative_error:.2e}")
     axes[1, 1].set_ylabel("metric")
     axes[1, 1].tick_params(axis="x", rotation=18)
     axes[1, 1].legend(loc="upper right", fontsize=8)
@@ -959,6 +971,15 @@ def generate_external_code_artifact_dashboard(output_dir: Path) -> list[Path]:
             "dimension": b_summary.dimension,
             "nonzero_count": b_summary.nonzero_count,
             "relative_asymmetry": b_summary.relative_asymmetry,
+        },
+        "ae3d_dense_spectrum": {
+            "count": dense_parity.count,
+            "matrix_dimension": dense_parity.matrix_dimension,
+            "real_eigenvalue_count": dense_parity.real_eigenvalue_count,
+            "max_eigenvalue_relative_error": dense_parity.max_eigenvalue_relative_error,
+            "p95_eigenvalue_relative_error": dense_parity.p95_eigenvalue_relative_error,
+            "max_frequency_relative_error": dense_parity.max_frequency_relative_error,
+            "p95_frequency_relative_error": dense_parity.p95_frequency_relative_error,
         },
     }
     (output_dir / "external_code_artifact_metrics.json").write_text(

@@ -9,6 +9,15 @@
     "nonzero_count": 49855,
     "relative_asymmetry": 0.0
   },
+  "ae3d_dense_spectrum": {
+    "count": 16,
+    "matrix_dimension": 1287,
+    "max_eigenvalue_relative_error": 1.633579871643743e-06,
+    "max_frequency_relative_error": 8.167902694136567e-07,
+    "p95_eigenvalue_relative_error": 7.888903789051451e-07,
+    "p95_frequency_relative_error": 3.944452487748285e-07,
+    "real_eigenvalue_count": 1283
+  },
   "ae3d_omega2_eigenvalue": {
     "count": 1287,
     "max_relative_error": 6.936729741100234e-07,

@@ -118,6 +118,9 @@ tags, and command. The current gates are:
   ``egn_mode_asci.dat`` eigenvectors against public ``a_matrix.dat`` and
   ``b_matrix.dat`` through ``A x = lambda B x`` residuals and Rayleigh
   quotient errors for the first modes.
+* ``ae3d_public_dense_spectrum_parity``: independently solves the public AE3D
+  dense generalized eigenproblem with SciPy/LAPACK and matches the first
+  published ``omega^2`` eigenvalues from ``egn_mode_asci.dat``.
 * ``landreman_paul_adapter_smoke``: checks the Landreman-Paul QA VMEC ``wout``
   profile and metric adapters when local data are available.
 * ``landreman_paul_vmec_jax_boozer_in_memory``: runs a one-iteration
@@ -300,9 +303,11 @@ yet full 3-D Alfvén-continuum validation.
 The AE3D public answer table and sparse generalized-eigenproblem artifacts are
 also parsed in local validation so future global-eigenmode parity work starts
 from tested artifact readers. FAX now verifies AE3D's public matrix/eigenmode
-triplet internally through residuals and Rayleigh quotients. This is still an
-external matrix/eigenmode parity gate, not yet a claim that the current reduced
-FAX radial operator reproduces AE3D's full physics operator.
+triplet internally through residuals and Rayleigh quotients, and independently
+re-solves the public generalized matrix problem to recover the published
+spectrum. This is still external matrix/eigenmode parity, not yet a claim that
+the current reduced FAX radial operator reproduces AE3D's full physics
+operator.
 
 .. figure:: _static/external_code_artifact_dashboard.svg
    :alt: STELLGAP and AE3D public artifact parity dashboard.

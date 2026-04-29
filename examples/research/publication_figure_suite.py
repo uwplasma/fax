@@ -38,6 +38,7 @@ from fax.boozer import (  # noqa: E402
 from fax.config import EquilibriumConfig, FaxConfig, GridConfig, RunConfig  # noqa: E402
 from fax.continuum import continuum_branch_matrix  # noqa: E402
 from fax.cross_code import (  # noqa: E402
+    ae3d_dense_spectrum_parity,
     ae3d_matrix_eigenmode_parity,
     read_ae3d_eigenmodes,
     read_stellgap_alfven_post,
@@ -476,6 +477,12 @@ def _case_ae3d_matrix_parity(output_dir: Path, formats: tuple[str, ...]) -> dict
         egn_mode_path=egn_mode,
         max_modes=8,
     )
+    dense_parity = ae3d_dense_spectrum_parity(
+        a_matrix_path=a_matrix,
+        b_matrix_path=b_matrix,
+        egn_mode_path=egn_mode,
+        max_modes=16,
+    )
     modes = np.asarray(data.modes)
     first_mode = np.abs(modes[0])
     fig, axes = plt.subplots(1, 3, figsize=(12.8, 3.9), constrained_layout=True)
@@ -489,14 +496,31 @@ def _case_ae3d_matrix_parity(output_dir: Path, formats: tuple[str, ...]) -> dict
     axes[1].set_title("first AE3D mode structure")
     axes[1].set_xlabel("rho")
     axes[1].set_ylabel("harmonic index")
-    metrics = [parity.max_residual, parity.p95_residual, parity.max_rayleigh_relative_error, parity.max_frequency_relative_error]
-    axes[2].bar(["max res.", "p95 res.", "Rayleigh", "freq."], metrics, color=["#2458a6", "#72b7b2", "#b13f2a", "#2e7d32"])
+    metrics = [
+        parity.max_residual,
+        parity.p95_residual,
+        parity.max_rayleigh_relative_error,
+        parity.max_frequency_relative_error,
+        dense_parity.max_eigenvalue_relative_error,
+    ]
+    axes[2].bar(
+        ["max res.", "p95 res.", "Rayleigh", "freq.", "dense eig."],
+        metrics,
+        color=["#2458a6", "#72b7b2", "#b13f2a", "#2e7d32", "#b279a2"],
+    )
     axes[2].set_yscale("log")
     axes[2].set_title("AE3D matrix/eigenmode parity")
     axes[2].set_ylabel("relative metric")
     axes[2].tick_params(axis="x", rotation=20)
     files = _save(fig, output_dir, case_id, formats)
-    return {"case": case_id, "status": "completed", "figures": files, **parity.__dict__}
+    return {
+        "case": case_id,
+        "status": "completed",
+        "figures": files,
+        **parity.__dict__,
+        "dense_spectrum_max_eigenvalue_relative_error": dense_parity.max_eigenvalue_relative_error,
+        "dense_spectrum_max_frequency_relative_error": dense_parity.max_frequency_relative_error,
+    }
 
 
 CASES: dict[str, CaseRunner] = {

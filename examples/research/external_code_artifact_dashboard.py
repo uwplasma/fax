@@ -13,6 +13,7 @@ import numpy as np
 jax.config.update("jax_enable_x64", True)
 
 from fax.cross_code import (  # noqa: E402
+    ae3d_dense_spectrum_parity,
     ae3d_eigenvalue_residual_summary,
     ae3d_matrix_symmetry_summary,
     ae3d_omega2_eigenvalue_error,
@@ -33,9 +34,10 @@ def build_dashboard(stellgap_dir: Path, ae3d_dir: Path, output_dir: Path) -> dic
     alfven_post = stellgap_dir / "alfven_post"
     omega2_path = ae3d_dir / "omega2.dat"
     egn_values_path = ae3d_dir / "egn_values.dat"
+    egn_mode_path = ae3d_dir / "egn_mode_asci.dat"
     a_matrix = ae3d_dir / "a_matrix.dat"
     b_matrix = ae3d_dir / "b_matrix.dat"
-    for path in (alfven_spec, alfven_post, omega2_path, egn_values_path, a_matrix, b_matrix):
+    for path in (alfven_spec, alfven_post, omega2_path, egn_values_path, egn_mode_path, a_matrix, b_matrix):
         if not path.exists():
             raise FileNotFoundError(path)
 
@@ -44,6 +46,12 @@ def build_dashboard(stellgap_dir: Path, ae3d_dir: Path, output_dir: Path) -> dic
     ae3d_residual = ae3d_eigenvalue_residual_summary(egn_values_path)
     a_summary = ae3d_matrix_symmetry_summary(a_matrix)
     b_summary = ae3d_matrix_symmetry_summary(b_matrix)
+    dense_parity = ae3d_dense_spectrum_parity(
+        a_matrix_path=a_matrix,
+        b_matrix_path=b_matrix,
+        egn_mode_path=egn_mode_path,
+        max_modes=16,
+    )
 
     stellgap_processed = stellgap_spec_postprocessed_continuum(alfven_spec)
     stellgap_reference = read_stellgap_alfven_post(alfven_post)
@@ -88,18 +96,19 @@ def build_dashboard(stellgap_dir: Path, ae3d_dir: Path, output_dir: Path) -> dic
     axes[1, 0].set_xlabel("egn_values table")
     axes[1, 0].set_ylabel("FAX convention reproduction")
 
-    labels = ["A asym.", "B asym.", "AE3D residual", "omega2 error"]
+    labels = ["A asym.", "B asym.", "AE3D residual", "omega2 error", "dense eig."]
     values = [
         a_summary.relative_asymmetry,
         b_summary.relative_asymmetry,
         ae3d_residual.max_residual,
         ae3d_comparison.max_relative_error,
+        dense_parity.max_eigenvalue_relative_error,
     ]
-    axes[1, 1].bar(labels, values, color=["#4c78a8", "#72b7b2", "#f58518", "#54a24b"])
+    axes[1, 1].bar(labels, values, color=["#4c78a8", "#72b7b2", "#f58518", "#54a24b", "#b279a2"])
     axes[1, 1].set_yscale("log")
     axes[1, 1].axhline(1.0e-5, color="k", ls="--", lw=1.0, label="matrix/eigenvalue gate")
     axes[1, 1].axhline(1.0e-2, color="#777777", ls=":", lw=1.0, label="residual gate")
-    axes[1, 1].set_title("AE3D artifact residuals")
+    axes[1, 1].set_title("AE3D matrix and spectrum parity")
     axes[1, 1].set_ylabel("metric")
     axes[1, 1].tick_params(axis="x", rotation=18)
     axes[1, 1].legend(loc="upper right")
@@ -117,6 +126,15 @@ def build_dashboard(stellgap_dir: Path, ae3d_dir: Path, output_dir: Path) -> dic
         "ae3d_residual": ae3d_residual.__dict__,
         "ae3d_a_matrix": a_summary.__dict__,
         "ae3d_b_matrix": b_summary.__dict__,
+        "ae3d_dense_spectrum": {
+            "count": dense_parity.count,
+            "matrix_dimension": dense_parity.matrix_dimension,
+            "real_eigenvalue_count": dense_parity.real_eigenvalue_count,
+            "max_eigenvalue_relative_error": dense_parity.max_eigenvalue_relative_error,
+            "p95_eigenvalue_relative_error": dense_parity.p95_eigenvalue_relative_error,
+            "max_frequency_relative_error": dense_parity.max_frequency_relative_error,
+            "p95_frequency_relative_error": dense_parity.p95_frequency_relative_error,
+        },
         "figures": paths,
     }
     (output_dir / "external_code_artifact_metrics.json").write_text(json.dumps(metrics, indent=2, sort_keys=True), encoding="utf-8")

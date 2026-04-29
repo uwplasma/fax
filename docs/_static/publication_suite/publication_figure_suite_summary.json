@@ -93,6 +93,8 @@
     {
       "case": "10_ae3d_matrix_eigenmode_parity",
       "count": 8,
+      "dense_spectrum_max_eigenvalue_relative_error": 1.633579871643743e-06,
+      "dense_spectrum_max_frequency_relative_error": 8.167902694136567e-07,
       "dominant_mode_harmonic_m": 12,
       "dominant_mode_harmonic_n": 2,
       "dominant_mode_surface": 18,

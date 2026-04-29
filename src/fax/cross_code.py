@@ -15,7 +15,8 @@ from typing import Any
 import jax
 import jax.numpy as jnp
 import numpy as np
-from scipy import sparse
+from scipy import linalg, sparse
+from scipy.optimize import linear_sum_assignment
 
 from .boozer import boozer_3d_continuum_frequencies_hz, read_boozmn_geometry
 
@@ -110,6 +111,23 @@ class Ae3dMatrixEigenmodeParity:
     dominant_mode_surface: int
     dominant_mode_harmonic_m: int
     dominant_mode_harmonic_n: int
+
+
+@dataclass(frozen=True)
+class Ae3dDenseSpectrumParity:
+    """Dense-solver spectrum parity for public AE3D generalized matrices."""
+
+    count: int
+    matrix_dimension: int
+    real_eigenvalue_count: int
+    reference_eigenvalue_omega2: jax.Array
+    computed_eigenvalue_omega2: jax.Array
+    eigenvalue_relative_error: jax.Array
+    frequency_relative_error: jax.Array
+    max_eigenvalue_relative_error: float
+    p95_eigenvalue_relative_error: float
+    max_frequency_relative_error: float
+    p95_frequency_relative_error: float
 
 
 @dataclass(frozen=True)
@@ -397,6 +415,71 @@ def ae3d_matrix_eigenmode_parity(
         dominant_mode_surface=int(dominant_surface),
         dominant_mode_harmonic_m=int(harmonics[dominant_harmonic, 0]),
         dominant_mode_harmonic_n=int(harmonics[dominant_harmonic, 1]),
+    )
+
+
+def ae3d_dense_spectrum_parity(
+    *,
+    a_matrix_path: str | Path,
+    b_matrix_path: str | Path,
+    egn_mode_path: str | Path,
+    max_modes: int = 16,
+    imaginary_tolerance: float = 1.0e-7,
+) -> Ae3dDenseSpectrumParity:
+    """Solve public AE3D matrices and compare against AE3D eigenvalues.
+
+    This is an executable external-code parity check for the public AE3D
+    generalized eigenproblem. It forms dense copies of the public sparse
+    matrices, solves ``A x = lambda B x`` with SciPy/LAPACK, then matches the
+    real computed eigenvalues nearest to the first ``max_modes`` AE3D
+    eigenvalues stored in ``egn_mode_asci.dat``. It is intentionally separate
+    from :func:`ae3d_matrix_eigenmode_parity`, which checks the published
+    eigenvectors directly.
+    """
+    a_matrix = read_ae3d_sparse_matrix(a_matrix_path)
+    b_matrix = read_ae3d_sparse_matrix(b_matrix_path)
+    if a_matrix.shape != b_matrix.shape:
+        raise ValueError("AE3D A and B matrices must have matching shapes")
+
+    data = read_ae3d_eigenmodes(egn_mode_path, max_modes=max_modes)
+    reference = np.asarray(data.eigenvalue_omega2, dtype=float)
+    raw_eigenvalues = linalg.eig(
+        a_matrix.toarray(),
+        b_matrix.toarray(),
+        left=False,
+        right=False,
+        check_finite=False,
+        overwrite_a=True,
+        overwrite_b=True,
+    )
+    finite = np.isfinite(raw_eigenvalues)
+    real_scale = np.maximum(np.abs(raw_eigenvalues.real), 1.0)
+    real_mask = finite & (np.abs(raw_eigenvalues.imag) <= float(imaginary_tolerance) * real_scale)
+    real_eigenvalues = raw_eigenvalues[real_mask].real
+    if real_eigenvalues.shape[0] < reference.shape[0]:
+        raise ValueError("not enough real AE3D generalized eigenvalues for spectrum parity")
+
+    cost = np.abs(real_eigenvalues[:, None] - reference[None, :])
+    row_indices, column_indices = linear_sum_assignment(cost)
+    computed = np.empty_like(reference)
+    computed[column_indices] = real_eigenvalues[row_indices]
+    eigenvalue_error = np.abs(computed - reference) / np.maximum(np.abs(reference), 1.0e-30)
+    reference_frequency = np.sqrt(np.maximum(reference, 0.0))
+    computed_frequency = np.sqrt(np.maximum(computed, 0.0))
+    frequency_error = np.abs(computed_frequency - reference_frequency) / np.maximum(reference_frequency, 1.0e-30)
+
+    return Ae3dDenseSpectrumParity(
+        count=int(reference.shape[0]),
+        matrix_dimension=int(a_matrix.shape[0]),
+        real_eigenvalue_count=int(real_eigenvalues.shape[0]),
+        reference_eigenvalue_omega2=jnp.asarray(reference),
+        computed_eigenvalue_omega2=jnp.asarray(computed),
+        eigenvalue_relative_error=jnp.asarray(eigenvalue_error),
+        frequency_relative_error=jnp.asarray(frequency_error),
+        max_eigenvalue_relative_error=float(np.max(eigenvalue_error)),
+        p95_eigenvalue_relative_error=float(np.percentile(eigenvalue_error, 95.0)),
+        max_frequency_relative_error=float(np.max(frequency_error)),
+        p95_frequency_relative_error=float(np.percentile(frequency_error, 95.0)),
     )
 
 

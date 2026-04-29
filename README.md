@@ -251,9 +251,11 @@ relative spectrum error is about 2.55% over 97 matched surfaces.
 This dashboard adds artifact-level parity checks for public ORNL outputs:
 STELLGAP `alfven_spec` post-processing reproduces `alfven_post` to max
 relative error `4.9e-7`, AE3D `omega2.dat` reproduces `egn_values.dat` to max
-relative error `6.9e-7`, and AE3D public sparse matrices are symmetric to the
-registered gates. These are prerequisite code-convention gates before claiming
-full global AE3D/CAS3D/FAR3D physics parity.
+relative error `6.9e-7`, AE3D public sparse matrices are symmetric to the
+registered gates, and an independent SciPy/LAPACK solve of AE3D's public
+generalized matrix problem recovers the first 16 published eigenvalues to max
+relative error about `1.6e-6`. These are prerequisite code-convention gates
+before claiming full global AE3D/CAS3D/FAR3D physics parity.
 
 ![AE3D public matrix/eigenmode parity](docs/_static/publication_suite/10_ae3d_matrix_eigenmode_parity.png)
 
@@ -261,7 +263,8 @@ This publication-suite figure reads AE3D public `a_matrix.dat`,
 `b_matrix.dat`, and `egn_mode_asci.dat`, reconstructs radial-harmonic mode
 structures, and checks `A x = lambda B x` residuals plus Rayleigh-quotient
 errors. On the current public artifact set, the first 8 modes have max residual
-about `3.3e-6` and max frequency relative error about `8.2e-7`.
+about `3.3e-6`; an independent dense generalized eigensolve recovers the first
+16 published eigenvalues to max relative error about `1.6e-6`.
 
 ![STELLGAP CTOK gap-anchored global screen](docs/_static/publication_suite/09_stellgap_ctok_gap_anchored_global_screen.png)
 
@@ -555,8 +558,8 @@ It currently establishes:
   gates, eigenfunction-weighted fast-ion drive diagnostics, and a differentiable
   Boozer global-mode avoidance objective with a builder-based API for future
   `vmec_jax`/`booz_xform_jax` end-to-end pipelines,
-- a public STELLGAP CTOK local-continuum comparison gate and figure, plus an
-  AE3D public-artifact residual smoke gate,
+- a public STELLGAP CTOK local-continuum comparison gate and figure, plus AE3D
+  public matrix/eigenmode and independent dense-spectrum parity gates,
 - generated smoke-test figures for docs and README,
 - a reduced radial global eigenmode operator, analytic gap estimates, reduced
   fast-ion resonance screens, and differentiable design objective,

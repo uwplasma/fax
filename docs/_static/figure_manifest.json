@@ -575,6 +575,22 @@
       ]
     },
     {
+      "id": "ae3d_public_dense_spectrum_parity",
+      "title": "AE3D public dense spectrum parity",
+      "layer": "cross-code",
+      "quantity": "maximum dense-solver eigenvalue relative error",
+      "tolerance": 2e-06,
+      "citation": "ORNL AE3D public a_matrix.dat/b_matrix.dat/egn_mode_asci.dat artifacts; independent SciPy/LAPACK generalized eigensolve",
+      "command": "python -m pytest tests/test_validation_registry.py tests/test_cross_code.py",
+      "tags": [
+        "cross-code",
+        "ae3d",
+        "matrix",
+        "spectrum",
+        "parity"
+      ]
+    },
+    {
       "id": "landreman_paul_adapter_smoke",
       "title": "Landreman-Paul QA VMEC adapter smoke test",
       "layer": "adapter",

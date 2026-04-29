@@ -118,9 +118,10 @@ python examples/research/external_code_artifact_dashboard.py
 
 This reads the public ORNL STELLGAP and AE3D answer artifacts under
 `/Users/rogerio/local`, reproduces STELLGAP and AE3D post-processing/eigenvalue
-conventions, checks AE3D sparse matrix symmetry, and writes a figure plus JSON
-metrics. These are prerequisite convention gates before full physics parity
-against AE3D/CAS3D/FAR3D.
+conventions, checks AE3D sparse matrix symmetry, independently re-solves the
+public AE3D generalized matrix spectrum, and writes a figure plus JSON metrics.
+These are prerequisite convention gates before full physics parity against
+AE3D/CAS3D/FAR3D.
 
 ## Publication Figure Suite
 
@@ -132,6 +133,7 @@ This writes ten SVG/PNG figures plus a JSON summary covering the common
 publication lanes for FAX studies: gap taxonomy, convergence, VMEC/wout
 inspection, Boozer harmonics, local 3-D Boozer continua, global radial
 eigenmodes, fast-ion drive/damping, differentiable sensitivities, STELLGAP
-CTOK gap-anchored global screening, and AE3D public matrix/eigenmode parity.
+CTOK gap-anchored global screening, and AE3D public matrix/eigenmode/spectrum
+parity.
 Run selected cases with repeated `--case` flags, for example `--case 09 --case
 10`.

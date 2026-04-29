@@ -35,6 +35,7 @@ from .boozer import (
 )
 from .continuum import continuum_branch_matrix, local_continuum_frequency_hz
 from .cross_code import (
+    ae3d_dense_spectrum_parity,
     ae3d_eigenvalue_residual_summary,
     ae3d_matrix_eigenmode_parity,
     ae3d_matrix_symmetry_summary,
@@ -1203,6 +1204,38 @@ def _gate_ae3d_public_matrix_eigenmode_parity() -> GateResult:
     )
 
 
+def _gate_ae3d_public_dense_spectrum_parity() -> GateResult:
+    gate_id = "ae3d_public_dense_spectrum_parity"
+    tolerance = 2.0e-6
+    a_matrix = _local_external_file("AE3D_test_problem", "a_matrix.dat")
+    b_matrix = _local_external_file("AE3D_test_problem", "b_matrix.dat")
+    egn_mode = _local_external_file("AE3D_test_problem", "egn_mode_asci.dat")
+    if a_matrix is None or b_matrix is None or egn_mode is None:
+        return GateResult(
+            gate_id=gate_id,
+            status="skipped",
+            metric=float("nan"),
+            tolerance=tolerance,
+            message="missing local ORNL AE3D sparse matrix/eigenmode artifacts under /Users/rogerio/local",
+        )
+    parity = ae3d_dense_spectrum_parity(
+        a_matrix_path=a_matrix,
+        b_matrix_path=b_matrix,
+        egn_mode_path=egn_mode,
+        max_modes=16,
+    )
+    return _pass_fail(
+        gate_id,
+        parity.max_eigenvalue_relative_error,
+        tolerance,
+        (
+            "SciPy/LAPACK dense solve of ORNL AE3D public A x = lambda B x "
+            f"recovers {parity.count} published omega^2 eigenvalues in a "
+            f"{parity.matrix_dimension}x{parity.matrix_dimension} problem"
+        ),
+    )
+
+
 def _gate_landreman_paul_adapter_smoke() -> GateResult:
     gate_id = "landreman_paul_adapter_smoke"
     tolerance = 0.0
@@ -1901,6 +1934,17 @@ def registered_validation_gates() -> tuple[ValidationGate, ...]:
             command="python -m pytest tests/test_validation_registry.py",
             tags=("cross-code", "ae3d", "matrix", "eigenmode", "parity"),
             _runner=_gate_ae3d_public_matrix_eigenmode_parity,
+        ),
+        ValidationGate(
+            gate_id="ae3d_public_dense_spectrum_parity",
+            title="AE3D public dense spectrum parity",
+            layer="cross-code",
+            quantity="maximum dense-solver eigenvalue relative error",
+            tolerance=2.0e-6,
+            citation="ORNL AE3D public a_matrix.dat/b_matrix.dat/egn_mode_asci.dat artifacts; independent SciPy/LAPACK generalized eigensolve",
+            command="python -m pytest tests/test_validation_registry.py tests/test_cross_code.py",
+            tags=("cross-code", "ae3d", "matrix", "spectrum", "parity"),
+            _runner=_gate_ae3d_public_dense_spectrum_parity,
         ),
         ValidationGate(
             gate_id="landreman_paul_adapter_smoke",

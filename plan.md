@@ -1193,6 +1193,12 @@ Needed docs:
     - Added the dedicated `vmec_boozer_operator_angular_convergence` README/docs figure.
     - Verified locally with `python -m pytest -q` (169 passed), coverage (`95.6%` FAX source coverage, fail-under 95 passed), `python -m ruff check .`, `python -m mypy src/fax`, `python tools/generate_validation_figures.py`, `python tools/qa_figures.py`, `python -m sphinx -W --keep-going -b html docs docs/_build/html`, `python -m build`, `python -m twine check dist/*`, and `git diff --check`.
     - Scope note: this strengthens local-operator numerical readiness. It still needs converged VMEC iteration studies, Boozer surface-resolution sweeps, and cross-code/literature comparisons before production physics claims.
+  - 2026-04-29 AE3D dense-spectrum parity milestone:
+    - Added `Ae3dDenseSpectrumParity` and `ae3d_dense_spectrum_parity`, which form dense copies of the public ORNL AE3D sparse generalized matrices, solve `A x = lambda B x` with SciPy/LAPACK, match the computed real eigenvalues to `egn_mode_asci.dat`, and report eigenvalue/frequency errors.
+    - Added registered gate `ae3d_public_dense_spectrum_parity`. Current local metric: max `omega^2` eigenvalue relative error `1.6336e-6 < 2.0e-6` for the first 16 published AE3D modes in the 1287-dimensional public problem.
+    - Updated the external-code dashboard, publication-suite AE3D figure, README, validation docs, examples, and tests so AE3D parity now includes matrix symmetry, published-vector residuals/Rayleigh quotients, and an independent dense eigensolve.
+    - Verified locally with `python -m pytest -q` (171 passed), coverage (`95.5%` FAX source coverage, fail-under 95 passed), `python -m ruff check .`, `python -m mypy src/fax`, `python tools/generate_validation_figures.py`, `python tools/qa_figures.py`, `python examples/research/publication_figure_suite.py --format svg --format png --output-dir docs/_static/publication_suite`, `python -m sphinx -W --keep-going -b html docs docs/_build/html`, `python -m build`, `python -m twine check dist/*`, and `git diff --check`.
+    - Scope note: this closes another public AE3D artifact/parity lane. It is still not a FAX reduced-operator-vs-AE3D physics parity claim; that remains a separate validation target once matching AE3D inputs/operators are fully mapped.
 
 ### Local Testing Policy Until GitHub Actions Resume
 

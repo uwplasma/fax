@@ -240,9 +240,10 @@ Run after extracting the public ORNL STELLGAP and AE3D answer artifacts under
 This writes a dashboard and JSON metrics for public-code convention checks:
 STELLGAP ``alfven_spec`` post-processing to ``alfven_post``, AE3D
 ``omega2.dat`` to ``egn_values.dat`` eigenvalue conventions, AE3D reported
-eigenpair residuals, and sparse matrix symmetry. These checks are intentionally
-artifact-level; the next physics step is full global FAX eigenmode parity
-against AE3D/CAS3D/FAR3D cases.
+eigenpair residuals, sparse matrix symmetry, and an independent dense
+generalized eigensolve of AE3D's public ``A x = lambda B x`` matrix problem.
+These checks are intentionally artifact-level; the next physics step is full
+global FAX eigenmode parity against AE3D/CAS3D/FAR3D cases.
 
 Publication Figure Suite
 ------------------------

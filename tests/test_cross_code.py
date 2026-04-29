@@ -5,6 +5,7 @@ from pathlib import Path
 import pytest
 
 from fax.cross_code import (
+    ae3d_dense_spectrum_parity,
     ae3d_eigenvalue_residual_summary,
     ae3d_matrix_eigenmode_parity,
     ae3d_matrix_symmetry_summary,
@@ -52,6 +53,48 @@ def test_cross_code_text_readers_parse_minimal_tables(tmp_path: Path):
     assert summary.max_residual > 0.0
     assert ae3d_omega2_eigenvalue_error(omega2_path=omega2, egn_values_path=egn_values).max_relative_error == 0.0
     assert ae3d_matrix_symmetry_summary(matrix).relative_asymmetry == 0.0
+
+
+def test_ae3d_dense_spectrum_parity_solves_known_generalized_problem(tmp_path: Path):
+    a_matrix = tmp_path / "a_matrix.dat"
+    b_matrix = tmp_path / "b_matrix.dat"
+    egn_mode = tmp_path / "egn_mode_asci.dat"
+    a_matrix.write_text("1 1 2.0\n2 2 6.0\n", encoding="utf-8")
+    b_matrix.write_text("1 1 1.0\n2 2 2.0\n", encoding="utf-8")
+    egn_mode.write_text(
+        "\n".join(
+            [
+                "2",
+                "2",
+                "1",
+                "1",
+                "0",
+                "2",
+                "0",
+                "2.0",
+                "3.0",
+                "0.5",
+                "1.0",
+                "0.0",
+                "0.0",
+                "1.0",
+            ]
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+
+    parity = ae3d_dense_spectrum_parity(
+        a_matrix_path=a_matrix,
+        b_matrix_path=b_matrix,
+        egn_mode_path=egn_mode,
+        max_modes=2,
+    )
+
+    assert parity.count == 2
+    assert parity.matrix_dimension == 2
+    assert parity.max_eigenvalue_relative_error < 1.0e-14
+    assert parity.max_frequency_relative_error < 1.0e-14
 
 
 @pytest.mark.requires_booz_xform_jax
@@ -121,3 +164,25 @@ def test_ae3d_public_matrix_eigenmode_parity_passes_or_skips():
     assert parity.max_residual < 5.0e-6
     assert parity.max_rayleigh_relative_error < 2.0e-6
     assert parity.max_frequency_relative_error < 2.0e-6
+
+
+def test_ae3d_public_dense_spectrum_parity_passes_or_skips():
+    root = Path("/Users/rogerio/local/AE3D_test_problem")
+    a_matrix = root / "a_matrix.dat"
+    b_matrix = root / "b_matrix.dat"
+    egn_mode = root / "egn_mode_asci.dat"
+    if not all(path.exists() for path in (a_matrix, b_matrix, egn_mode)):
+        pytest.skip("missing local ORNL AE3D public matrix/eigenmode artifacts")
+
+    parity = ae3d_dense_spectrum_parity(
+        a_matrix_path=a_matrix,
+        b_matrix_path=b_matrix,
+        egn_mode_path=egn_mode,
+        max_modes=16,
+    )
+
+    assert parity.count == 16
+    assert parity.matrix_dimension == 1287
+    assert parity.real_eigenvalue_count >= 1200
+    assert parity.max_eigenvalue_relative_error < 2.0e-6
+    assert parity.max_frequency_relative_error < 1.0e-6
