@@ -199,6 +199,23 @@
       ]
     },
     {
+      "id": "global_3d_block_custom_jvp_eigenvalue",
+      "title": "Global radial 3-D block custom-JVP eigenvalue",
+      "layer": "differentiability",
+      "quantity": "relative custom-JVP/adjoint gradient error",
+      "tolerance": 2e-06,
+      "citation": "Custom-JVP isolated Hermitian generalized-eigenvalue derivative for block radial shear-Alfven eigenpairs",
+      "command": "python -m pytest tests/test_metric.py tests/test_global_modes.py tests/test_validation_registry.py",
+      "tags": [
+        "global",
+        "eigenmode",
+        "3d",
+        "autodiff",
+        "adjoint",
+        "custom-jvp"
+      ]
+    },
+    {
       "id": "analytic_tae_gap_center",
       "title": "Analytic TAE gap-center crossing",
       "layer": "gap-physics",

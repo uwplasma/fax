@@ -57,6 +57,7 @@ from .global_modes import (
     lowest_radial_block_frequency_hz,
     lowest_radial_frequency_hz,
     radial_block_eigenvalue_sensitivity,
+    radial_block_isolated_omega2,
     radial_block_problem_from_boozer_geometry,
     solve_radial_block_eigenmodes,
     solve_radial_eigenmodes,
@@ -439,6 +440,46 @@ def _gate_global_3d_block_eigenvalue_sensitivity() -> GateResult:
         float(jnp.maximum(mass_metric, radial_metric)),
         tolerance,
         "block radial Hermitian generalized-eigenvalue adjoint sensitivity matches direct JAX autodiff",
+    )
+
+
+def _gate_global_3d_block_custom_jvp_eigenvalue() -> GateResult:
+    gate_id = "global_3d_block_custom_jvp_eigenvalue"
+    tolerance = 2.0e-6
+    problem = constant_radial_block_problem(
+        radial_points=18,
+        continuum_frequency_hz=(92_000.0, 150_000.0),
+        radial_coupling_omega2=(2.2e9, 3.4e9),
+    )
+    result = solve_radial_block_eigenmodes(problem)
+    tangent = RadialBlockEigenmodeProblem(
+        s=problem.s,
+        local_stiffness=jnp.zeros_like(problem.local_stiffness),
+        local_mass=jnp.zeros_like(problem.local_mass),
+        radial_stiffness=problem.radial_stiffness,
+        harmonics=problem.harmonics,
+        boundary_condition=problem.boundary_condition,
+    )
+
+    def omega2(alpha: float) -> jnp.ndarray:
+        scaled = RadialBlockEigenmodeProblem(
+            s=problem.s,
+            local_stiffness=problem.local_stiffness,
+            local_mass=problem.local_mass,
+            radial_stiffness=(1.0 + alpha) * problem.radial_stiffness,
+            harmonics=problem.harmonics,
+            boundary_condition=problem.boundary_condition,
+        )
+        return radial_block_isolated_omega2(scaled, mode_index=0)
+
+    custom_jvp = jax.grad(omega2)(0.0)
+    explicit = radial_block_eigenvalue_sensitivity(problem, tangent, result.omega2[0], result.eigenvectors[:, 0])
+    metric = jnp.abs(custom_jvp - explicit) / jnp.maximum(jnp.abs(explicit), 1.0e-30)
+    return _pass_fail(
+        gate_id,
+        float(metric),
+        tolerance,
+        "custom-JVP isolated radial-block eigenvalue gradient matches the explicit adjoint sensitivity",
     )
 
 
@@ -1777,6 +1818,17 @@ def registered_validation_gates() -> tuple[ValidationGate, ...]:
             command="python -m pytest tests/test_metric.py tests/test_global_modes.py tests/test_validation_registry.py",
             tags=("global", "eigenmode", "3d", "autodiff", "adjoint"),
             _runner=_gate_global_3d_block_eigenvalue_sensitivity,
+        ),
+        ValidationGate(
+            gate_id="global_3d_block_custom_jvp_eigenvalue",
+            title="Global radial 3-D block custom-JVP eigenvalue",
+            layer="differentiability",
+            quantity="relative custom-JVP/adjoint gradient error",
+            tolerance=2.0e-6,
+            citation="Custom-JVP isolated Hermitian generalized-eigenvalue derivative for block radial shear-Alfven eigenpairs",
+            command="python -m pytest tests/test_metric.py tests/test_global_modes.py tests/test_validation_registry.py",
+            tags=("global", "eigenmode", "3d", "autodiff", "adjoint", "custom-jvp"),
+            _runner=_gate_global_3d_block_custom_jvp_eigenvalue,
         ),
         ValidationGate(
             gate_id="analytic_tae_gap_center",

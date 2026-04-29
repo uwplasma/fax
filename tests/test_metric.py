@@ -13,6 +13,7 @@ from fax.metric import (
     generalized_hermitian_eigenvalue_sensitivity,
     generalized_hermitian_eigensystem,
     generalized_hermitian_eigenvalues,
+    generalized_hermitian_isolated_eigenvalue,
     metric_continuum_frequencies_hz,
     metric_continuum_matrices,
     metric_from_equilibrium,
@@ -112,6 +113,40 @@ def test_generalized_eigenvalue_sensitivity_matches_autodiff_and_finite_differen
 
     np.testing.assert_allclose(float(sensitivity), float(autodiff), rtol=2.0e-10)
     np.testing.assert_allclose(float(sensitivity), float(finite_difference), rtol=2.0e-7)
+
+
+def test_generalized_isolated_eigenvalue_custom_jvp_matches_adjoint_formula():
+    stiffness = jnp.asarray([[4.0, 0.15], [0.15, 9.0]])
+    mass = jnp.asarray([[2.0, 0.05], [0.05, 1.2]])
+    stiffness_tangent = jnp.asarray([[0.3, -0.04], [-0.04, 0.8]])
+    mass_tangent = jnp.asarray([[0.1, 0.02], [0.02, -0.03]])
+    eigensystem = generalized_hermitian_eigensystem(stiffness, mass)
+    expected = generalized_hermitian_eigenvalue_sensitivity(
+        stiffness,
+        mass,
+        eigensystem.eigenvalues[1],
+        eigensystem.eigenvectors[:, 1],
+        stiffness_tangent,
+        mass_tangent,
+    )
+
+    def eigenvalue(alpha):
+        return generalized_hermitian_isolated_eigenvalue(
+            stiffness + alpha * stiffness_tangent,
+            mass + alpha * mass_tangent,
+            1,
+        )
+
+    value = generalized_hermitian_isolated_eigenvalue(stiffness, mass, 1)
+    jit_value = jax.jit(lambda k, m: generalized_hermitian_isolated_eigenvalue(k, m, 1))(stiffness, mass)
+    custom_jvp = jax.grad(eigenvalue)(0.0)
+    step = 2.0e-5
+    finite_difference = (eigenvalue(step) - eigenvalue(-step)) / (2.0 * step)
+
+    np.testing.assert_allclose(float(value), float(eigensystem.eigenvalues[1]), rtol=1.0e-12)
+    np.testing.assert_allclose(float(jit_value), float(value), rtol=1.0e-12)
+    np.testing.assert_allclose(float(custom_jvp), float(expected), rtol=2.0e-10)
+    np.testing.assert_allclose(float(custom_jvp), float(finite_difference), rtol=2.0e-7)
 
 
 def test_generalized_eigenvalue_sensitivity_contracts():

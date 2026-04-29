@@ -19,6 +19,8 @@ from fax.global_modes import (
     lowest_radial_block_frequency_hz,
     lowest_radial_frequency_hz,
     radial_block_eigenvalue_sensitivity,
+    radial_block_isolated_frequency_hz,
+    radial_block_isolated_omega2,
     radial_block_mass_matvec,
     radial_block_matrix_free_residual_norm,
     radial_block_mode_structures,
@@ -353,6 +355,49 @@ def test_radial_block_eigenvalue_sensitivity_rejects_mismatched_tangent_problem(
 
     with pytest.raises(ValueError, match="boundary_condition"):
         radial_block_eigenvalue_sensitivity(problem, mismatched, result.omega2[0], result.eigenvectors[:, 0])
+
+
+def test_radial_block_isolated_omega2_custom_jvp_matches_explicit_sensitivity():
+    problem = constant_radial_block_problem(
+        radial_points=18,
+        continuum_frequency_hz=(92_000.0, 150_000.0),
+        radial_coupling_omega2=(2.2e9, 3.4e9),
+    )
+    result = solve_radial_block_eigenmodes(problem)
+    zero_stiffness = jnp.zeros_like(problem.local_stiffness)
+    zero_mass = jnp.zeros_like(problem.local_mass)
+    tangent_problem = RadialBlockEigenmodeProblem(
+        s=problem.s,
+        local_stiffness=zero_stiffness,
+        local_mass=zero_mass,
+        radial_stiffness=problem.radial_stiffness,
+        harmonics=problem.harmonics,
+        boundary_condition=problem.boundary_condition,
+    )
+    explicit = radial_block_eigenvalue_sensitivity(problem, tangent_problem, result.omega2[0], result.eigenvectors[:, 0])
+
+    def omega2(alpha):
+        scaled = RadialBlockEigenmodeProblem(
+            s=problem.s,
+            local_stiffness=problem.local_stiffness,
+            local_mass=problem.local_mass,
+            radial_stiffness=(1.0 + alpha) * problem.radial_stiffness,
+            harmonics=problem.harmonics,
+            boundary_condition=problem.boundary_condition,
+        )
+        return radial_block_isolated_omega2(scaled, mode_index=0)
+
+    custom_jvp = jax.grad(omega2)(0.0)
+    step = 2.0e-5
+    finite_difference = (omega2(step) - omega2(-step)) / (2.0 * step)
+    frequency = radial_block_isolated_frequency_hz(problem, mode_index=0)
+    jit_frequency = jax.jit(lambda p: radial_block_isolated_frequency_hz(p, mode_index=0))(problem)
+
+    np.testing.assert_allclose(float(radial_block_isolated_omega2(problem, mode_index=0)), float(result.omega2[0]), rtol=1.0e-12)
+    np.testing.assert_allclose(float(frequency), float(result.frequencies_hz[0]), rtol=1.0e-12)
+    np.testing.assert_allclose(float(jit_frequency), float(frequency), rtol=1.0e-12)
+    np.testing.assert_allclose(float(custom_jvp), float(explicit), rtol=3.0e-7)
+    np.testing.assert_allclose(float(custom_jvp), float(finite_difference), rtol=3.0e-7)
 
 
 def test_sparse_radial_block_assembly_matches_dense_and_exact_spectrum():

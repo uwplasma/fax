@@ -11,6 +11,7 @@ Fourier data for early stellarator smoke tests.
 from __future__ import annotations
 
 from dataclasses import dataclass
+from functools import partial
 from pathlib import Path
 from typing import Any
 
@@ -419,6 +420,39 @@ def generalized_hermitian_eigensystem(stiffness: Any, mass: Any, *, mass_floor: 
 def generalized_hermitian_eigenvalues(stiffness: Any, mass: Any, *, mass_floor: float = 1.0e-30) -> jax.Array:
     """Return eigenvalues of ``K x = lambda M x`` for Hermitian matrices."""
     return generalized_hermitian_eigensystem(stiffness, mass, mass_floor=mass_floor).eigenvalues
+
+
+@partial(jax.custom_jvp, nondiff_argnums=(2,))
+def generalized_hermitian_isolated_eigenvalue(stiffness: Any, mass: Any, mode_index: int = 0) -> jax.Array:
+    """Return one isolated generalized eigenvalue with an adjoint JVP.
+
+    The primal value is computed by the dense Hermitian generalized eigensolver.
+    The custom JVP uses the isolated-eigenpair sensitivity
+    ``x.H(dK - lambda*dM)x/(x.H M x)`` instead of differentiating through all
+    eigensolver internals. This is intended for simple eigenvalues away from
+    crossings; repeated eigenvalues require a subspace derivative.
+    """
+    eigensystem = generalized_hermitian_eigensystem(stiffness, mass)
+    return jnp.real(eigensystem.eigenvalues[int(mode_index)])
+
+
+@generalized_hermitian_isolated_eigenvalue.defjvp
+def _generalized_hermitian_isolated_eigenvalue_jvp(mode_index: int, primals: tuple[Any, Any], tangents: tuple[Any, Any]) -> tuple[jax.Array, jax.Array]:
+    stiffness, mass = primals
+    stiffness_tangent, mass_tangent = tangents
+    eigensystem = generalized_hermitian_eigensystem(stiffness, mass)
+    index = int(mode_index)
+    eigenvalue = jnp.real(eigensystem.eigenvalues[index])
+    eigenvector = eigensystem.eigenvectors[:, index]
+    tangent = generalized_hermitian_eigenvalue_sensitivity(
+        stiffness,
+        mass,
+        eigenvalue,
+        eigenvector,
+        stiffness_tangent,
+        mass_tangent,
+    )
+    return eigenvalue, tangent
 
 
 def generalized_hermitian_eigenvalue_sensitivity(

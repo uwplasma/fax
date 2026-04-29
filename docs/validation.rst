@@ -55,6 +55,9 @@ tags, and command. The current gates are:
   generalized-eigenvalue adjoint formula
   ``x^H(dK-lambda dM)x/(x^H M x)`` against direct JAX autodiff for mass and
   radial-stiffness tangent directions.
+* ``global_3d_block_custom_jvp_eigenvalue``: checks that the custom-JVP
+  isolated-eigenvalue path returns the same radial-block gradient as the
+  explicit adjoint formula.
 * ``analytic_tae_gap_center``: checks the analytic TAE crossing condition
   ``iota=2n/(2m+1)``.
 * ``basic_gap_map_ordering``: checks that the fast BAE/TAE/EAE example places

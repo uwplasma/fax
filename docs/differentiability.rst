@@ -44,12 +44,14 @@ sensitivity is
 The implemented helper ``generalized_hermitian_eigenvalue_sensitivity`` keeps
 the normalization denominator explicitly,
 ``x.H @ (dK - lambda*dM) @ x / (x.H @ M @ x)``, so it works with eigenvectors
-from FAX, SciPy, or cross-code artifacts. ``radial_block_eigenvalue_sensitivity``
-applies the same formula to the global radial block operator by assembling
-``dK`` and ``dM`` from a tangent problem. Current tests and validation gates
-compare the formula against direct autodiff and centered finite differences for
-isolated eigenvalues. Repeated/near-crossing eigenvalues remain a subspace
-problem and should not be reported as single-mode sensitivities.
+from FAX, SciPy, or cross-code artifacts. ``generalized_hermitian_isolated_eigenvalue``
+wraps the dense generalized eigensolver with a custom JVP using that formula.
+``radial_block_eigenvalue_sensitivity`` and ``radial_block_isolated_omega2``
+apply the same pattern to the global radial block operator. Current tests and
+validation gates compare the formula against direct autodiff and centered
+finite differences for isolated eigenvalues. Repeated/near-crossing eigenvalues
+remain a subspace problem and should not be reported as single-mode
+sensitivities.
 
 Implicit and matrix-free path
 -----------------------------

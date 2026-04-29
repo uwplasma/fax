@@ -1230,6 +1230,11 @@ Needed docs:
     - Added `radial_block_eigenvalue_sensitivity`, which assembles `dK` and `dM` from a radial-block tangent problem so mass, continuum-stiffness, and radial-stiffness tangent directions can be checked without relying on autodiff through the eigensolver.
     - Added tests against direct JAX autodiff and centered finite differences, including normalization-invariance checks and tangent-contract errors.
     - Added registered gate `global_3d_block_eigenvalue_sensitivity` for reviewer-facing adjoint/autodiff agreement on the block radial shear-Alfven eigenproblem.
+  - 2026-04-29 custom-JVP isolated eigenvalue milestone:
+    - Added `generalized_hermitian_isolated_eigenvalue`, a dense generalized-eigenvalue value path whose JAX JVP uses the explicit isolated-eigenpair adjoint formula instead of differentiating through all eigensolver internals.
+    - Added `radial_block_isolated_omega2` and `radial_block_isolated_frequency_hz` so global radial objectives can use the custom-JVP path after matrix assembly.
+    - Added tests comparing custom-JVP gradients with explicit adjoint sensitivities and centered finite differences, plus JIT/value parity against the dense solve.
+    - Added registered gate `global_3d_block_custom_jvp_eigenvalue`.
 
 ### Local Testing Policy Until GitHub Actions Resume
 

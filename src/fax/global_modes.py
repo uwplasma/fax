@@ -32,6 +32,7 @@ from .metric import (
     generalized_hermitian_eigenvalue_sensitivity,
     generalized_hermitian_eigensystem,
     generalized_hermitian_eigenvalues,
+    generalized_hermitian_isolated_eigenvalue,
 )
 from .units import MU0
 
@@ -619,6 +620,18 @@ def radial_block_eigenvalue_sensitivity(
         stiffness_tangent,
         mass_tangent,
     )
+
+
+def radial_block_isolated_omega2(problem: RadialBlockEigenmodeProblem, *, mode_index: int = 0) -> jax.Array:
+    """Return one radial-block ``omega^2`` using the custom-JVP eigenvalue path."""
+    stiffness, mass = assemble_radial_block_matrices(problem)
+    return generalized_hermitian_isolated_eigenvalue(stiffness, mass, int(mode_index))
+
+
+def radial_block_isolated_frequency_hz(problem: RadialBlockEigenmodeProblem, *, mode_index: int = 0) -> jax.Array:
+    """Return one radial-block frequency using the custom-JVP eigenvalue path."""
+    omega2 = radial_block_isolated_omega2(problem, mode_index=mode_index)
+    return jnp.sqrt(jnp.maximum(omega2, 0.0)) / (2.0 * jnp.pi)
 
 
 def solve_radial_block_eigenmodes(problem: RadialBlockEigenmodeProblem) -> RadialBlockEigenmodeResult:
