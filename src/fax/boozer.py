@@ -330,26 +330,48 @@ def run_booz_xform_jax_from_wout(
     wout_path = Path(path).expanduser().resolve()
     transform = Booz_xform()
     transform.read_wout(str(wout_path))
-    transform.mboz = int(mboz)
-    transform.nboz = int(nboz)
-    transform.compute_surfs = []
-    transform.register_surfaces([float(surface) for surface in surfaces])
-    output = transform.run_jax(jit=bool(jit))
-    return BoozerSpectrum(
-        source="booz_xform_jax",
-        s=jnp.asarray(np.asarray(transform.s_in)[transform.compute_surfs]),
-        xm=jnp.asarray(output["ixm_b"]),
-        xn=jnp.asarray(output["ixn_b"]),
-        bmnc=jnp.asarray(output["bmnc_b"]),
-        bmns=jnp.asarray(output["bmns_b"]) if "bmns_b" in output else None,
-        field_periods=int(transform.nfp),
-        metadata=(
-            ("wout", str(wout_path)),
-            ("mboz", int(mboz)),
-            ("nboz", int(nboz)),
-            ("surfaces", tuple(float(surface) for surface in surfaces)),
-        ),
+    output, s, metadata = _run_booz_xform_transform(
+        transform,
+        mboz=mboz,
+        nboz=nboz,
+        surfaces=surfaces,
+        jit=jit,
+        metadata=(("wout", str(wout_path)),),
     )
+    return _spectrum_from_booz_xform_output(transform, output, s, metadata)
+
+
+def run_booz_xform_jax_from_wout_data(
+    wout: Any,
+    *,
+    mboz: int = 8,
+    nboz: int = 8,
+    surfaces: tuple[float, ...] = (0.25, 0.5, 0.75),
+    jit: bool = False,
+) -> BoozerSpectrum:
+    """Run ``booz_xform_jax`` from an in-memory VMEC ``wout`` object.
+
+    This is the preferred no-intermediate-file path for composed
+    ``vmec_jax -> booz_xform_jax -> FAX`` workflows. The supplied object must
+    expose the VMEC ``wout`` attributes consumed by
+    :meth:`booz_xform_jax.Booz_xform.read_wout_data`.
+    """
+    try:
+        from booz_xform_jax import Booz_xform
+    except ImportError as exc:  # pragma: no cover - environment dependent
+        raise ImportError("booz_xform_jax is required for run_booz_xform_jax_from_wout_data") from exc
+
+    transform = Booz_xform()
+    transform.read_wout_data(wout)
+    output, s, metadata = _run_booz_xform_transform(
+        transform,
+        mboz=mboz,
+        nboz=nboz,
+        surfaces=surfaces,
+        jit=jit,
+        metadata=(("wout_data_type", type(wout).__name__),),
+    )
+    return _spectrum_from_booz_xform_output(transform, output, s, metadata)
 
 
 def run_booz_xform_jax_geometry_from_wout(
@@ -375,13 +397,99 @@ def run_booz_xform_jax_geometry_from_wout(
     wout_path = Path(path).expanduser().resolve()
     transform = Booz_xform()
     transform.read_wout(str(wout_path))
+    output, s, metadata = _run_booz_xform_transform(
+        transform,
+        mboz=mboz,
+        nboz=nboz,
+        surfaces=surfaces,
+        jit=jit,
+        metadata=(("wout", str(wout_path)),),
+    )
+    return _geometry_from_booz_xform_output(transform, output, s, metadata)
+
+
+def run_booz_xform_jax_geometry_from_wout_data(
+    wout: Any,
+    *,
+    mboz: int = 8,
+    nboz: int = 8,
+    surfaces: tuple[float, ...] = (0.25, 0.5, 0.75),
+    jit: bool = False,
+) -> BoozerGeometry:
+    """Run ``booz_xform_jax`` from an in-memory VMEC ``wout`` object.
+
+    This avoids writing a VMEC ``wout`` file between ``vmec_jax`` and FAX. It
+    returns the same :class:`BoozerGeometry` contract as
+    :func:`run_booz_xform_jax_geometry_from_wout`, including asymmetric
+    harmonics and Boozer-Jacobian spectra.
+    """
+    try:
+        from booz_xform_jax import Booz_xform
+    except ImportError as exc:  # pragma: no cover - environment dependent
+        raise ImportError("booz_xform_jax is required for run_booz_xform_jax_geometry_from_wout_data") from exc
+
+    transform = Booz_xform()
+    transform.read_wout_data(wout)
+    output, s, metadata = _run_booz_xform_transform(
+        transform,
+        mboz=mboz,
+        nboz=nboz,
+        surfaces=surfaces,
+        jit=jit,
+        metadata=(("wout_data_type", type(wout).__name__),),
+    )
+    return _geometry_from_booz_xform_output(transform, output, s, metadata)
+
+
+def _run_booz_xform_transform(
+    transform: Any,
+    *,
+    mboz: int,
+    nboz: int,
+    surfaces: tuple[float, ...],
+    jit: bool,
+    metadata: tuple[tuple[str, Any], ...],
+) -> tuple[dict[str, Any], jax.Array, tuple[tuple[str, Any], ...]]:
     transform.mboz = int(mboz)
     transform.nboz = int(nboz)
     transform.compute_surfs = []
     transform.register_surfaces([float(surface) for surface in surfaces])
     output = transform.run_jax(jit=bool(jit))
     s = jnp.asarray(np.asarray(transform.s_in)[transform.compute_surfs])
+    full_metadata = (
+        *metadata,
+        ("mboz", int(mboz)),
+        ("nboz", int(nboz)),
+        ("surfaces", tuple(float(surface) for surface in surfaces)),
+        ("jlist", tuple(int(value) for value in np.asarray(output["jlist"]))),
+    )
+    return output, s, full_metadata
 
+
+def _spectrum_from_booz_xform_output(
+    transform: Any,
+    output: dict[str, Any],
+    s: jax.Array,
+    metadata: tuple[tuple[str, Any], ...],
+) -> BoozerSpectrum:
+    return BoozerSpectrum(
+        source="booz_xform_jax",
+        s=s,
+        xm=jnp.asarray(output["ixm_b"]),
+        xn=jnp.asarray(output["ixn_b"]),
+        bmnc=jnp.asarray(output["bmnc_b"]),
+        bmns=jnp.asarray(output["bmns_b"]) if "bmns_b" in output else None,
+        field_periods=int(transform.nfp),
+        metadata=metadata,
+    )
+
+
+def _geometry_from_booz_xform_output(
+    transform: Any,
+    output: dict[str, Any],
+    s: jax.Array,
+    metadata: tuple[tuple[str, Any], ...],
+) -> BoozerGeometry:
     zeros = jnp.zeros_like(jnp.asarray(output["bmnc_b"]))
 
     def output_array(name: str, default: jax.Array | None = zeros) -> jax.Array | None:
@@ -412,13 +520,7 @@ def run_booz_xform_jax_geometry_from_wout(
         boozer_i=jnp.asarray(output["buco_b"]),
         boozer_g=jnp.asarray(output["bvco_b"]),
         field_periods=int(transform.nfp),
-        metadata=(
-            ("wout", str(wout_path)),
-            ("mboz", int(mboz)),
-            ("nboz", int(nboz)),
-            ("surfaces", tuple(float(surface) for surface in surfaces)),
-            ("jlist", tuple(int(value) for value in np.asarray(output["jlist"]))),
-        ),
+        metadata=metadata,
     )
 
 

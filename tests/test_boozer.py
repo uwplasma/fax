@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+import types
 
 import numpy as np
 import pytest
@@ -30,7 +31,9 @@ from fax.boozer import (
     read_boozmn,
     read_boozmn_geometry,
     reconstruct_boozer_field,
+    run_booz_xform_jax_from_wout_data,
     run_booz_xform_jax_geometry_from_wout,
+    run_booz_xform_jax_geometry_from_wout_data,
     run_booz_xform_jax_from_wout,
     straight_field_line_phase_error,
 )
@@ -39,6 +42,50 @@ from fax.units import MU0
 
 
 BOOZ_XFORM_TEST_FILES = Path("/Users/rogerio/local/booz_xform_jax/tests/test_files")
+
+
+def _wout_like_from_netcdf(path: Path):
+    netCDF4 = pytest.importorskip("netCDF4")
+    dataset = netCDF4.Dataset(str(path), "r")  # type: ignore
+
+    lasym_name = "lasym__logical__"
+    if lasym_name in dataset.variables:
+        lasym = bool(dataset.variables[lasym_name][...].item())
+    else:
+        lasym = bool(getattr(dataset, lasym_name, False))
+
+    rmnc = np.asarray(dataset.variables["rmnc"][:])
+    zeros = np.zeros_like(rmnc)
+
+    def read(name: str) -> np.ndarray:
+        return np.asarray(dataset.variables[name][:]) if name in dataset.variables else zeros
+
+    wout = types.SimpleNamespace(
+        lasym=lasym,
+        nfp=int(dataset.variables["nfp"][...].item()),
+        mpol=int(dataset.variables["mpol"][...].item()),
+        ntor=int(dataset.variables["ntor"][...].item()),
+        xm=np.asarray(dataset.variables["xm"][:], dtype=int),
+        xn=np.asarray(dataset.variables["xn"][:], dtype=int),
+        xm_nyq=np.asarray(dataset.variables["xm_nyq"][:], dtype=int),
+        xn_nyq=np.asarray(dataset.variables["xn_nyq"][:], dtype=int),
+        ns=int(dataset.variables["ns"][...].item()),
+        rmnc=rmnc,
+        rmns=read("rmns") if lasym else zeros,
+        zmnc=read("zmnc") if lasym else zeros,
+        zmns=read("zmns"),
+        lmnc=read("lmnc") if lasym else zeros,
+        lmns=read("lmns"),
+        bmnc=read("bmnc"),
+        bmns=read("bmns") if lasym else zeros,
+        bsubumnc=read("bsubumnc"),
+        bsubumns=read("bsubumns") if lasym else zeros,
+        bsubvmnc=read("bsubvmnc"),
+        bsubvmns=read("bsubvmns") if lasym else zeros,
+        iotas=np.asarray(dataset.variables["iotas"][:]),
+    )
+    dataset.close()
+    return wout
 
 
 def _synthetic_spectrum() -> BoozerSpectrum:
@@ -535,10 +582,18 @@ def test_run_booz_xform_jax_from_wout_smoke():
         pytest.skip(f"missing local booz_xform_jax fixture: {path}")
 
     spectrum = run_booz_xform_jax_from_wout(path, mboz=4, nboz=4, surfaces=(0.25, 0.5), jit=False)
+    in_memory = run_booz_xform_jax_from_wout_data(
+        _wout_like_from_netcdf(path),
+        mboz=4,
+        nboz=4,
+        surfaces=(0.25, 0.5),
+        jit=False,
+    )
 
     assert spectrum.bmnc.shape[0] == 2
     assert spectrum.field_periods >= 1
     assert np.all(np.isfinite(np.asarray(spectrum.bmnc)))
+    np.testing.assert_allclose(np.asarray(in_memory.bmnc), np.asarray(spectrum.bmnc), rtol=2.0e-12, atol=2.0e-13)
 
 
 @pytest.mark.requires_booz_xform_jax
@@ -565,3 +620,38 @@ def test_run_booz_xform_jax_geometry_from_wout_matches_asymmetric_reference():
         np.testing.assert_allclose(np.asarray(actual), np.asarray(expected), rtol=5.0e-10, atol=5.0e-11)
 
     assert float(boozer_geometry_jacobian_identity_error(geometry, theta_points=32, zeta_points=8)) < 2.0e-5
+
+
+@pytest.mark.requires_booz_xform_jax
+def test_run_booz_xform_jax_geometry_from_wout_data_matches_file_adapter():
+    wout_path = BOOZ_XFORM_TEST_FILES / "wout_up_down_asymmetric_tokamak.nc"
+    boozmn_path = BOOZ_XFORM_TEST_FILES / "boozmn_up_down_asymmetric_tokamak.nc"
+    if not wout_path.exists() or not boozmn_path.exists():
+        pytest.skip("missing local asymmetric booz_xform_jax fixtures")
+
+    reference = read_boozmn_geometry(boozmn_path)
+    surfaces = tuple(float(value) for value in np.asarray(reference.s))
+    file_geometry = run_booz_xform_jax_geometry_from_wout(
+        wout_path,
+        mboz=48,
+        nboz=0,
+        surfaces=surfaces,
+        jit=False,
+    )
+    object_geometry = run_booz_xform_jax_geometry_from_wout_data(
+        _wout_like_from_netcdf(wout_path),
+        mboz=48,
+        nboz=0,
+        surfaces=surfaces,
+        jit=False,
+    )
+
+    for name in ("bmnc", "bmns", "rmnc", "rmns", "zmns", "zmnc", "pmns", "pmnc", "gmnc", "gmns"):
+        actual = getattr(object_geometry, name)
+        expected = getattr(file_geometry, name)
+        assert actual is not None
+        assert expected is not None
+        np.testing.assert_allclose(np.asarray(actual), np.asarray(expected), rtol=5.0e-10, atol=5.0e-11)
+
+    assert dict(object_geometry.metadata)["wout_data_type"] == "SimpleNamespace"
+    assert float(boozer_geometry_jacobian_identity_error(object_geometry, theta_points=32, zeta_points=8)) < 2.0e-5

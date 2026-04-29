@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from pathlib import Path
+from types import SimpleNamespace
 from typing import Any, Callable
 
 import jax
@@ -26,6 +27,7 @@ from .boozer import (
     boozer_projection_error,
     read_boozmn_geometry,
     run_booz_xform_jax_geometry_from_wout,
+    run_booz_xform_jax_geometry_from_wout_data,
     straight_field_line_phase_error,
 )
 from .continuum import continuum_branch_matrix, local_continuum_frequency_hz
@@ -539,6 +541,48 @@ def _booz_xform_fixture(name: str) -> Path | None:
     return path if path.exists() else None
 
 
+def _wout_like_from_netcdf(path: Path) -> SimpleNamespace:
+    from netCDF4 import Dataset
+
+    with Dataset(str(path), "r") as dataset:
+        lasym_name = "lasym__logical__"
+        if lasym_name in dataset.variables:
+            lasym = bool(dataset.variables[lasym_name][...].item())
+        else:
+            lasym = bool(getattr(dataset, lasym_name, False))
+
+        rmnc = np.asarray(dataset.variables["rmnc"][:])
+        zeros = np.zeros_like(rmnc)
+
+        def read(name: str) -> np.ndarray:
+            return np.asarray(dataset.variables[name][:]) if name in dataset.variables else zeros
+
+        return SimpleNamespace(
+            lasym=lasym,
+            nfp=int(dataset.variables["nfp"][...].item()),
+            mpol=int(dataset.variables["mpol"][...].item()),
+            ntor=int(dataset.variables["ntor"][...].item()),
+            xm=np.asarray(dataset.variables["xm"][:], dtype=int),
+            xn=np.asarray(dataset.variables["xn"][:], dtype=int),
+            xm_nyq=np.asarray(dataset.variables["xm_nyq"][:], dtype=int),
+            xn_nyq=np.asarray(dataset.variables["xn_nyq"][:], dtype=int),
+            ns=int(dataset.variables["ns"][...].item()),
+            rmnc=rmnc,
+            rmns=read("rmns") if lasym else zeros,
+            zmnc=read("zmnc") if lasym else zeros,
+            zmns=read("zmns"),
+            lmnc=read("lmnc") if lasym else zeros,
+            lmns=read("lmns"),
+            bmnc=read("bmnc"),
+            bmns=read("bmns") if lasym else zeros,
+            bsubumnc=read("bsubumnc"),
+            bsubumns=read("bsubumns") if lasym else zeros,
+            bsubvmnc=read("bsubvmnc"),
+            bsubvmns=read("bsubvmns") if lasym else zeros,
+            iotas=np.asarray(dataset.variables["iotas"][:]),
+        )
+
+
 def _local_external_file(*parts: str) -> Path | None:
     path = Path("/Users/rogerio/local").joinpath(*parts)
     return path if path.exists() else None
@@ -826,6 +870,52 @@ def _gate_booz_xform_jax_live_geometry_adapter() -> GateResult:
         metric,
         tolerance,
         "live booz_xform_jax VMEC-to-Boozer geometry matches the asymmetric BOOZ_XFORM boozmn reference",
+    )
+
+
+def _gate_booz_xform_jax_in_memory_geometry_adapter() -> GateResult:
+    gate_id = "booz_xform_jax_in_memory_geometry_adapter"
+    tolerance = 5.0e-9
+    boozmn = _booz_xform_fixture("boozmn_up_down_asymmetric_tokamak.nc")
+    wout = _booz_xform_fixture("wout_up_down_asymmetric_tokamak.nc")
+    if boozmn is None or wout is None:
+        return GateResult(
+            gate_id=gate_id,
+            status="skipped",
+            metric=float("nan"),
+            tolerance=tolerance,
+            message="missing local asymmetric booz_xform_jax fixtures",
+        )
+
+    reference = read_boozmn_geometry(boozmn)
+    try:
+        wout_data = _wout_like_from_netcdf(wout)
+        geometry = run_booz_xform_jax_geometry_from_wout_data(
+            wout_data,
+            mboz=48,
+            nboz=0,
+            surfaces=tuple(float(value) for value in np.asarray(reference.s)),
+            jit=False,
+        )
+    except ImportError as exc:
+        return GateResult(
+            gate_id=gate_id,
+            status="skipped",
+            metric=float("nan"),
+            tolerance=tolerance,
+            message=str(exc),
+        )
+
+    errors = [
+        relative_l2_error(getattr(geometry, name), getattr(reference, name))
+        for name in ("bmnc", "bmns", "rmnc", "rmns", "zmns", "zmnc", "pmns", "pmnc", "gmnc", "gmns")
+    ]
+    metric = float(jnp.max(jnp.asarray(errors)))
+    return _pass_fail(
+        gate_id,
+        metric,
+        tolerance,
+        "in-memory VMEC wout_data to booz_xform_jax to FAX geometry matches the asymmetric boozmn reference",
     )
 
 
@@ -1540,6 +1630,17 @@ def registered_validation_gates() -> tuple[ValidationGate, ...]:
             command="python -m pytest -m requires_booz_xform_jax tests/test_boozer.py tests/test_validation_registry.py",
             tags=("boozer", "jacobian", "boozmn", "booz_xform_jax", "asymmetry"),
             _runner=_gate_booz_xform_jax_live_geometry_adapter,
+        ),
+        ValidationGate(
+            gate_id="booz_xform_jax_in_memory_geometry_adapter",
+            title="In-memory booz_xform_jax geometry adapter",
+            layer="boozer",
+            quantity="relative asymmetric harmonic parity error",
+            tolerance=5.0e-9,
+            citation="In-memory VMEC wout objects should produce the same Boozer harmonics as file-backed BOOZ_XFORM/booz_xform_jax references",
+            command="python -m pytest -m requires_booz_xform_jax tests/test_boozer.py tests/test_validation_registry.py",
+            tags=("boozer", "jacobian", "boozmn", "booz_xform_jax", "vmec_jax", "in-memory"),
+            _runner=_gate_booz_xform_jax_in_memory_geometry_adapter,
         ),
         ValidationGate(
             gate_id="boozmn_embedding_jacobian_shape",

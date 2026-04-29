@@ -238,10 +238,12 @@ connected to VMEC/vmec_jax design variables.
 Boozer Path
 -----------
 
-``fax.boozer`` can read ``boozmn`` files and can call local
-``booz_xform_jax`` from a VMEC ``wout`` when available. The implemented
-diagnostic computes normalized non-axisymmetric Boozer ``|B|`` spectral energy
-and dominant modes. It also validates the scalar harmonic representation
+``fax.boozer`` can read ``boozmn`` files, call local ``booz_xform_jax`` from a
+VMEC ``wout`` file, or accept an in-memory VMEC ``wout``-like object produced by
+``vmec_jax``. All three paths populate the same ``BoozerGeometry`` contract when
+the required harmonics are available. The implemented diagnostic computes
+normalized non-axisymmetric Boozer ``|B|`` spectral energy and dominant modes.
+It also validates the scalar harmonic representation
 
 .. math::
 

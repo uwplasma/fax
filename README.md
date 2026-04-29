@@ -79,9 +79,11 @@ M_{ij} =
 K(s)x = \omega^2(s) M(s)x.
 ```
 
-The newest Boozer path reads real `boozmn` geometry harmonics, or builds the
-same `BoozerGeometry` object directly from a VMEC `wout` through
-`booz_xform_jax`, and uses the straight-field-line derivative
+The newest Boozer path reads real `boozmn` geometry harmonics, builds the same
+`BoozerGeometry` object directly from a VMEC `wout` through `booz_xform_jax`,
+or accepts an in-memory VMEC `wout`-like object for the no-intermediate-file
+`vmec_jax -> booz_xform_jax -> FAX` route. It uses the straight-field-line
+derivative
 
 ```math
 k_{\parallel,mn}(s,\theta_B,\zeta_B)=
@@ -483,8 +485,9 @@ adapter plus continuum finite-output/radial-sampling smoke tests. The new
 global radial block gates validate a multi-harmonic radial eigenproblem with
 Dirichlet and Neumann boundaries, exact constant-coefficient spectra, AD
 density scaling, metric-derived Boozer radial stiffness, eigenfunction-weighted
-fast-ion drive, real-`boozmn` residual checks, and the first public STELLGAP
-CTOK continuum comparison. The AE3D public answer table is parsed as an
+fast-ion drive, file-backed and in-memory `booz_xform_jax` adapter parity,
+real-`boozmn` residual checks, and the first public STELLGAP CTOK continuum
+comparison. The AE3D public answer table is parsed as an
 artifact/residual smoke gate, but not yet as a FAX eigenmode parity claim.
 These are acceptance gates for the current operators, not yet full
 AE3D/CAS3D/FAR3D stellarator validation.
@@ -516,6 +519,8 @@ It currently establishes:
 - a LandremanPaul2021 QA lowres local reference target,
 - real `boozmn` geometry gates for Boozer Jacobian identity, embedding
   Jacobian shape, and local 3-D surface continuum matrices,
+- file-backed and in-memory `booz_xform_jax` adapters that populate the same
+  FAX `BoozerGeometry` contract from VMEC `wout` data,
 - a global radial 3-D Boozer block eigenmode operator with radial envelopes,
   harmonic mode structures, residual diagnostics, and analytic constant-limit
   gates,

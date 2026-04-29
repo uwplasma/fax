@@ -1166,6 +1166,12 @@ Needed docs:
     - Added `examples/research/boozmn_differentiable_design_study.py`, which reads a real `boozmn` file, differentiates through local Boozer matrices, metric-derived radial stiffness, global generalized eigenfrequencies, and fast-ion growth projected on radial/harmonic eigenfunctions.
     - Generated `docs/_static/boozmn_differentiable_design_study.{svg,png}` and summary JSON. On the local Landreman-Sengupta-Plunk `boozmn` fixture, the example moves the first two modes below a 200-300 kHz risk window and reduces the peak reduced fast-ion growth screen from about `+8.87 Hz` to negative.
     - This closes the first real-geometry differentiable-design lane for the current Boozer operator. It is still a reduced-parameter design screen; true shape-gradient publication claims require wiring those parameters to `vmec_jax` boundary/profile variables and validating optimized geometries against external-code/literature targets.
+  - 2026-04-28 in-memory VMEC/Boozer bridge milestone:
+    - Added FAX `run_booz_xform_jax_from_wout_data` and `run_booz_xform_jax_geometry_from_wout_data` so a live VMEC `wout`-like object can populate the same `BoozerSpectrum`/`BoozerGeometry` contracts as the file-backed adapter.
+    - Added a registered physics gate `booz_xform_jax_in_memory_geometry_adapter`, comparing an in-memory asymmetric VMEC object through `booz_xform_jax` against the asymmetric BOOZ_XFORM `boozmn` reference across field, embedding, Boozer-shift, and Jacobian harmonic families.
+    - Strengthened neighboring `booz_xform_jax` with `read_wout_data(...).run_jax(...)` parity tests against file-backed `read_wout(...).run_jax(...)` for stellarator-symmetric and asymmetric fixtures, including Jacobian harmonics.
+    - Regenerated the validation gate summary figures and manifest so docs/README artifacts include the new in-memory bridge gate.
+    - This closes the no-intermediate-file handoff layer needed for `vmec_jax -> booz_xform_jax -> FAX` applications. The next hard step is differentiating through an actual `vmec_jax` solve/transform builder, not only through downstream FAX objectives.
 
 ### Local Testing Policy Until GitHub Actions Resume
 

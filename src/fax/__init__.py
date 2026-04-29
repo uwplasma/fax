@@ -2,7 +2,14 @@
 
 from __future__ import annotations
 
-from .boozer import BoozerGeometry, BoozerGeometryGrid, BoozerSpectrum, run_booz_xform_jax_geometry_from_wout
+from .boozer import (
+    BoozerGeometry,
+    BoozerGeometryGrid,
+    BoozerSpectrum,
+    run_booz_xform_jax_from_wout_data,
+    run_booz_xform_jax_geometry_from_wout,
+    run_booz_xform_jax_geometry_from_wout_data,
+)
 from .config import FaxConfig, load_config
 from .cross_code import (
     Ae3dEigenvalueData,
@@ -90,7 +97,9 @@ __all__ = [
     "plot_convergence_artifacts",
     "run",
     "run_benchmark",
+    "run_booz_xform_jax_from_wout_data",
     "run_booz_xform_jax_geometry_from_wout",
+    "run_booz_xform_jax_geometry_from_wout_data",
     "run_continuum",
     "run_convergence",
     "run_validation",

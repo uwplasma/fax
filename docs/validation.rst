@@ -86,6 +86,10 @@ tags, and command. The current gates are:
   ``booz_xform_jax`` VMEC-to-Boozer JAX adapter on an asymmetric fixture and
   compares all field, embedding, shift, and Jacobian harmonics against the
   BOOZ_XFORM ``boozmn`` reference.
+* ``booz_xform_jax_in_memory_geometry_adapter``: exercises the no-file
+  ``vmec_jax`` handoff path by passing an in-memory VMEC ``wout``-like object
+  through ``booz_xform_jax`` and comparing the resulting FAX geometry against
+  the same asymmetric ``boozmn`` reference.
 * ``boozmn_embedding_jacobian_shape``: compares the physical embedding
   Jacobian shape reconstructed from ``R``, ``Z``, and ``p`` against the
   ``boozmn`` Jacobian harmonics up to one surface-wise radial-coordinate scale.

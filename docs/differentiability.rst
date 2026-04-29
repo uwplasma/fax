@@ -13,11 +13,14 @@ The current gates differentiate profile continuum diagnostics and the reduced
 radial generalized eigenproblem with respect to density, rotational-transform,
 and magnetic-field profile parameters.
 ``boozer_pipeline_mode_avoidance_objective`` extends this pattern to a
-callable Boozer-geometry builder, which is the intended API boundary for a
-future differentiable ``vmec_jax``/``booz_xform_jax`` pipeline. The current
-unit test differentiates through a synthetic builder; a full VMEC-to-Boozer
-gradient gate requires a differentiable Boozer transform artifact with stable
-local runtime.
+callable Boozer-geometry builder, which is the intended API boundary for
+``vmec_jax``/``booz_xform_jax`` pipelines. The file-backed and in-memory
+``run_booz_xform_jax_geometry_from_wout*`` adapters now share the same
+``BoozerGeometry`` contract and are validated against asymmetric Boozer
+harmonics. The dense objective test still differentiates through a synthetic
+builder; the next full-equilibrium gradient gate should replace that builder
+with a stable differentiable ``vmec_jax`` solve and ``booz_xform_jax`` transform
+artifact.
 
 Generalized eigenvalue path
 ---------------------------
