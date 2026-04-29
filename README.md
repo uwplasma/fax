@@ -306,6 +306,14 @@ then compares Boozer truncations through sampled `|B|`, local 3-D continuum
 frequencies, and the Boozer-Jacobian identity. This is the first convergence
 gate on the live bridge, not a converged VMEC physics claim.
 
+![VMEC-JAX solve convergence](docs/_static/vmec_jax_solve_convergence.png)
+
+This figure runs a real `vmec_jax` iteration ladder on the Landreman-Paul QA
+input, transforms each iterate through `booz_xform_jax`, and compares FAX
+local 3-D Boozer continuum frequencies against the converged reference `wout`.
+The current gate checks monotone VMEC force-residual reduction plus decreasing
+Boozer `|B|` and FAX frequency errors.
+
 ![Live VMEC/Boozer operator angular convergence](docs/_static/vmec_boozer_operator_angular_convergence.png)
 
 This figure holds the same live Landreman-Paul Boozer geometry fixed and
@@ -473,6 +481,7 @@ Current figures:
 - `metric_residual_convergence.svg`: metric-matrix residual and angular-grid check.
 - `landreman_paul_convergence_dashboard.svg`: VMEC-backed radial/angular/Fourier convergence smoke-test dashboard.
 - `vmec_boozer_bridge_convergence.svg`: live `vmec_jax -> booz_xform_jax -> FAX` Boozer truncation convergence smoke-test dashboard.
+- `vmec_jax_solve_convergence.svg`: live `vmec_jax` residual ladder propagated through Boozer geometry and FAX continuum errors.
 - `vmec_boozer_operator_angular_convergence.svg`: live Boozer local-operator angular quadrature convergence smoke-test dashboard.
 - `validation_gate_summary.svg`: current validation-gate status plot.
 
@@ -551,6 +560,9 @@ It currently establishes:
   against `(5,5)` on the same in-memory VMEC state,
 - a live-bridge local-operator angular convergence gate comparing `12x12`,
   `16x16`, and `20x20` angular quadrature against a `32x32` reference grid,
+- a live `vmec_jax` solve-convergence gate that checks residual reduction and
+  propagates each VMEC iterate through Boozer geometry and FAX continuum
+  frequencies against the converged Landreman-Paul reference `wout`,
 - a global radial 3-D Boozer block eigenmode operator with radial envelopes,
   harmonic mode structures, residual diagnostics, and analytic constant-limit
   gates,

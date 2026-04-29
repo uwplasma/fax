@@ -1203,6 +1203,12 @@ Needed docs:
     - Updated `fax validate` so the CLI logs every selected validation gate before and after execution, including gate index, gate id, layer, tolerance, elapsed time, metric, status, and message. This keeps long local validation runs visibly alive while GitHub Actions are unavailable.
     - Updated README/development/validation docs and CLI tests to cover the per-gate progress contract.
     - Verified locally with targeted CLI/progress tests, `python -m coverage erase && python -m coverage run --source=fax -m pytest -q && python -m coverage report --skip-empty -m --fail-under=95` (171 passed, 95.5% FAX source coverage), `python -m ruff check .`, `python -m mypy src/fax`, `python -m sphinx -W --keep-going -b html docs docs/_build/html`, and `git diff --check`.
+  - 2026-04-29 VMEC solve-convergence ladder milestone:
+    - Added `VmecJaxBoozerSolveConvergenceResult` and `run_vmec_jax_boozer_solve_convergence`, which run a native-grid `vmec_jax` iteration ladder, carry VMEC force residuals into the result object, transform each iterate through `booz_xform_jax`, and compare Boozer `|B|` plus FAX local 3-D continuum frequencies against a converged reference `wout`.
+    - Added registered gate `landreman_paul_vmec_jax_solve_convergence`. Current local metric: `2.3407e-2 < 4.0e-2`, with VMEC residual ratio `6.474e-3` and FAX frequency-error ratio `2.365e-1` from requested iterations `(1, 6, 12, 24)`.
+    - Added the runtime-comparison plan for matched FAX/STELLGAP/AE3D/CAS3D/FAR3D benchmark families. Speed claims must be coupled to passing physics metrics.
+    - Added the `vmec_jax_solve_convergence` README/docs figure to show residual reduction, Boozer/FAX reference errors, and local runtime per ladder point.
+    - Verified locally with direct gate execution, `python tools/generate_validation_figures.py`, `python tools/qa_figures.py`, targeted Landreman-Paul registry test, `python -m coverage erase && python -m coverage run --source=fax -m pytest -q && python -m coverage report --skip-empty -m --fail-under=95` (171 passed, 95.5% FAX source coverage), `python -m ruff check .`, `python -m mypy src/fax`, `python -m sphinx -W --keep-going -b html docs docs/_build/html`, `python -m build`, `python -m twine check dist/*`, and `git diff --check`.
 
 ### Local Testing Policy Until GitHub Actions Resume
 
@@ -1261,3 +1267,37 @@ and differentiable design studies that can produce new FAX-native results:
 6. Use the differentiable-design study API on real VMEC/Boozer geometries to produce novel design maps: sensitivity-ranked boundary/profile variables, UQ-aware AE risk bands, inverse-designed resonance avoidance, and alpha/beam resonance robustness scans.
 7. Publish the staged `v0.0.1` GitHub release when GitHub Actions are available so the PyPI trusted-publishing workflow can complete.
 8. Extend `fax benchmark` with memory/process telemetry and separate compile/warm kernel timing once matrix-free kernels are introduced.
+
+### Runtime Comparison Plan Against Reference Codes
+
+FAX performance claims must be reported on matched physics problems rather
+than generic wall-clock anecdotes. Add a runtime table and plot for each
+validated comparison family:
+
+1. STELLGAP CTOK local continuum: compare FAX local 3-D Boozer continuum
+   runtime against STELLGAP `xstgap` on the same `boozmn_ctok.nc` and matched
+   harmonic/surface sets once the local STELLGAP executable issue is resolved.
+   Report setup/read time, solve time, post-processing time, total wall time,
+   CPU/GPU hardware, thread/MPI counts, and matched p95 continuum error.
+2. AE3D public matrix problem: compare FAX/SciPy dense and future FAX sparse or
+   matrix-free global solves against AE3D artifact dimensions and, when AE3D
+   builds with a portable compiler, against AE3D executable wall time. Report
+   matrix assembly, eigensolve, residual check, memory footprint, and
+   eigenfrequency parity error.
+3. CAS3D/CONTI and CAS3D-K: once runnable inputs or archived outputs are
+   available, compare global mode frequency/eigenfunction/growth-rate runtime
+   for matched radial/harmonic resolution and physics toggles. Keep these in a
+   manual slow benchmark tier until portable execution is proven.
+4. FAR3D: after a CPU-only or CUDA Fortran build is available, compare reduced
+   fast-ion drive/damping scans on matched equilibria and energetic-particle
+   profiles. Report parameter-scan throughput as well as single-case runtime.
+5. FAX-native differentiable studies: benchmark gradient, Jacobian, UQ, and
+   inverse-design loops against finite-difference baselines and against the
+   closest non-differentiable external workflow. Separate compile time from
+   warmed runtime and include derivative accuracy/error bars.
+
+Implementation target: extend `fax benchmark` with named benchmark families
+(`analytic`, `boozmn-local`, `global-block`, `vmec-boozer`, `ae3d-artifact`,
+`stellgap-ctok`) and write JSON/CSV/Markdown plus publication-ready plots. Do
+not claim a speedup unless the physics metric also passes the corresponding
+validation gate.

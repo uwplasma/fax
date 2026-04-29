@@ -29,6 +29,7 @@ from .boozer import (
     read_boozmn_geometry,
     run_booz_xform_jax_geometry_from_wout,
     run_booz_xform_jax_geometry_from_wout_data,
+    run_vmec_jax_boozer_solve_convergence,
     run_vmec_jax_boozer_truncation_convergence,
     run_vmec_jax_fixed_boundary_boozer_geometry,
     straight_field_line_phase_error,
@@ -1484,6 +1485,56 @@ def _gate_landreman_paul_vmec_jax_boozer_operator_angular_convergence() -> GateR
     )
 
 
+def _gate_landreman_paul_vmec_jax_solve_convergence() -> GateResult:
+    gate_id = "landreman_paul_vmec_jax_solve_convergence"
+    tolerance = 4.0e-2
+    case = landreman_paul_qa_lowres()
+    if case.wout is None or not case.vmec_input.exists() or not case.wout.exists():
+        return GateResult(
+            gate_id=gate_id,
+            status="skipped",
+            metric=float("nan"),
+            tolerance=tolerance,
+            message=f"missing Landreman-Paul VMEC input or reference wout: {case.missing_paths()}",
+        )
+
+    try:
+        result = run_vmec_jax_boozer_solve_convergence(
+            case.vmec_input,
+            case.wout,
+            max_iters=(1, 6, 12, 24),
+            mboz=5,
+            nboz=5,
+            surfaces=(0.25, 0.5),
+            theta_points=None,
+            zeta_points=None,
+            jit=False,
+        )
+    except ImportError as exc:
+        return GateResult(
+            gate_id=gate_id,
+            status="skipped",
+            metric=float("nan"),
+            tolerance=tolerance,
+            message=str(exc),
+        )
+
+    residual_monotone = bool(jnp.all(jnp.diff(result.fsq_totals) <= 1.0e-12))
+    frequency_improves = bool(result.frequency_relative_errors[-1] < result.frequency_relative_errors[0])
+    field_improves = bool(jnp.max(result.field_relative_errors[-1]) < jnp.max(result.field_relative_errors[0]))
+    metric = result.max_metric if residual_monotone and frequency_improves and field_improves else float("inf")
+    return _pass_fail(
+        gate_id,
+        metric,
+        tolerance,
+        (
+            "Landreman-Paul VMEC-JAX residual ladder propagates to converging Boozer/FAX "
+            f"field and continuum errors; residual ratio={result.residual_reduction_ratio:.3e}, "
+            f"frequency-error ratio={result.frequency_error_reduction_ratio:.3e}"
+        ),
+    )
+
+
 def _coarsen_metric_geometry(metric: MetricGeometry, *, radial_points: int) -> MetricGeometry:
     indices = np.unique(np.rint(np.linspace(0, int(metric.s.shape[0]) - 1, int(radial_points))).astype(int))
     if indices.size < 4:
@@ -1998,6 +2049,20 @@ def registered_validation_gates() -> tuple[ValidationGate, ...]:
             command="python -m pytest -m requires_vmec_jax tests/test_boozer.py tests/test_validation_registry.py",
             tags=("vmec_jax", "booz_xform_jax", "landreman-paul", "convergence", "boozer", "operator"),
             _runner=_gate_landreman_paul_vmec_jax_boozer_operator_angular_convergence,
+        ),
+        ValidationGate(
+            gate_id="landreman_paul_vmec_jax_solve_convergence",
+            title="Landreman-Paul QA vmec_jax solve convergence ladder",
+            layer="convergence",
+            quantity="final VMEC residual ratio and Boozer/FAX reference error",
+            tolerance=4.0e-2,
+            citation=(
+                "Landreman & Paul, Phys. Rev. Lett. 128, 035001 (2022); "
+                "VMEC-JAX residual convergence propagated through booz_xform_jax and FAX local 3-D continuum"
+            ),
+            command="python -m pytest -m requires_vmec_jax tests/test_validation_registry.py",
+            tags=("vmec_jax", "booz_xform_jax", "landreman-paul", "convergence", "boozer", "solve"),
+            _runner=_gate_landreman_paul_vmec_jax_solve_convergence,
         ),
         ValidationGate(
             gate_id="landreman_paul_continuum_finite",

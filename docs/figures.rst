@@ -151,6 +151,13 @@ Current Figures
    through sampled ``|B|``, local 3-D continuum frequencies, and the
    Boozer-Jacobian identity.
 
+.. figure:: _static/vmec_jax_solve_convergence.svg
+   :alt: VMEC-JAX solve convergence propagated through Boozer/FAX.
+
+   Live Landreman-Paul ``vmec_jax`` solve-convergence ladder. VMEC force
+   residuals, Boozer field/Jacobian errors, FAX continuum frequency errors,
+   and local runtimes are tracked against the converged reference ``wout``.
+
 .. figure:: _static/vmec_boozer_operator_angular_convergence.svg
    :alt: Live VMEC-JAX Boozer local-operator angular convergence dashboard.
 

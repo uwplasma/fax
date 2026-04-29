@@ -32,6 +32,7 @@ from fax.boozer import (
     read_boozmn_geometry,
     reconstruct_boozer_field,
     run_booz_xform_jax_geometry_from_wout_data,
+    run_vmec_jax_boozer_solve_convergence,
     run_vmec_jax_fixed_boundary_wout_data,
     straight_field_line_phase_error,
 )
@@ -1334,6 +1335,83 @@ def generate_vmec_boozer_bridge_convergence(output_dir: Path) -> list[Path]:
     return paths
 
 
+def generate_vmec_jax_solve_convergence(output_dir: Path) -> list[Path]:
+    """Generate VMEC residual convergence propagated through Boozer/FAX."""
+    plt = _setup_matplotlib()
+    case = landreman_paul_qa_lowres()
+    if not case.vmec_input.exists() or not case.wout.exists():
+        raise FileNotFoundError(f"Landreman-Paul QA VMEC input/reference wout not found: {case.missing_paths()}")
+
+    result = run_vmec_jax_boozer_solve_convergence(
+        case.vmec_input,
+        case.wout,
+        max_iters=(1, 6, 12, 24),
+        mboz=5,
+        nboz=5,
+        surfaces=(0.25, 0.5),
+        theta_points=None,
+        zeta_points=None,
+        jit=False,
+    )
+    max_iters = np.asarray(result.max_iters)
+    fsq = np.asarray(result.fsq_totals)
+    field_errors = np.asarray(result.field_relative_errors)
+    frequency_errors = np.asarray(result.frequency_relative_errors)
+    jacobian_errors = np.asarray(result.jacobian_identity_errors)
+    runtime = np.asarray(result.runtime_seconds)
+
+    fig, axes = plt.subplots(1, 4, figsize=(14.8, 3.6), constrained_layout=True)
+    axes[0].loglog(max_iters, fsq, marker="o", linewidth=1.6)
+    axes[0].set_title("VMEC force residual")
+    axes[0].set_xlabel("requested VMEC iterations")
+    axes[0].set_ylabel(r"$f_{sq,r}+f_{sq,z}+f_{sq,\lambda}$")
+    axes[0].grid(True, which="both", alpha=0.25)
+
+    axes[1].semilogy(max_iters, frequency_errors, marker="s", linewidth=1.6, color="#2458a6")
+    axes[1].axhline(4.0e-2, color="#222222", linestyle="--", linewidth=1.0, label="gate")
+    axes[1].set_title("FAX continuum error")
+    axes[1].set_xlabel("requested VMEC iterations")
+    axes[1].set_ylabel("relative frequency error")
+    axes[1].legend(fontsize=7)
+    axes[1].grid(True, which="both", alpha=0.25)
+
+    surfaces = np.asarray(result.reference_geometry.s)
+    for surface_index, surface in enumerate(surfaces):
+        axes[2].semilogy(
+            max_iters,
+            field_errors[:, surface_index],
+            marker="o",
+            linewidth=1.4,
+            label=f"s={surface:.2f}",
+        )
+    axes[2].semilogy(max_iters, jacobian_errors, marker="^", linewidth=1.4, label="Jacobian")
+    axes[2].set_title(r"Boozer $|B|$ and Jacobian")
+    axes[2].set_xlabel("requested VMEC iterations")
+    axes[2].set_ylabel("relative error")
+    axes[2].legend(fontsize=7)
+    axes[2].grid(True, which="both", alpha=0.25)
+
+    axes[3].bar([str(value) for value in max_iters], runtime, color="#4c78a8")
+    axes[3].set_title("local runtime")
+    axes[3].set_xlabel("requested VMEC iterations")
+    axes[3].set_ylabel("seconds")
+    axes[3].text(
+        0.04,
+        0.96,
+        f"final metric={result.max_metric:.2e}\nresidual ratio={result.residual_reduction_ratio:.2e}",
+        transform=axes[3].transAxes,
+        ha="left",
+        va="top",
+        fontsize=8,
+        bbox={"facecolor": "white", "edgecolor": "#bbbbbb", "boxstyle": "round,pad=0.25"},
+    )
+
+    fig.suptitle("Landreman-Paul VMEC-JAX solve convergence through Boozer/FAX", fontsize=12, weight="bold")
+    paths = _save_figure(fig, output_dir, "vmec_jax_solve_convergence")
+    plt.close(fig)
+    return paths
+
+
 def generate_vmec_boozer_operator_angular_convergence(output_dir: Path) -> list[Path]:
     """Generate angular-convergence evidence for the live VMEC-JAX/Boozer operator."""
     plt = _setup_matplotlib()
@@ -1483,6 +1561,7 @@ def main(argv: list[str] | None = None) -> int:
         generate_metric_residual_convergence(output_dir),
         generate_landreman_convergence_dashboard(output_dir),
         generate_vmec_boozer_bridge_convergence(output_dir),
+        generate_vmec_jax_solve_convergence(output_dir),
         generate_vmec_boozer_operator_angular_convergence(output_dir),
         generate_validation_gate_summary(output_dir),
     ]:

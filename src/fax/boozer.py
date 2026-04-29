@@ -11,6 +11,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, replace
 from pathlib import Path
+import time
 from typing import Any
 
 import jax
@@ -246,6 +247,43 @@ class VmecJaxBoozerConvergenceResult:
             float(jnp.max(self.field_relative_error)),
             float(self.frequency_relative_error),
             float(self.coarse_jacobian_identity_error),
+            float(self.reference_jacobian_identity_error),
+        )
+
+
+@dataclass(frozen=True)
+class VmecJaxBoozerSolveConvergenceResult:
+    """VMEC-iteration convergence diagnostics propagated through Boozer/FAX."""
+
+    reference_geometry: BoozerGeometry
+    geometries: tuple[BoozerGeometry, ...]
+    max_iters: tuple[int, ...]
+    fsq_totals: jax.Array
+    runtime_seconds: jax.Array
+    field_relative_errors: jax.Array
+    frequency_relative_errors: jax.Array
+    jacobian_identity_errors: jax.Array
+    reference_jacobian_identity_error: float
+    metadata: tuple[tuple[str, Any], ...] = ()
+
+    @property
+    def residual_reduction_ratio(self) -> float:
+        """Return final over initial VMEC force-residual total."""
+        return float(self.fsq_totals[-1] / jnp.maximum(self.fsq_totals[0], 1.0e-30))
+
+    @property
+    def frequency_error_reduction_ratio(self) -> float:
+        """Return final over initial FAX continuum-frequency error."""
+        return float(self.frequency_relative_errors[-1] / jnp.maximum(self.frequency_relative_errors[0], 1.0e-30))
+
+    @property
+    def max_metric(self) -> float:
+        """Return the largest final scalar convergence diagnostic."""
+        return max(
+            float(self.residual_reduction_ratio),
+            float(jnp.max(self.field_relative_errors[-1])),
+            float(self.frequency_relative_errors[-1]),
+            float(self.jacobian_identity_errors[-1]),
             float(self.reference_jacobian_identity_error),
         )
 
@@ -488,11 +526,12 @@ def run_vmec_jax_fixed_boundary_wout_data(
     input_path: str | Path,
     *,
     max_iter: int = 1,
-    theta_points: int = 12,
-    zeta_points: int = 4,
+    theta_points: int | None = 12,
+    zeta_points: int | None = 4,
     use_initial_guess: bool = False,
     vmec_project: bool = False,
     fast_bcovar: bool = True,
+    include_fsq: bool = False,
     solver_kwargs: dict[str, Any] | None = None,
 ) -> Any:
     """Run a short ``vmec_jax`` fixed-boundary solve and return ``wout`` data.
@@ -511,27 +550,29 @@ def run_vmec_jax_fixed_boundary_wout_data(
 
     vmec_input = Path(input_path).expanduser().resolve()
     cfg, _ = vj.load_input(str(vmec_input))
-    grid = vmec_angle_grid(
-        ntheta=int(theta_points),
-        nzeta=int(zeta_points),
-        nfp=int(cfg.nfp),
-        lasym=bool(cfg.lasym),
-    )
+    if (theta_points is None) != (zeta_points is None):
+        raise ValueError("theta_points and zeta_points must both be provided or both be None")
     run_options: dict[str, Any] = {
         "max_iter": int(max_iter),
         "use_initial_guess": bool(use_initial_guess),
         "vmec_project": bool(vmec_project),
         "verbose": False,
-        "grid": grid,
         "jit_forces": False,
         "use_scan": False,
         "multigrid": False,
     }
+    if theta_points is not None and zeta_points is not None:
+        run_options["grid"] = vmec_angle_grid(
+            ntheta=int(theta_points),
+            nzeta=int(zeta_points),
+            nfp=int(cfg.nfp),
+            lasym=bool(cfg.lasym),
+        )
     if solver_kwargs:
         run_options.update(solver_kwargs)
 
     run = run_fixed_boundary(vmec_input, **run_options)
-    return wout_from_fixed_boundary_run(run, include_fsq=False, fast_bcovar=bool(fast_bcovar))
+    return wout_from_fixed_boundary_run(run, include_fsq=bool(include_fsq), fast_bcovar=bool(fast_bcovar))
 
 
 def run_vmec_jax_fixed_boundary_boozer_geometry(
@@ -704,6 +745,168 @@ def run_vmec_jax_boozer_truncation_convergence(
     )
 
 
+def run_vmec_jax_boozer_solve_convergence(
+    input_path: str | Path,
+    reference_wout_path: str | Path,
+    *,
+    max_iters: tuple[int, ...] = (1, 6, 12, 24),
+    mboz: int = 5,
+    nboz: int = 5,
+    surfaces: tuple[float, ...] = (0.25, 0.5),
+    theta_points: int | None = None,
+    zeta_points: int | None = None,
+    field_theta_points: int = 24,
+    field_zeta_points: int = 16,
+    frequency_theta_points: int = 16,
+    frequency_zeta_points: int = 16,
+    harmonics: Any = ((1.0, 0.0), (2.0, 1.0), (3.0, 2.0)),
+    mass_density: float = 3.4e-8,
+    use_initial_guess: bool = False,
+    vmec_project: bool = True,
+    fast_bcovar: bool = True,
+    jit: bool = False,
+    solver_kwargs: dict[str, Any] | None = None,
+) -> VmecJaxBoozerSolveConvergenceResult:
+    """Run a VMEC-iteration convergence ladder through Boozer/FAX.
+
+    The default path intentionally uses ``vmec_jax``'s native fixed-boundary
+    grid and scan-based JAX iteration rather than the tiny smoke-test grid used
+    by :func:`run_vmec_jax_fixed_boundary_boozer_geometry`.  This makes the
+    diagnostic a real solve-convergence check: each VMEC iterate is transformed
+    through ``booz_xform_jax``, projected into the FAX local 3-D Boozer
+    continuum operator, and compared against a converged reference ``wout``.
+    """
+    import importlib.util
+
+    if importlib.util.find_spec("booz_xform_jax") is None:  # pragma: no cover - environment dependent
+        raise ImportError("booz_xform_jax is required for run_vmec_jax_boozer_solve_convergence")
+    if not max_iters:
+        raise ValueError("max_iters must contain at least one VMEC iteration count")
+
+    vmec_input = Path(input_path).expanduser().resolve()
+    reference_wout = Path(reference_wout_path).expanduser().resolve()
+    default_solver_kwargs: dict[str, Any] = {
+        "jit_forces": "auto",
+        "use_scan": True,
+        "performance_mode": True,
+        "multigrid": None,
+    }
+    if solver_kwargs:
+        default_solver_kwargs.update(solver_kwargs)
+
+    reference_geometry = run_booz_xform_jax_geometry_from_wout(
+        reference_wout,
+        mboz=mboz,
+        nboz=nboz,
+        surfaces=surfaces,
+        jit=jit,
+    )
+    harmonics_array = jnp.asarray(harmonics, dtype=float)
+    reference_frequencies = boozer_3d_continuum_frequencies_hz(
+        reference_geometry,
+        harmonics_array,
+        mass_density=mass_density,
+        theta_points=frequency_theta_points,
+        zeta_points=frequency_zeta_points,
+    )
+
+    geometries: list[BoozerGeometry] = []
+    fsq_totals: list[float] = []
+    runtimes: list[float] = []
+    field_errors: list[jax.Array] = []
+    frequency_errors: list[jax.Array] = []
+    jacobian_errors: list[float] = []
+    for max_iter in tuple(int(value) for value in max_iters):
+        start = time.perf_counter()
+        wout = run_vmec_jax_fixed_boundary_wout_data(
+            vmec_input,
+            max_iter=max_iter,
+            theta_points=theta_points,
+            zeta_points=zeta_points,
+            use_initial_guess=use_initial_guess,
+            vmec_project=vmec_project,
+            fast_bcovar=fast_bcovar,
+            include_fsq=True,
+            solver_kwargs=default_solver_kwargs,
+        )
+        geometry = run_booz_xform_jax_geometry_from_wout_data(
+            wout,
+            mboz=mboz,
+            nboz=nboz,
+            surfaces=surfaces,
+            jit=jit,
+        )
+        runtimes.append(float(time.perf_counter() - start))
+        fsq_totals.append(_vmec_wout_fsq_total(wout))
+        frequencies = boozer_3d_continuum_frequencies_hz(
+            geometry,
+            harmonics_array,
+            mass_density=mass_density,
+            theta_points=frequency_theta_points,
+            zeta_points=frequency_zeta_points,
+        )
+        field_errors.append(
+            boozer_geometry_field_relative_error(
+                geometry,
+                reference_geometry,
+                theta_points=field_theta_points,
+                zeta_points=field_zeta_points,
+            )
+        )
+        frequency_errors.append(
+            jnp.linalg.norm(frequencies - reference_frequencies)
+            / jnp.maximum(jnp.linalg.norm(reference_frequencies), 1.0e-30)
+        )
+        jacobian_errors.append(
+            float(
+                boozer_geometry_jacobian_identity_error(
+                    geometry,
+                    theta_points=frequency_theta_points,
+                    zeta_points=frequency_zeta_points,
+                )
+            )
+        )
+        metadata = (
+            ("vmec_input", str(vmec_input)),
+            ("reference_wout", str(reference_wout)),
+            ("vmec_max_iter", int(max_iter)),
+            ("mboz", int(mboz)),
+            ("nboz", int(nboz)),
+            ("surfaces", tuple(float(surface) for surface in surfaces)),
+            *geometry.metadata,
+        )
+        geometries.append(replace(geometry, source="vmec_jax_booz_xform_jax", metadata=metadata))
+
+    result_metadata = (
+        ("vmec_input", str(vmec_input)),
+        ("reference_wout", str(reference_wout)),
+        ("mboz", int(mboz)),
+        ("nboz", int(nboz)),
+        ("surfaces", tuple(float(surface) for surface in surfaces)),
+        ("theta_points", None if theta_points is None else int(theta_points)),
+        ("zeta_points", None if zeta_points is None else int(zeta_points)),
+        ("solver_kwargs", tuple(sorted((str(key), str(value)) for key, value in default_solver_kwargs.items()))),
+    )
+    return VmecJaxBoozerSolveConvergenceResult(
+        reference_geometry=replace(reference_geometry, source="reference_wout_booz_xform_jax"),
+        geometries=tuple(geometries),
+        max_iters=tuple(int(value) for value in max_iters),
+        fsq_totals=jnp.asarray(fsq_totals),
+        runtime_seconds=jnp.asarray(runtimes),
+        field_relative_errors=jnp.asarray(field_errors),
+        frequency_relative_errors=jnp.asarray(frequency_errors),
+        jacobian_identity_errors=jnp.asarray(jacobian_errors),
+        reference_jacobian_identity_error=float(
+            boozer_geometry_jacobian_identity_error(
+                reference_geometry,
+                theta_points=frequency_theta_points,
+                zeta_points=frequency_zeta_points,
+            )
+        ),
+        metadata=result_metadata,
+    )
+
+
 def _run_booz_xform_transform(
     transform: Any,
     *,
@@ -727,6 +930,10 @@ def _run_booz_xform_transform(
         ("jlist", tuple(int(value) for value in np.asarray(output["jlist"]))),
     )
     return output, s, full_metadata
+
+
+def _vmec_wout_fsq_total(wout: Any) -> float:
+    return float(getattr(wout, "fsqr", 0.0)) + float(getattr(wout, "fsqz", 0.0)) + float(getattr(wout, "fsql", 0.0))
 
 
 def _spectrum_from_booz_xform_output(

@@ -22,8 +22,11 @@ harmonics. ``run_vmec_jax_fixed_boundary_boozer_geometry`` adds the first live
 a Landreman-Paul QA integration smoke gate. The companion
 ``run_vmec_jax_boozer_truncation_convergence`` diagnostic reuses one VMEC state
 to compare nearby Boozer truncations before downstream operators are used for
-gradient claims. ``boozer_3d_operator_angular_convergence`` then checks the
-local 3-D operator's angular quadrature on that fixed geometry. The dense
+gradient claims. ``run_vmec_jax_boozer_solve_convergence`` adds the next
+pre-gradient gate by requiring VMEC residual reduction to propagate through
+Boozer geometry and FAX continuum errors against a converged reference
+``wout``. ``boozer_3d_operator_angular_convergence`` then checks the local 3-D
+operator's angular quadrature on that fixed geometry. The dense
 objective test still differentiates through a synthetic builder; the next
 full-equilibrium gradient gate should replace that builder with a stable
 differentiable ``vmec_jax`` solve and ``booz_xform_jax`` transform artifact.

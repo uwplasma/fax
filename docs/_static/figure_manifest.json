@@ -656,6 +656,23 @@
       ]
     },
     {
+      "id": "landreman_paul_vmec_jax_solve_convergence",
+      "title": "Landreman-Paul QA vmec_jax solve convergence ladder",
+      "layer": "convergence",
+      "quantity": "final VMEC residual ratio and Boozer/FAX reference error",
+      "tolerance": 0.04,
+      "citation": "Landreman & Paul, Phys. Rev. Lett. 128, 035001 (2022); VMEC-JAX residual convergence propagated through booz_xform_jax and FAX local 3-D continuum",
+      "command": "python -m pytest -m requires_vmec_jax tests/test_validation_registry.py",
+      "tags": [
+        "vmec_jax",
+        "booz_xform_jax",
+        "landreman-paul",
+        "convergence",
+        "boozer",
+        "solve"
+      ]
+    },
+    {
       "id": "landreman_paul_continuum_finite",
       "title": "Landreman-Paul QA continuum finite-output check",
       "layer": "adapter",
@@ -899,6 +916,18 @@
     },
     {
       "file": "vmec_boozer_bridge_convergence.png",
+      "format": "png",
+      "status": "smoke-test",
+      "claim": "Development figure generated from analytic/local continuum formulas; not a full 3-D stellarator Alfvén-continuum validation."
+    },
+    {
+      "file": "vmec_jax_solve_convergence.svg",
+      "format": "svg",
+      "status": "smoke-test",
+      "claim": "Development figure generated from analytic/local continuum formulas; not a full 3-D stellarator Alfvén-continuum validation."
+    },
+    {
+      "file": "vmec_jax_solve_convergence.png",
       "format": "png",
       "status": "smoke-test",
       "claim": "Development figure generated from analytic/local continuum formulas; not a full 3-D stellarator Alfvén-continuum validation."

@@ -137,6 +137,10 @@ tags, and command. The current gates are:
   live Landreman-Paul Boozer geometry fixed and compares local 3-D operator
   frequencies from ``12x12``, ``16x16``, and ``20x20`` angular quadrature
   against a ``32x32`` reference grid while also checking matrix Hermiticity.
+* ``landreman_paul_vmec_jax_solve_convergence``: runs a native-grid
+  ``vmec_jax`` iteration ladder on the Landreman-Paul QA input, transforms
+  each iterate through ``booz_xform_jax``, and compares Boozer ``|B|`` plus FAX
+  local continuum frequencies against the converged reference ``wout``.
 * ``landreman_paul_continuum_finite``: checks that the Landreman-Paul profile
   and metric continuum branches are finite and have small eigensolve residuals.
 * ``landreman_paul_radial_sampling_convergence``: checks VMEC-backed radial
@@ -332,6 +336,14 @@ operator.
    test. The same one-iteration VMEC state is transformed at multiple Boozer
    truncations; the gate checks sampled ``|B|`` reconstruction, local 3-D
    continuum frequencies, and the Boozer-Jacobian identity.
+
+.. figure:: _static/vmec_jax_solve_convergence.svg
+   :alt: VMEC-JAX solve convergence propagated through Boozer and FAX.
+
+   Landreman-Paul ``vmec_jax`` residual convergence propagated through
+   ``booz_xform_jax`` and the FAX local 3-D Boozer continuum operator. The gate
+   checks residual reduction and decreasing reference errors before treating
+   the live equilibrium as a usable physics input.
 
 .. figure:: _static/vmec_boozer_operator_angular_convergence.svg
    :alt: Live VMEC-JAX Boozer local-operator angular convergence dashboard.
