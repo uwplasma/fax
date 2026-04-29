@@ -16,14 +16,19 @@ model.
    quickstart
    configuration
    architecture
+   model_inventory
    equations
+   numerical_algorithms
    differentiability
    optimization
+   user_workflows
    demonstrations
    research_examples
    figures
    validation
+   validation_traceability
    literature
+   function_map
    release
    development
    api

@@ -71,10 +71,21 @@ The next executable layer is built around publication-style design studies:
    publication study follows one mode away from a resonance window and needs a
    finite-difference reviewer check.
 
+``boozer_global_cluster_mean_frequency_hz`` and ``boozer_global_cluster_mean_avoidance_objective``
+   Track a mode family or near crossing through the cluster-mean custom-JVP
+   path. This is the preferred objective form when branch labels exchange or
+   when an optimizer should move a crossing region rather than one isolated
+   eigenvector.
+
 ``boozer_pipeline_isolated_mode_avoidance_objective``
    Applies the same isolated-mode objective to a callable Boozer-geometry
    builder, which is the API boundary for differentiable ``vmec_jax`` and
    ``booz_xform_jax`` pipelines.
+
+``boozer_pipeline_cluster_mean_avoidance_objective``
+   Applies the crossing-safe cluster objective to the same callable geometry
+   builder API, enabling future ``vmec_jax -> booz_xform_jax -> FAX`` design
+   studies to optimize mode families without invalid single-mode gradients.
 
 The example
 

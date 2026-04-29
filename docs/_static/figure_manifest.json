@@ -250,6 +250,23 @@
       ]
     },
     {
+      "id": "boozer_global_cluster_mean_design_gradient",
+      "title": "Boozer global cluster-mean design gradient",
+      "layer": "differentiability",
+      "quantity": "relative cluster-mean autodiff/finite-difference error",
+      "tolerance": 0.005,
+      "citation": "Subspace cluster-mean generalized-eigenvalue derivative applied to Boozer global-mode design variables",
+      "command": "python -m pytest tests/test_optimization.py tests/test_validation_registry.py",
+      "tags": [
+        "boozer",
+        "global",
+        "eigenmode",
+        "autodiff",
+        "cluster",
+        "optimization"
+      ]
+    },
+    {
       "id": "analytic_tae_gap_center",
       "title": "Analytic TAE gap-center crossing",
       "layer": "gap-physics",

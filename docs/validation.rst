@@ -64,6 +64,9 @@ tags, and command. The current gates are:
 * ``global_3d_block_degenerate_cluster_mean``: checks that a degenerate
   two-harmonic radial block cluster has a finite-difference-consistent
   cluster-mean gradient.
+* ``boozer_global_cluster_mean_design_gradient``: checks that a real-Boozer
+  global cluster-mean objective has finite-difference-consistent design
+  gradients.
 * ``analytic_tae_gap_center``: checks the analytic TAE crossing condition
   ``iota=2n/(2m+1)``.
 * ``basic_gap_map_ordering``: checks that the fast BAE/TAE/EAE example places

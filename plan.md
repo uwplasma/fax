@@ -1245,6 +1245,11 @@ Needed docs:
     - Added `radial_block_cluster_mean_omega2` and `radial_block_cluster_mean_frequency_hz` so global radial block studies can optimize/report a reviewer-safe cluster mean rather than an invalid single-mode gradient through a crossing.
     - Added tests for exact degenerate splitting directions, cluster-mean finite differences, JIT/value parity, and radial-block duplicate-harmonic degeneracy.
     - Added registered gate `global_3d_block_degenerate_cluster_mean`.
+  - 2026-04-29 cluster optimization and documentation expansion milestone:
+    - Added `boozer_global_cluster_mean_omega2`, `boozer_global_cluster_mean_frequency_hz`, `boozer_global_cluster_mean_avoidance_objective`, and `boozer_pipeline_cluster_mean_avoidance_objective` so real-Boozer and future VMEC/Boozer design studies can optimize crossing-safe mode-family objectives.
+    - Added tests for cluster-mean objective gradients against centered finite differences and callable Boozer-builder differentiation.
+    - Added registered gate `boozer_global_cluster_mean_design_gradient`.
+    - Expanded ReadTheDocs with model inventory, numerical algorithms, validation traceability, user workflows, and function-map pages covering functionality, inputs/outputs, equations, algorithms, tests, plots, and current claim boundaries.
 
 ### Local Testing Policy Until GitHub Actions Resume
 

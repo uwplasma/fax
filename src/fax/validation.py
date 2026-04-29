@@ -74,7 +74,7 @@ from .metric import (
     metric_from_vmec_wout,
 )
 from .modes import stellarator_mode_family
-from .optimization import boozer_global_isolated_mode_frequency_hz
+from .optimization import boozer_global_cluster_mean_omega2, boozer_global_isolated_mode_frequency_hz
 from .reference_cases import landreman_paul_qa_lowres
 from .units import MU0, PROTON_MASS
 
@@ -557,6 +557,41 @@ def _gate_global_3d_block_degenerate_cluster_mean() -> GateResult:
         float(metric),
         tolerance,
         "degenerate block radial cluster mean has a finite-difference-consistent subspace derivative",
+    )
+
+
+def _gate_boozer_global_cluster_mean_design_gradient() -> GateResult:
+    gate_id = "boozer_global_cluster_mean_design_gradient"
+    tolerance = 5.0e-3
+    geometry = _synthetic_global_boozer_geometry()
+    harmonics = jnp.asarray([[1.0, 0.0], [2.0, 1.0]], dtype=float)
+    params = jnp.asarray([0.03, -0.004, 0.02])
+
+    def omega2(parameter_vector: jax.Array) -> jnp.ndarray:
+        return boozer_global_cluster_mean_omega2(
+            parameter_vector,
+            geometry=geometry,
+            harmonics=harmonics,
+            mass_density=3.4e-8,
+            start_index=0,
+            stop_index=2,
+            theta_points=10,
+            zeta_points=10,
+            radial_stiffness_scale=1.0e-4,
+        )
+
+    autodiff = jax.grad(omega2)(params)
+    step = 2.0e-4
+    finite_difference = []
+    for index in range(int(params.shape[0])):
+        direction = jnp.zeros_like(params).at[index].set(step)
+        finite_difference.append((omega2(params + direction) - omega2(params - direction)) / (2.0 * step))
+    metric = relative_l2_error(autodiff, jnp.asarray(finite_difference))
+    return _pass_fail(
+        gate_id,
+        float(metric),
+        tolerance,
+        "real-Boozer cluster-mean design gradient matches centered finite differences",
     )
 
 
@@ -1957,6 +1992,17 @@ def registered_validation_gates() -> tuple[ValidationGate, ...]:
             command="python -m pytest tests/test_metric.py tests/test_global_modes.py tests/test_validation_registry.py",
             tags=("global", "eigenmode", "3d", "autodiff", "cluster", "degeneracy"),
             _runner=_gate_global_3d_block_degenerate_cluster_mean,
+        ),
+        ValidationGate(
+            gate_id="boozer_global_cluster_mean_design_gradient",
+            title="Boozer global cluster-mean design gradient",
+            layer="differentiability",
+            quantity="relative cluster-mean autodiff/finite-difference error",
+            tolerance=5.0e-3,
+            citation="Subspace cluster-mean generalized-eigenvalue derivative applied to Boozer global-mode design variables",
+            command="python -m pytest tests/test_optimization.py tests/test_validation_registry.py",
+            tags=("boozer", "global", "eigenmode", "autodiff", "cluster", "optimization"),
+            _runner=_gate_boozer_global_cluster_mean_design_gradient,
         ),
         ValidationGate(
             gate_id="analytic_tae_gap_center",

@@ -71,9 +71,13 @@ from .modes import ModeFamily
 from .optimization import (
     GradientDescentResult,
     LinearizedUncertaintyEstimate,
+    boozer_global_cluster_mean_avoidance_objective,
+    boozer_global_cluster_mean_frequency_hz,
+    boozer_global_cluster_mean_omega2,
     boozer_global_isolated_mode_avoidance_objective,
     boozer_global_isolated_mode_frequency_hz,
     boozer_global_isolated_mode_omega2,
+    boozer_pipeline_cluster_mean_avoidance_objective,
     boozer_pipeline_isolated_mode_avoidance_objective,
 )
 from .plotting import (
@@ -158,6 +162,9 @@ __all__ = [
     "plot_continuum_artifacts",
     "plot_basic_alfven_gap_map",
     "plot_convergence_artifacts",
+    "boozer_global_cluster_mean_avoidance_objective",
+    "boozer_global_cluster_mean_frequency_hz",
+    "boozer_global_cluster_mean_omega2",
     "radial_block_cluster_mean_frequency_hz",
     "radial_block_cluster_mean_omega2",
     "radial_block_eigenvalue_sensitivity",
@@ -180,6 +187,7 @@ __all__ = [
     "run_continuum",
     "run_convergence",
     "run_validation",
+    "boozer_pipeline_cluster_mean_avoidance_objective",
     "solve_radial_block_eigenmodes_sparse",
     "time_callable",
 ]

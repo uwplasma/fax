@@ -35,9 +35,10 @@ an optional Boozer adapter, real `boozmn` geometry/Jacobian readers, a local
 3-D Boozer continuum operator, a registered validation-gate inventory, and
 generated documentation figures. It also has differentiable sensitivity,
 linearized uncertainty, inverse-design, isolated-mode custom-JVP gradients,
-degenerate-cluster mean gradients, and reduced fast-ion risk screens for the
-current radial model. The first public STELLGAP CTOK local-continuum parity gate
-and AE3D public sparse-matrix/eigenmode parity gate are implemented.
+degenerate-cluster mean gradients, cluster-mean optimization objectives, and
+reduced fast-ion risk screens for the current radial model. The first public
+STELLGAP CTOK local-continuum parity gate and AE3D public sparse-matrix/eigenmode
+parity gate are implemented.
 Broader FAX reduced-operator parity against AE3D/CAS3D/FAR3D and perturbative
 kinetic fast-ion growth-rate models are still planned work.
 
@@ -533,9 +534,9 @@ adapter plus continuum finite-output/radial-sampling smoke tests. The new
 global radial block gates validate a multi-harmonic radial eigenproblem with
 Dirichlet and Neumann boundaries, exact constant-coefficient spectra, AD
 density scaling, isolated-eigenvalue adjoint sensitivities, custom-JVP
-eigenvalue gradients, real-Boozer isolated-mode design-gradient finite
-difference checks, degenerate-cluster mean gradient checks, metric-derived
-Boozer radial stiffness,
+eigenvalue gradients, real-Boozer isolated-mode and cluster-mean design-gradient
+finite-difference checks, degenerate-cluster mean gradient checks,
+metric-derived Boozer radial stiffness,
 eigenfunction-weighted fast-ion drive, file-backed and in-memory
 `booz_xform_jax` adapter parity, real-`boozmn` residual checks, and the first
 public STELLGAP CTOK continuum comparison. The AE3D public answer table is
@@ -563,7 +564,9 @@ It currently establishes:
 
 - installable package metadata with unpinned library dependencies,
 - a TOML-driven `fax` command,
-- ReadTheDocs-ready documentation,
+- ReadTheDocs-ready documentation with dedicated pages for model inventory,
+  numerical algorithms, validation traceability, user workflows, figures,
+  equations, optimization, and function ownership,
 - GitHub Actions for tests, docs, and PyPI publishing,
 - local-only quality gates while GitHub Actions billing is blocked,
 - unit tests for configuration, CLI, reference cases, continuum formulas,
@@ -591,7 +594,7 @@ It currently establishes:
   real-Boozer isolated-mode custom-JVP design-gradient checks, degenerate
   cluster-mean gradient checks for mode crossings,
   eigenfunction-weighted fast-ion drive diagnostics, and differentiable Boozer
-  global-mode avoidance objectives with builder-based APIs for future
+  global-mode avoidance and cluster-mean objectives with builder-based APIs for future
   `vmec_jax`/`booz_xform_jax` end-to-end pipelines,
 - a public STELLGAP CTOK local-continuum comparison gate and figure, plus AE3D
   public matrix/eigenmode and independent dense-spectrum parity gates,
