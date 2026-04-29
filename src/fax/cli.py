@@ -7,6 +7,7 @@ import json
 import sys
 
 from . import __version__
+from .benchmarks import known_benchmark_families
 from .config import ConfigError, FaxConfig, load_config
 from .plotting import plot_continuum_artifacts, plot_convergence_artifacts
 from .runner import run
@@ -124,6 +125,16 @@ def build_command_parser() -> argparse.ArgumentParser:
     benchmark.add_argument("config", help="Path to a fax TOML configuration file.")
     benchmark.add_argument("--repeats", type=int, default=3, help="Number of warm repeats.")
     benchmark.add_argument("--warmups", type=int, default=1, help="Number of warmup runs before timing repeats.")
+    benchmark.add_argument(
+        "--family",
+        action="append",
+        default=[],
+        choices=("continuum",) + known_benchmark_families(),
+        help=(
+            "Additional named physics benchmark family to include; may be repeated. "
+            "The continuum workflow is always included as the public baseline."
+        ),
+    )
     benchmark.add_argument("--json", action="store_true", help="Print only summary JSON; disables rich progress output.")
     benchmark.add_argument("--quiet", action="store_true", help="Suppress rich progress output and print only summary JSON.")
     benchmark.add_argument("--no-artifacts", action="store_true", help="Do not write benchmark artifact files.")
@@ -255,6 +266,7 @@ def _main_command(argv: list[str]) -> int:
                 progress=not machine_readable,
                 repeats=args.repeats,
                 warmups=args.warmups,
+                families=tuple(args.family),
                 write_artifacts=not args.no_artifacts,
             )
         else:  # pragma: no cover - argparse prevents this branch

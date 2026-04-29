@@ -321,6 +321,14 @@ refines only the angular quadrature used by the local 3-D Boozer operator. It
 checks local continuum frequency convergence and Hermiticity against a `32x32`
 reference grid.
 
+![Benchmark family packet](docs/_static/benchmark_family_packet.png)
+
+This benchmark packet separates cold and warm runtime and reports the physics
+gate margin for each timed family. The first packet covers the public continuum
+workflow, the analytic density-scaling continuum kernel, and the global radial
+block eigensolve against its exact discrete spectrum. External-code benchmark
+families are available from the CLI when their public artifacts are present.
+
 ![Registered validation gates](docs/_static/validation_gate_summary.png)
 
 The validation-gate plot summarizes scaffold acceptance gates. A gate below the
@@ -372,6 +380,7 @@ fax plot-continuum outputs/landreman_paul_qa_lowres --output-dir outputs/landrem
 fax convergence examples/landreman_paul_qa_lowres.toml --radial-points 24 --radial-points 40
 fax plot-convergence outputs/landreman_paul_qa_lowres/convergence --output-dir outputs/landreman_paul_qa_lowres/figures
 fax benchmark examples/landreman_paul_qa_lowres.toml --repeats 3
+fax benchmark examples/minimal.toml --repeats 1 --warmups 0 --family analytic-local --family global-block
 python examples/research/basic_alfven_gap_map.py
 python examples/research/global_gap_fastion_screen.py
 python examples/research/boozer_harmonic_validation.py
@@ -395,7 +404,10 @@ turns those continuum artifacts into SVG/PNG dashboard figures.
 truncation, then writes a CSV/Markdown/JSON convergence report.
 `fax plot-convergence` turns those reports into radial/angular/Fourier
 convergence dashboards. `fax benchmark` records cold runtime, warm runtime, and
-artifact size for local performance tracking.
+artifact size for local performance tracking. Repeated `--family` options add
+physics-tied benchmark packets such as `analytic-local`, `global-block`,
+`stellgap-ctok`, `ae3d-artifact`, and `vmec-boozer`; speed numbers are reported
+beside the relevant physics metric and tolerance.
 
 For machine-readable output:
 
@@ -483,6 +495,7 @@ Current figures:
 - `vmec_boozer_bridge_convergence.svg`: live `vmec_jax -> booz_xform_jax -> FAX` Boozer truncation convergence smoke-test dashboard.
 - `vmec_jax_solve_convergence.svg`: live `vmec_jax` residual ladder propagated through Boozer geometry and FAX continuum errors.
 - `vmec_boozer_operator_angular_convergence.svg`: live Boozer local-operator angular quadrature convergence smoke-test dashboard.
+- `benchmark_family_packet.svg`: cold/warm runtime packet with physics-gate margins.
 - `validation_gate_summary.svg`: current validation-gate status plot.
 
 ## Validation Gates

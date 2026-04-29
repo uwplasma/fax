@@ -1,0 +1,115 @@
+{
+  "case": "benchmark_family_packet",
+  "families": [
+    {
+      "cold_seconds": 1.3544289169367403,
+      "details": {
+        "artifact_size_bytes": 9702,
+        "harmonic_count": 4,
+        "metric_residual_max": 8.213574004302623e-14,
+        "min_gap_hz": 5942.091081074148,
+        "radial_points": 18
+      },
+      "environment": {
+        "jax_backend": "cpu",
+        "jax_device_count": 1,
+        "jax_devices": [
+          "TFRT_CPU_0"
+        ],
+        "jax_enable_x64": true,
+        "platform": "macOS-26.2-arm64-arm-64bit-Mach-O",
+        "python": "3.13.7"
+      },
+      "family": "continuum",
+      "gate_passed": true,
+      "label": "public continuum workflow with generalized-eigen residual gate",
+      "metric_value": 9.131428421408066e-15,
+      "physics_metric": "p95 generalized-eigen residual",
+      "process_max_rss_bytes": 349831168,
+      "status": "completed",
+      "tolerance": 1e-06,
+      "warm_result": {
+        "max_seconds": 0.009221332962624729,
+        "median_seconds": 0.009221332962624729,
+        "min_seconds": 0.009221332962624729,
+        "name": "continuum_warm_no_artifacts",
+        "repeats": 1,
+        "warmups": 0
+      }
+    },
+    {
+      "cold_seconds": 0.10821099998429418,
+      "details": {
+        "frequency_max_hz": 1412917.4279973626,
+        "frequency_min_hz": 108.6468357577859,
+        "harmonic_count": 18,
+        "radial_points": 160
+      },
+      "environment": {
+        "jax_backend": "cpu",
+        "jax_device_count": 1,
+        "jax_devices": [
+          "TFRT_CPU_0"
+        ],
+        "jax_enable_x64": true,
+        "platform": "macOS-26.2-arm64-arm-64bit-Mach-O",
+        "python": "3.13.7"
+      },
+      "family": "analytic-local",
+      "gate_passed": true,
+      "label": "profile-limit continuum matrix with analytic density-scaling gate",
+      "metric_value": 5.107667783642402e-16,
+      "physics_metric": "max density-scaling relative error",
+      "process_max_rss_bytes": 379338752,
+      "status": "completed",
+      "tolerance": 5e-12,
+      "warm_result": {
+        "max_seconds": 0.0013358329888433218,
+        "median_seconds": 0.0013358329888433218,
+        "min_seconds": 0.0013358329888433218,
+        "name": "analytic_local_continuum",
+        "repeats": 1,
+        "warmups": 0
+      }
+    },
+    {
+      "cold_seconds": 0.5633125830208883,
+      "details": {
+        "checked_modes": 24,
+        "harmonic_count": 3,
+        "matrix_dimension": 150,
+        "max_residual": 3.2899442151672844e-14,
+        "radial_points": 52
+      },
+      "environment": {
+        "jax_backend": "cpu",
+        "jax_device_count": 1,
+        "jax_devices": [
+          "TFRT_CPU_0"
+        ],
+        "jax_enable_x64": true,
+        "platform": "macOS-26.2-arm64-arm-64bit-Mach-O",
+        "python": "3.13.7"
+      },
+      "family": "global-block",
+      "gate_passed": true,
+      "label": "global radial block eigensolve with exact finite-difference spectrum gate",
+      "metric_value": 3.77055066792297e-15,
+      "physics_metric": "max exact discrete-spectrum relative error",
+      "process_max_rss_bytes": 490471424,
+      "status": "completed",
+      "tolerance": 6e-06,
+      "warm_result": {
+        "max_seconds": 0.04181637498550117,
+        "median_seconds": 0.04181637498550117,
+        "min_seconds": 0.04181637498550117,
+        "name": "global_radial_block",
+        "repeats": 1,
+        "warmups": 0
+      }
+    }
+  ],
+  "message": "Completed continuum workflow benchmark.",
+  "note": "Temporary run directories are intentionally omitted from this docs summary.",
+  "status": "completed"
+}

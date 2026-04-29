@@ -47,6 +47,17 @@ Local workflow smoke checks:
 
    fax convergence examples/minimal.toml --radial-points 16 --radial-points 32 --angular-points 8 --angular-points 12 --mode-max 1 --mode-max 2
    fax benchmark examples/minimal.toml --repeats 1 --warmups 0
+   fax benchmark examples/minimal.toml --repeats 1 --warmups 0 --family analytic-local --family global-block
+
+Benchmark packets
+-----------------
+
+``fax benchmark`` always includes the public continuum workflow as a baseline.
+Named families add timed kernels with reviewer-facing physics gates. This
+follows the performance patterns observed in the neighboring ``vmec_jax`` and
+``booz_xform_jax`` branches: report cold and warm timings separately, block on
+JAX work before stopping timers, avoid speed claims without a passing physics
+metric, and keep external-code parity artifacts optional but reproducible.
 
 Progress Output
 ---------------

@@ -271,11 +271,29 @@ field_periods = 1
         encoding="utf-8",
     )
 
-    assert main(["benchmark", str(config_path), "--repeats", "1", "--warmups", "0", "--json"]) == 0
+    assert (
+        main(
+            [
+                "benchmark",
+                str(config_path),
+                "--repeats",
+                "1",
+                "--warmups",
+                "0",
+                "--family",
+                "global-block",
+                "--json",
+            ]
+        )
+        == 0
+    )
     payload = json.loads(capsys.readouterr().out)
     assert payload["case"] == "benchmark_cli"
     assert payload["status"] == "completed"
     assert payload["warm_result"]["repeats"] == 1
+    families = {result["family"]: result for result in payload["family_results"]}
+    assert families["continuum"]["gate_passed"]
+    assert families["global-block"]["gate_passed"]
     assert payload["artifact_size_bytes"] > 0
     assert (output_dir / "benchmark" / "benchmark_summary.json").exists()
     assert (output_dir / "benchmark" / "benchmark_metrics.csv").exists()

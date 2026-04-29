@@ -56,11 +56,14 @@ Real Boozer 3-D continuum and global modes
    ``wout`` through ``run_booz_xform_jax_geometry_from_wout`` when
    ``booz_xform_jax`` is available.
 
-Planned demonstrations include:
-
 Runtime
-   Report compile time, warmed runtime, memory, and scaling with radial and
-   Fourier resolution on CPU and GPU.
+   ``fax benchmark`` reports cold runtime, warmed runtime, artifact size,
+   process memory, JAX backend metadata, and physics-gate margins. The first
+   named families cover the analytic continuum limit, global radial block
+   operator, public STELLGAP CTOK artifact path, public AE3D matrix path, and
+   the live ``vmec_jax -> booz_xform_jax -> FAX`` convergence bridge.
+
+Planned demonstrations include:
 
 Sensitivity analysis
    Rank density, iota, beta, and boundary Fourier coefficients by impact on a

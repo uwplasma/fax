@@ -165,6 +165,13 @@ Current Figures
    It holds the Boozer geometry fixed and refines only the angular quadrature
    used by the local 3-D surface operator.
 
+.. figure:: _static/benchmark_family_packet.svg
+   :alt: FAX benchmark families with physics gates.
+
+   Benchmark family packet. Cold and warm runtimes are shown beside the
+   physics-gate margin for the public continuum workflow, analytic local
+   continuum kernel, and global radial block eigensolve.
+
 .. figure:: _static/validation_gate_summary.svg
    :alt: Registered validation-gate summary.
 

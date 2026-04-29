@@ -68,7 +68,7 @@ from fax.optimization import radial_mode_avoidance_objective
 from fax.plotting import plot_basic_alfven_gap_map, plot_continuum_artifacts, plot_convergence_artifacts
 from fax.reference_cases import landreman_paul_qa_lowres
 from fax.units import PROTON_MASS
-from fax.workflows import run_continuum, run_convergence
+from fax.workflows import run_benchmark, run_continuum, run_convergence
 from fax.validation import registered_validation_gates, run_validation_suite
 
 jax.config.update("jax_enable_x64", True)
@@ -1498,6 +1498,95 @@ def generate_vmec_boozer_operator_angular_convergence(output_dir: Path) -> list[
     return paths
 
 
+def generate_benchmark_family_packet(output_dir: Path) -> list[Path]:
+    """Generate a benchmark-packet figure tied to physics gates."""
+    plt = _setup_matplotlib()
+    with tempfile.TemporaryDirectory() as tmp:
+        config = FaxConfig(
+            run=RunConfig(case="benchmark_family_packet", output_dir=tmp),
+            equilibrium=EquilibriumConfig(source="analytic"),
+            grid=GridConfig(radial_points=18, m_max=2, n_max=1, field_periods=1),
+        )
+        summary = run_benchmark(
+            config,
+            progress=False,
+            repeats=1,
+            warmups=0,
+            families=("analytic-local", "global-block"),
+        )
+    results = summary.family_results
+    labels = [str(result["family"]).replace("-", "\n") for result in results]
+    cold = np.asarray([float(result["cold_seconds"]) for result in results], dtype=float)
+    warm = np.asarray([float(result["warm_result"]["median_seconds"]) for result in results], dtype=float)
+    ratios = np.asarray(
+        [
+            float(result["metric_value"]) / max(float(result["tolerance"]), 1.0e-30)
+            if result["metric_value"] is not None and result["tolerance"] is not None
+            else np.nan
+            for result in results
+        ],
+        dtype=float,
+    )
+
+    summary_path = output_dir / "benchmark_family_packet_summary.json"
+    summary_payload = {
+        "case": summary.case,
+        "status": summary.status,
+        "message": summary.message,
+        "families": summary.family_results,
+        "note": "Temporary run directories are intentionally omitted from this docs summary.",
+    }
+    summary_path.write_text(json.dumps(summary_payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+
+    fig, axes = plt.subplots(1, 3, figsize=(10.0, 3.1), constrained_layout=True)
+    x = np.arange(len(labels))
+
+    ax = axes[0]
+    width = 0.35
+    ax.bar(x - width / 2.0, cold, width=width, color="#4c78a8", label="cold")
+    ax.bar(x + width / 2.0, warm, width=width, color="#f58518", label="warm")
+    ax.set_xticks(x, labels)
+    ax.set_ylabel("runtime [s]")
+    ax.set_title("cold vs warm")
+    ax.legend(fontsize=8)
+
+    ax = axes[1]
+    colors = ["#2e7d32" if result["gate_passed"] else "#b13f2a" for result in results]
+    ax.bar(x, ratios, color=colors)
+    ax.axhline(1.0, color="#222222", linestyle="--", linewidth=1.0, label="gate")
+    ax.set_xticks(x, labels)
+    ax.set_yscale("log")
+    ax.set_ylabel("metric / tolerance")
+    ax.set_title("physics gate margin")
+    ax.legend(fontsize=8)
+
+    ax = axes[2]
+    text_lines = [
+        "Benchmark packet",
+        f"JAX backend: {results[0]['environment']['jax_backend']}",
+        "families:",
+        *[
+            f"{result['family']}: {result['physics_metric']}"
+            for result in results
+        ],
+    ]
+    ax.axis("off")
+    ax.text(
+        0.0,
+        1.0,
+        "\n".join(text_lines),
+        transform=ax.transAxes,
+        fontsize=8.5,
+        va="top",
+        family="monospace",
+    )
+
+    fig.suptitle("FAX benchmark families tie runtime to physics gates", fontsize=12, weight="bold")
+    paths = _save_figure(fig, output_dir, "benchmark_family_packet")
+    plt.close(fig)
+    return paths + [summary_path]
+
+
 def write_figure_manifest(output_dir: Path, paths: list[Path]) -> Path:
     """Write a JSON manifest describing generated figures and their claims."""
     manifest = {
@@ -1563,6 +1652,7 @@ def main(argv: list[str] | None = None) -> int:
         generate_vmec_boozer_bridge_convergence(output_dir),
         generate_vmec_jax_solve_convergence(output_dir),
         generate_vmec_boozer_operator_angular_convergence(output_dir),
+        generate_benchmark_family_packet(output_dir),
         generate_validation_gate_summary(output_dir),
     ]:
         paths.extend(generated)

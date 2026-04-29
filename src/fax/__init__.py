@@ -2,6 +2,15 @@
 
 from __future__ import annotations
 
+from .benchmarks import (
+    BenchmarkFamilyResult,
+    BenchmarkResult,
+    benchmark_environment,
+    known_benchmark_families,
+    process_max_rss_bytes,
+    run_named_benchmark_family,
+    time_callable,
+)
 from .boozer import (
     BoozerGeometry,
     BoozerGeometryGrid,
@@ -71,6 +80,8 @@ __all__ = [
     "Ae3dOmega2Data",
     "Ae3dResidualSummary",
     "BenchmarkRunSummary",
+    "BenchmarkResult",
+    "BenchmarkFamilyResult",
     "BoozerGeometry",
     "BoozerGeometryGrid",
     "BoozerOperatorAngularConvergenceResult",
@@ -104,11 +115,15 @@ __all__ = [
     "load_continuum_artifacts",
     "load_convergence_artifacts",
     "load_config",
+    "benchmark_environment",
+    "known_benchmark_families",
+    "process_max_rss_bytes",
     "plot_continuum_artifacts",
     "plot_basic_alfven_gap_map",
     "plot_convergence_artifacts",
     "run",
     "run_benchmark",
+    "run_named_benchmark_family",
     "run_booz_xform_jax_from_wout_data",
     "run_booz_xform_jax_geometry_from_wout",
     "run_booz_xform_jax_geometry_from_wout_data",
@@ -119,6 +134,7 @@ __all__ = [
     "run_continuum",
     "run_convergence",
     "run_validation",
+    "time_callable",
 ]
 
 __version__ = "0.0.1"

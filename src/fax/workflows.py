@@ -14,7 +14,13 @@ import jax
 import jax.numpy as jnp
 import numpy as np
 
-from .benchmarks import time_callable
+from .benchmarks import (
+    benchmark_environment,
+    known_benchmark_families,
+    process_max_rss_bytes,
+    run_named_benchmark_family,
+    time_callable,
+)
 from .config import FaxConfig
 from .continuum import continuum_branch_matrix
 from .equilibrium import EquilibriumGeometry, analytic_circular_tokamak, from_vmec_wout
@@ -133,6 +139,7 @@ class BenchmarkRunSummary:
     warm_result: dict[str, Any]
     artifact_size_bytes: int
     continuum_summary: dict[str, Any]
+    family_results: list[dict[str, Any]]
 
     def to_dict(self) -> dict[str, Any]:
         """Return a strict JSON-serializable representation."""
@@ -481,6 +488,7 @@ def run_benchmark(
     stream: TextIO | None = None,
     repeats: int = 3,
     warmups: int = 1,
+    families: tuple[str, ...] = (),
     write_artifacts: bool = True,
 ) -> BenchmarkRunSummary:
     """Benchmark the current continuum workflow and record artifact sizes."""
@@ -492,11 +500,17 @@ def run_benchmark(
         raise ValueError("repeats must be at least 1")
     if warmups < 0:
         raise ValueError("warmups must be non-negative")
+    selected_families = _normalize_benchmark_families(families)
 
     phase_specs = [
         ("Validate benchmark", f"repeats={repeats}, warmups={warmups}", 0.1),
         ("Cold continuum run", "measure first full workflow and write continuum artifacts", 0.8),
         ("Warm continuum repeats", "repeat continuum workflow without artifact writes", 1.0),
+        (
+            "Named benchmark families",
+            "run selected physics/parity benchmark packets" if selected_families else "no additional families selected",
+            max(0.1, 0.8 * len(selected_families)),
+        ),
         ("Write benchmark artifacts", f"output_dir={config.run.output_dir}", 0.2),
     ]
     reporter = ProgressReporter(
@@ -510,6 +524,9 @@ def run_benchmark(
     _start_phase(reporter, phase_specs[0])
     reporter.log(f"benchmark repeats: {repeats}")
     reporter.log(f"benchmark warmups: {warmups}")
+    if selected_families:
+        reporter.log(f"additional benchmark families: {', '.join(selected_families)}")
+    reporter.log(f"jax backend: {benchmark_environment()['jax_backend']}")
     reporter.phase_done(status="done")
 
     benchmark_root = _output_dir(config) / "benchmark"
@@ -535,9 +552,34 @@ def run_benchmark(
     reporter.log(f"warm median runtime: {warm_result.median_seconds:.3f}s")
     reporter.phase_done(status="done")
 
+    _start_phase(reporter, phase_specs[3])
+    family_results = [
+        _continuum_family_result(
+            cold_seconds=cold_seconds,
+            warm_result=warm_result,
+            artifact_size_bytes=artifact_size_bytes,
+            continuum_summary=continuum_summary,
+        )
+    ]
+    if selected_families:
+        for family in selected_families:
+            reporter.log(f"family START {family}")
+            family_start = time.perf_counter()
+            result = run_named_benchmark_family(family, repeats=repeats, warmups=warmups)
+            family_results.append(_json_safe(asdict(result)))
+            metric = "n/a" if result.metric_value is None else f"{result.metric_value:.3e}"
+            tolerance = "n/a" if result.tolerance is None else f"{result.tolerance:.3e}"
+            reporter.log(
+                f"family DONE  {family}: status={result.status}, gate={result.gate_passed}, "
+                f"metric={metric}, tol={tolerance}, elapsed={format_seconds(time.perf_counter() - family_start)}"
+            )
+    else:
+        reporter.log("no additional benchmark families selected")
+    reporter.phase_done(status="done")
+
     artifacts: dict[str, str] = {}
     output_dir: str | None = None
-    _start_phase(reporter, phase_specs[3])
+    _start_phase(reporter, phase_specs[4])
     if write_artifacts:
         benchmark_root.mkdir(parents=True, exist_ok=True)
         output_dir = str(benchmark_root)
@@ -565,6 +607,7 @@ def run_benchmark(
         warm_result=asdict(warm_result),
         artifact_size_bytes=artifact_size_bytes,
         continuum_summary=continuum_summary.to_dict(),
+        family_results=family_results,
     )
     if write_artifacts:
         _write_json(Path(artifacts["summary_json"]), summary.to_dict())
@@ -923,6 +966,21 @@ def _write_benchmark_csv(path: Path, summary: BenchmarkRunSummary) -> None:
         writer.writerow(["warm_repeats", warm["repeats"]])
         writer.writerow(["warmups", warm["warmups"]])
         writer.writerow(["artifact_size_bytes", summary.artifact_size_bytes])
+        writer.writerow([])
+        writer.writerow(["family", "status", "gate_passed", "metric", "tolerance", "cold_seconds", "warm_median_seconds"])
+        for result in summary.family_results:
+            warm_family = result.get("warm_result") or {}
+            writer.writerow(
+                [
+                    result.get("family"),
+                    result.get("status"),
+                    result.get("gate_passed"),
+                    result.get("metric_value"),
+                    result.get("tolerance"),
+                    result.get("cold_seconds"),
+                    warm_family.get("median_seconds"),
+                ]
+            )
 
 
 def _json_safe(value: Any) -> Any:
@@ -937,6 +995,54 @@ def _json_safe(value: Any) -> Any:
     if isinstance(value, float):
         return value if math.isfinite(value) else None
     return value
+
+
+def _normalize_benchmark_families(families: tuple[str, ...]) -> tuple[str, ...]:
+    known = set(known_benchmark_families())
+    normalized: list[str] = []
+    for raw in families:
+        family = str(raw)
+        if family == "continuum":
+            continue
+        if family not in known:
+            choices = ", ".join(("continuum",) + known_benchmark_families())
+            raise ValueError(f"unknown benchmark family {family!r}; expected one of: {choices}")
+        if family not in normalized:
+            normalized.append(family)
+    return tuple(normalized)
+
+
+def _continuum_family_result(
+    *,
+    cold_seconds: float,
+    warm_result: Any,
+    artifact_size_bytes: int,
+    continuum_summary: ContinuumRunSummary,
+) -> dict[str, Any]:
+    tolerance = 1.0e-6
+    metric_value = float(continuum_summary.metric_residual_p95)
+    return _json_safe(
+        {
+            "family": "continuum",
+            "label": "public continuum workflow with generalized-eigen residual gate",
+            "status": "completed",
+            "gate_passed": bool(metric_value < tolerance),
+            "physics_metric": "p95 generalized-eigen residual",
+            "metric_value": metric_value,
+            "tolerance": tolerance,
+            "cold_seconds": float(cold_seconds),
+            "warm_result": asdict(warm_result),
+            "process_max_rss_bytes": process_max_rss_bytes(),
+            "details": {
+                "artifact_size_bytes": int(artifact_size_bytes),
+                "radial_points": int(continuum_summary.radial_points),
+                "harmonic_count": int(continuum_summary.harmonic_count),
+                "min_gap_hz": float(continuum_summary.min_gap_hz),
+                "metric_residual_max": float(continuum_summary.metric_residual_max),
+            },
+            "environment": benchmark_environment(),
+        }
+    )
 
 
 def _convergence_report_markdown(summary: ConvergenceRunSummary) -> str:

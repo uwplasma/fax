@@ -1209,6 +1209,12 @@ Needed docs:
     - Added the runtime-comparison plan for matched FAX/STELLGAP/AE3D/CAS3D/FAR3D benchmark families. Speed claims must be coupled to passing physics metrics.
     - Added the `vmec_jax_solve_convergence` README/docs figure to show residual reduction, Boozer/FAX reference errors, and local runtime per ladder point.
     - Verified locally with direct gate execution, `python tools/generate_validation_figures.py`, `python tools/qa_figures.py`, targeted Landreman-Paul registry test, `python -m coverage erase && python -m coverage run --source=fax -m pytest -q && python -m coverage report --skip-empty -m --fail-under=95` (171 passed, 95.5% FAX source coverage), `python -m ruff check .`, `python -m mypy src/fax`, `python -m sphinx -W --keep-going -b html docs docs/_build/html`, `python -m build`, `python -m twine check dist/*`, and `git diff --check`.
+  - 2026-04-29 benchmark-family and neighboring-branch numerics milestone:
+    - Inspected current local `vmec_jax` `main` and active branches including `origin/gpu_optimization`, `origin/codex/qh-fixed-resolution-jax-main`, and `origin/codex/discrete-adjoint-2506`. Performance/numerics practices to carry into FAX: separate cold and warm runtime, avoid host/device synchronization in quiet scans, keep CPU debug callbacks away from CUDA paths, use small-problem tridiagonal accelerators only behind shape/backend gates, and use chunked Jacobian/adjoint construction before dense autodiff paths become large.
+    - Inspected current local `booz_xform_jax` `main` and `origin/fax/jax-geometry-jacobian-outputs`. Useful practices: maintain in-memory VMEC-to-Boozer parity, expose Jacobian/harmonic outputs directly, precompute angular trig tables, and prefer vectorized double-spectral Fourier integrals to repeated Python/dispatch loops.
+    - Extended `fax benchmark` with named benchmark families: `analytic-local`, `global-block`, `stellgap-ctok`, `ae3d-artifact`, and `vmec-boozer`. The public continuum workflow remains the baseline, and each added family records cold runtime, warm runtime, process memory, JAX backend metadata, and a physics/parity metric with tolerance.
+    - Added the `benchmark_family_packet` README/docs figure and JSON summary so runtime plots are tied to physics gates instead of standalone wall-clock anecdotes.
+    - Added tests for dataclass-aware JAX `block_until_ready` synchronization, the analytic named benchmark family, and CLI benchmark-family JSON output.
 
 ### Local Testing Policy Until GitHub Actions Resume
 
@@ -1266,7 +1272,7 @@ and differentiable design studies that can produce new FAX-native results:
 5. Wire `boozer_pipeline_mode_avoidance_objective` to a real differentiable `vmec_jax`/`booz_xform_jax` builder and add finite-difference/adjoint consistency plots for VMEC-to-stability gradients.
 6. Use the differentiable-design study API on real VMEC/Boozer geometries to produce novel design maps: sensitivity-ranked boundary/profile variables, UQ-aware AE risk bands, inverse-designed resonance avoidance, and alpha/beam resonance robustness scans.
 7. Publish the staged `v0.0.1` GitHub release when GitHub Actions are available so the PyPI trusted-publishing workflow can complete.
-8. Extend `fax benchmark` with memory/process telemetry and separate compile/warm kernel timing once matrix-free kernels are introduced.
+8. Extend benchmark packets with matrix-free/Krylov runtime families and GPU memory telemetry once those kernels are introduced.
 
 ### Runtime Comparison Plan Against Reference Codes
 
@@ -1296,8 +1302,10 @@ validated comparison family:
    closest non-differentiable external workflow. Separate compile time from
    warmed runtime and include derivative accuracy/error bars.
 
-Implementation target: extend `fax benchmark` with named benchmark families
-(`analytic`, `boozmn-local`, `global-block`, `vmec-boozer`, `ae3d-artifact`,
-`stellgap-ctok`) and write JSON/CSV/Markdown plus publication-ready plots. Do
-not claim a speedup unless the physics metric also passes the corresponding
-validation gate.
+Implementation status: `fax benchmark` now supports named benchmark families
+(`analytic-local`, `global-block`, `vmec-boozer`, `ae3d-artifact`,
+`stellgap-ctok`) and writes JSON/CSV artifacts plus the first
+`benchmark_family_packet` docs plot. Next, add Markdown reports, matrix-free
+families, executable STELLGAP/AE3D timings once portable builds are stable, and
+GPU memory telemetry. Do not claim a speedup unless the physics metric also
+passes the corresponding validation gate.
