@@ -153,7 +153,8 @@ Run them from Python:
 
    results = run_validation_suite()
 
-Run the same gates from the CLI, with rich phase-by-phase output and artifacts:
+Run the same gates from the CLI, with rich phase-by-phase output, per-gate
+start/done lines, elapsed timings, and artifacts:
 
 .. code-block:: bash
 

@@ -374,8 +374,8 @@ python examples/research/stellgap_ctok_comparison.py
 
 `fax` reads TOML configuration files. The normal CLI path is intentionally
 verbose: it prints solve parameters, phase-by-phase status, elapsed time,
-estimated remaining time, and what the code is doing so long runs do not look
-silent.
+estimated remaining time, individual validation gate start/done lines, and
+what the code is doing so long runs do not look silent.
 
 `fax validate` runs the registered validation gates and writes
 `validation_summary.json` plus `validation_report.md` in the configured

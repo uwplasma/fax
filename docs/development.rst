@@ -59,6 +59,7 @@ Future solvers should report:
 
 * configuration and resolved input paths,
 * phase starts and completions,
+* per-case or per-validation-gate start/done messages,
 * elapsed time and estimated remaining time,
 * current residuals or convergence metrics,
 * current resolution, mode-family, or scan point,

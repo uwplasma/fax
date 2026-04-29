@@ -1199,6 +1199,10 @@ Needed docs:
     - Updated the external-code dashboard, publication-suite AE3D figure, README, validation docs, examples, and tests so AE3D parity now includes matrix symmetry, published-vector residuals/Rayleigh quotients, and an independent dense eigensolve.
     - Verified locally with `python -m pytest -q` (171 passed), coverage (`95.5%` FAX source coverage, fail-under 95 passed), `python -m ruff check .`, `python -m mypy src/fax`, `python tools/generate_validation_figures.py`, `python tools/qa_figures.py`, `python examples/research/publication_figure_suite.py --format svg --format png --output-dir docs/_static/publication_suite`, `python -m sphinx -W --keep-going -b html docs docs/_build/html`, `python -m build`, `python -m twine check dist/*`, and `git diff --check`.
     - Scope note: this closes another public AE3D artifact/parity lane. It is still not a FAX reduced-operator-vs-AE3D physics parity claim; that remains a separate validation target once matching AE3D inputs/operators are fully mapped.
+  - 2026-04-29 validation progress-output milestone:
+    - Updated `fax validate` so the CLI logs every selected validation gate before and after execution, including gate index, gate id, layer, tolerance, elapsed time, metric, status, and message. This keeps long local validation runs visibly alive while GitHub Actions are unavailable.
+    - Updated README/development/validation docs and CLI tests to cover the per-gate progress contract.
+    - Verified locally with targeted CLI/progress tests, `python -m coverage erase && python -m coverage run --source=fax -m pytest -q && python -m coverage report --skip-empty -m --fail-under=95` (171 passed, 95.5% FAX source coverage), `python -m ruff check .`, `python -m mypy src/fax`, `python -m sphinx -W --keep-going -b html docs docs/_build/html`, and `git diff --check`.
 
 ### Local Testing Policy Until GitHub Actions Resume
 

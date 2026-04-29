@@ -29,8 +29,8 @@ from .metric import (
     metric_from_vmec_wout,
 )
 from .modes import ModeFamily, stellarator_mode_family
-from .progress import PhaseRecord, ProgressReporter
-from .validation import GateResult, registered_validation_gates, run_validation_suite
+from .progress import PhaseRecord, ProgressReporter, format_seconds
+from .validation import GateResult, registered_validation_gates
 
 
 @dataclass(frozen=True)
@@ -172,9 +172,24 @@ def run_validation(
     reporter.phase_done(status="done")
 
     _start_phase(reporter, phase_specs[1])
-    results = run_validation_suite(tags=selected_tags or None, include_skipped=True)
-    for result in results:
-        reporter.log(_format_gate_line(result))
+    selected_tag_set = set(selected_tags)
+    selected_gates = [
+        gate
+        for gate in registered_validation_gates()
+        if not selected_tag_set or selected_tag_set.intersection(gate.tags)
+    ]
+    results_list: list[GateResult] = []
+    for index, gate in enumerate(selected_gates, start=1):
+        reporter.log(
+            f"gate {index}/{len(selected_gates)} START {gate.gate_id} "
+            f"[{gate.layer}; tol={gate.tolerance:.3e}]"
+        )
+        gate_start = time.perf_counter()
+        result = gate.run()
+        results_list.append(result)
+        elapsed = format_seconds(time.perf_counter() - gate_start)
+        reporter.log(f"gate {index}/{len(selected_gates)} DONE  {_format_gate_line(result)} in {elapsed}")
+    results = tuple(results_list)
     passed_count = sum(result.status == "passed" for result in results)
     failed_count = sum(result.status == "failed" for result in results)
     skipped_count = sum(result.status == "skipped" for result in results)

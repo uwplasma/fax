@@ -103,6 +103,9 @@ def test_cli_validate_default_prints_progress(tmp_path, capsys):
     captured = capsys.readouterr()
     assert "FAX run" in captured.out
     assert "Run validation gates" in captured.out
+    assert "gate 1/" in captured.out
+    assert "START analytic_cylinder_frequency" in captured.out
+    assert "DONE  analytic_cylinder_frequency" in captured.out
     assert "analytic_cylinder_frequency" in captured.out
     assert "Execution phases" in captured.out
 
