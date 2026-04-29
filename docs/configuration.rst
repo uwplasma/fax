@@ -55,9 +55,9 @@ The CLI uses ``[run] output_dir`` for durable local artifacts:
    ``benchmark/benchmark_metrics.csv`` under ``run.output_dir`` while also
    recording the size of the generated continuum artifacts. Repeated
    ``--family`` values add named physics benchmark packets. Available families
-   currently include ``analytic-local``, ``global-block``, ``stellgap-ctok``,
-   ``ae3d-artifact``, and ``vmec-boozer``; each reports a runtime next to the
-   corresponding physics metric and tolerance.
+   currently include ``analytic-local``, ``global-block``, ``global-krylov``,
+   ``stellgap-ctok``, ``ae3d-artifact``, and ``vmec-boozer``; each reports a
+   runtime next to the corresponding physics metric and tolerance.
 
 The JSON summaries are intended for scripts and regression checks. The
 Markdown validation report is intended for review packets and handoff notes.

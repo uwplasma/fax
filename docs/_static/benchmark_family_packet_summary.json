@@ -2,9 +2,9 @@
   "case": "benchmark_family_packet",
   "families": [
     {
-      "cold_seconds": 1.3544289169367403,
+      "cold_seconds": 2.309529958991334,
       "details": {
-        "artifact_size_bytes": 9702,
+        "artifact_size_bytes": 9699,
         "harmonic_count": 4,
         "metric_residual_max": 8.213574004302623e-14,
         "min_gap_hz": 5942.091081074148,
@@ -25,20 +25,20 @@
       "label": "public continuum workflow with generalized-eigen residual gate",
       "metric_value": 9.131428421408066e-15,
       "physics_metric": "p95 generalized-eigen residual",
-      "process_max_rss_bytes": 349831168,
+      "process_max_rss_bytes": 350978048,
       "status": "completed",
       "tolerance": 1e-06,
       "warm_result": {
-        "max_seconds": 0.009221332962624729,
-        "median_seconds": 0.009221332962624729,
-        "min_seconds": 0.009221332962624729,
+        "max_seconds": 0.015228832955472171,
+        "median_seconds": 0.015228832955472171,
+        "min_seconds": 0.015228832955472171,
         "name": "continuum_warm_no_artifacts",
         "repeats": 1,
         "warmups": 0
       }
     },
     {
-      "cold_seconds": 0.10821099998429418,
+      "cold_seconds": 0.18672266602516174,
       "details": {
         "frequency_max_hz": 1412917.4279973626,
         "frequency_min_hz": 108.6468357577859,
@@ -60,20 +60,20 @@
       "label": "profile-limit continuum matrix with analytic density-scaling gate",
       "metric_value": 5.107667783642402e-16,
       "physics_metric": "max density-scaling relative error",
-      "process_max_rss_bytes": 379338752,
+      "process_max_rss_bytes": 380829696,
       "status": "completed",
       "tolerance": 5e-12,
       "warm_result": {
-        "max_seconds": 0.0013358329888433218,
-        "median_seconds": 0.0013358329888433218,
-        "min_seconds": 0.0013358329888433218,
+        "max_seconds": 0.0021857910323888063,
+        "median_seconds": 0.0021857910323888063,
+        "min_seconds": 0.0021857910323888063,
         "name": "analytic_local_continuum",
         "repeats": 1,
         "warmups": 0
       }
     },
     {
-      "cold_seconds": 0.5633125830208883,
+      "cold_seconds": 0.9697435830021277,
       "details": {
         "checked_modes": 24,
         "harmonic_count": 3,
@@ -96,14 +96,51 @@
       "label": "global radial block eigensolve with exact finite-difference spectrum gate",
       "metric_value": 3.77055066792297e-15,
       "physics_metric": "max exact discrete-spectrum relative error",
-      "process_max_rss_bytes": 490471424,
+      "process_max_rss_bytes": 490192896,
       "status": "completed",
       "tolerance": 6e-06,
       "warm_result": {
-        "max_seconds": 0.04181637498550117,
-        "median_seconds": 0.04181637498550117,
-        "min_seconds": 0.04181637498550117,
+        "max_seconds": 0.06088187510613352,
+        "median_seconds": 0.06088187510613352,
+        "min_seconds": 0.06088187510613352,
         "name": "global_radial_block",
+        "repeats": 1,
+        "warmups": 0
+      }
+    },
+    {
+      "cold_seconds": 0.21106854104436934,
+      "details": {
+        "checked_modes": 24,
+        "harmonic_count": 4,
+        "matrix_dimension": 872,
+        "matrix_nonzeros": 2608,
+        "max_residual": 1.1061403588218497e-13,
+        "radial_points": 220
+      },
+      "environment": {
+        "jax_backend": "cpu",
+        "jax_device_count": 1,
+        "jax_devices": [
+          "TFRT_CPU_0"
+        ],
+        "jax_enable_x64": true,
+        "platform": "macOS-26.2-arm64-arm-64bit-Mach-O",
+        "python": "3.13.7"
+      },
+      "family": "global-krylov",
+      "gate_passed": true,
+      "label": "sparse Krylov global radial block eigensolve with exact-spectrum gate",
+      "metric_value": 2.2291741123472633e-14,
+      "physics_metric": "max sparse Krylov exact-spectrum relative error",
+      "process_max_rss_bytes": 539623424,
+      "status": "completed",
+      "tolerance": 2e-05,
+      "warm_result": {
+        "max_seconds": 0.02554375003091991,
+        "median_seconds": 0.02554375003091991,
+        "min_seconds": 0.02554375003091991,
+        "name": "global_radial_sparse_krylov",
         "repeats": 1,
         "warmups": 0
       }

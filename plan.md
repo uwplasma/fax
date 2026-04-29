@@ -1215,6 +1215,11 @@ Needed docs:
     - Extended `fax benchmark` with named benchmark families: `analytic-local`, `global-block`, `stellgap-ctok`, `ae3d-artifact`, and `vmec-boozer`. The public continuum workflow remains the baseline, and each added family records cold runtime, warm runtime, process memory, JAX backend metadata, and a physics/parity metric with tolerance.
     - Added the `benchmark_family_packet` README/docs figure and JSON summary so runtime plots are tied to physics gates instead of standalone wall-clock anecdotes.
     - Added tests for dataclass-aware JAX `block_until_ready` synchronization, the analytic named benchmark family, and CLI benchmark-family JSON output.
+  - 2026-04-29 sparse/Krylov global radial benchmark milestone:
+    - Added sparse CSR assembly for the block global radial operator with the same finite-difference energy as the dense JAX assembly.
+    - Added `solve_radial_block_eigenmodes_sparse` as a SciPy sparse/Krylov scale-up path. This is intentionally a non-differentiable benchmark/reference solver; the dense JAX eigensolve remains the differentiable truth path.
+    - Added exact-spectrum and dense-assembly parity tests for the sparse matrices and Krylov eigenpairs.
+    - Added the `global-krylov` benchmark family, reporting cold/warm runtime, sparse matrix dimension/nonzeros, residuals, and exact-spectrum error.
 
 ### Local Testing Policy Until GitHub Actions Resume
 
@@ -1272,7 +1277,7 @@ and differentiable design studies that can produce new FAX-native results:
 5. Wire `boozer_pipeline_mode_avoidance_objective` to a real differentiable `vmec_jax`/`booz_xform_jax` builder and add finite-difference/adjoint consistency plots for VMEC-to-stability gradients.
 6. Use the differentiable-design study API on real VMEC/Boozer geometries to produce novel design maps: sensitivity-ranked boundary/profile variables, UQ-aware AE risk bands, inverse-designed resonance avoidance, and alpha/beam resonance robustness scans.
 7. Publish the staged `v0.0.1` GitHub release when GitHub Actions are available so the PyPI trusted-publishing workflow can complete.
-8. Extend benchmark packets with matrix-free/Krylov runtime families and GPU memory telemetry once those kernels are introduced.
+8. Extend benchmark packets with matrix-free JAX linear-operator families and GPU memory telemetry once those kernels are introduced.
 
 ### Runtime Comparison Plan Against Reference Codes
 
@@ -1303,9 +1308,9 @@ validated comparison family:
    warmed runtime and include derivative accuracy/error bars.
 
 Implementation status: `fax benchmark` now supports named benchmark families
-(`analytic-local`, `global-block`, `vmec-boozer`, `ae3d-artifact`,
-`stellgap-ctok`) and writes JSON/CSV artifacts plus the first
-`benchmark_family_packet` docs plot. Next, add Markdown reports, matrix-free
-families, executable STELLGAP/AE3D timings once portable builds are stable, and
-GPU memory telemetry. Do not claim a speedup unless the physics metric also
-passes the corresponding validation gate.
+(`analytic-local`, `global-block`, `global-krylov`, `vmec-boozer`,
+`ae3d-artifact`, `stellgap-ctok`) and writes JSON/CSV artifacts plus the first
+`benchmark_family_packet` docs plot. Next, add Markdown reports, JAX-native
+matrix-free families, executable STELLGAP/AE3D timings once portable builds are
+stable, and GPU memory telemetry. Do not claim a speedup unless the physics
+metric also passes the corresponding validation gate.

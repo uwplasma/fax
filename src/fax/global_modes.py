@@ -20,6 +20,9 @@ from typing import Any
 
 import jax
 import jax.numpy as jnp
+import numpy as np
+from scipy import linalg, sparse
+from scipy.sparse import linalg as sparse_linalg
 
 from .boozer import BoozerGeometry, boozer_3d_continuum_matrices, boozer_geometry_grid
 from .continuum import continuum_branch_matrix
@@ -173,6 +176,24 @@ class RadialBlockEigenmodeResult:
     residuals: jax.Array
     stiffness: jax.Array
     mass: jax.Array
+
+
+@dataclass(frozen=True)
+class SparseRadialBlockEigenmodeResult:
+    """Sparse/Krylov eigenpairs for block radial problems.
+
+    This result type is intentionally not a JAX-transformable solver result.
+    It is a reviewer-facing scale-up/reference path for larger global radial
+    matrices. The dense JAX path remains the differentiable validation target.
+    """
+
+    omega2: jax.Array
+    frequencies_hz: jax.Array
+    eigenvectors: jax.Array
+    mode_structures: jax.Array
+    residuals: jax.Array
+    stiffness: Any
+    mass: Any
 
 
 def radial_problem_from_equilibrium(
@@ -398,6 +419,85 @@ def assemble_radial_block_matrices(problem: RadialBlockEigenmodeProblem) -> tupl
     return stiffness, mass
 
 
+def assemble_radial_block_sparse_matrices(problem: RadialBlockEigenmodeProblem) -> tuple[Any, Any]:
+    """Assemble sparse CSR block radial matrices.
+
+    The sparse matrix uses the same finite-difference energy as
+    :func:`assemble_radial_block_matrices` and is validated against both the
+    exact constant-coefficient spectrum and the dense JAX assembly. It is meant
+    for larger benchmark/parity runs where forming dense matrices is wasteful.
+    """
+    surface_count = int(problem.s.shape[0])
+    harmonic_count = int(problem.harmonics.shape[0])
+    active_surfaces = _active_radial_surfaces(problem)
+    active_count = len(active_surfaces)
+    matrix_size = active_count * harmonic_count
+    spacing = np.diff(np.asarray(problem.s, dtype=float))
+    inverse_face_ds2 = 1.0 / spacing**2
+    face_stiffness = 0.5 * (
+        np.asarray(problem.radial_stiffness[1:], dtype=np.complex128)
+        + np.asarray(problem.radial_stiffness[:-1], dtype=np.complex128)
+    )
+    local_stiffness = np.asarray(problem.local_stiffness, dtype=np.complex128)
+    local_mass = np.asarray(problem.local_mass, dtype=np.complex128)
+    zero = np.zeros((harmonic_count, harmonic_count), dtype=np.complex128)
+
+    stiffness_rows: list[int] = []
+    stiffness_cols: list[int] = []
+    stiffness_data: list[complex] = []
+    mass_rows: list[int] = []
+    mass_cols: list[int] = []
+    mass_data: list[complex] = []
+
+    def add_block(rows: list[int], cols: list[int], data: list[complex], row_block: int, col_block: int, block: Any) -> None:
+        block_array = np.asarray(block, dtype=np.complex128)
+        local_rows, local_cols = np.nonzero(np.abs(block_array) > 0.0)
+        row_offset = int(row_block) * harmonic_count
+        col_offset = int(col_block) * harmonic_count
+        rows.extend((row_offset + local_rows).astype(int).tolist())
+        cols.extend((col_offset + local_cols).astype(int).tolist())
+        data.extend(block_array[local_rows, local_cols].tolist())
+
+    for local_index, surface_index in enumerate(active_surfaces):
+        left = (
+            face_stiffness[surface_index - 1] * inverse_face_ds2[surface_index - 1]
+            if surface_index > 0
+            else zero
+        )
+        right = (
+            face_stiffness[surface_index] * inverse_face_ds2[surface_index]
+            if surface_index < surface_count - 1
+            else zero
+        )
+        add_block(
+            stiffness_rows,
+            stiffness_cols,
+            stiffness_data,
+            local_index,
+            local_index,
+            local_stiffness[surface_index] + left + right,
+        )
+        add_block(mass_rows, mass_cols, mass_data, local_index, local_index, local_mass[surface_index])
+        if local_index > 0 and surface_index > 0:
+            add_block(stiffness_rows, stiffness_cols, stiffness_data, local_index, local_index - 1, -left)
+        if local_index < active_count - 1 and surface_index < surface_count - 1:
+            add_block(stiffness_rows, stiffness_cols, stiffness_data, local_index, local_index + 1, -right)
+
+    stiffness = sparse.coo_matrix(
+        (stiffness_data, (stiffness_rows, stiffness_cols)),
+        shape=(matrix_size, matrix_size),
+        dtype=np.complex128,
+    ).tocsr()
+    mass = sparse.coo_matrix(
+        (mass_data, (mass_rows, mass_cols)),
+        shape=(matrix_size, matrix_size),
+        dtype=np.complex128,
+    ).tocsr()
+    stiffness = (0.5 * (stiffness + stiffness.getH())).tocsr()
+    mass = (0.5 * (mass + mass.getH())).tocsr()
+    return stiffness, mass
+
+
 def assemble_radial_matrices(problem: RadialEigenmodeProblem) -> tuple[jax.Array, jax.Array]:
     """Assemble stiffness and mass matrices on interior radial nodes."""
     s = problem.s
@@ -430,6 +530,72 @@ def solve_radial_block_eigenmodes(problem: RadialBlockEigenmodeProblem) -> Radia
         eigenvectors=eigensystem.eigenvectors,
         mode_structures=radial_block_mode_structures(problem, eigensystem.eigenvectors),
         residuals=residuals,
+        stiffness=stiffness,
+        mass=mass,
+    )
+
+
+def solve_radial_block_eigenmodes_sparse(
+    problem: RadialBlockEigenmodeProblem,
+    *,
+    mode_count: int = 16,
+    sigma: float | None = 0.0,
+    which: str = "LM",
+    tolerance: float = 0.0,
+    maxiter: int | None = None,
+) -> SparseRadialBlockEigenmodeResult:
+    """Solve the block radial generalized problem with sparse Krylov methods.
+
+    The default shift-invert request targets the lowest-frequency modes of the
+    positive generalized problem. If ``mode_count`` is too close to the matrix
+    dimension, SciPy's dense Hermitian generalized solve is used instead; this
+    keeps tiny validation cases deterministic.
+    """
+    stiffness, mass = assemble_radial_block_sparse_matrices(problem)
+    requested = int(mode_count)
+    if requested < 1:
+        raise ValueError("mode_count must be at least 1")
+    matrix_dimension = int(stiffness.shape[0])
+    if requested >= matrix_dimension:
+        raise ValueError("mode_count must be smaller than the matrix dimension")
+    if requested >= matrix_dimension - 1:
+        eigenvalues, eigenvectors = linalg.eigh(
+            stiffness.toarray(),
+            mass.toarray(),
+            check_finite=False,
+            overwrite_a=True,
+            overwrite_b=True,
+        )
+        eigenvalues = eigenvalues[:requested]
+        eigenvectors = eigenvectors[:, :requested]
+    else:
+        eigenvalues, eigenvectors = sparse_linalg.eigsh(
+            stiffness,
+            k=requested,
+            M=mass,
+            sigma=sigma,
+            which=which,
+            tol=float(tolerance),
+            maxiter=maxiter,
+        )
+    order = np.argsort(np.real(eigenvalues))
+    omega2 = np.real(eigenvalues[order])
+    eigenvectors = np.asarray(eigenvectors[:, order], dtype=np.complex128)
+    residuals = np.asarray(
+        [
+            _sparse_eigenpair_residual_norm(stiffness, mass, float(omega2[index]), eigenvectors[:, index])
+            for index in range(requested)
+        ],
+        dtype=float,
+    )
+    eigenvectors_jax = jnp.asarray(eigenvectors)
+    omega2_jax = jnp.asarray(omega2)
+    return SparseRadialBlockEigenmodeResult(
+        omega2=omega2_jax,
+        frequencies_hz=jnp.sqrt(jnp.maximum(omega2_jax, 0.0)) / (2.0 * jnp.pi),
+        eigenvectors=eigenvectors_jax,
+        mode_structures=radial_block_mode_structures(problem, eigenvectors_jax),
+        residuals=jnp.asarray(residuals),
         stiffness=stiffness,
         mass=mass,
     )
@@ -548,6 +714,22 @@ def eigenpair_residual_norm(stiffness: Any, mass: Any, omega2: Any, vector: Any,
         float(floor),
     )
     return jnp.linalg.norm(residual) / denominator
+
+
+def _sparse_eigenpair_residual_norm(stiffness: Any, mass: Any, omega2: float, vector: Any, *, floor: float = 1.0e-30) -> float:
+    vector_array = np.asarray(vector)
+    stiffness_vector = stiffness @ vector_array
+    mass_vector = mass @ vector_array
+    residual = stiffness_vector - float(omega2) * mass_vector
+    denominator = max(float(np.linalg.norm(stiffness_vector) + abs(float(omega2)) * np.linalg.norm(mass_vector)), float(floor))
+    return float(np.linalg.norm(residual) / denominator)
+
+
+def _active_radial_surfaces(problem: RadialBlockEigenmodeProblem) -> tuple[int, ...]:
+    surface_count = int(problem.s.shape[0])
+    if problem.boundary_condition == "dirichlet":
+        return tuple(range(1, surface_count - 1))
+    return tuple(range(surface_count))
 
 
 def _broadcast_mode_profile(value: jax.Array, count: int, *, name: str) -> jax.Array:

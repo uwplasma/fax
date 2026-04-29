@@ -1512,10 +1512,16 @@ def generate_benchmark_family_packet(output_dir: Path) -> list[Path]:
             progress=False,
             repeats=1,
             warmups=0,
-            families=("analytic-local", "global-block"),
+            families=("analytic-local", "global-block", "global-krylov"),
         )
     results = summary.family_results
-    labels = [str(result["family"]).replace("-", "\n") for result in results]
+    label_map = {
+        "continuum": "continuum",
+        "analytic-local": "analytic\nlocal",
+        "global-block": "dense\nglobal",
+        "global-krylov": "sparse\nKrylov",
+    }
+    labels = [label_map.get(str(result["family"]), str(result["family"]).replace("-", "\n")) for result in results]
     cold = np.asarray([float(result["cold_seconds"]) for result in results], dtype=float)
     warm = np.asarray([float(result["warm_result"]["median_seconds"]) for result in results], dtype=float)
     ratios = np.asarray(
@@ -1538,7 +1544,7 @@ def generate_benchmark_family_packet(output_dir: Path) -> list[Path]:
     }
     summary_path.write_text(json.dumps(summary_payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
 
-    fig, axes = plt.subplots(1, 3, figsize=(10.0, 3.1), constrained_layout=True)
+    fig, axes = plt.subplots(1, 3, figsize=(11.0, 3.2), constrained_layout=True)
     x = np.arange(len(labels))
 
     ax = axes[0]

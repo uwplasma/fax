@@ -45,7 +45,10 @@ from .global_modes import (
     RadialBlockEigenmodeResult,
     RadialEigenmodeProblem,
     RadialEigenmodeResult,
+    SparseRadialBlockEigenmodeResult,
+    assemble_radial_block_sparse_matrices,
     boozer_radial_stiffness_matrices,
+    solve_radial_block_eigenmodes_sparse,
 )
 from .metric import MetricGeometry
 from .modes import ModeFamily
@@ -104,11 +107,13 @@ __all__ = [
     "RadialBlockEigenmodeResult",
     "RadialEigenmodeProblem",
     "RadialEigenmodeResult",
+    "SparseRadialBlockEigenmodeResult",
     "ReferenceCase",
     "RunSummary",
     "StellgapContinuumData",
     "StellgapSpectrumData",
     "ValidationRunSummary",
+    "assemble_radial_block_sparse_matrices",
     "boozer_radial_stiffness_matrices",
     "boozer_3d_operator_angular_convergence",
     "landreman_paul_qa_lowres",
@@ -134,6 +139,7 @@ __all__ = [
     "run_continuum",
     "run_convergence",
     "run_validation",
+    "solve_radial_block_eigenmodes_sparse",
     "time_callable",
 ]
 

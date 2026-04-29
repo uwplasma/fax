@@ -52,6 +52,7 @@ class BenchmarkFamilyResult:
 BENCHMARK_FAMILY_DESCRIPTIONS: dict[str, str] = {
     "analytic-local": "profile-limit continuum matrix with analytic density-scaling gate",
     "global-block": "global radial block eigensolve with exact finite-difference spectrum gate",
+    "global-krylov": "sparse Krylov global radial block eigensolve with exact-spectrum gate",
     "ae3d-artifact": "public AE3D generalized matrix dense-spectrum parity gate",
     "stellgap-ctok": "public STELLGAP CTOK local Boozer continuum parity gate",
     "vmec-boozer": "live vmec_jax solve through booz_xform_jax and FAX local 3-D continuum gate",
@@ -150,6 +151,8 @@ def run_named_benchmark_family(
         return _run_analytic_local_family(repeats=repeats, warmups=warmups)
     if family == "global-block":
         return _run_global_block_family(repeats=repeats, warmups=warmups)
+    if family == "global-krylov":
+        return _run_global_krylov_family(repeats=repeats, warmups=warmups)
     if family == "ae3d-artifact":
         return _run_ae3d_artifact_family(repeats=repeats, warmups=warmups)
     if family == "stellgap-ctok":
@@ -302,6 +305,59 @@ def _run_global_block_family(*, repeats: int, warmups: int) -> BenchmarkFamilyRe
             "harmonic_count": int(problem.harmonics.shape[0]),
             "matrix_dimension": int(result.stiffness.shape[0]),
             "checked_modes": count,
+            "max_residual": residual_max,
+        },
+    )
+
+
+def _run_global_krylov_family(*, repeats: int, warmups: int) -> BenchmarkFamilyResult:
+    from .global_modes import (
+        constant_block_problem_discrete_omega2,
+        constant_radial_block_problem,
+        solve_radial_block_eigenmodes_sparse,
+    )
+
+    problem = constant_radial_block_problem(
+        radial_points=220,
+        continuum_frequency_hz=(90_000.0, 135_000.0, 210_000.0, 275_000.0),
+        radial_coupling_omega2=(2.0e9, 3.5e9, 4.2e9, 5.0e9),
+        boundary_condition="dirichlet",
+    )
+    mode_count = 24
+
+    def kernel():
+        return solve_radial_block_eigenmodes_sparse(problem, mode_count=mode_count)
+
+    cold_seconds, warm_result, result = _timed_family_call(
+        "global_radial_sparse_krylov",
+        kernel,
+        repeats=repeats,
+        warmups=warmups,
+    )
+
+    expected = constant_block_problem_discrete_omega2(problem)
+    error = jnp.max(
+        jnp.abs(result.omega2[:mode_count] - expected[:mode_count])
+        / jnp.maximum(jnp.abs(expected[:mode_count]), 1.0e-30)
+    )
+    tolerance = 2.0e-5
+    residual_max = float(jnp.max(result.residuals[:mode_count]))
+    return _family_result(
+        family="global-krylov",
+        label=BENCHMARK_FAMILY_DESCRIPTIONS["global-krylov"],
+        status="completed",
+        gate_passed=float(error) < tolerance and residual_max < 2.0e-8,
+        physics_metric="max sparse Krylov exact-spectrum relative error",
+        metric_value=float(error),
+        tolerance=tolerance,
+        cold_seconds=cold_seconds,
+        warm_result=warm_result,
+        details={
+            "radial_points": int(problem.s.shape[0]),
+            "harmonic_count": int(problem.harmonics.shape[0]),
+            "matrix_dimension": int(result.stiffness.shape[0]),
+            "matrix_nonzeros": int(result.stiffness.nnz),
+            "checked_modes": mode_count,
             "max_residual": residual_max,
         },
     )

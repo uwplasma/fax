@@ -9,6 +9,7 @@ from fax.equilibrium import analytic_circular_tokamak
 from fax.global_modes import (
     RadialBlockEigenmodeProblem,
     assemble_radial_block_matrices,
+    assemble_radial_block_sparse_matrices,
     boozer_radial_stiffness_matrices,
     constant_block_problem_discrete_omega2,
     constant_radial_block_problem,
@@ -21,6 +22,7 @@ from fax.global_modes import (
     radial_block_problem_from_boozer_geometry,
     radial_problem_from_equilibrium,
     solve_radial_block_eigenmodes,
+    solve_radial_block_eigenmodes_sparse,
     solve_radial_eigenmodes,
 )
 from fax.boozer import BoozerGeometry
@@ -186,6 +188,35 @@ def test_radial_block_problem_is_jittable_and_hermitian():
     np.testing.assert_allclose(np.asarray(mass), np.conjugate(np.asarray(mass).T), rtol=1.0e-6, atol=1.0e-12)
     assert frequencies.shape == (4,)
     assert structures.shape[1:] == (14, 2)
+
+
+def test_sparse_radial_block_assembly_matches_dense_and_exact_spectrum():
+    problem = constant_radial_block_problem(
+        radial_points=28,
+        continuum_frequency_hz=(85_000.0, 125_000.0, 170_000.0),
+        radial_coupling_omega2=(1.8e9, 2.6e9, 3.4e9),
+    )
+
+    dense_stiffness, dense_mass = assemble_radial_block_matrices(problem)
+    sparse_stiffness, sparse_mass = assemble_radial_block_sparse_matrices(problem)
+    result = solve_radial_block_eigenmodes_sparse(problem, mode_count=10)
+    expected = constant_block_problem_discrete_omega2(problem)
+
+    np.testing.assert_allclose(sparse_stiffness.toarray(), np.asarray(dense_stiffness), rtol=1.0e-12, atol=1.0e-8)
+    np.testing.assert_allclose(sparse_mass.toarray(), np.asarray(dense_mass), rtol=1.0e-12, atol=1.0e-12)
+    np.testing.assert_allclose(np.asarray(result.omega2), np.asarray(expected[:10]), rtol=8.0e-6)
+    assert result.mode_structures.shape == (10, 28, 3)
+    assert float(jnp.max(result.residuals)) < 2.0e-8
+    assert sparse_stiffness.nnz < sparse_stiffness.shape[0] ** 2
+
+
+def test_sparse_radial_block_solver_contracts():
+    problem = constant_radial_block_problem(radial_points=6, continuum_frequency_hz=(90_000.0, 140_000.0))
+
+    with pytest.raises(ValueError, match="mode_count"):
+        solve_radial_block_eigenmodes_sparse(problem, mode_count=0)
+    with pytest.raises(ValueError, match="mode_count"):
+        solve_radial_block_eigenmodes_sparse(problem, mode_count=problem.local_stiffness.shape[0] * problem.harmonics.shape[0])
 
 
 def test_lowest_radial_block_frequency_density_gradient_matches_analytic_scaling():

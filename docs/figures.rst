@@ -170,7 +170,8 @@ Current Figures
 
    Benchmark family packet. Cold and warm runtimes are shown beside the
    physics-gate margin for the public continuum workflow, analytic local
-   continuum kernel, and global radial block eigensolve.
+   continuum kernel, dense global radial block eigensolve, and sparse Krylov
+   global radial eigensolve.
 
 .. figure:: _static/validation_gate_summary.svg
    :alt: Registered validation-gate summary.
