@@ -144,6 +144,21 @@ This prints a JSON packet with Boozer ``|B|`` reconstruction/projection error,
 harmonic orthogonality error, straight-field-line phase-slope error, and
 normalized non-axisymmetric spectral energy for a synthetic spectrum.
 
+Live VMEC/Boozer Convergence
+----------------------------
+
+Run:
+
+.. code-block:: bash
+
+   python examples/research/vmec_boozer_convergence.py --output-dir outputs/vmec_boozer_convergence
+
+This runs the local Landreman-Paul QA ``vmec_jax`` input through the in-memory
+``booz_xform_jax`` bridge and checks two production-readiness metrics:
+Boozer harmonic truncation and local 3-D operator angular quadrature
+convergence. It writes a compact figure and prints JSON metrics; it is not a
+converged VMEC physics benchmark.
+
 Real ``boozmn`` Local 3-D Continuum
 -----------------------------------
 

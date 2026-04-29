@@ -16,6 +16,7 @@ from .boozer import (
     BoozerSpectrum,
     boozer_3d_continuum_frequencies_hz,
     boozer_3d_continuum_matrices,
+    boozer_3d_operator_angular_convergence,
     boozer_continuum_frequencies_hz,
     boozer_continuum_matrices,
     boozer_embedding_jacobian_shape_error,
@@ -1402,6 +1403,54 @@ def _gate_landreman_paul_vmec_jax_boozer_truncation_convergence() -> GateResult:
     )
 
 
+def _gate_landreman_paul_vmec_jax_boozer_operator_angular_convergence() -> GateResult:
+    gate_id = "landreman_paul_vmec_jax_boozer_operator_angular_convergence"
+    tolerance = 5.0e-3
+    case = landreman_paul_qa_lowres()
+    if not case.vmec_input.exists():
+        return GateResult(
+            gate_id=gate_id,
+            status="skipped",
+            metric=float("nan"),
+            tolerance=tolerance,
+            message=f"missing Landreman-Paul VMEC input: {case.vmec_input}",
+        )
+
+    try:
+        geometry = run_vmec_jax_fixed_boundary_boozer_geometry(
+            case.vmec_input,
+            mboz=5,
+            nboz=5,
+            surfaces=(0.25, 0.5),
+            max_iter=1,
+            theta_points=12,
+            zeta_points=4,
+            jit=False,
+        )
+    except ImportError as exc:
+        return GateResult(
+            gate_id=gate_id,
+            status="skipped",
+            metric=float("nan"),
+            tolerance=tolerance,
+            message=str(exc),
+        )
+
+    result = boozer_3d_operator_angular_convergence(
+        geometry,
+        jnp.asarray([[1.0, 0.0], [2.0, 1.0], [3.0, 2.0]]),
+        mass_density=3.4e-8,
+        grids=((12, 12), (16, 16), (20, 20)),
+        reference_grid=(32, 32),
+    )
+    return _pass_fail(
+        gate_id,
+        result.max_metric,
+        tolerance,
+        "live Landreman-Paul VMEC-JAX Boozer local 3-D operator is stable under angular quadrature refinement",
+    )
+
+
 def _coarsen_metric_geometry(metric: MetricGeometry, *, radial_points: int) -> MetricGeometry:
     indices = np.unique(np.rint(np.linspace(0, int(metric.s.shape[0]) - 1, int(radial_points))).astype(int))
     if indices.size < 4:
@@ -1891,6 +1940,20 @@ def registered_validation_gates() -> tuple[ValidationGate, ...]:
             command="python -m pytest -m requires_vmec_jax tests/test_boozer.py tests/test_validation_registry.py",
             tags=("vmec_jax", "booz_xform_jax", "landreman-paul", "convergence", "boozer", "in-memory"),
             _runner=_gate_landreman_paul_vmec_jax_boozer_truncation_convergence,
+        ),
+        ValidationGate(
+            gate_id="landreman_paul_vmec_jax_boozer_operator_angular_convergence",
+            title="Landreman-Paul QA vmec_jax Boozer operator angular convergence",
+            layer="convergence",
+            quantity="relative local 3-D frequency error and Hermitian error",
+            tolerance=5.0e-3,
+            citation=(
+                "Landreman & Paul, Phys. Rev. Lett. 128, 035001 (2022); "
+                "Boozer local-operator angular quadrature convergence smoke gate on the live bridge"
+            ),
+            command="python -m pytest -m requires_vmec_jax tests/test_boozer.py tests/test_validation_registry.py",
+            tags=("vmec_jax", "booz_xform_jax", "landreman-paul", "convergence", "boozer", "operator"),
+            _runner=_gate_landreman_paul_vmec_jax_boozer_operator_angular_convergence,
         ),
         ValidationGate(
             gate_id="landreman_paul_continuum_finite",

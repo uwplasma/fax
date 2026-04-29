@@ -17,6 +17,7 @@ python examples/research/boozer_harmonic_validation.py
 python examples/research/boozmn_3d_continuum.py
 python examples/research/boozmn_global_3d_eigenmodes.py
 python examples/research/boozmn_differentiable_design_study.py
+python examples/research/vmec_boozer_convergence.py
 python examples/research/stellgap_ctok_comparison.py
 python examples/research/external_code_artifact_dashboard.py
 python examples/research/publication_figure_suite.py
@@ -83,6 +84,18 @@ This builds the radial block eigenproblem from real local 3-D Boozer matrices,
 solves for global frequencies and radial/harmonic mode structures, writes a
 figure, and prints residuals. It is the current global radial shear-Alfven
 operator path, still awaiting STELLGAP/AE3D cross-code validation.
+
+## Live VMEC/Boozer Convergence
+
+```bash
+python examples/research/vmec_boozer_convergence.py --output-dir outputs/vmec_boozer_convergence
+```
+
+This runs the local Landreman-Paul QA ``vmec_jax`` input through the in-memory
+``booz_xform_jax`` bridge, then checks two convergence layers: Boozer harmonic
+truncation and angular quadrature for the local 3-D Boozer operator. It is a
+production-readiness smoke check for the live bridge, not a converged VMEC
+physics benchmark.
 
 ## STELLGAP CTOK Cross-Code Comparison
 

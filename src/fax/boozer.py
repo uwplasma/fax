@@ -250,6 +250,26 @@ class VmecJaxBoozerConvergenceResult:
         )
 
 
+@dataclass(frozen=True)
+class BoozerOperatorAngularConvergenceResult:
+    """Angular-quadrature convergence diagnostics for local 3-D Boozer operators."""
+
+    geometry: BoozerGeometry
+    harmonics: jax.Array
+    grids: tuple[tuple[int, int], ...]
+    reference_grid: tuple[int, int]
+    frequencies_hz: jax.Array
+    reference_frequencies_hz: jax.Array
+    relative_frequency_errors: jax.Array
+    hermitian_errors: jax.Array
+    metadata: tuple[tuple[str, Any], ...] = ()
+
+    @property
+    def max_metric(self) -> float:
+        """Return the largest scalar convergence diagnostic."""
+        return max(float(jnp.max(self.relative_frequency_errors)), float(jnp.max(self.hermitian_errors)))
+
+
 def read_boozmn(path: str | Path) -> BoozerSpectrum:
     """Read a minimal Boozer magnetic-field spectrum from a ``boozmn`` netCDF file."""
     from netCDF4 import Dataset
@@ -1330,6 +1350,73 @@ def boozer_3d_continuum_frequencies_hz(
     return jnp.sqrt(jnp.maximum(jnp.real(omega2), 0.0)) / (2.0 * jnp.pi)
 
 
+def boozer_3d_operator_angular_convergence(
+    geometry: BoozerGeometry,
+    harmonics: Any,
+    *,
+    mass_density: Any,
+    radial_metric: Any | None = None,
+    grids: tuple[tuple[int, int], ...] = ((12, 12), (16, 16), (20, 20)),
+    reference_grid: tuple[int, int] = (32, 32),
+) -> BoozerOperatorAngularConvergenceResult:
+    """Measure local 3-D Boozer operator convergence under angular refinement."""
+    harmonic_array = jnp.asarray(harmonics, dtype=float)
+    reference_frequencies = boozer_3d_continuum_frequencies_hz(
+        geometry,
+        harmonic_array,
+        mass_density=mass_density,
+        radial_metric=radial_metric,
+        theta_points=int(reference_grid[0]),
+        zeta_points=int(reference_grid[1]),
+    )
+    frequencies = []
+    relative_errors = []
+    hermitian_errors = []
+    for theta_points, zeta_points in grids:
+        matrices = boozer_3d_continuum_matrices(
+            geometry,
+            harmonic_array,
+            mass_density=mass_density,
+            radial_metric=radial_metric,
+            theta_points=int(theta_points),
+            zeta_points=int(zeta_points),
+        )
+        grid_frequencies = boozer_3d_continuum_frequencies_hz(
+            geometry,
+            harmonic_array,
+            mass_density=mass_density,
+            radial_metric=radial_metric,
+            theta_points=int(theta_points),
+            zeta_points=int(zeta_points),
+        )
+        frequencies.append(grid_frequencies)
+        relative_errors.append(
+            jnp.linalg.norm(grid_frequencies - reference_frequencies)
+            / jnp.maximum(jnp.linalg.norm(reference_frequencies), 1.0e-30)
+        )
+        hermitian_errors.append(
+            jnp.maximum(
+                _batched_hermitian_relative_error(matrices.stiffness),
+                _batched_hermitian_relative_error(matrices.mass),
+            )
+        )
+
+    return BoozerOperatorAngularConvergenceResult(
+        geometry=geometry,
+        harmonics=harmonic_array,
+        grids=tuple((int(theta), int(zeta)) for theta, zeta in grids),
+        reference_grid=(int(reference_grid[0]), int(reference_grid[1])),
+        frequencies_hz=jnp.stack(frequencies),
+        reference_frequencies_hz=reference_frequencies,
+        relative_frequency_errors=jnp.asarray(relative_errors),
+        hermitian_errors=jnp.asarray(hermitian_errors),
+        metadata=(
+            ("reference_grid", (int(reference_grid[0]), int(reference_grid[1]))),
+            ("grids", tuple((int(theta), int(zeta)) for theta, zeta in grids)),
+        ),
+    )
+
+
 def boozer_metric_continuum_matrices(
     spectrum: BoozerSpectrum,
     harmonics: Any,
@@ -1498,6 +1585,13 @@ def _combine_mode_basis(coefficients: jax.Array, basis: jax.Array) -> jax.Array:
     if coefficients.ndim == 2:
         return jnp.einsum("sm,tzm->stz", coefficients, basis)
     raise ValueError("Boozer coefficient arrays must have shape (modes,) or (surfaces, modes)")
+
+
+def _batched_hermitian_relative_error(matrix: jax.Array, *, floor: float = 1.0e-30) -> jax.Array:
+    difference = matrix - jnp.conjugate(jnp.swapaxes(matrix, -1, -2))
+    numerator = jnp.linalg.norm(difference.reshape((difference.shape[0], -1)), axis=1)
+    denominator = jnp.maximum(jnp.linalg.norm(matrix.reshape((matrix.shape[0], -1)), axis=1), floor)
+    return jnp.max(numerator / denominator)
 
 
 def _require_surface_modes(value: jax.Array | None, name: str) -> jax.Array:

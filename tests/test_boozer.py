@@ -10,9 +10,11 @@ import jax
 from fax.boozer import (
     BoozerGeometry,
     BoozerSpectrum,
+    BoozerOperatorAngularConvergenceResult,
     VmecJaxBoozerConvergenceResult,
     boozer_3d_continuum_frequencies_hz,
     boozer_3d_continuum_matrices,
+    boozer_3d_operator_angular_convergence,
     boozer_angle_grid,
     boozer_continuum_frequencies_hz,
     boozer_continuum_matrices,
@@ -524,6 +526,26 @@ def test_boozer_3d_radial_metric_profiles_and_grids_are_accepted():
         )
 
 
+def test_boozer_3d_operator_angular_convergence_constant_field_limit():
+    geometry = _constant_boozer_geometry()
+    harmonics = np.asarray([[1.0, 0.0], [2.0, 1.0], [3.0, 2.0]])
+
+    result = boozer_3d_operator_angular_convergence(
+        geometry,
+        harmonics,
+        mass_density=3.4e-8,
+        radial_metric=1.0,
+        grids=((6, 6), (8, 8)),
+        reference_grid=(12, 12),
+    )
+
+    assert isinstance(result, BoozerOperatorAngularConvergenceResult)
+    assert result.frequencies_hz.shape == (2, 2, 3)
+    np.testing.assert_allclose(np.asarray(result.relative_frequency_errors), np.zeros(2), atol=1.0e-12)
+    np.testing.assert_allclose(np.asarray(result.hermitian_errors), np.zeros(2), atol=1.0e-12)
+    assert result.max_metric < 1.0e-12
+
+
 @pytest.mark.requires_booz_xform_jax
 def test_read_boozmn_spectrum_and_dominant_modes():
     path = BOOZ_XFORM_TEST_FILES / "boozmn_circular_tokamak.nc"
@@ -776,3 +798,36 @@ def test_landreman_paul_vmec_jax_boozer_truncation_convergence_smoke():
     assert np.all(np.asarray(result.field_relative_error) >= 0.0)
     assert float(result.frequency_relative_error) >= 0.0
     assert result.max_metric < 1.0e-2
+
+
+@pytest.mark.requires_vmec_jax
+@pytest.mark.requires_booz_xform_jax
+def test_landreman_paul_vmec_jax_boozer_operator_angular_convergence_smoke():
+    pytest.importorskip("vmec_jax")
+    pytest.importorskip("booz_xform_jax")
+    case = landreman_paul_qa_lowres()
+    if not case.vmec_input.exists():
+        pytest.skip(f"missing local Landreman-Paul VMEC input: {case.vmec_input}")
+
+    geometry = run_vmec_jax_fixed_boundary_boozer_geometry(
+        case.vmec_input,
+        mboz=5,
+        nboz=5,
+        surfaces=(0.25, 0.5),
+        max_iter=1,
+        theta_points=12,
+        zeta_points=4,
+        jit=False,
+    )
+    result = boozer_3d_operator_angular_convergence(
+        geometry,
+        np.asarray([[1.0, 0.0], [2.0, 1.0], [3.0, 2.0]]),
+        mass_density=3.4e-8,
+        grids=((12, 12), (16, 16), (20, 20)),
+        reference_grid=(32, 32),
+    )
+
+    assert result.frequencies_hz.shape == (3, 2, 3)
+    assert np.all(np.asarray(result.relative_frequency_errors) >= 0.0)
+    assert np.all(np.asarray(result.hermitian_errors) < 1.0e-12)
+    assert result.max_metric < 5.0e-3

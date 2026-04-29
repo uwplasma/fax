@@ -130,6 +130,10 @@ tags, and command. The current gates are:
   ``vmec_jax`` ``wout`` object, compares ``(mboz,nboz)=(4,4)`` against
   ``(5,5)``, and gates sampled ``|B|`` error, local 3-D continuum frequency
   error, and Boozer-Jacobian identity error.
+* ``landreman_paul_vmec_jax_boozer_operator_angular_convergence``: holds the
+  live Landreman-Paul Boozer geometry fixed and compares local 3-D operator
+  frequencies from ``12x12``, ``16x16``, and ``20x20`` angular quadrature
+  against a ``32x32`` reference grid while also checking matrix Hermiticity.
 * ``landreman_paul_continuum_finite``: checks that the Landreman-Paul profile
   and metric continuum branches are finite and have small eigensolve residuals.
 * ``landreman_paul_radial_sampling_convergence``: checks VMEC-backed radial
@@ -198,6 +202,9 @@ The companion ``landreman_paul_vmec_jax_boozer_truncation_convergence`` gate
 starts that convergence ladder by holding the same VMEC state fixed and
 checking that the FAX Boozer geometry and local continuum are stable between
 nearby Boozer harmonic truncations.
+The ``landreman_paul_vmec_jax_boozer_operator_angular_convergence`` gate then
+holds the Boozer geometry fixed and checks angular quadrature convergence of
+the local 3-D operator itself.
 
 Current Smoke-Test Figures
 --------------------------
@@ -319,3 +326,10 @@ FAX radial operator reproduces AE3D's full physics operator.
    test. The same one-iteration VMEC state is transformed at multiple Boozer
    truncations; the gate checks sampled ``|B|`` reconstruction, local 3-D
    continuum frequencies, and the Boozer-Jacobian identity.
+
+.. figure:: _static/vmec_boozer_operator_angular_convergence.svg
+   :alt: Live VMEC-JAX Boozer local-operator angular convergence dashboard.
+
+   Live Landreman-Paul Boozer local-operator angular convergence smoke test.
+   The Boozer geometry is fixed while angular quadrature is refined, checking
+   local continuum frequency stability and matrix Hermiticity.

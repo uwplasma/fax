@@ -150,6 +150,13 @@ Current Figures
    through sampled ``|B|``, local 3-D continuum frequencies, and the
    Boozer-Jacobian identity.
 
+.. figure:: _static/vmec_boozer_operator_angular_convergence.svg
+   :alt: Live VMEC-JAX Boozer local-operator angular convergence dashboard.
+
+   Live Landreman-Paul Boozer local-operator angular convergence dashboard.
+   It holds the Boozer geometry fixed and refines only the angular quadrature
+   used by the local 3-D surface operator.
+
 .. figure:: _static/validation_gate_summary.svg
    :alt: Registered validation-gate summary.
 

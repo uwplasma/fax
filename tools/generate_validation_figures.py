@@ -15,6 +15,7 @@ from fax.boozer import (
     BoozerSpectrum,
     boozer_3d_continuum_frequencies_hz,
     boozer_3d_continuum_matrices,
+    boozer_3d_operator_angular_convergence,
     boozer_angle_grid,
     boozer_continuum_frequencies_hz,
     boozer_continuum_matrices,
@@ -1312,6 +1313,92 @@ def generate_vmec_boozer_bridge_convergence(output_dir: Path) -> list[Path]:
     return paths
 
 
+def generate_vmec_boozer_operator_angular_convergence(output_dir: Path) -> list[Path]:
+    """Generate angular-convergence evidence for the live VMEC-JAX/Boozer operator."""
+    plt = _setup_matplotlib()
+    case = landreman_paul_qa_lowres()
+    if not case.vmec_input.exists():
+        raise FileNotFoundError(f"Landreman-Paul QA VMEC input not found: {case.vmec_input}")
+
+    geometry = run_booz_xform_jax_geometry_from_wout_data(
+        run_vmec_jax_fixed_boundary_wout_data(
+            case.vmec_input,
+            max_iter=1,
+            theta_points=12,
+            zeta_points=4,
+        ),
+        mboz=5,
+        nboz=5,
+        surfaces=(0.25, 0.5),
+        jit=False,
+    )
+    harmonics = jnp.asarray([[1.0, 0.0], [2.0, 1.0], [3.0, 2.0]])
+    result = boozer_3d_operator_angular_convergence(
+        geometry,
+        harmonics,
+        mass_density=3.4e-8,
+        grids=((8, 8), (12, 12), (16, 16), (20, 20), (24, 24)),
+        reference_grid=(32, 32),
+    )
+    grid_points = np.asarray([theta * zeta for theta, zeta in result.grids])
+    reference = np.asarray(result.reference_frequencies_hz) / 1.0e3
+    selected = np.asarray(result.frequencies_hz[2]) / 1.0e3
+    residual = selected - reference
+    grid = boozer_geometry_grid(geometry, theta_points=64, zeta_points=64)
+    surface_index = int(np.argmin(np.abs(np.asarray(geometry.s) - 0.5)))
+
+    fig, axes = plt.subplots(1, 3, figsize=(12.8, 3.6), constrained_layout=True)
+
+    ax = axes[0]
+    image = ax.imshow(
+        np.asarray(grid.grad_s_squared[surface_index]),
+        origin="lower",
+        extent=(0.0, 2.0 * np.pi, 0.0, 2.0 * np.pi),
+        aspect="auto",
+        cmap="magma",
+    )
+    ax.set_title(r"embedding $|\nabla s|^2$")
+    ax.set_xlabel(r"$\zeta_B$")
+    ax.set_ylabel(r"$\theta_B$")
+    fig.colorbar(image, ax=ax, fraction=0.046, pad=0.04, label="normalized")
+
+    ax = axes[1]
+    ax.loglog(grid_points, np.asarray(result.relative_frequency_errors), marker="o", linewidth=1.6, label="frequency")
+    ax.loglog(grid_points, np.maximum(np.asarray(result.hermitian_errors), 1.0e-16), marker="s", linewidth=1.4, label="Hermitian")
+    ax.axhline(5.0e-3, color="#222222", linestyle="--", linewidth=1.0, label="gate")
+    ax.set_title("operator angular convergence")
+    ax.set_xlabel(r"$N_\theta N_\zeta$")
+    ax.set_ylabel("relative metric")
+    ax.set_ylim(1.0e-16, 1.0e-2)
+    ax.legend(fontsize=8)
+
+    ax = axes[2]
+    s = np.asarray(geometry.s)
+    for branch in range(reference.shape[1]):
+        ax.plot(s, reference[:, branch], marker="o", linewidth=1.6, label=f"ref {branch + 1}")
+        ax.plot(s, selected[:, branch], marker="s", linestyle="--", linewidth=1.2, label=f"16x16 {branch + 1}")
+    max_residual_hz = float(np.max(np.abs(residual)) * 1.0e3)
+    ax.text(
+        0.03,
+        0.95,
+        f"max |df|={max_residual_hz:.1f} Hz",
+        transform=ax.transAxes,
+        fontsize=8,
+        va="top",
+        bbox={"facecolor": "white", "edgecolor": "#bbbbbb", "boxstyle": "round,pad=0.25"},
+    )
+    ax.set_title("frequency stability")
+    ax.set_xlabel("normalized toroidal flux s")
+    ax.set_ylabel("frequency [kHz]")
+    ax.set_ylim(bottom=0.0)
+    ax.legend(fontsize=7, ncol=2)
+
+    fig.suptitle("Live Landreman-Paul Boozer local-operator angular convergence", fontsize=12, weight="bold")
+    paths = _save_figure(fig, output_dir, "vmec_boozer_operator_angular_convergence")
+    plt.close(fig)
+    return paths
+
+
 def write_figure_manifest(output_dir: Path, paths: list[Path]) -> Path:
     """Write a JSON manifest describing generated figures and their claims."""
     manifest = {
@@ -1375,6 +1462,7 @@ def main(argv: list[str] | None = None) -> int:
         generate_metric_residual_convergence(output_dir),
         generate_landreman_convergence_dashboard(output_dir),
         generate_vmec_boozer_bridge_convergence(output_dir),
+        generate_vmec_boozer_operator_angular_convergence(output_dir),
         generate_validation_gate_summary(output_dir),
     ]:
         paths.extend(generated)

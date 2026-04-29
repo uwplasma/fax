@@ -191,6 +191,35 @@ def test_boozmn_global_3d_eigenmodes_example_runs(tmp_path):
     assert all(Path(path).exists() for path in payload["figure_files"])
 
 
+def test_vmec_boozer_convergence_example_runs(tmp_path):
+    import pytest
+
+    pytest.importorskip("vmec_jax")
+    pytest.importorskip("booz_xform_jax")
+    vmec_input = REPO_ROOT.parent / "vmec_jax" / "examples" / "data" / "input.LandremanPaul2021_QA_lowres"
+    if not vmec_input.exists():
+        return
+
+    result = subprocess.run(
+        [
+            sys.executable,
+            "examples/research/vmec_boozer_convergence.py",
+            "--output-dir",
+            str(tmp_path),
+            "--format",
+            "png",
+        ],
+        cwd=REPO_ROOT,
+        check=True,
+        text=True,
+        capture_output=True,
+    )
+    payload = json.loads(result.stdout)
+    assert payload["truncation_max_metric"] < 1.0e-2
+    assert payload["angular_max_metric"] < 5.0e-3
+    assert all(Path(path).exists() for path in payload["figure_files"])
+
+
 def test_boozmn_differentiable_design_study_example_runs(tmp_path):
     fixture = Path("/Users/rogerio/local/booz_xform_jax/tests/test_files/boozmn_LandremanSenguptaPlunk_section5p3.nc")
     if not fixture.exists():

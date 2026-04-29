@@ -303,6 +303,13 @@ then compares Boozer truncations through sampled `|B|`, local 3-D continuum
 frequencies, and the Boozer-Jacobian identity. This is the first convergence
 gate on the live bridge, not a converged VMEC physics claim.
 
+![Live VMEC/Boozer operator angular convergence](docs/_static/vmec_boozer_operator_angular_convergence.png)
+
+This figure holds the same live Landreman-Paul Boozer geometry fixed and
+refines only the angular quadrature used by the local 3-D Boozer operator. It
+checks local continuum frequency convergence and Hermiticity against a `32x32`
+reference grid.
+
 ![Registered validation gates](docs/_static/validation_gate_summary.png)
 
 The validation-gate plot summarizes scaffold acceptance gates. A gate below the
@@ -463,6 +470,7 @@ Current figures:
 - `metric_residual_convergence.svg`: metric-matrix residual and angular-grid check.
 - `landreman_paul_convergence_dashboard.svg`: VMEC-backed radial/angular/Fourier convergence smoke-test dashboard.
 - `vmec_boozer_bridge_convergence.svg`: live `vmec_jax -> booz_xform_jax -> FAX` Boozer truncation convergence smoke-test dashboard.
+- `vmec_boozer_operator_angular_convergence.svg`: live Boozer local-operator angular quadrature convergence smoke-test dashboard.
 - `validation_gate_summary.svg`: current validation-gate status plot.
 
 ## Validation Gates
@@ -538,6 +546,8 @@ It currently establishes:
   finite local 3-D continuum branches without claiming converged VMEC physics,
 - a live-bridge Boozer truncation convergence gate comparing `(mboz,nboz)=(4,4)`
   against `(5,5)` on the same in-memory VMEC state,
+- a live-bridge local-operator angular convergence gate comparing `12x12`,
+  `16x16`, and `20x20` angular quadrature against a `32x32` reference grid,
 - a global radial 3-D Boozer block eigenmode operator with radial envelopes,
   harmonic mode structures, residual diagnostics, and analytic constant-limit
   gates,

@@ -1186,6 +1186,13 @@ Needed docs:
     - Added the dedicated `vmec_boozer_bridge_convergence` README/docs figure to make the live bridge convergence evidence visible.
     - Verified locally with `python -m pytest -q` (166 passed), coverage (`95.6%` FAX source coverage, fail-under 95 passed), `python -m ruff check .`, `python -m mypy src/fax`, `python tools/generate_validation_figures.py`, `python tools/qa_figures.py`, `python -m sphinx -W --keep-going -b html docs docs/_build/html`, `python -m build`, `python -m twine check dist/*`, and `git diff --check`.
     - Scope note: this starts the live-bridge convergence ladder. Next required steps are converged VMEC residual/iteration studies, Boozer angular and surface-resolution sweeps, and external-code/literature continuum comparisons on the same geometry family.
+  - 2026-04-29 live Boozer operator angular convergence milestone:
+    - Added `BoozerOperatorAngularConvergenceResult` and `boozer_3d_operator_angular_convergence` to measure local 3-D Boozer operator angular-grid convergence through frequency errors and Hermitian matrix errors.
+    - Added registered gate `landreman_paul_vmec_jax_boozer_operator_angular_convergence`, holding the one-iteration Landreman-Paul live bridge geometry fixed and comparing `12x12`, `16x16`, and `20x20` quadrature against a `32x32` reference grid. Current local metric: `1.7882e-3 < 5.0e-3`.
+    - Added `examples/research/vmec_boozer_convergence.py` so users can reproduce the live bridge truncation and operator-angular convergence metrics and generate a compact figure.
+    - Added the dedicated `vmec_boozer_operator_angular_convergence` README/docs figure.
+    - Verified locally with `python -m pytest -q` (169 passed), coverage (`95.6%` FAX source coverage, fail-under 95 passed), `python -m ruff check .`, `python -m mypy src/fax`, `python tools/generate_validation_figures.py`, `python tools/qa_figures.py`, `python -m sphinx -W --keep-going -b html docs docs/_build/html`, `python -m build`, `python -m twine check dist/*`, and `git diff --check`.
+    - Scope note: this strengthens local-operator numerical readiness. It still needs converged VMEC iteration studies, Boozer surface-resolution sweeps, and cross-code/literature comparisons before production physics claims.
 
 ### Local Testing Policy Until GitHub Actions Resume
 
