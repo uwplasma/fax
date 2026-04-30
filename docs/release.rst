@@ -81,6 +81,10 @@ state before publishing:
   global radial 3-D Boozer operator with residual, boundary-condition, and
   radial-stiffness variant metrics. This is still not AE3D/CAS3D/STELLGAP
   parity, but it closes the public-artifact Boozer/global adapter lane.
+* ``examples/research/vmec_equilibria_live_boozer.py`` uses ``booz_xform_jax``
+  to generate Boozer geometry from public W7-X/NCSX ``wout`` files and sends
+  those geometries through the same FAX global operator, including
+  coarse/reference truncation and runtime diagnostics.
 
 Do not publish the existing ``v0.0.1`` draft until the tag points at the final
 release commit and the full local release gate above is green.

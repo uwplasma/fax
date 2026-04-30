@@ -174,6 +174,7 @@ checkout as an external geometry matrix:
 git clone https://github.com/landreman/vmec_equilibria /Users/rogerio/local/vmec_equilibria
 python examples/research/vmec_equilibria_catalog.py --root /Users/rogerio/local/vmec_equilibria
 python examples/research/vmec_equilibria_boozer_global.py --root /Users/rogerio/local/vmec_equilibria
+python examples/research/vmec_equilibria_live_boozer.py --root /Users/rogerio/local/vmec_equilibria --jit
 ```
 
 ![VMEC-equilibria catalog](docs/_static/vmec_equilibria_catalog.png)
@@ -200,8 +201,10 @@ The v0.0.1 gate currently covers:
 * Public VMEC-equilibria Boozer artifacts for HSX and Ku-Boozer QHS cases,
   propagated through FAX's global radial 3-D Boozer operator with
   boundary-condition and radial-stiffness variants.
+* Live `booz_xform_jax` generation from public W7-X/NCSX VMEC-equilibria
+  `wout` files into FAX global radial 3-D Boozer diagnostics.
 
-Current headline local metrics are 237 passing tests, 95% coverage,
+Current headline local metrics are 238 passing tests, 95% coverage,
 STELLGAP CTOK p95 sorted-spectrum relative error about 2.55%, AE3D dense
 spectrum max relative error about 1.6e-6, and AE3D B-weighted mode-shape error
 about 5.2e-8 for the checked public modes; AE3D mode-peak closest-continuum

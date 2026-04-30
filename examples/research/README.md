@@ -36,6 +36,7 @@ python examples/research/boozmn_differentiable_design_study.py
 python examples/research/vmec_boozer_convergence.py
 python examples/research/vmec_equilibria_catalog.py
 python examples/research/vmec_equilibria_boozer_global.py
+python examples/research/vmec_equilibria_live_boozer.py
 python examples/research/stellgap_ctok_comparison.py
 python examples/research/external_code_artifact_dashboard.py
 python examples/research/far3d_gpu_lincheck_artifact.py
@@ -146,6 +147,18 @@ and runs the FAX global radial 3-D Boozer operator on HSX and Ku-Boozer QHS
 cases. The figure compares lowest global frequencies, radial envelopes,
 Boozer-Jacobian identity errors, and boundary/stiffness variants. This is a
 public-artifact global-operator gate, not yet AE3D/CAS3D/STELLGAP parity.
+
+## VMEC-Equilibria Live Boozer Generation
+
+```bash
+python examples/research/vmec_equilibria_live_boozer.py --root /Users/rogerio/local/vmec_equilibria --jit
+```
+
+This runs `booz_xform_jax` directly on public W7-X and NCSX VMEC `wout` files,
+then sends the generated Boozer geometry into FAX's global radial 3-D Boozer
+operator. It compares coarse/reference Boozer truncations, runtime,
+Boozer-Jacobian identity errors, and lowest global-mode convergence. This is a
+generated-Boozer convergence gate, not external-code parity.
 
 ## STELLGAP CTOK Cross-Code Comparison
 

@@ -1909,3 +1909,28 @@ Scope: this closes the public-artifact Boozer/global adapter lane for the
 available VMEC-equilibria ``boozmn`` subset. It is still not full
 AE3D/CAS3D/STELLGAP parity because no external eigenmode spectra are matched
 to these geometries yet.
+
+### 2026-04-30 VMEC-Equilibria Live Boozer Generation
+
+Started the generated-Boozer convergence lane for VMEC-equilibria cases that
+do not ship public ``boozmn`` files:
+
+- confirmed local ``booz_xform_jax`` and ``vmec_jax`` are importable,
+- ran ``booz_xform_jax`` directly on public W7-X standard and NCSX li383
+  VMEC ``wout`` files,
+- added ``examples/research/vmec_equilibria_live_boozer.py`` to compare
+  coarse/reference Boozer truncations, runtime, Boozer-Jacobian identity,
+  field reconstruction, lowest global-mode convergence, and reference radial
+  envelopes,
+- added a local physics test that runs the W7-X ``wout`` through
+  ``booz_xform_jax`` and the FAX global radial 3-D Boozer operator when the
+  external clone and optional dependency are available,
+- generated ``docs/_static/vmec_equilibria_live_boozer.{png,svg}``,
+  ``vmec_equilibria_live_boozer.csv``, and
+  ``vmec_equilibria_live_boozer_summary.json``.
+
+Observed first-pass generated-Boozer behavior: W7-X and NCSX run quickly at
+low truncation and produce finite global frequencies with residuals near dense
+eigensolver precision. LHD also runs, but the low-truncation Jacobian identity
+error is much larger, so it should enter as a convergence-ladder target rather
+than a first acceptance gate.

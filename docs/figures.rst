@@ -224,6 +224,14 @@ Current Figures
    This advances the multi-geometry lane from profile ``wout`` screening to
    public Boozer/global operator checks, but it is not external-code parity.
 
+.. figure:: _static/vmec_equilibria_live_boozer.svg
+   :alt: Live booz_xform_jax generation from VMEC-equilibria wout files.
+
+   Generated-Boozer convergence gate. FAX runs ``booz_xform_jax`` on public
+   W7-X and NCSX VMEC-equilibria ``wout`` files, compares coarse/reference
+   Boozer truncations, and propagates the generated geometry through the
+   global radial 3-D Boozer operator.
+
 .. figure:: _static/benchmark_family_packet.svg
    :alt: FAX benchmark families with physics gates.
 

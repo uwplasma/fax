@@ -58,6 +58,14 @@ VMEC-equilibria public Boozer artifacts
    metric-vs-mass radial stiffness variants. This is a ``smoke-tested``
    public-artifact global-operator gate, not an external-code parity result.
 
+VMEC-equilibria live Boozer generation
+   ``examples/research/vmec_equilibria_live_boozer.py`` runs
+   ``booz_xform_jax`` directly on public W7-X and NCSX VMEC ``wout`` files and
+   sends the generated geometry into the global radial 3-D Boozer operator.
+   Tests protect the W7-X path locally when ``booz_xform_jax`` and the
+   VMEC-equilibria clone are available. This is a ``smoke-tested`` generated
+   Boozer convergence gate, not full external-code parity.
+
 Metric geometry
    ``fax.metric.MetricGeometry`` stores angular grids, Jacobian weights,
    magnetic field strength, density, and field-line derivative coefficients.

@@ -221,6 +221,28 @@ not a claim of AE3D/CAS3D/STELLGAP physics agreement.
    global radial 3-D Boozer operator, with boundary-condition and
    radial-stiffness variant checks.
 
+VMEC-Equilibria Live Boozer Generation
+--------------------------------------
+
+Run:
+
+.. code-block:: bash
+
+   python examples/research/vmec_equilibria_live_boozer.py --root /Users/rogerio/local/vmec_equilibria --jit
+
+This uses ``booz_xform_jax`` to generate Boozer geometry from public W7-X and
+NCSX VMEC ``wout`` files, then assembles the FAX global radial 3-D Boozer
+operator. The generated artifacts compare coarse/reference Boozer truncations,
+runtime, Boozer-Jacobian identity, field reconstruction, lowest global-mode
+convergence, and reference radial envelopes. This is a generated-Boozer
+convergence gate, not external-code physics parity.
+
+.. figure:: _static/vmec_equilibria_live_boozer.svg
+   :alt: Live booz_xform_jax generation from VMEC-equilibria wout files.
+
+   Live ``booz_xform_jax`` W7-X/NCSX generation from public VMEC-equilibria
+   ``wout`` files, followed by FAX global radial 3-D Boozer diagnostics.
+
 Real ``boozmn`` Local 3-D Continuum
 -----------------------------------
 

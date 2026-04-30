@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import importlib.util
+
 import numpy as np
 import pytest
 
@@ -7,6 +9,7 @@ from fax.boozer import (
     boozer_geometry_jacobian_identity_error,
     normalized_nonaxisymmetric_boozer_energy,
     read_boozmn_geometry,
+    run_booz_xform_jax_geometry_from_wout,
     slice_boozer_geometry_surfaces,
 )
 from fax.config import load_config
@@ -109,3 +112,35 @@ def test_available_vmec_equilibria_boozmn_cases_feed_global_operator():
         assert float(np.max(np.asarray(result.residuals[:4]))) < 1.0e-9
         assert float(boozer_geometry_jacobian_identity_error(sampled, theta_points=8, zeta_points=8)) < 1.0e-3
         assert float(normalized_nonaxisymmetric_boozer_energy(sampled.as_spectrum())) >= 0.0
+
+
+def test_vmec_equilibria_w7x_live_boozer_global_operator_gate():
+    if importlib.util.find_spec("booz_xform_jax") is None:
+        pytest.skip("booz_xform_jax is not importable")
+    catalog = {case.case_id: case for case in vmec_equilibria_catalog()}
+    case = catalog["w7x_standard"]
+    if not case.wout_path().exists():
+        pytest.skip("local landreman/vmec_equilibria W7-X wout is not available")
+
+    geometry = run_booz_xform_jax_geometry_from_wout(
+        case.wout_path(),
+        mboz=4,
+        nboz=4,
+        surfaces=(0.2, 0.35, 0.5, 0.65, 0.8),
+        jit=True,
+    )
+    problem = radial_block_problem_from_boozer_geometry(
+        geometry,
+        np.asarray([[1.0, 0.0], [2.0, 1.0]]),
+        mass_density=3.4e-8,
+        theta_points=8,
+        zeta_points=8,
+        radial_stiffness_scale=1.0e-8,
+    )
+    result = solve_radial_block_eigenmodes(problem)
+
+    assert geometry.field_periods == 5
+    assert int(geometry.s.shape[0]) == 5
+    assert float(boozer_geometry_jacobian_identity_error(geometry, theta_points=8, zeta_points=8)) < 5.0e-3
+    assert bool(np.all(np.isfinite(np.asarray(result.frequencies_hz[:4]))))
+    assert float(np.max(np.asarray(result.residuals[:4]))) < 1.0e-9

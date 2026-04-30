@@ -61,6 +61,10 @@ Multi-geometry cross-code benchmark suite
    FAX global radial 3-D Boozer operator with boundary/stiffness variants. The
    remaining acceptance gate is still matched AE3D/CAS3D/STELLGAP physics
    parity on those or equivalent geometries.
+   A live ``booz_xform_jax`` generated-Boozer gate now covers public W7-X and
+   NCSX VMEC-equilibria ``wout`` files. This should be expanded into a full
+   truncation/radial/angular convergence ladder before broad reactor-design
+   claims.
 
 Final no-proxy/no-reduced-model release gate
    This remains blocked until the previous milestones pass. Reduced models may
