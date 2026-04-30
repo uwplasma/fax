@@ -81,6 +81,14 @@ are known and hashable:
    fax benchmark-manifest
    fax benchmark-manifest --json --hashes
 
+Use ``fax kinetic-parity`` for FAR3D/CAS3D-K growth-rate packets. The command
+requires held-out validation cases before it can pass:
+
+.. code-block:: bash
+
+   fax kinetic-parity kinetic_dataset.json predictions.json
+   fax kinetic-parity kinetic_dataset.json predictions.json --json
+
 Use tags to focus on one layer while developing. Before pushing or making a
 publication figure, run the full local suite described in :doc:`development`.
 

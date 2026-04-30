@@ -65,7 +65,9 @@ First Implementation Steps
 2. Add native global operator parity drivers that compare FAX mode structures
    against external-code eigenfunctions, not just external matrix artifacts.
 3. Define the FAR3D/CAS3D-K growth-rate data schema and add the first archived
-   calibration/validation case.
+   calibration/validation case. The schema and ``fax kinetic-parity`` command
+   are now implemented in :doc:`kinetic_validation`; real archived FAR3D or
+   CAS3D-K cases remain to be added.
 4. Choose a small set of VMEC boundary variables for the first end-to-end
    differentiable design check and compare JAX gradients to finite differences.
 5. Keep ``fax maturity`` and this page updated whenever a milestone moves from

@@ -43,6 +43,13 @@ Inspect current external-code benchmark artifacts:
    fax benchmark-manifest
    fax benchmark-manifest --json --hashes
 
+Check a kinetic growth-rate parity packet when FAR3D/CAS3D-K references are
+available:
+
+.. code-block:: bash
+
+   fax kinetic-parity kinetic_dataset.json predictions.json --json
+
 Local quality gate while GitHub Actions is unavailable:
 
 .. code-block:: bash

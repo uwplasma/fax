@@ -120,6 +120,50 @@ def test_cli_benchmark_manifest_json_reports_current_cases(capsys):
     assert "ae3d_public_matrix_mode_shape" in ids
 
 
+def test_cli_kinetic_parity_reports_held_out_growth_rate_gate(tmp_path, capsys):
+    dataset_path = tmp_path / "kinetic_dataset.json"
+    predictions_path = tmp_path / "predictions.json"
+    dataset_path.write_text(
+        json.dumps(
+            {
+                "dataset_id": "cli_kinetic_fixture",
+                "cases": [
+                    {
+                        "case_id": "far3d_calibration",
+                        "source_code": "FAR3D",
+                        "geometry_id": "qa",
+                        "mode_id": "n1",
+                        "frequency_hz": 80_000.0,
+                        "growth_rate_hz": 100.0,
+                        "growth_rate_uncertainty_hz": 10.0,
+                        "toroidal_mode": 1,
+                        "split": "calibration",
+                    },
+                    {
+                        "case_id": "cas3dk_validation",
+                        "source_code": "CAS3D-K",
+                        "geometry_id": "qa",
+                        "mode_id": "n2",
+                        "frequency_hz": 120_000.0,
+                        "growth_rate_hz": -20.0,
+                        "growth_rate_uncertainty_hz": 5.0,
+                        "toroidal_mode": 2,
+                        "split": "validation",
+                    },
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+    predictions_path.write_text(json.dumps({"far3d_calibration": 104.0, "cas3dk_validation": -21.0}), encoding="utf-8")
+
+    assert main(["kinetic-parity", str(dataset_path), str(predictions_path), "--json"]) == 0
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["status"] == "passed"
+    assert payload["validation_count"] == 1
+    assert payload["validation_sign_accuracy"] == 1.0
+
+
 def test_cli_validate_default_prints_progress(tmp_path, capsys):
     config_path = tmp_path / "case.toml"
     config_path.write_text("[run]\ncase = \"validate_progress\"\n", encoding="utf-8")

@@ -40,6 +40,14 @@ Inspect the cross-code benchmark artifacts currently known to FAX:
    fax benchmark-manifest
    fax benchmark-manifest --json --hashes
 
+Run a FAR3D/CAS3D-K growth-rate parity packet once a dataset and predictions
+are available:
+
+.. code-block:: bash
+
+   fax kinetic-parity kinetic_dataset.json predictions.json
+   fax kinetic-parity kinetic_dataset.json predictions.json --json
+
 Compute the current profile and metric continuum models and write branch/metric
 artifacts:
 

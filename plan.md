@@ -1677,3 +1677,24 @@ with claim levels, expected metrics, validation gate IDs, local paths, optional
 SHA-256 hashes, and the next parity step. The next coding lane is to use this
 manifest to drive native global parity comparisons rather than hard-coded
 local path checks.
+
+### 2026-04-30 Kinetic Growth-Rate Validation Contract
+
+Started RG-2/RG-3 implementation by adding a concrete FAR3D/CAS3D-K
+growth-rate data contract:
+
+- `fax.kinetic_validation.KineticGrowthRateCase`,
+- `fax.kinetic_validation.KineticGrowthRateDataset`,
+- uncertainty-weighted differentiable `kinetic_growth_rate_loss`,
+- held-out `kinetic_growth_rate_parity`,
+- JSON dataset/prediction loaders,
+- the `fax kinetic-parity` CLI command,
+- `docs/kinetic_validation.rst`.
+
+This is deliberately not marked as completed kinetic validation. It enforces
+the structure needed for reviewer-grade kinetic parity: external-code source,
+geometry, mode ID, frequency, growth rate, uncertainty, toroidal mode,
+distribution parameters, and calibration-vs-validation split. The next step is
+to populate this contract with real FAR3D/CAS3D-K or literature growth-rate
+artifacts, then fit reduced closure coefficients only on calibration cases and
+test them on held-out cases.

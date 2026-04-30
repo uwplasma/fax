@@ -85,6 +85,10 @@ tags, and command. The current gates are:
 * ``fast_ion_gyro_landau_calibration``: checks that the differentiable
   least-squares calibration layer recovers synthetic resonant, dispersive, and
   thermal-Landau coefficients from eigenfunction-weighted growth rates.
+* ``fax kinetic-parity`` and ``fax.kinetic_validation`` define the real
+  FAR3D/CAS3D-K growth-rate packet contract: cases must carry uncertainties,
+  calibration/validation splits, and held-out parity metrics before calibrated
+  kinetic claims are allowed.
 * ``boozer_harmonic_projection``: checks Boozer ``|B|`` harmonic
   reconstruction/projection and Fourier orthogonality on a synthetic spectrum.
 * ``boozer_straight_field_line_phase``: checks that Boozer harmonic phases have

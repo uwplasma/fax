@@ -194,6 +194,8 @@ The remaining full-physics milestones are tracked by `fax maturity` and
 [the full research-grade roadmap](docs/research_grade_roadmap.rst).
 Current external-code artifacts are tracked by `fax benchmark-manifest` and
 [the benchmark manifest](docs/benchmark_manifest.rst).
+FAR3D/CAS3D-K growth-rate packets are checked with `fax kinetic-parity`; this
+is a held-out validation contract, not yet a completed kinetic-code replacement.
 
 ## What Is New Relative To Legacy AE Codes
 

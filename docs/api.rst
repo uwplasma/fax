@@ -31,6 +31,9 @@ API
 .. automodule:: fax.maturity
    :members:
 
+.. automodule:: fax.kinetic_validation
+   :members:
+
 .. automodule:: fax.gaps
    :members:
 

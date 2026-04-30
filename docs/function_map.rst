@@ -28,6 +28,12 @@ Configuration and CLI
    through ``fax benchmark-manifest`` and documented in
    :doc:`benchmark_manifest`.
 
+``fax.kinetic_validation``
+   FAR3D/CAS3D-K growth-rate dataset contract, weighted differentiable loss,
+   held-out parity metrics, JSON loaders, and the ``fax kinetic-parity`` CLI
+   gate. This is the ingestion path for real kinetic validation data; it does
+   not by itself calibrate the current reduced closure.
+
 Equilibrium Helpers
 -------------------
 
@@ -189,6 +195,14 @@ Fast-Ion Screens
    Fit resonant, dispersive, and thermal-Landau closure coefficients from
    eigenfunction-weighted growth rates using a differentiable least-squares
    solve.
+
+``kinetic_growth_rate_parity``
+   Compare predicted fast-ion growth rates with FAR3D/CAS3D-K or literature
+   references on a held-out validation split.
+
+``kinetic_growth_rate_loss``
+   JAX-differentiable uncertainty-weighted growth-rate loss for calibration,
+   UQ, and inverse-design studies.
 
 Optimization
 ------------

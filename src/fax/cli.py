@@ -10,6 +10,12 @@ from . import __version__
 from .benchmark_manifest import benchmark_manifest_markdown, benchmark_manifest_summary
 from .benchmarks import known_benchmark_families
 from .config import ConfigError, FaxConfig, load_config
+from .kinetic_validation import (
+    kinetic_growth_rate_parity,
+    kinetic_growth_rate_parity_markdown,
+    load_kinetic_growth_rate_dataset,
+    load_kinetic_growth_rate_predictions,
+)
 from .maturity import research_grade_report_markdown, research_grade_summary
 from .plotting import plot_continuum_artifacts, plot_convergence_artifacts, plot_global_eigenmode_artifacts
 from .runner import run
@@ -64,7 +70,7 @@ def build_parser() -> argparse.ArgumentParser:
         description=(
             "Run or inspect differentiable Alfvén eigenmode calculations from a TOML file. "
             "Subcommands: validate, continuum, eigenmodes, convergence, benchmark, benchmark-manifest, "
-            "maturity, plot-continuum, plot-global, plot-convergence."
+            "kinetic-parity, maturity, plot-continuum, plot-global, plot-convergence."
         ),
     )
     parser.add_argument("config", nargs="?", help="Path to a fax TOML configuration file.")
@@ -166,6 +172,33 @@ def build_command_parser() -> argparse.ArgumentParser:
     benchmark_manifest.add_argument("--quiet", action="store_true", help="Alias for --json.")
     benchmark_manifest.add_argument("--hashes", action="store_true", help="Include SHA-256 hashes for present files.")
 
+    kinetic = subparsers.add_parser(
+        "kinetic-parity",
+        help="Compare FAX fast-ion growth-rate predictions with FAR3D/CAS3D-K reference datasets.",
+    )
+    kinetic.add_argument("dataset", help="JSON kinetic growth-rate dataset.")
+    kinetic.add_argument("predictions", help="JSON predicted growth rates, either by case_id or in dataset order.")
+    kinetic.add_argument("--json", action="store_true", help="Print only the parity report JSON.")
+    kinetic.add_argument("--quiet", action="store_true", help="Alias for --json.")
+    kinetic.add_argument(
+        "--max-validation-normalized-rms-error",
+        type=float,
+        default=2.0,
+        help="Maximum held-out normalized RMS error for a passing parity gate.",
+    )
+    kinetic.add_argument(
+        "--min-validation-count",
+        type=int,
+        default=1,
+        help="Minimum number of held-out validation cases required for a passing parity gate.",
+    )
+    kinetic.add_argument(
+        "--min-validation-sign-accuracy",
+        type=float,
+        default=1.0,
+        help="Minimum held-out growth-rate sign accuracy required for a passing parity gate.",
+    )
+
     plot = subparsers.add_parser("plot-continuum", help="Plot artifacts written by fax continuum.")
     plot.add_argument("artifact_dir", help="Directory containing continuum_summary.json and continuum_branches.csv.")
     plot.add_argument("--output-dir", help="Directory for generated figures; defaults to artifact_dir.")
@@ -235,6 +268,7 @@ def main(argv: list[str] | None = None) -> int:
         "convergence",
         "benchmark",
         "benchmark-manifest",
+        "kinetic-parity",
         "maturity",
         "plot-continuum",
         "plot-global",
@@ -281,6 +315,8 @@ def _main_command(argv: list[str]) -> int:
         return _main_maturity(args)
     if args.command == "benchmark-manifest":
         return _main_benchmark_manifest(args)
+    if args.command == "kinetic-parity":
+        return _main_kinetic_parity(args)
     if args.command == "plot-continuum":
         return _main_plot_continuum(args)
     if args.command == "plot-convergence":
@@ -387,6 +423,28 @@ def _main_benchmark_manifest(args: argparse.Namespace) -> int:
     else:
         print(benchmark_manifest_markdown(include_hashes=bool(args.hashes)))
     return 0
+
+
+def _main_kinetic_parity(args: argparse.Namespace) -> int:
+    machine_readable = bool(args.json or args.quiet)
+    try:
+        dataset = load_kinetic_growth_rate_dataset(args.dataset)
+        predictions = load_kinetic_growth_rate_predictions(args.predictions, dataset=dataset)
+        parity = kinetic_growth_rate_parity(
+            dataset,
+            predictions,
+            max_validation_normalized_rms_error=args.max_validation_normalized_rms_error,
+            min_validation_count=args.min_validation_count,
+            min_validation_sign_accuracy=args.min_validation_sign_accuracy,
+        )
+    except (FileNotFoundError, OSError, ValueError) as exc:
+        print(f"fax: {exc}", file=sys.stderr)
+        return 2
+    if machine_readable:
+        print(json.dumps(parity.to_dict(), indent=2, sort_keys=True))
+    else:
+        print(kinetic_growth_rate_parity_markdown(parity))
+    return 0 if parity.passed else 1
 
 
 def _main_plot_convergence(args: argparse.Namespace) -> int:

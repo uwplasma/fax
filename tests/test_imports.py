@@ -16,3 +16,5 @@ def test_recent_public_exports_exist():
     assert fax.run_stellgap_ctok_executable
     assert fax.Ae3dGlobalModeParity
     assert fax.ae3d_global_mode_parity
+    assert fax.KineticGrowthRateDataset
+    assert fax.kinetic_growth_rate_parity

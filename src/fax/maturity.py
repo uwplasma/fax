@@ -91,8 +91,9 @@ def registered_research_grade_milestones() -> tuple[ResearchGradeMilestone, ...]
             status="planned",
             current_state=(
                 "FAX has reduced fast-ion resonance screens and synthetic gyro-Landau "
-                "coefficient-recovery gates. It has no real CAS3D-K/FAR3D kinetic "
-                "growth-rate parity gate yet."
+                "coefficient-recovery gates plus a FAR3D/CAS3D-K growth-rate dataset "
+                "contract and held-out parity CLI. It has no populated real kinetic "
+                "growth-rate parity case yet."
             ),
             target_state=(
                 "FAX reproduces selected CAS3D-K/FAR3D energetic-particle growth/"
@@ -117,8 +118,8 @@ def registered_research_grade_milestones() -> tuple[ResearchGradeMilestone, ...]
                 "fast-ion benchmark input/output archive",
             ),
             next_steps=(
-                "Build or archive one portable FAR3D linear benchmark",
-                "Add a CAS3D-K-style perturbative reference table when available",
+                "Build or archive one portable FAR3D linear benchmark in the kinetic dataset schema",
+                "Add a CAS3D-K-style perturbative reference table in the same schema when available",
                 "Fit closure coefficients only on training cases and test on held-out cases",
             ),
         ),
@@ -128,8 +129,9 @@ def registered_research_grade_milestones() -> tuple[ResearchGradeMilestone, ...]
             status="in_progress",
             current_state=(
                 "Reduced gyro-Landau drive/damping API, sign gates, eigenfunction "
-                "projection, and differentiable synthetic calibration are implemented. "
-                "The closure is not calibrated to real kinetic-code growth rates."
+                "projection, differentiable synthetic calibration, and a held-out "
+                "kinetic growth-rate parity contract are implemented. The closure is "
+                "not calibrated to real kinetic-code growth rates."
             ),
             target_state=(
                 "FAX fast-ion model is calibrated, cross-validated, uncertainty-aware, "
@@ -154,8 +156,8 @@ def registered_research_grade_milestones() -> tuple[ResearchGradeMilestone, ...]
                 "replacement-domain documentation",
             ),
             next_steps=(
-                "Define the first FAR3D/CAS3D-K calibration data schema",
-                "Add train/test calibration workflow outputs",
+                "Populate the FAR3D/CAS3D-K calibration data schema with real archived outputs",
+                "Add train/test calibration workflow outputs from those real datasets",
                 "Add uncertainty bands around predicted growth rates",
             ),
         ),
