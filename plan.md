@@ -1991,6 +1991,8 @@ gradient parity check to a first refinement ladder:
   iteration,
 - added ``landreman_paul_vmec_boundary_surface_gradient_convergence`` for
   nested five-to-seven radial-surface drift,
+- added ``landreman_paul_vmec_boundary_multiparameter_gradient`` for the
+  first two selected VMEC boundary coefficients, ``rc01`` and ``zs01``,
 - added a physics test that compares Landreman-Paul QA VMEC iteration levels
   2 and 4, requiring AD/finite-difference agreement and small objective,
   gradient, and global-frequency drift,
@@ -2011,9 +2013,9 @@ Observed ladder metrics for the public figure:
 
 Scope: this closes the first VMEC-iteration gradient-convergence lane and
 makes the remaining gradient risk explicit. It also starts the
-Boozer/operator-resolution and radial-surface gradient-convergence lanes. The
-next lanes are multi-parameter boundary coefficients and alignment with the
-high-iteration VMEC2000/discrete-adjoint path.
+Boozer/operator-resolution, radial-surface, and first two-parameter
+gradient-convergence lanes. The next lanes are larger boundary-coefficient
+sets and alignment with the high-iteration VMEC2000/discrete-adjoint path.
 
 ### 2026-04-30 CI/CD Status Check
 

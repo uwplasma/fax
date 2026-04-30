@@ -954,6 +954,23 @@
       ]
     },
     {
+      "id": "landreman_paul_vmec_boundary_multiparameter_gradient",
+      "title": "Landreman-Paul QA VMEC-boundary multiparameter gradient",
+      "layer": "differentiability",
+      "quantity": "relative AD/finite-difference two-parameter gradient error",
+      "tolerance": 5e-05,
+      "citation": "Landreman & Paul, Phys. Rev. Lett. 128, 035001 (2022); two-boundary-coefficient gradient through vmec_jax, booz_xform_jax, and FAX",
+      "command": "python -m pytest -m requires_vmec_jax tests/test_vmec_boozer_design.py tests/test_validation_registry.py",
+      "tags": [
+        "vmec_jax",
+        "booz_xform_jax",
+        "landreman-paul",
+        "gradient",
+        "multiparameter",
+        "optimization"
+      ]
+    },
+    {
       "id": "landreman_paul_continuum_finite",
       "title": "Landreman-Paul QA continuum finite-output check",
       "layer": "adapter",

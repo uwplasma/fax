@@ -119,3 +119,39 @@ def test_landreman_paul_vmec_boundary_gradient_convergence_ladder_is_stable():
     assert result.max_frequency_delta_to_reference_hz < 20.0
     assert result.points[-1].frequency_delta_to_reference_hz == 0.0
     assert result.as_dict()["points"][0]["label"] == "vmec_iter2"
+
+
+@pytest.mark.requires_vmec_jax
+@pytest.mark.requires_booz_xform_jax
+def test_landreman_paul_vmec_boundary_two_parameter_gradient_matches_finite_difference():
+    pytest.importorskip("vmec_jax")
+    pytest.importorskip("booz_xform_jax")
+    input_path = Path("/Users/rogerio/local/vmec_jax/examples/data/input.LandremanPaul2021_QA_lowres")
+    if not input_path.exists():
+        pytest.skip(f"missing local Landreman-Paul VMEC input: {input_path}")
+
+    settings = VmecBoozerFaxDesignSettings(
+        input_path=input_path,
+        parameter_count=2,
+        surfaces=(0.25, 0.40, 0.55, 0.70),
+        mboz=3,
+        nboz=3,
+        theta_points=8,
+        zeta_points=8,
+        vmec_max_iter=4,
+    )
+    result = validate_vmec_boundary_alfven_gradient(
+        settings,
+        finite_difference_step=1.0e-4,
+        descent_step=1.0e-3,
+    )
+
+    assert result.parameter_names == ("rc01", "zs01")
+    assert result.relative_gradient_error < 5.0e-5
+    assert float(result.descent_objective) < float(result.objective)
+    np.testing.assert_allclose(
+        np.asarray(result.gradient),
+        np.asarray(result.finite_difference_gradient),
+        rtol=5.0e-5,
+        atol=1.0e-10,
+    )

@@ -221,7 +221,7 @@ The v0.0.1 gate currently covers:
 * Live `booz_xform_jax` generation from public W7-X/NCSX VMEC-equilibria
   `wout` files into FAX global radial 3-D Boozer diagnostics.
 
-Current headline local metrics are 241 passing tests, 95% coverage,
+Current headline local metrics are 242 passing tests, 95% coverage,
 STELLGAP CTOK p95 sorted-spectrum relative error about 2.55%, AE3D dense
 spectrum max relative error about 1.6e-6, and AE3D B-weighted mode-shape error
 about 5.2e-8 for the checked public modes; AE3D mode-peak closest-continuum
