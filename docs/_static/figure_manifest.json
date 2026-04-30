@@ -903,6 +903,23 @@
       ]
     },
     {
+      "id": "landreman_paul_vmec_boundary_gradient_convergence",
+      "title": "Landreman-Paul QA VMEC-boundary gradient convergence",
+      "layer": "differentiability",
+      "quantity": "maximum gradient parity and refinement drift",
+      "tolerance": 2e-05,
+      "citation": "Landreman & Paul, Phys. Rev. Lett. 128, 035001 (2022); VMEC iteration convergence of the end-to-end vmec_jax, booz_xform_jax, and FAX gradient",
+      "command": "python -m pytest -m requires_vmec_jax tests/test_vmec_boozer_design.py tests/test_validation_registry.py",
+      "tags": [
+        "vmec_jax",
+        "booz_xform_jax",
+        "landreman-paul",
+        "gradient",
+        "convergence",
+        "optimization"
+      ]
+    },
+    {
       "id": "landreman_paul_continuum_finite",
       "title": "Landreman-Paul QA continuum finite-output check",
       "layer": "adapter",
@@ -1245,6 +1262,24 @@
       "format": "json",
       "status": "validation",
       "claim": "Machine-readable metrics for the VMEC boundary-gradient validation figure."
+    },
+    {
+      "file": "vmec_boozer_gradient_convergence.svg",
+      "format": "svg",
+      "status": "validation",
+      "claim": "End-to-end VMEC boundary-gradient convergence ladder through vmec_jax, booz_xform_jax, and FAX; not yet a multi-geometry converged optimization campaign."
+    },
+    {
+      "file": "vmec_boozer_gradient_convergence.png",
+      "format": "png",
+      "status": "validation",
+      "claim": "End-to-end VMEC boundary-gradient convergence ladder through vmec_jax, booz_xform_jax, and FAX; not yet a multi-geometry converged optimization campaign."
+    },
+    {
+      "file": "vmec_boozer_gradient_convergence.json",
+      "format": "json",
+      "status": "validation",
+      "claim": "Machine-readable metrics for the VMEC boundary-gradient convergence ladder."
     }
   ]
 }

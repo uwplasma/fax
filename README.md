@@ -141,6 +141,8 @@ Check an end-to-end VMEC-boundary design gradient:
 ```bash
 python examples/research/vmec_boozer_alfven_design_gradient.py \
   --output-dir outputs/vmec_boozer_alfven_design_gradient
+python examples/research/vmec_boozer_gradient_convergence.py \
+  --output-dir outputs/vmec_boozer_gradient_convergence
 ```
 
 ![VMEC boundary Alfvén design gradient](docs/_static/vmec_boozer_alfven_design_gradient.png)
@@ -201,7 +203,8 @@ The v0.0.1 gate currently covers:
   crossings, finite-difference sensitivity checks, and linearized UQ examples,
 - Landreman-Paul QA VMEC boundary-coefficient gradients through
   `vmec_jax -> booz_xform_jax -> FAX`, checked against centered finite
-  differences and a one-step Alfvén-risk descent,
+  differences, a one-step Alfvén-risk descent, and a VMEC/Boozer refinement
+  ladder,
 - reduced fast-ion resonance signs, eigenfunction weighting, and calibrated
   gyro-Landau closure coefficient recovery,
 - STELLGAP CTOK local-continuum and largest-local-gap parity,
@@ -218,7 +221,7 @@ The v0.0.1 gate currently covers:
 * Live `booz_xform_jax` generation from public W7-X/NCSX VMEC-equilibria
   `wout` files into FAX global radial 3-D Boozer diagnostics.
 
-Current headline local metrics are 240 passing tests, 95% coverage,
+Current headline local metrics are 241 passing tests, 95% coverage,
 STELLGAP CTOK p95 sorted-spectrum relative error about 2.55%, AE3D dense
 spectrum max relative error about 1.6e-6, and AE3D B-weighted mode-shape error
 about 5.2e-8 for the checked public modes; AE3D mode-peak closest-continuum

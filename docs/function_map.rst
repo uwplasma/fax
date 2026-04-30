@@ -276,6 +276,10 @@ Optimization
    Compare the JAX gradient of the VMEC-boundary Alfvén risk objective against
    centered finite differences and perform one line-searched descent step.
 
+``run_vmec_boundary_alfven_gradient_convergence``
+   Repeat the VMEC-boundary gradient validation across a resolution ladder and
+   report frequency, objective, and gradient drift to the reference level.
+
 Validation, Figures, and Benchmarks
 -----------------------------------
 

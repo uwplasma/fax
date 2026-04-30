@@ -156,6 +156,20 @@ Fourier coefficients, and reduction of the smooth Alfvén risk objective.
    gate: JAX and centered finite-difference gradients agree for the selected
    boundary coefficient.
 
+The corresponding refinement ladder is:
+
+.. code-block:: bash
+
+   python examples/research/vmec_boozer_gradient_convergence.py
+
+.. figure:: _static/vmec_boozer_gradient_convergence.svg
+   :alt: VMEC boundary to Boozer to FAX gradient convergence ladder.
+
+   End-to-end gradient convergence on the same Landreman-Paul QA input. The
+   plot separates gradient correctness from refinement drift so a design study
+   can report both AD/finite-difference agreement and numerical stability
+   under VMEC-iteration and Boozer/angular refinement.
+
 Power-Plant Assessment
 ----------------------
 

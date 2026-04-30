@@ -240,6 +240,14 @@ Current Figures
    FAX global Alfvén risk objective, then checks the gradient with centered
    finite differences.
 
+.. figure:: _static/vmec_boozer_gradient_convergence.svg
+   :alt: VMEC boundary to Boozer to FAX gradient convergence ladder.
+
+   VMEC-boundary design-gradient convergence ladder. FAX repeats the
+   AD/finite-difference gradient gate at multiple VMEC/Boozer resolutions and
+   reports refinement drift against the highest-resolution entry in the
+   ladder.
+
 .. figure:: _static/benchmark_family_packet.svg
    :alt: FAX benchmark families with physics gates.
 

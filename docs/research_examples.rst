@@ -127,6 +127,16 @@ global radial Alfvén risk objective. The generated plot compares JAX and
 centered-finite-difference gradients and shows the effect of one line-searched
 boundary-shape descent step.
 
+Run the associated refinement ladder:
+
+.. code-block:: bash
+
+   python examples/research/vmec_boozer_gradient_convergence.py --output-dir outputs/vmec_boozer_gradient_convergence
+
+This repeats the same gradient validation over VMEC-iteration and
+Boozer/angular refinements, writes a JSON convergence packet, and plots both
+AD/finite-difference error and drift to the reference level.
+
 Basic BAE/TAE/EAE Gap Map
 -------------------------
 

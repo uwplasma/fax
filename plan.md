@@ -1973,3 +1973,39 @@ FAX. It uses ``vmec_jax.solve_fixed_boundary_from_boundary`` with
 over VMEC iteration count, boundary parameter set, Boozer truncation, radial
 surfaces, angular quadrature, and risk-window definitions, followed by
 alignment with the high-iteration VMEC2000/discrete-adjoint tape path.
+
+### 2026-04-30 VMEC Boundary Gradient Convergence Ladder
+
+Extended the end-to-end differentiable optimization lane from a single
+gradient parity check to a first refinement ladder:
+
+- added ``VmecBoozerFaxGradientConvergencePoint`` and
+  ``VmecBoozerFaxGradientConvergence`` result objects,
+- added ``run_vmec_boundary_alfven_gradient_convergence`` to repeat the
+  ``vmec_jax -> booz_xform_jax -> FAX`` gradient validation over a sequence of
+  VMEC/Boozer/angular resolutions,
+- added ``landreman_paul_vmec_boundary_gradient_convergence`` to the
+  validation registry,
+- added a physics test that compares Landreman-Paul QA VMEC iteration levels
+  2 and 4, requiring AD/finite-difference agreement and small objective,
+  gradient, and global-frequency drift,
+- added ``examples/research/vmec_boozer_gradient_convergence.py``,
+- generated ``docs/_static/vmec_boozer_gradient_convergence.{png,svg,json}``,
+- updated README, optimization docs, validation docs, figure docs, research
+  examples, function map, and the research-grade roadmap.
+
+Observed ladder metrics for the public figure:
+
+- levels: ``vmec_iter2``, ``vmec_iter4``, and
+  ``vmec_iter4_boozer4_grid10``,
+- maximum AD/centered-finite-difference relative gradient error
+  ``3.225e-8``,
+- maximum global-frequency drift to the highest-resolution entry
+  ``9.788e2`` Hz,
+- maximum absolute gradient drift to the reference ``1.422e-4``.
+
+Scope: this closes the first VMEC-iteration gradient-convergence lane and
+makes the remaining gradient risk explicit. The next lanes are Boozer
+truncation-only gradient convergence, radial-surface and angular-quadrature
+gradient ladders, multi-parameter boundary coefficients, and alignment with
+the high-iteration VMEC2000/discrete-adjoint path.

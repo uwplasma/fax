@@ -10,9 +10,9 @@ FAX global Alfvén objective``.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from pathlib import Path
-from typing import Any
+from typing import Any, Mapping, Sequence
 
 import jax
 import jax.numpy as jnp
@@ -84,6 +84,74 @@ class VmecBoozerFaxGradientValidation:
     descent_frequencies_hz: jax.Array
     descent_step_norm: float
     metadata: tuple[tuple[str, Any], ...]
+
+
+@dataclass(frozen=True)
+class VmecBoozerFaxGradientConvergencePoint:
+    """One level in a VMEC-boundary/Boozer/FAX gradient convergence ladder."""
+
+    label: str
+    parameter_names: tuple[str, ...]
+    vmec_max_iter: int
+    mboz: int
+    nboz: int
+    theta_points: int
+    zeta_points: int
+    surfaces: tuple[float, ...]
+    objective: float
+    descent_objective: float
+    relative_gradient_error: float
+    gradient: tuple[float, ...]
+    finite_difference_gradient: tuple[float, ...]
+    frequencies_hz: tuple[float, ...]
+    frequency_delta_to_reference_hz: float
+    objective_delta_to_reference: float
+    gradient_delta_to_reference: float
+
+    def as_dict(self) -> dict[str, Any]:
+        """Return a JSON-serializable representation."""
+        return {
+            "label": self.label,
+            "parameter_names": list(self.parameter_names),
+            "vmec_max_iter": self.vmec_max_iter,
+            "mboz": self.mboz,
+            "nboz": self.nboz,
+            "theta_points": self.theta_points,
+            "zeta_points": self.zeta_points,
+            "surfaces": list(self.surfaces),
+            "objective": self.objective,
+            "descent_objective": self.descent_objective,
+            "relative_gradient_error": self.relative_gradient_error,
+            "gradient": list(self.gradient),
+            "finite_difference_gradient": list(self.finite_difference_gradient),
+            "frequencies_hz": list(self.frequencies_hz),
+            "frequency_delta_to_reference_hz": self.frequency_delta_to_reference_hz,
+            "objective_delta_to_reference": self.objective_delta_to_reference,
+            "gradient_delta_to_reference": self.gradient_delta_to_reference,
+        }
+
+
+@dataclass(frozen=True)
+class VmecBoozerFaxGradientConvergence:
+    """Convergence summary for VMEC-boundary Alfvén objective gradients."""
+
+    points: tuple[VmecBoozerFaxGradientConvergencePoint, ...]
+    reference_label: str
+    max_relative_gradient_error: float
+    max_frequency_delta_to_reference_hz: float
+    max_objective_delta_to_reference: float
+    max_gradient_delta_to_reference: float
+
+    def as_dict(self) -> dict[str, Any]:
+        """Return a JSON-serializable convergence summary."""
+        return {
+            "reference_label": self.reference_label,
+            "max_relative_gradient_error": self.max_relative_gradient_error,
+            "max_frequency_delta_to_reference_hz": self.max_frequency_delta_to_reference_hz,
+            "max_objective_delta_to_reference": self.max_objective_delta_to_reference,
+            "max_gradient_delta_to_reference": self.max_gradient_delta_to_reference,
+            "points": [point.as_dict() for point in self.points],
+        }
 
 
 def prepare_vmec_boozer_fax_design_context(
@@ -340,6 +408,96 @@ def validate_vmec_boundary_alfven_gradient(
         descent_frequencies_hz=descent_frequencies,
         descent_step_norm=float(jnp.linalg.norm(descent_params - params)),
         metadata=metadata,
+    )
+
+
+def run_vmec_boundary_alfven_gradient_convergence(
+    base_settings: VmecBoozerFaxDesignSettings,
+    *,
+    levels: Sequence[tuple[str, Mapping[str, Any]]] | None = None,
+    parameters: Any | None = None,
+    finite_difference_step: float = 1.0e-4,
+    descent_step: float = 1.0e-3,
+) -> VmecBoozerFaxGradientConvergence:
+    """Run a resolution ladder for the end-to-end VMEC-boundary gradient.
+
+    Each ladder level validates the JAX gradient against centered finite
+    differences through the same in-memory chain used by
+    :func:`validate_vmec_boundary_alfven_gradient`. The last level is treated
+    as the numerical reference for frequency, objective, and gradient drift.
+    """
+    requested_levels: Sequence[tuple[str, Mapping[str, Any]]] = (
+        (
+            (
+                "vmec2_boozer3_grid8",
+                {"vmec_max_iter": 2, "mboz": 3, "nboz": 3, "theta_points": 8, "zeta_points": 8},
+            ),
+            (
+                "vmec4_boozer3_grid8",
+                {"vmec_max_iter": 4, "mboz": 3, "nboz": 3, "theta_points": 8, "zeta_points": 8},
+            ),
+            (
+                "vmec4_boozer4_grid10",
+                {"vmec_max_iter": 4, "mboz": 4, "nboz": 4, "theta_points": 10, "zeta_points": 10},
+            ),
+        )
+        if levels is None
+        else levels
+    )
+    if not requested_levels:
+        raise ValueError("at least one convergence level is required")
+
+    validations: list[tuple[str, VmecBoozerFaxDesignSettings, VmecBoozerFaxGradientValidation]] = []
+    for label, overrides in requested_levels:
+        settings = replace(base_settings, **dict(overrides))
+        result = validate_vmec_boundary_alfven_gradient(
+            settings,
+            parameters=parameters,
+            finite_difference_step=finite_difference_step,
+            descent_step=descent_step,
+        )
+        validations.append((str(label), settings, result))
+
+    reference_label, _, reference = validations[-1]
+    reference_frequencies = np.asarray(reference.initial_frequencies_hz, dtype=float)
+    reference_gradient = np.asarray(reference.gradient, dtype=float)
+    reference_objective = float(reference.objective)
+
+    points = []
+    for label, settings, result in validations:
+        frequencies = np.asarray(result.initial_frequencies_hz, dtype=float)
+        gradient = np.asarray(result.gradient, dtype=float)
+        points.append(
+            VmecBoozerFaxGradientConvergencePoint(
+                label=label,
+                parameter_names=result.parameter_names,
+                vmec_max_iter=int(settings.vmec_max_iter),
+                mboz=int(settings.mboz),
+                nboz=int(settings.nboz),
+                theta_points=int(settings.theta_points),
+                zeta_points=int(settings.zeta_points),
+                surfaces=tuple(float(surface) for surface in settings.surfaces),
+                objective=float(result.objective),
+                descent_objective=float(result.descent_objective),
+                relative_gradient_error=float(result.relative_gradient_error),
+                gradient=tuple(float(x) for x in gradient),
+                finite_difference_gradient=tuple(
+                    float(x) for x in np.asarray(result.finite_difference_gradient, dtype=float)
+                ),
+                frequencies_hz=tuple(float(x) for x in frequencies),
+                frequency_delta_to_reference_hz=float(np.linalg.norm(frequencies - reference_frequencies)),
+                objective_delta_to_reference=float(abs(float(result.objective) - reference_objective)),
+                gradient_delta_to_reference=float(np.linalg.norm(gradient - reference_gradient)),
+            )
+        )
+
+    return VmecBoozerFaxGradientConvergence(
+        points=tuple(points),
+        reference_label=reference_label,
+        max_relative_gradient_error=max(point.relative_gradient_error for point in points),
+        max_frequency_delta_to_reference_hz=max(point.frequency_delta_to_reference_hz for point in points),
+        max_objective_delta_to_reference=max(point.objective_delta_to_reference for point in points),
+        max_gradient_delta_to_reference=max(point.gradient_delta_to_reference for point in points),
     )
 
 

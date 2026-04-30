@@ -34,6 +34,7 @@ python examples/research/boozmn_3d_continuum.py
 python examples/research/boozmn_global_3d_eigenmodes.py
 python examples/research/boozmn_differentiable_design_study.py
 python examples/research/vmec_boozer_alfven_design_gradient.py
+python examples/research/vmec_boozer_gradient_convergence.py
 python examples/research/vmec_boozer_convergence.py
 python examples/research/vmec_equilibria_catalog.py
 python examples/research/vmec_equilibria_boozer_global.py
@@ -91,6 +92,17 @@ global Alfvén risk objective. It compares the JAX gradient with centered finite
 differences, then takes one line-searched boundary-shape step that lowers the
 smooth mode-in-window risk. Increase `--vmec-max-iter`, Boozer truncation, and
 surface count for production studies after the gradient gate passes.
+
+## VMEC Boundary Gradient Convergence
+
+```bash
+python examples/research/vmec_boozer_gradient_convergence.py --output-dir outputs/vmec_boozer_gradient_convergence
+```
+
+This repeats the VMEC-boundary Alfvén gradient check across VMEC-iteration and
+Boozer/angular refinement levels. It writes a JSON packet plus a figure showing
+mode-frequency drift, AD/finite-difference gradient error, and relative drift
+to the reference level.
 
 ## Basic Alfvén Gap Map
 

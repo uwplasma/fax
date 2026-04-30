@@ -192,6 +192,9 @@ tags, and command. The current gates are:
   ``vmec_jax -> booz_xform_jax -> FAX`` chain, checks the smooth global-mode
   risk-objective gradient against centered finite differences, and verifies
   that one line-searched shape step lowers the risk metric.
+* ``landreman_paul_vmec_boundary_gradient_convergence``: repeats that
+  end-to-end gradient check over a VMEC-iteration ladder and gates gradient,
+  objective, and global-frequency drift against the refined entry.
 * ``landreman_paul_continuum_finite``: checks that the Landreman-Paul profile
   and metric continuum branches are finite and have small eigensolve residuals.
 * ``landreman_paul_radial_sampling_convergence``: checks VMEC-backed radial
@@ -269,7 +272,11 @@ design-variable differentiability gate on this same reference family. It uses
 the differentiable fixed-boundary VMEC path and must be followed by
 VMEC-iteration, Boozer-truncation, surface-count, and finite-difference
 convergence ladders before using a boundary-gradient result as a final
-reactor-design recommendation.
+reactor-design recommendation. The
+``landreman_paul_vmec_boundary_gradient_convergence`` gate now implements the
+first such ladder for VMEC iteration count; Boozer truncation, surface count,
+angular quadrature, and multi-parameter gradient ladders remain the next
+closure items.
 
 Current Validation Figures
 --------------------------
@@ -419,3 +426,11 @@ operator.
    Live Landreman-Paul Boozer local-operator angular convergence check.
    The Boozer geometry is fixed while angular quadrature is refined, checking
    local continuum frequency stability and matrix Hermiticity.
+
+.. figure:: _static/vmec_boozer_gradient_convergence.svg
+   :alt: VMEC boundary to Boozer to FAX gradient convergence ladder.
+
+   VMEC-boundary design-gradient convergence ladder. Each level repeats the
+   AD/finite-difference gradient check through ``vmec_jax``,
+   ``booz_xform_jax``, and the FAX global Alfvén objective, then compares
+   frequency, objective, and gradient drift with the reference level.
