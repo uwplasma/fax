@@ -1989,6 +1989,8 @@ gradient parity check to a first refinement ladder:
 - added ``landreman_paul_vmec_boundary_boozer_gradient_convergence`` as a
   second gate for Boozer truncation and angular-grid drift at fixed VMEC
   iteration,
+- added ``landreman_paul_vmec_boundary_surface_gradient_convergence`` for
+  nested five-to-seven radial-surface drift,
 - added a physics test that compares Landreman-Paul QA VMEC iteration levels
   2 and 4, requiring AD/finite-difference agreement and small objective,
   gradient, and global-frequency drift,
@@ -2009,6 +2011,24 @@ Observed ladder metrics for the public figure:
 
 Scope: this closes the first VMEC-iteration gradient-convergence lane and
 makes the remaining gradient risk explicit. It also starts the
-Boozer/operator-resolution gradient-convergence lane. The next lanes are
-radial-surface gradient ladders, multi-parameter boundary coefficients, and
-alignment with the high-iteration VMEC2000/discrete-adjoint path.
+Boozer/operator-resolution and radial-surface gradient-convergence lanes. The
+next lanes are multi-parameter boundary coefficients and alignment with the
+high-iteration VMEC2000/discrete-adjoint path.
+
+### 2026-04-30 CI/CD Status Check
+
+Checked GitHub Actions after the latest pushes:
+
+- latest ``Tests`` and ``Docs`` workflows on ``main`` failed before any steps
+  ran,
+- ``gh run view --log-failed`` returned no logs because the jobs never reached
+  a runner,
+- check-run annotations for Python 3.10/3.11/3.12/3.13 and docs all report:
+  "The job was not started because recent account payments have failed or your
+  spending limit needs to be increased. Please check the 'Billing & plans'
+  section in your settings",
+- this is an account billing/spending-limit blocker, not a FAX code failure.
+
+Local substitute verification continues to be the release gate while Actions
+are unavailable: full pytest with coverage, ruff, mypy, Sphinx ``-W``, figure
+QA, and targeted optional VMEC/Boozer gates.

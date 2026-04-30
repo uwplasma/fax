@@ -937,6 +937,23 @@
       ]
     },
     {
+      "id": "landreman_paul_vmec_boundary_surface_gradient_convergence",
+      "title": "Landreman-Paul QA VMEC-boundary surface gradient convergence",
+      "layer": "differentiability",
+      "quantity": "maximum relative radial-surface refinement drift",
+      "tolerance": 0.04,
+      "citation": "Landreman & Paul, Phys. Rev. Lett. 128, 035001 (2022); radial-surface convergence of the end-to-end vmec_jax, booz_xform_jax, and FAX gradient",
+      "command": "python -m pytest -m requires_vmec_jax tests/test_validation_registry.py",
+      "tags": [
+        "vmec_jax",
+        "booz_xform_jax",
+        "landreman-paul",
+        "gradient",
+        "convergence",
+        "radial"
+      ]
+    },
+    {
       "id": "landreman_paul_continuum_finite",
       "title": "Landreman-Paul QA continuum finite-output check",
       "layer": "adapter",
