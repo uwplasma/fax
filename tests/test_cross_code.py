@@ -16,9 +16,11 @@ from fax.cross_code import (
     read_ae3d_sparse_matrix,
     read_stellgap_alfven_spec,
     read_stellgap_alfven_post,
+    run_stellgap_ctok_executable,
     stellgap_postprocess_error,
     stellgap_spec_postprocessed_continuum,
     stellgap_ctok_local_continuum_error,
+    stellgap_ctok_gap_parity,
 )
 from fax.units import PROTON_MASS
 
@@ -115,6 +117,17 @@ def test_stellgap_ctok_local_continuum_comparison_passes_or_skips():
     assert comparison.count >= 90
     assert comparison.p95_relative_error < 4.0e-2
 
+    gap_parity = stellgap_ctok_gap_parity(
+        boozmn_path=boozmn,
+        alfven_post_path=alfven_post,
+        mass_density=2.0 * PROTON_MASS * 1.0e19,
+        theta_points=32,
+        zeta_points=32,
+    )
+    assert gap_parity.count >= 90
+    assert gap_parity.p95_largest_gap_center_relative_error < 4.0e-2
+    assert gap_parity.p95_largest_gap_width_relative_error < 6.0e-2
+
 
 def test_stellgap_and_ae3d_public_artifact_consistency_passes_or_skips():
     stellgap_spec = Path("/Users/rogerio/local/Stellgap_test_problem/alfven_spec")
@@ -186,3 +199,20 @@ def test_ae3d_public_dense_spectrum_parity_passes_or_skips():
     assert parity.real_eigenvalue_count >= 1200
     assert parity.max_eigenvalue_relative_error < 2.0e-6
     assert parity.max_frequency_relative_error < 1.0e-6
+
+
+def test_stellgap_executable_runner_reports_clean_status(tmp_path: Path):
+    executable = tmp_path / "xstgap"
+    executable.write_text("#!/bin/sh\necho run-ok\nprintf '0.1 1.0 0 0\\n' > alfven_spec\n", encoding="utf-8")
+    executable.chmod(0o755)
+    input_dir = tmp_path / "inputs"
+    input_dir.mkdir()
+    for name in ("fourier.dat", "plasma.dat", "tae_data_boozer"):
+        (input_dir / name).write_text("0\n", encoding="utf-8")
+
+    result = run_stellgap_ctok_executable(executable=executable, input_dir=input_dir, timeout_seconds=5.0)
+
+    assert result.status == "completed"
+    assert result.returncode == 0
+    assert result.elapsed_seconds >= 0.0
+    assert "alfven_spec" in result.output_files

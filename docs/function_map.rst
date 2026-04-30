@@ -155,14 +155,25 @@ Fast-Ion Screens
 ``FastIonPopulation``
    Radial profiles for reduced fast-ion resonance diagnostics.
 
+``GyroLandauClosure``
+   Calibrated reduced gyro-Landau closure coefficients for resonant,
+   dispersive, diamagnetic, and thermal-Landau damping terms.
+
 ``resonance_mismatch_hz``
    Compute ``f_mode - n f_phi - l f_theta``.
 
 ``reduced_fast_ion_drive``
    Pressure-gradient-weighted Lorentzian drive indicator.
 
+``gyro_landau_closure_drive``
+   Reduced FAR3D/CAS3D-K-facing drive density with documented sign convention.
+
 ``eigenfunction_fast_ion_drive``
    Project reduced drive onto global eigenfunction intensity.
+
+``gyro_landau_eigenfunction_drive``
+   Project the reduced gyro-Landau closure onto global eigenfunction
+   intensity and report net growth after damping offsets.
 
 Optimization
 ------------
@@ -222,6 +233,13 @@ Validation, Figures, and Benchmarks
 
 ``run_named_benchmark_family``
    Run a named benchmark family and return structured runtime data.
+
+``stellgap_ctok_gap_parity``
+   Compare FAX and public STELLGAP CTOK largest local gap center/width metrics.
+
+``run_stellgap_ctok_executable``
+   Attempt a bounded local STELLGAP CTOK executable run and record status,
+   output files, return code, and stdout/stderr tails.
 
 Preferred Import Pattern
 ------------------------

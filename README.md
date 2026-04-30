@@ -38,9 +38,11 @@ linearized uncertainty, inverse-design, isolated-mode custom-JVP gradients,
 degenerate-cluster mean gradients, cluster-mean optimization objectives, and
 reduced fast-ion risk screens for the current radial model. The first public
 STELLGAP CTOK local-continuum parity gate and AE3D public sparse-matrix/eigenmode
-parity gate are implemented.
-Broader FAX reduced-operator parity against AE3D/CAS3D/FAR3D and perturbative
-kinetic fast-ion growth-rate models are still planned work.
+parity gate are implemented, and the CTOK gate now checks largest local-gap
+centers and widths in addition to branch frequencies. A reduced FAR3D-style
+gyro-Landau fast-ion closure API is in place for calibrated drive/damping
+studies. Broader FAX reduced-operator parity against AE3D/CAS3D/FAR3D and
+fully calibrated kinetic growth-rate models are still planned work.
 
 ![FAX input/operator/output workflow](docs/_static/workflow_io_diagram.png)
 
@@ -128,6 +130,26 @@ resonance windows using
 
 ```math
 f_{\rm mode} - n f_\phi - \ell f_\theta = 0.
+```
+
+The reduced gyro-Landau closure keeps that resonance coordinate but adds
+calibrated resonant, dispersive, diamagnetic, and thermal-Landau damping
+coefficients:
+
+```math
+x = \frac{f_{\rm mode} - n f_\phi - \ell f_\theta}{\Delta f},
+\qquad
+D_{\rm GL} =
+-\alpha_f \frac{\partial p_f}{\partial s}
+\left(1+\frac{f_*}{\max(|f_{\rm mode}|,\Delta f)}\right)
+\left[\frac{C_0}{1+x^2}+\frac{C_1x}{1+x^2}\right].
+```
+
+Projected onto a global eigenfunction, the current diagnostic is
+
+```math
+\Gamma_k = S_f\langle D_{\rm GL}\rangle_{|\xi_k|^2}
+-\gamma_{\rm damp}-\gamma_L.
 ```
 
 These equations are the current tested scaffold. They are anchored in the
@@ -246,7 +268,9 @@ remains a separate publication gate.
 This figure is the first quantitative external-code gate: FAX reads the public
 ORNL STELLGAP CTOK `boozmn` fixture, computes local 3-D Boozer continuum
 branches, and compares them with STELLGAP `alfven_post` output. The p95
-relative spectrum error is about 2.55% over 97 matched surfaces.
+relative spectrum error is about 2.55% over 97 matched surfaces. The matching
+validation gate also compares the largest adjacent-branch local gap on each
+surface, with p95 center and width errors below the current 6% gate.
 
 ![External code artifact dashboard](docs/_static/external_code_artifact_dashboard.png)
 
@@ -346,7 +370,9 @@ workflow, the analytic density-scaling continuum kernel, the dense global radial
 block eigensolve, the JAX matrix-free radial-block apply/Rayleigh gate, and the
 sparse Krylov global radial eigensolve against exact discrete spectra.
 External-code benchmark families are available from the CLI when their public
-artifacts are present.
+artifacts are present. The `stellgap-executable` family records a bounded
+local `xstgap` runtime attempt and reports `failed`, `timeout`, or `skipped`
+instead of silently treating an unreliable external run as a FAX speed result.
 
 ![Registered validation gates](docs/_static/validation_gate_summary.png)
 
@@ -433,8 +459,9 @@ truncation, then writes a CSV/Markdown/JSON convergence report.
 convergence dashboards. `fax benchmark` records cold runtime, warm runtime, and
 artifact size for local performance tracking. Repeated `--family` options add
 physics-tied benchmark packets such as `analytic-local`, `global-block`,
-`global-matrix-free`, `global-krylov`, `stellgap-ctok`, `ae3d-artifact`, and `vmec-boozer`; speed
-numbers are reported beside the relevant physics metric and tolerance.
+`global-matrix-free`, `global-krylov`, `stellgap-ctok`,
+`stellgap-executable`, `ae3d-artifact`, and `vmec-boozer`; speed numbers are
+reported beside the relevant physics metric and tolerance.
 
 For machine-readable output:
 
@@ -563,9 +590,11 @@ density scaling, isolated-eigenvalue adjoint sensitivities, custom-JVP
 eigenvalue gradients, real-Boozer isolated-mode and cluster-mean design-gradient
 finite-difference checks, degenerate-cluster mean gradient checks,
 metric-derived Boozer radial stiffness,
-eigenfunction-weighted fast-ion drive, file-backed and in-memory
-`booz_xform_jax` adapter parity, real-`boozmn` residual checks, and the first
-public STELLGAP CTOK continuum comparison. The AE3D public answer table is
+eigenfunction-weighted fast-ion drive, gyro-Landau reduced closure sign gates,
+real-Boozer angular/radial/boundary/stiffness convergence gates, file-backed
+and in-memory `booz_xform_jax` adapter parity, real-`boozmn` residual checks,
+and the first public STELLGAP CTOK branch and largest-local-gap comparisons.
+The AE3D public answer table is
 parsed as an
 artifact/residual smoke gate, but not yet as a FAX eigenmode parity claim.
 These are acceptance gates for the current operators, not yet full
@@ -622,11 +651,15 @@ It currently establishes:
   gates, isolated generalized-eigenvalue adjoint/custom-JVP sensitivity checks,
   real-Boozer isolated-mode custom-JVP design-gradient checks, degenerate
   cluster-mean gradient checks for mode crossings,
-  eigenfunction-weighted fast-ion drive diagnostics, and differentiable Boozer
+  eigenfunction-weighted fast-ion drive diagnostics, reduced gyro-Landau
+  fast-ion closure diagnostics, and differentiable Boozer
   global-mode avoidance and cluster-mean objectives with builder-based APIs for future
   `vmec_jax`/`booz_xform_jax` end-to-end pipelines,
-- a public STELLGAP CTOK local-continuum comparison gate and figure, plus AE3D
-  public matrix/eigenmode and independent dense-spectrum parity gates,
+- public STELLGAP CTOK local-continuum and largest-local-gap comparison gates
+  and figures, plus AE3D public matrix/eigenmode and independent dense-spectrum
+  parity gates,
+- an external executable benchmark family that records bounded STELLGAP runtime
+  status without converting failed or missing runs into speed claims,
 - generated smoke-test figures for docs and README,
 - a reduced radial global eigenmode operator, analytic gap estimates, reduced
   fast-ion resonance screens, and differentiable design objective,

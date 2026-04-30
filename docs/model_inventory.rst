@@ -141,7 +141,10 @@ Analytic gap markers
 Reduced fast-ion drive
    ``fax.fast_ions`` implements a transit/precession resonance mismatch,
    Lorentzian overlap, pressure-gradient sign convention, and eigenfunction
-   weighting. It is a differentiable screening model, not a kinetic growth-rate
+   weighting. ``GyroLandauClosure`` adds calibrated resonant, dispersive,
+   diamagnetic, and thermal-Landau damping coefficients so FAR3D/CAS3D-K
+   parity can fit coefficients without changing FAX sign conventions. This is
+   still a differentiable reduced closure, not a kinetic growth-rate
    replacement for FAR3D or CAS3D-K.
 
 Optimization and UQ
@@ -169,8 +172,16 @@ Cross-Code Comparisons
 
 Implemented artifact gates
    STELLGAP CTOK local-continuum comparison, STELLGAP post-processing parity,
-   AE3D public matrix symmetry, AE3D matrix/eigenmode residuals, AE3D omega2
-   convention parity, and independent dense-spectrum parity.
+   STELLGAP CTOK largest local-gap center/width comparison, AE3D public matrix
+   symmetry, AE3D matrix/eigenmode residuals, AE3D omega2 convention parity,
+   and independent dense-spectrum parity.
+
+External executable status capture
+   ``run_stellgap_ctok_executable`` copies the public CTOK STELLGAP inputs to a
+   temporary run directory, executes a bounded local ``xstgap`` attempt, and
+   records stdout/stderr tails, elapsed time, return code, and output-file
+   status. It reports failed, skipped, or timed-out runs as benchmark metadata,
+   not as FAX runtime parity.
 
 Still planned
    Broader STELLGAP geometries, FAX-vs-AE3D global radial mode comparisons,

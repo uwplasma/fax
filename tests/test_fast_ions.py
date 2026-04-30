@@ -6,7 +6,10 @@ import numpy as np
 
 from fax.fast_ions import (
     FastIonPopulation,
+    GyroLandauClosure,
     eigenfunction_fast_ion_drive,
+    gyro_landau_closure_drive,
+    gyro_landau_eigenfunction_drive,
     lorentzian_resonance_weight,
     reduced_fast_ion_drive,
     resonance_mismatch_hz,
@@ -113,3 +116,71 @@ def test_eigenfunction_fast_ion_drive_tracks_mode_localization_and_gradients():
     assert float(result.drive_indicator[0]) > 3.0 * float(result.drive_indicator[1])
     assert float(result.net_growth_rate_hz[0]) > float(result.net_growth_rate_hz[1])
     assert float(jax.grad(center_drive)(0.03)) > 0.0
+
+
+def test_gyro_landau_closure_has_resonant_signs_and_damping_offset():
+    s = jnp.linspace(0.0, 1.0, 64)
+    structures = jnp.ones((2, s.shape[0], 1))
+    population = FastIonPopulation(
+        density_fraction=0.02,
+        pressure_gradient=-jnp.ones_like(s),
+        transit_frequency_hz=jnp.full_like(s, 40_000.0),
+        precession_frequency_hz=jnp.full_like(s, 5_000.0),
+        resonance_width_hz=jnp.full_like(s, 2_000.0),
+    )
+    closure = GyroLandauClosure(
+        resonant_coefficient=1.5,
+        dispersive_coefficient=0.2,
+        diamagnetic_frequency_hz=1_000.0,
+        thermal_landau_damping_hz=3.0,
+    )
+    resonant_frequency = 45_000.0
+    off_resonant_frequency = resonant_frequency + 12.0 * 2_000.0
+
+    resonant_drive = gyro_landau_closure_drive(
+        resonant_frequency,
+        toroidal_mode=1,
+        transit_harmonic=1,
+        population=population,
+        closure=closure,
+    )
+    off_resonant_drive = gyro_landau_closure_drive(
+        off_resonant_frequency,
+        toroidal_mode=1,
+        transit_harmonic=1,
+        population=population,
+        closure=closure,
+    )
+    result = gyro_landau_eigenfunction_drive(
+        jnp.asarray([resonant_frequency, off_resonant_frequency]),
+        structures,
+        s,
+        toroidal_mode=1,
+        transit_harmonics=(1,),
+        population=population,
+        closure=closure,
+        drive_scale_hz=100.0,
+        damping_rate_hz=2.0,
+    )
+
+    assert float(jnp.mean(resonant_drive)) > float(jnp.mean(off_resonant_drive)) > 0.0
+    np.testing.assert_allclose(np.asarray(result.damping_rate_hz), np.asarray([5.0, 5.0]), rtol=1.0e-12)
+    assert float(result.net_growth_rate_hz[0]) > float(result.net_growth_rate_hz[1])
+    gradient = jax.grad(
+        lambda density: jnp.mean(
+            gyro_landau_closure_drive(
+                resonant_frequency,
+                toroidal_mode=1,
+                transit_harmonic=1,
+                population=FastIonPopulation(
+                    density_fraction=density,
+                    pressure_gradient=-jnp.ones_like(s),
+                    transit_frequency_hz=jnp.full_like(s, 40_000.0),
+                    precession_frequency_hz=jnp.full_like(s, 5_000.0),
+                    resonance_width_hz=jnp.full_like(s, 2_000.0),
+                ),
+                closure=closure,
+            )
+        )
+    )(0.02)
+    assert float(gradient) > 0.0

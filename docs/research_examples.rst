@@ -265,7 +265,8 @@ This reads the public CTOK ``boozmn_ctok.nc`` and STELLGAP ``alfven_post``
 output, recomputes the local 3-D Boozer continuum branches in FAX, writes an
 overlay/error figure, and prints JSON metrics. On the current local fixture the
 p95 sorted-spectrum error is about 2.55 percent over 97 matched radial
-surfaces.
+surfaces. The registered validation suite also compares the largest
+adjacent-branch local gap center and width on matched surfaces.
 
 External-Code Artifact Dashboard
 --------------------------------
@@ -307,8 +308,8 @@ Alfvén-eigenmode studies:
 * global radial eigenfrequencies, eigenfunctions, and residuals,
 * fast-ion resonance drive/damping and eigenfunction overlap,
 * autodiff sensitivity checks,
-* STELLGAP CTOK local-continuum parity with a gap-anchored FAX global-mode
-  screen, and
+* STELLGAP CTOK local-continuum and local-gap parity with a gap-anchored FAX
+  global-mode screen, and
 * AE3D public sparse-matrix/eigenmode residual parity.
 
 Generate selected figures with repeated ``--case`` flags, for example:

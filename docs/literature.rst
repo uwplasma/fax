@@ -129,6 +129,9 @@ Current quantitative external-code status:
 * FAX local 3-D Boozer continuum branches match the public ORNL STELLGAP CTOK
   ``alfven_post`` answer with p95 sorted-spectrum relative error about
   ``2.55e-2`` over 97 matched radial surfaces.
+* FAX compares the same CTOK surfaces through largest adjacent-branch local gap
+  centers and widths; the current p95 gap metric is below the registered
+  ``6.0e-2`` gate.
 * FAX reproduces STELLGAP ``alfven_spec`` to ``alfven_post`` post-processing
   with max relative error about ``4.9e-7`` over 3848 public CTOK rows.
 * FAX reproduces AE3D ``omega2.dat`` to ``egn_values.dat`` eigenvalue

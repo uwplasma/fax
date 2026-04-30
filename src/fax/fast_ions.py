@@ -70,6 +70,56 @@ class FastIonModeDriveResult:
     mode_weights: jax.Array
 
 
+@jax.tree_util.register_pytree_node_class
+@dataclass(frozen=True)
+class GyroLandauClosure:
+    """Reduced FAR3D-style gyro-Landau closure coefficients.
+
+    FAR3D evolves energetic-particle density and parallel-momentum moments and
+    introduces wave-particle resonance physics through Landau-closure terms.
+    FAX keeps this as a calibrated perturbative closure around fixed
+    eigenfunctions: the Lorentzian part is the resonant drive/damping channel,
+    the dispersive part changes sign across the resonance, and
+    ``thermal_landau_damping_hz`` is a transparent damping offset.
+
+    This is still a reduced closure, not a full CAS3D-K/FAR3D replacement, but
+    it exposes the coefficients that must be calibrated in future parity runs.
+    """
+
+    resonant_coefficient: Any = 1.0
+    dispersive_coefficient: Any = 0.0
+    diamagnetic_frequency_hz: Any = 0.0
+    thermal_landau_damping_hz: Any = 0.0
+
+    def __post_init__(self) -> None:
+        for name in (
+            "resonant_coefficient",
+            "dispersive_coefficient",
+            "diamagnetic_frequency_hz",
+            "thermal_landau_damping_hz",
+        ):
+            object.__setattr__(self, name, jnp.asarray(getattr(self, name)))
+
+    def tree_flatten(self):
+        children = (
+            self.resonant_coefficient,
+            self.dispersive_coefficient,
+            self.diamagnetic_frequency_hz,
+            self.thermal_landau_damping_hz,
+        )
+        return children, None
+
+    @classmethod
+    def tree_unflatten(cls, aux: None, children: tuple[Any, ...]) -> "GyroLandauClosure":
+        resonant, dispersive, diamagnetic, damping = children
+        return cls(
+            resonant_coefficient=resonant,
+            dispersive_coefficient=dispersive,
+            diamagnetic_frequency_hz=diamagnetic,
+            thermal_landau_damping_hz=damping,
+        )
+
+
 def resonance_mismatch_hz(
     mode_frequency_hz: Any,
     *,
@@ -114,6 +164,38 @@ def reduced_fast_ion_drive(
     return -population.density_fraction * population.pressure_gradient * resonance
 
 
+def gyro_landau_closure_drive(
+    mode_frequency_hz: Any,
+    *,
+    toroidal_mode: int,
+    transit_harmonic: int,
+    population: FastIonPopulation,
+    closure: GyroLandauClosure,
+) -> jax.Array:
+    """Return a calibrated gyro-Landau energetic-particle drive density.
+
+    The resonant term is even in the frequency mismatch and peaks at the
+    transit/precession resonance. The dispersive term is odd in the mismatch
+    and represents the non-reactive branch shift retained by two-moment
+    Landau closures. The diamagnetic factor keeps the pressure-gradient drive
+    tied to an externally calibrated drift/diamagnetic frequency scale.
+    """
+    mismatch = resonance_mismatch_hz(
+        mode_frequency_hz,
+        toroidal_mode=toroidal_mode,
+        transit_harmonic=transit_harmonic,
+        population=population,
+    )
+    width = jnp.maximum(population.resonance_width_hz, 1.0e-30)
+    normalized_mismatch = mismatch / width
+    denominator = 1.0 + normalized_mismatch**2
+    resonant = closure.resonant_coefficient / denominator
+    dispersive = closure.dispersive_coefficient * normalized_mismatch / denominator
+    frequency_scale = jnp.maximum(jnp.abs(jnp.asarray(mode_frequency_hz)), width)
+    diamagnetic_factor = 1.0 + closure.diamagnetic_frequency_hz / frequency_scale
+    return -population.density_fraction * population.pressure_gradient * diamagnetic_factor * (resonant + dispersive)
+
+
 def resonance_scan(
     mode_frequency_hz: Any,
     *,
@@ -132,6 +214,72 @@ def resonance_scan(
             )
             for harmonic in transit_harmonics
         ]
+    )
+
+
+def gyro_landau_eigenfunction_drive(
+    frequencies_hz: Any,
+    mode_structures: Any,
+    s: Any,
+    *,
+    toroidal_mode: int,
+    transit_harmonics: tuple[int, ...],
+    population: FastIonPopulation,
+    closure: GyroLandauClosure,
+    drive_scale_hz: Any = 1.0,
+    damping_rate_hz: Any = 0.0,
+) -> FastIonModeDriveResult:
+    """Project the reduced gyro-Landau closure onto global eigenfunctions.
+
+    The output has the same contract as :func:`eigenfunction_fast_ion_drive`,
+    but the drive density includes calibrated resonant, dispersive,
+    diamagnetic, and thermal-Landau damping terms. This is the first
+    FAR3D/CAS3D-K-facing closure API: future executable parity should fit the
+    closure coefficients rather than changing the sign convention silently.
+    """
+    frequencies = jnp.asarray(frequencies_hz)
+    structures = jnp.asarray(mode_structures)
+    radial_grid = jnp.asarray(s)
+    mode_weights = jnp.sum(jnp.abs(structures) ** 2, axis=-1)
+    norm = jnp.maximum(_trapz(mode_weights, radial_grid), 1.0e-30)
+
+    drive_rows = []
+    overlap_rows = []
+    for frequency in frequencies:
+        harmonic_drive = []
+        harmonic_overlap = []
+        for harmonic in transit_harmonics:
+            mismatch = resonance_mismatch_hz(
+                frequency,
+                toroidal_mode=toroidal_mode,
+                transit_harmonic=harmonic,
+                population=population,
+            )
+            harmonic_overlap.append(lorentzian_resonance_weight(mismatch, population.resonance_width_hz))
+            harmonic_drive.append(
+                gyro_landau_closure_drive(
+                    frequency,
+                    toroidal_mode=toroidal_mode,
+                    transit_harmonic=harmonic,
+                    population=population,
+                    closure=closure,
+                )
+            )
+        drive_rows.append(jnp.sum(jnp.stack(harmonic_drive), axis=0))
+        overlap_rows.append(jnp.max(jnp.stack(harmonic_overlap), axis=0))
+
+    drive_density = jnp.stack(drive_rows)
+    overlap_density = jnp.stack(overlap_rows)
+    weighted_drive = _trapz(mode_weights * drive_density, radial_grid) / norm
+    weighted_overlap = _trapz(mode_weights * overlap_density, radial_grid) / norm
+    damping = jnp.broadcast_to(jnp.asarray(damping_rate_hz) + closure.thermal_landau_damping_hz, weighted_drive.shape)
+    net_growth = jnp.asarray(drive_scale_hz) * weighted_drive - damping
+    return FastIonModeDriveResult(
+        drive_indicator=weighted_drive,
+        damping_rate_hz=damping,
+        net_growth_rate_hz=net_growth,
+        resonance_overlap=weighted_overlap,
+        mode_weights=mode_weights,
     )
 
 

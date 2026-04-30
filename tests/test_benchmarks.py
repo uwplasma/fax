@@ -45,6 +45,7 @@ def test_time_callable_blocks_nested_jax_like_results():
 
 def test_named_benchmark_family_runs_physics_gate():
     assert "analytic-local" in known_benchmark_families()
+    assert "stellgap-executable" in known_benchmark_families()
 
     result = run_named_benchmark_family("analytic-local", warmups=0, repeats=1)
 

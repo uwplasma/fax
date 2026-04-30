@@ -10,6 +10,10 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
+import shutil
+import subprocess
+import tempfile
+import time
 from typing import Any
 
 import jax
@@ -128,6 +132,32 @@ class Ae3dDenseSpectrumParity:
     p95_eigenvalue_relative_error: float
     max_frequency_relative_error: float
     p95_frequency_relative_error: float
+
+
+@dataclass(frozen=True)
+class StellgapGapParity:
+    """Gap-center/width parity against STELLGAP continuum branches."""
+
+    count: int
+    p95_largest_gap_center_relative_error: float
+    p95_largest_gap_width_relative_error: float
+    max_largest_gap_center_relative_error: float
+    max_largest_gap_width_relative_error: float
+    mean_largest_gap_center_relative_error: float
+    mean_largest_gap_width_relative_error: float
+
+
+@dataclass(frozen=True)
+class ExternalExecutableRun:
+    """Short external-code execution attempt for runtime comparability."""
+
+    executable: str
+    status: str
+    returncode: int | None
+    elapsed_seconds: float
+    stdout_tail: str
+    stderr_tail: str
+    output_files: tuple[str, ...]
 
 
 @dataclass(frozen=True)
@@ -481,6 +511,149 @@ def ae3d_dense_spectrum_parity(
         max_frequency_relative_error=float(np.max(frequency_error)),
         p95_frequency_relative_error=float(np.percentile(frequency_error, 95.0)),
     )
+
+
+def stellgap_ctok_gap_parity(
+    *,
+    boozmn_path: str | Path,
+    alfven_post_path: str | Path,
+    mass_density: Any,
+    toroidal_mode: int = 2,
+    poloidal_modes: tuple[int, ...] = tuple(range(13)),
+    theta_points: int = 32,
+    zeta_points: int = 32,
+    nearest_surface_tolerance: float = 2.0e-3,
+) -> StellgapGapParity:
+    """Compare FAX and STELLGAP largest local gap centers and widths.
+
+    This is a physics comparison above artifact parsing: both codes provide a
+    local continuum spectrum on matched surfaces, then FAX compares the largest
+    adjacent-branch gap center and width on each surface. It does not validate
+    a global eigenmode operator, but it directly checks gap quantities used in
+    stellarator AE studies.
+    """
+    geometry = read_boozmn_geometry(boozmn_path)
+    reference = read_stellgap_alfven_post(alfven_post_path)
+    harmonics = jnp.asarray([[float(m), float(toroidal_mode)] for m in poloidal_modes])
+    fax_khz = (
+        boozer_3d_continuum_frequencies_hz(
+            geometry,
+            harmonics,
+            mass_density=mass_density,
+            theta_points=theta_points,
+            zeta_points=zeta_points,
+        )
+        / 1.0e3
+    )
+    reference_s = np.asarray(reference.s)
+    reference_frequency = np.asarray(reference.frequency_khz)
+    unique_s = np.unique(reference_s)
+    center_errors: list[float] = []
+    width_errors: list[float] = []
+    for surface_index, surface in enumerate(np.asarray(geometry.s)):
+        nearest_index = int(np.argmin(np.abs(unique_s - surface)))
+        if abs(float(unique_s[nearest_index] - surface)) > float(nearest_surface_tolerance):
+            continue
+        surface_mask = reference_s == unique_s[nearest_index]
+        reference_branch = np.sort(reference_frequency[surface_mask])
+        if reference_branch.shape[0] != len(poloidal_modes):
+            continue
+        fax_branch = np.sort(np.asarray(fax_khz[surface_index]))
+        reference_gaps = np.diff(reference_branch)
+        fax_gaps = np.diff(fax_branch)
+        gap_index = int(np.argmax(reference_gaps))
+        reference_center = 0.5 * (reference_branch[gap_index] + reference_branch[gap_index + 1])
+        fax_center = 0.5 * (fax_branch[gap_index] + fax_branch[gap_index + 1])
+        center_errors.append(abs(float(fax_center - reference_center)) / max(abs(float(reference_center)), 1.0e-30))
+        width_errors.append(
+            abs(float(fax_gaps[gap_index] - reference_gaps[gap_index]))
+            / max(abs(float(reference_gaps[gap_index])), 1.0e-30)
+        )
+    if not center_errors:
+        raise ValueError("no matching STELLGAP/FAX gap surfaces found")
+    center_array = np.asarray(center_errors)
+    width_array = np.asarray(width_errors)
+    return StellgapGapParity(
+        count=int(center_array.shape[0]),
+        p95_largest_gap_center_relative_error=float(np.percentile(center_array, 95.0)),
+        p95_largest_gap_width_relative_error=float(np.percentile(width_array, 95.0)),
+        max_largest_gap_center_relative_error=float(np.max(center_array)),
+        max_largest_gap_width_relative_error=float(np.max(width_array)),
+        mean_largest_gap_center_relative_error=float(np.mean(center_array)),
+        mean_largest_gap_width_relative_error=float(np.mean(width_array)),
+    )
+
+
+def run_stellgap_ctok_executable(
+    *,
+    executable: str | Path = "/Users/rogerio/local/Stellgap/xstgap",
+    input_dir: str | Path = "/Users/rogerio/local/Stellgap_test_inputs",
+    timeout_seconds: float = 1800.0,
+) -> ExternalExecutableRun:
+    """Attempt a bounded STELLGAP CTOK executable run in a temporary directory.
+
+    The helper copies the public CTOK ``fourier.dat``, ``plasma.dat``, and
+    ``tae_data_boozer`` inputs and records stdout/stderr tails. A nonzero
+    return code is reported as ``status='failed'`` rather than raising so
+    benchmark packets can document executable portability without blocking FAX
+    tests.
+    """
+    executable_path = Path(executable).expanduser().resolve()
+    input_root = Path(input_dir).expanduser().resolve()
+    required = [input_root / "fourier.dat", input_root / "plasma.dat", input_root / "tae_data_boozer"]
+    if not executable_path.exists() or not all(path.exists() for path in required):
+        missing = [str(path) for path in [executable_path, *required] if not path.exists()]
+        return ExternalExecutableRun(
+            executable=str(executable_path),
+            status="skipped",
+            returncode=None,
+            elapsed_seconds=0.0,
+            stdout_tail="",
+            stderr_tail="missing executable/input files: " + ", ".join(missing),
+            output_files=(),
+        )
+
+    with tempfile.TemporaryDirectory(prefix="fax-stellgap-ctok-") as tmp:
+        workdir = Path(tmp)
+        for path in required:
+            shutil.copy2(path, workdir / path.name)
+        start = time.perf_counter()
+        try:
+            completed = subprocess.run(
+                [str(executable_path)],
+                cwd=workdir,
+                check=False,
+                capture_output=True,
+                timeout=float(timeout_seconds),
+            )
+            elapsed = time.perf_counter() - start
+            outputs = tuple(sorted(path.name for path in workdir.iterdir() if path.is_file()))
+            status = "completed" if completed.returncode == 0 and "alfven_spec" in outputs else "failed"
+            return ExternalExecutableRun(
+                executable=str(executable_path),
+                status=status,
+                returncode=int(completed.returncode),
+                elapsed_seconds=float(elapsed),
+                stdout_tail=_decode_tail(completed.stdout),
+                stderr_tail=_decode_tail(completed.stderr),
+                output_files=outputs,
+            )
+        except subprocess.TimeoutExpired as exc:
+            return ExternalExecutableRun(
+                executable=str(executable_path),
+                status="timeout",
+                returncode=None,
+                elapsed_seconds=float(time.perf_counter() - start),
+                stdout_tail=_decode_tail(exc.stdout or b""),
+                stderr_tail=_decode_tail(exc.stderr or b""),
+                output_files=tuple(sorted(path.name for path in workdir.iterdir() if path.is_file())),
+            )
+
+
+def _decode_tail(payload: bytes | str, *, limit: int = 2000) -> str:
+    if isinstance(payload, str):
+        return payload[-int(limit):]
+    return bytes(payload)[-int(limit):].decode("utf-8", errors="replace")
 
 
 def stellgap_ctok_local_continuum_error(

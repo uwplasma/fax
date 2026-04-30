@@ -48,6 +48,7 @@ Local workflow smoke checks:
    fax convergence examples/minimal.toml --radial-points 16 --radial-points 32 --angular-points 8 --angular-points 12 --mode-max 1 --mode-max 2
    fax benchmark examples/minimal.toml --repeats 1 --warmups 0
    fax benchmark examples/minimal.toml --repeats 1 --warmups 0 --family analytic-local --family global-block --family global-matrix-free --family global-krylov
+   fax benchmark examples/minimal.toml --repeats 1 --warmups 0 --family stellgap-ctok --family stellgap-executable --family ae3d-artifact
 
 Benchmark packets
 -----------------
@@ -58,6 +59,11 @@ follows the performance patterns observed in the neighboring ``vmec_jax`` and
 ``booz_xform_jax`` branches: report cold and warm timings separately, block on
 JAX work before stopping timers, avoid speed claims without a passing physics
 metric, and keep external-code parity artifacts optional but reproducible.
+The ``stellgap-executable`` family is a status-capture benchmark: it attempts a
+bounded local ``xstgap`` CTOK run when the executable and public inputs are
+present, but reports ``failed``, ``timeout``, or ``skipped`` without treating
+that status as a valid runtime comparison. Only ``completed`` runs that produce
+``alfven_spec`` should be used in external-code speed tables.
 
 Progress Output
 ---------------

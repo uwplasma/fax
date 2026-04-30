@@ -20,10 +20,13 @@ Initial research scaffold release for FAX.
 - Real-file Boozer validation gates for `sqrt(g)|B|^2=G+iota I`, embedding-Jacobian shape, and finite Hermitian local 3-D continuum output.
 - Global radial 3-D Boozer block eigenmode operator with Dirichlet radial boundaries, radial/harmonic mode structures, exact constant-spectrum gates, density-gradient gates, and real-`boozmn` residual gates.
 - Metric-derived Boozer radial stiffness, Neumann radial boundary variant, and eigenfunction-weighted fast-ion drive/damping screen.
+- Reduced gyro-Landau fast-ion closure API with resonant, dispersive, diamagnetic, and thermal-Landau damping coefficients plus sign/regression gates.
+- Real-`boozmn` global radial convergence gates for Boozer angular quadrature, radial surface coarsening, boundary-condition variants, and radial-stiffness variants.
 - Builder-based Boozer pipeline optimization objective for future differentiable `vmec_jax`/`booz_xform_jax` design workflows.
-- Public ORNL STELLGAP CTOK local-continuum comparison gate and generated figure.
+- Public ORNL STELLGAP CTOK local-continuum and largest-local-gap comparison gates and generated figure.
 - Public ORNL AE3D eigenvalue-answer parser/residual smoke gate.
 - Public ORNL STELLGAP post-processing parity gate and AE3D omega2/matrix artifact gates.
+- Bounded STELLGAP CTOK executable runtime/status capture benchmark family.
 - External-code artifact dashboard example and generated README/docs figure.
 - README status badges for tests, docs, publish, ReadTheDocs, coverage, PyPI, Python versions, license, Ruff, and JAX.
 - Differentiable radial-mode avoidance objective for early design-screen demonstrations.
@@ -57,7 +60,9 @@ limit, Hermiticity, generalized-eigensolve residuals, JAX density-gradient
 consistency, radial/angular convergence, reduced radial eigenmode spectra,
 analytic gap centers, BAE/TAE/EAE reference ordering, Boozer-Jacobian metric
 identity checks, real `boozmn` local 3-D Boozer geometry/operator checks,
-reduced fast-ion resonance ordering, and VMEC/Boozer adapter smoke tests.
+real-Boozer global radial convergence variants, reduced fast-ion resonance
+ordering, reduced gyro-Landau closure signs, STELLGAP CTOK largest local-gap
+parity, and VMEC/Boozer adapter smoke tests.
 
 ### Local Release Gate
 

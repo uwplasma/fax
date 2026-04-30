@@ -126,7 +126,10 @@ Cross-code gates currently cover public artifacts:
 STELLGAP CTOK
    FAX reads public CTOK Boozer geometry and compares local 3-D continuum
    branches against the STELLGAP artifact. It also checks STELLGAP
-   post-processing conventions.
+   post-processing conventions and largest adjacent-branch local gap centers
+   and widths on matched surfaces. A separate executable runner records
+   bounded local ``xstgap`` status for runtime packets, but failed, skipped, or
+   timed-out runs are not counted as runtime parity.
 
 AE3D
    FAX parses public AE3D matrices, eigenvectors, omega2 tables, and reported
@@ -197,7 +200,8 @@ Current Gaps
 The strongest current gaps are:
 
 * full global AE3D/CAS3D/FAR3D parity for the FAX radial block operator,
-* kinetic energetic-particle growth-rate validation,
+* calibration and validation of the reduced gyro-Landau closure against
+  kinetic energetic-particle growth-rate references,
 * production-scale matrix-free eigensolver derivatives,
 * converged end-to-end VMEC shape gradients,
 * expanded stellarator geometry set beyond Landreman-Paul QA and CTOK.

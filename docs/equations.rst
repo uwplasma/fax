@@ -193,8 +193,27 @@ gradient gives positive drive in the current convention:
    -\alpha_f \frac{\partial p_f}{\partial s}
    \frac{1}{1 + \left[(f_{\rm mode}-n f_\phi-\ell f_\theta)/\Delta f\right]^2}.
 
-This is not yet a perturbative kinetic growth rate. The planned publication
-path is still
+The reduced gyro-Landau closure keeps the same resonance coordinate but exposes
+calibrated coefficients for a FAR3D/CAS3D-K-facing parity path:
+
+.. math::
+
+   x =
+   \frac{f_{\rm mode}-n f_\phi-\ell f_\theta}{\Delta f},
+   \qquad
+   D_{\rm GL} =
+   -\alpha_f \frac{\partial p_f}{\partial s}
+   \left(1+\frac{f_*}{\max(|f_{\rm mode}|,\Delta f)}\right)
+   \left[
+   \frac{C_0}{1+x^2}
+   + \frac{C_1 x}{1+x^2}
+   \right].
+
+``C_0`` is the even resonant drive/damping coefficient, ``C_1`` is the odd
+dispersive coefficient, ``f_*`` is a diamagnetic frequency scale, and
+``gamma_L`` is a thermal Landau damping offset. This is a reduced closure, not
+yet a first-principles perturbative kinetic growth rate. The publication path
+still needs
 
 .. math::
 
@@ -209,9 +228,9 @@ eigenfunctions:
 .. math::
 
    \Gamma_k =
-   S_f \frac{\int ds\, |\xi_k(s)|^2 \sum_\ell D_f(s,\ell)}
+   S_f \frac{\int ds\, |\xi_k(s)|^2 \sum_\ell D_{\rm GL}(s,\ell)}
    {\int ds\,|\xi_k(s)|^2}
-   - \gamma_{\rm damp}.
+   - \gamma_{\rm damp} - \gamma_L.
 
 This gives a differentiable screening metric for resonance overlap and radial
 localization. It is a sign and sensitivity gate, not a substitute for a
@@ -321,9 +340,9 @@ Using the normalized-radial embedding metric
 
 This is the first true ``boozmn`` geometry operator. It has analytic
 constant-field, Hermiticity, real-Jacobian-identity, and embedding-Jacobian
-shape gates. It remains a local surface-by-surface model; global radial
-boundary conditions, full cross-code STELLGAP/AE3D comparison, and
-kinetic/fast-ion drive validation are separate publication milestones.
+shape gates. It is also the local block used by the global radial Boozer
+operator. Full ideal-MHD STELLGAP/AE3D/CAS3D parity and kinetic/fast-ion drive
+validation remain separate publication milestones.
 
 With the Boozer-Jacobian bridge enabled, the reduced weights become
 

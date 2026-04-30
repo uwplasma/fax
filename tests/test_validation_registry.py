@@ -46,6 +46,7 @@ def test_core_validation_gates_pass():
         "bae_temperature_scaling",
         "fast_ion_resonance_peak",
         "fast_ion_eigenfunction_drive_localization",
+        "fast_ion_gyro_landau_closure_signs",
         "boozer_harmonic_projection",
         "boozer_straight_field_line_phase",
         "boozer_constant_field_continuum",
@@ -73,6 +74,9 @@ def test_boozmn_validation_gates_pass_or_skip_cleanly():
         "boozmn_3d_continuum_finite",
         "boozmn_global_3d_eigenmode_finite",
         "boozmn_metric_radial_stiffness_hermitian",
+        "boozmn_global_angular_convergence",
+        "boozmn_global_radial_surface_coarsening",
+        "boozmn_global_boundary_and_stiffness_variants",
     ):
         result = run_validation_gate(gate_id)
 
@@ -83,6 +87,7 @@ def test_boozmn_validation_gates_pass_or_skip_cleanly():
 def test_cross_code_validation_gates_pass_or_skip_cleanly():
     for gate_id in (
         "stellgap_ctok_local_continuum",
+        "stellgap_ctok_largest_gap_parity",
         "stellgap_public_postprocess_parity",
         "ae3d_public_eigenvalue_artifact",
         "ae3d_public_omega2_eigenvalue_parity",

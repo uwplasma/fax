@@ -340,6 +340,21 @@
       ]
     },
     {
+      "id": "fast_ion_gyro_landau_closure_signs",
+      "title": "Gyro-Landau fast-ion closure signs",
+      "layer": "fast-ion",
+      "quantity": "resonant peak and pressure-gradient sign",
+      "tolerance": 1e-12,
+      "citation": "FAR3D gyro-fluid Landau-closure model retains resonant EP drive/damping through energetic-particle density and parallel-momentum moments",
+      "command": "python -m pytest tests/test_fast_ions.py tests/test_validation_registry.py",
+      "tags": [
+        "fast-ion",
+        "landau-closure",
+        "far3d",
+        "resonance"
+      ]
+    },
+    {
       "id": "boozer_harmonic_projection",
       "title": "Boozer harmonic projection",
       "layer": "boozer",
@@ -568,6 +583,54 @@
       ]
     },
     {
+      "id": "boozmn_global_angular_convergence",
+      "title": "Real boozmn global angular convergence",
+      "layer": "global-eigenmode",
+      "quantity": "relative frequency change under angular refinement",
+      "tolerance": 0.001,
+      "citation": "Real-boozmn global radial block frequencies must be stable under Boozer theta/zeta quadrature refinement",
+      "command": "python -m pytest -m requires_booz_xform_jax tests/test_boozer.py tests/test_validation_registry.py",
+      "tags": [
+        "boozer",
+        "global",
+        "convergence",
+        "boozmn",
+        "angular"
+      ]
+    },
+    {
+      "id": "boozmn_global_radial_surface_coarsening",
+      "title": "Real boozmn radial surface coarsening",
+      "layer": "global-eigenmode",
+      "quantity": "relative lowest-mode frequency change",
+      "tolerance": 0.02,
+      "citation": "Real-boozmn global radial block lowest modes must be stable under a documented radial-surface coarsening check",
+      "command": "python -m pytest -m requires_booz_xform_jax tests/test_boozer.py tests/test_validation_registry.py",
+      "tags": [
+        "boozer",
+        "global",
+        "convergence",
+        "boozmn",
+        "radial"
+      ]
+    },
+    {
+      "id": "boozmn_global_boundary_and_stiffness_variants",
+      "title": "Real boozmn boundary/stiffness variants",
+      "layer": "global-eigenmode",
+      "quantity": "maximum residual and finite-output check",
+      "tolerance": 2e-05,
+      "citation": "Real-boozmn global radial block operator must remain finite and low-residual for Dirichlet/Neumann boundaries and metric/mass radial stiffness variants",
+      "command": "python -m pytest -m requires_booz_xform_jax tests/test_boozer.py tests/test_validation_registry.py",
+      "tags": [
+        "boozer",
+        "global",
+        "boundary",
+        "stiffness",
+        "boozmn"
+      ]
+    },
+    {
       "id": "stellgap_ctok_local_continuum",
       "title": "STELLGAP CTOK local continuum comparison",
       "layer": "cross-code",
@@ -578,6 +641,22 @@
       "tags": [
         "cross-code",
         "stellgap",
+        "boozer",
+        "continuum"
+      ]
+    },
+    {
+      "id": "stellgap_ctok_largest_gap_parity",
+      "title": "STELLGAP CTOK largest local-gap parity",
+      "layer": "cross-code",
+      "quantity": "p95 largest-gap center/width relative error",
+      "tolerance": 0.06,
+      "citation": "ORNL STELLGAP CTOK public continuum branches compared against FAX real-boozmn local 3-D Boozer largest adjacent-branch gap centers and widths",
+      "command": "python -m pytest tests/test_cross_code.py tests/test_validation_registry.py",
+      "tags": [
+        "cross-code",
+        "stellgap",
+        "gap",
         "boozer",
         "continuum"
       ]
@@ -789,134 +868,8 @@
   ],
   "figures": [
     {
-      "file": "workflow_io_diagram.svg",
+      "file": "metric_residual_convergence.svg",
       "format": "svg",
-      "status": "smoke-test",
-      "claim": "Development figure generated from analytic/local continuum formulas; not a full 3-D stellarator Alfvén-continuum validation."
-    },
-    {
-      "file": "workflow_io_diagram.png",
-      "format": "png",
-      "status": "smoke-test",
-      "claim": "Development figure generated from analytic/local continuum formulas; not a full 3-D stellarator Alfvén-continuum validation."
-    },
-    {
-      "file": "equations_overview.svg",
-      "format": "svg",
-      "status": "smoke-test",
-      "claim": "Development figure generated from analytic/local continuum formulas; not a full 3-D stellarator Alfvén-continuum validation."
-    },
-    {
-      "file": "equations_overview.png",
-      "format": "png",
-      "status": "smoke-test",
-      "claim": "Development figure generated from analytic/local continuum formulas; not a full 3-D stellarator Alfvén-continuum validation."
-    },
-    {
-      "file": "analytic_continuum_scaling.svg",
-      "format": "svg",
-      "status": "smoke-test",
-      "claim": "Development figure generated from analytic/local continuum formulas; not a full 3-D stellarator Alfvén-continuum validation."
-    },
-    {
-      "file": "analytic_continuum_scaling.png",
-      "format": "png",
-      "status": "smoke-test",
-      "claim": "Development figure generated from analytic/local continuum formulas; not a full 3-D stellarator Alfvén-continuum validation."
-    },
-    {
-      "file": "landreman_paul_qa_lowres_profiles.svg",
-      "format": "svg",
-      "status": "smoke-test",
-      "claim": "Development figure generated from analytic/local continuum formulas; not a full 3-D stellarator Alfvén-continuum validation."
-    },
-    {
-      "file": "landreman_paul_qa_lowres_profiles.png",
-      "format": "png",
-      "status": "smoke-test",
-      "claim": "Development figure generated from analytic/local continuum formulas; not a full 3-D stellarator Alfvén-continuum validation."
-    },
-    {
-      "file": "basic_alfven_gap_map.svg",
-      "format": "svg",
-      "status": "smoke-test",
-      "claim": "Development figure generated from analytic/local continuum formulas; not a full 3-D stellarator Alfvén-continuum validation."
-    },
-    {
-      "file": "basic_alfven_gap_map.png",
-      "format": "png",
-      "status": "smoke-test",
-      "claim": "Development figure generated from analytic/local continuum formulas; not a full 3-D stellarator Alfvén-continuum validation."
-    },
-    {
-      "file": "gap_sensitivity_dashboard.svg",
-      "format": "svg",
-      "status": "smoke-test",
-      "claim": "Development figure generated from analytic/local continuum formulas; not a full 3-D stellarator Alfvén-continuum validation."
-    },
-    {
-      "file": "gap_sensitivity_dashboard.png",
-      "format": "png",
-      "status": "smoke-test",
-      "claim": "Development figure generated from analytic/local continuum formulas; not a full 3-D stellarator Alfvén-continuum validation."
-    },
-    {
-      "file": "global_gap_fastion_dashboard.svg",
-      "format": "svg",
-      "status": "smoke-test",
-      "claim": "Development figure generated from analytic/local continuum formulas; not a full 3-D stellarator Alfvén-continuum validation."
-    },
-    {
-      "file": "global_gap_fastion_dashboard.png",
-      "format": "png",
-      "status": "smoke-test",
-      "claim": "Development figure generated from analytic/local continuum formulas; not a full 3-D stellarator Alfvén-continuum validation."
-    },
-    {
-      "file": "boozer_harmonic_validation.svg",
-      "format": "svg",
-      "status": "smoke-test",
-      "claim": "Development figure generated from analytic/local continuum formulas; not a full 3-D stellarator Alfvén-continuum validation."
-    },
-    {
-      "file": "boozer_harmonic_validation.png",
-      "format": "png",
-      "status": "smoke-test",
-      "claim": "Development figure generated from analytic/local continuum formulas; not a full 3-D stellarator Alfvén-continuum validation."
-    },
-    {
-      "file": "boozer_continuum_coupling.svg",
-      "format": "svg",
-      "status": "smoke-test",
-      "claim": "Development figure generated from analytic/local continuum formulas; not a full 3-D stellarator Alfvén-continuum validation."
-    },
-    {
-      "file": "boozer_continuum_coupling.png",
-      "format": "png",
-      "status": "smoke-test",
-      "claim": "Development figure generated from analytic/local continuum formulas; not a full 3-D stellarator Alfvén-continuum validation."
-    },
-    {
-      "file": "boozer_jacobian_identity.svg",
-      "format": "svg",
-      "status": "smoke-test",
-      "claim": "Development figure generated from analytic/local continuum formulas; not a full 3-D stellarator Alfvén-continuum validation."
-    },
-    {
-      "file": "boozer_jacobian_identity.png",
-      "format": "png",
-      "status": "smoke-test",
-      "claim": "Development figure generated from analytic/local continuum formulas; not a full 3-D stellarator Alfvén-continuum validation."
-    },
-    {
-      "file": "boozmn_3d_geometry_operator.svg",
-      "format": "svg",
-      "status": "smoke-test",
-      "claim": "Development figure generated from analytic/local continuum formulas; not a full 3-D stellarator Alfvén-continuum validation."
-    },
-    {
-      "file": "boozmn_3d_geometry_operator.png",
-      "format": "png",
       "status": "smoke-test",
       "claim": "Development figure generated from analytic/local continuum formulas; not a full 3-D stellarator Alfvén-continuum validation."
     },
@@ -927,20 +880,20 @@
       "claim": "Development figure generated from analytic/local continuum formulas; not a full 3-D stellarator Alfvén-continuum validation."
     },
     {
-      "file": "boozmn_global_3d_eigenmodes.png",
-      "format": "png",
-      "status": "smoke-test",
-      "claim": "Development figure generated from analytic/local continuum formulas; not a full 3-D stellarator Alfvén-continuum validation."
-    },
-    {
-      "file": "stellgap_ctok_comparison.svg",
+      "file": "boozmn_3d_geometry_operator.svg",
       "format": "svg",
       "status": "smoke-test",
       "claim": "Development figure generated from analytic/local continuum formulas; not a full 3-D stellarator Alfvén-continuum validation."
     },
     {
-      "file": "stellgap_ctok_comparison.png",
-      "format": "png",
+      "file": "boozmn_global_eigenmode_artifact_dashboard.svg",
+      "format": "svg",
+      "status": "smoke-test",
+      "claim": "Development figure generated from analytic/local continuum formulas; not a full 3-D stellarator Alfvén-continuum validation."
+    },
+    {
+      "file": "workflow_io_diagram.svg",
+      "format": "svg",
       "status": "smoke-test",
       "claim": "Development figure generated from analytic/local continuum formulas; not a full 3-D stellarator Alfvén-continuum validation."
     },
@@ -951,97 +904,7 @@
       "claim": "Development figure generated from analytic/local continuum formulas; not a full 3-D stellarator Alfvén-continuum validation."
     },
     {
-      "file": "external_code_artifact_dashboard.png",
-      "format": "png",
-      "status": "smoke-test",
-      "claim": "Development figure generated from analytic/local continuum formulas; not a full 3-D stellarator Alfvén-continuum validation."
-    },
-    {
-      "file": "continuum_artifact_dashboard.svg",
-      "format": "svg",
-      "status": "smoke-test",
-      "claim": "Development figure generated from analytic/local continuum formulas; not a full 3-D stellarator Alfvén-continuum validation."
-    },
-    {
-      "file": "continuum_artifact_dashboard.png",
-      "format": "png",
-      "status": "smoke-test",
-      "claim": "Development figure generated from analytic/local continuum formulas; not a full 3-D stellarator Alfvén-continuum validation."
-    },
-    {
-      "file": "global_eigenmode_artifact_dashboard.svg",
-      "format": "svg",
-      "status": "smoke-test",
-      "claim": "Development figure generated from analytic/local continuum formulas; not a full 3-D stellarator Alfvén-continuum validation."
-    },
-    {
-      "file": "global_eigenmode_artifact_dashboard.png",
-      "format": "png",
-      "status": "smoke-test",
-      "claim": "Development figure generated from analytic/local continuum formulas; not a full 3-D stellarator Alfvén-continuum validation."
-    },
-    {
-      "file": "metric_residual_convergence.svg",
-      "format": "svg",
-      "status": "smoke-test",
-      "claim": "Development figure generated from analytic/local continuum formulas; not a full 3-D stellarator Alfvén-continuum validation."
-    },
-    {
-      "file": "metric_residual_convergence.png",
-      "format": "png",
-      "status": "smoke-test",
-      "claim": "Development figure generated from analytic/local continuum formulas; not a full 3-D stellarator Alfvén-continuum validation."
-    },
-    {
-      "file": "landreman_paul_convergence_dashboard.svg",
-      "format": "svg",
-      "status": "smoke-test",
-      "claim": "Development figure generated from analytic/local continuum formulas; not a full 3-D stellarator Alfvén-continuum validation."
-    },
-    {
-      "file": "landreman_paul_convergence_dashboard.png",
-      "format": "png",
-      "status": "smoke-test",
-      "claim": "Development figure generated from analytic/local continuum formulas; not a full 3-D stellarator Alfvén-continuum validation."
-    },
-    {
-      "file": "vmec_boozer_bridge_convergence.svg",
-      "format": "svg",
-      "status": "smoke-test",
-      "claim": "Development figure generated from analytic/local continuum formulas; not a full 3-D stellarator Alfvén-continuum validation."
-    },
-    {
-      "file": "vmec_boozer_bridge_convergence.png",
-      "format": "png",
-      "status": "smoke-test",
-      "claim": "Development figure generated from analytic/local continuum formulas; not a full 3-D stellarator Alfvén-continuum validation."
-    },
-    {
-      "file": "vmec_jax_solve_convergence.svg",
-      "format": "svg",
-      "status": "smoke-test",
-      "claim": "Development figure generated from analytic/local continuum formulas; not a full 3-D stellarator Alfvén-continuum validation."
-    },
-    {
-      "file": "vmec_jax_solve_convergence.png",
-      "format": "png",
-      "status": "smoke-test",
-      "claim": "Development figure generated from analytic/local continuum formulas; not a full 3-D stellarator Alfvén-continuum validation."
-    },
-    {
-      "file": "vmec_boozer_operator_angular_convergence.svg",
-      "format": "svg",
-      "status": "smoke-test",
-      "claim": "Development figure generated from analytic/local continuum formulas; not a full 3-D stellarator Alfvén-continuum validation."
-    },
-    {
-      "file": "vmec_boozer_operator_angular_convergence.png",
-      "format": "png",
-      "status": "smoke-test",
-      "claim": "Development figure generated from analytic/local continuum formulas; not a full 3-D stellarator Alfvén-continuum validation."
-    },
-    {
-      "file": "benchmark_family_packet.svg",
+      "file": "validation_gate_summary.svg",
       "format": "svg",
       "status": "smoke-test",
       "claim": "Development figure generated from analytic/local continuum formulas; not a full 3-D stellarator Alfvén-continuum validation."
@@ -1053,14 +916,92 @@
       "claim": "Development figure generated from analytic/local continuum formulas; not a full 3-D stellarator Alfvén-continuum validation."
     },
     {
-      "file": "benchmark_family_packet_summary.json",
-      "format": "json",
+      "file": "gap_sensitivity_dashboard.svg",
+      "format": "svg",
       "status": "smoke-test",
       "claim": "Development figure generated from analytic/local continuum formulas; not a full 3-D stellarator Alfvén-continuum validation."
     },
     {
-      "file": "validation_gate_summary.svg",
+      "file": "vmec_boozer_bridge_convergence.png",
+      "format": "png",
+      "status": "smoke-test",
+      "claim": "Development figure generated from analytic/local continuum formulas; not a full 3-D stellarator Alfvén-continuum validation."
+    },
+    {
+      "file": "boozer_jacobian_identity.png",
+      "format": "png",
+      "status": "smoke-test",
+      "claim": "Development figure generated from analytic/local continuum formulas; not a full 3-D stellarator Alfvén-continuum validation."
+    },
+    {
+      "file": "landreman_paul_qa_lowres_profiles.png",
+      "format": "png",
+      "status": "smoke-test",
+      "claim": "Development figure generated from analytic/local continuum formulas; not a full 3-D stellarator Alfvén-continuum validation."
+    },
+    {
+      "file": "global_eigenmode_artifact_dashboard.svg",
       "format": "svg",
+      "status": "smoke-test",
+      "claim": "Development figure generated from analytic/local continuum formulas; not a full 3-D stellarator Alfvén-continuum validation."
+    },
+    {
+      "file": "vmec_boozer_operator_angular_convergence.png",
+      "format": "png",
+      "status": "smoke-test",
+      "claim": "Development figure generated from analytic/local continuum formulas; not a full 3-D stellarator Alfvén-continuum validation."
+    },
+    {
+      "file": "stellgap_ctok_comparison.png",
+      "format": "png",
+      "status": "smoke-test",
+      "claim": "Development figure generated from analytic/local continuum formulas; not a full 3-D stellarator Alfvén-continuum validation."
+    },
+    {
+      "file": "stellgap_ctok_comparison.svg",
+      "format": "svg",
+      "status": "smoke-test",
+      "claim": "Development figure generated from analytic/local continuum formulas; not a full 3-D stellarator Alfvén-continuum validation."
+    },
+    {
+      "file": "vmec_boozer_operator_angular_convergence.svg",
+      "format": "svg",
+      "status": "smoke-test",
+      "claim": "Development figure generated from analytic/local continuum formulas; not a full 3-D stellarator Alfvén-continuum validation."
+    },
+    {
+      "file": "landreman_paul_qa_lowres_profiles.svg",
+      "format": "svg",
+      "status": "smoke-test",
+      "claim": "Development figure generated from analytic/local continuum formulas; not a full 3-D stellarator Alfvén-continuum validation."
+    },
+    {
+      "file": "global_eigenmode_artifact_dashboard.png",
+      "format": "png",
+      "status": "smoke-test",
+      "claim": "Development figure generated from analytic/local continuum formulas; not a full 3-D stellarator Alfvén-continuum validation."
+    },
+    {
+      "file": "gap_sensitivity_dashboard.png",
+      "format": "png",
+      "status": "smoke-test",
+      "claim": "Development figure generated from analytic/local continuum formulas; not a full 3-D stellarator Alfvén-continuum validation."
+    },
+    {
+      "file": "boozer_jacobian_identity.svg",
+      "format": "svg",
+      "status": "smoke-test",
+      "claim": "Development figure generated from analytic/local continuum formulas; not a full 3-D stellarator Alfvén-continuum validation."
+    },
+    {
+      "file": "vmec_boozer_bridge_convergence.svg",
+      "format": "svg",
+      "status": "smoke-test",
+      "claim": "Development figure generated from analytic/local continuum formulas; not a full 3-D stellarator Alfvén-continuum validation."
+    },
+    {
+      "file": "benchmark_family_packet_summary.json",
+      "format": "json",
       "status": "smoke-test",
       "claim": "Development figure generated from analytic/local continuum formulas; not a full 3-D stellarator Alfvén-continuum validation."
     },
@@ -1071,14 +1012,332 @@
       "claim": "Development figure generated from analytic/local continuum formulas; not a full 3-D stellarator Alfvén-continuum validation."
     },
     {
-      "file": "boozmn_global_eigenmode_artifact_dashboard.svg",
+      "file": "benchmark_family_packet.svg",
       "format": "svg",
+      "status": "smoke-test",
+      "claim": "Development figure generated from analytic/local continuum formulas; not a full 3-D stellarator Alfvén-continuum validation."
+    },
+    {
+      "file": "external_code_artifact_dashboard.png",
+      "format": "png",
       "status": "smoke-test",
       "claim": "Development figure generated from analytic/local continuum formulas; not a full 3-D stellarator Alfvén-continuum validation."
     },
     {
       "file": "boozmn_global_eigenmode_artifact_dashboard.png",
       "format": "png",
+      "status": "smoke-test",
+      "claim": "Development figure generated from analytic/local continuum formulas; not a full 3-D stellarator Alfvén-continuum validation."
+    },
+    {
+      "file": "boozmn_3d_geometry_operator.png",
+      "format": "png",
+      "status": "smoke-test",
+      "claim": "Development figure generated from analytic/local continuum formulas; not a full 3-D stellarator Alfvén-continuum validation."
+    },
+    {
+      "file": "workflow_io_diagram.png",
+      "format": "png",
+      "status": "smoke-test",
+      "claim": "Development figure generated from analytic/local continuum formulas; not a full 3-D stellarator Alfvén-continuum validation."
+    },
+    {
+      "file": "boozmn_global_3d_eigenmodes.png",
+      "format": "png",
+      "status": "smoke-test",
+      "claim": "Development figure generated from analytic/local continuum formulas; not a full 3-D stellarator Alfvén-continuum validation."
+    },
+    {
+      "file": "metric_residual_convergence.png",
+      "format": "png",
+      "status": "smoke-test",
+      "claim": "Development figure generated from analytic/local continuum formulas; not a full 3-D stellarator Alfvén-continuum validation."
+    },
+    {
+      "file": "analytic_continuum_scaling.svg",
+      "format": "svg",
+      "status": "smoke-test",
+      "claim": "Development figure generated from analytic/local continuum formulas; not a full 3-D stellarator Alfvén-continuum validation."
+    },
+    {
+      "file": "boozer_harmonic_validation.png",
+      "format": "png",
+      "status": "smoke-test",
+      "claim": "Development figure generated from analytic/local continuum formulas; not a full 3-D stellarator Alfvén-continuum validation."
+    },
+    {
+      "file": "basic_alfven_gap_map.png",
+      "format": "png",
+      "status": "smoke-test",
+      "claim": "Development figure generated from analytic/local continuum formulas; not a full 3-D stellarator Alfvén-continuum validation."
+    },
+    {
+      "file": "vmec_jax_solve_convergence.svg",
+      "format": "svg",
+      "status": "smoke-test",
+      "claim": "Development figure generated from analytic/local continuum formulas; not a full 3-D stellarator Alfvén-continuum validation."
+    },
+    {
+      "file": "boozmn_differentiable_design_study.svg",
+      "format": "svg",
+      "status": "smoke-test",
+      "claim": "Development figure generated from analytic/local continuum formulas; not a full 3-D stellarator Alfvén-continuum validation."
+    },
+    {
+      "file": "differentiable_design_study_summary.json",
+      "format": "json",
+      "status": "smoke-test",
+      "claim": "Development figure generated from analytic/local continuum formulas; not a full 3-D stellarator Alfvén-continuum validation."
+    },
+    {
+      "file": "global_gap_fastion_dashboard.png",
+      "format": "png",
+      "status": "smoke-test",
+      "claim": "Development figure generated from analytic/local continuum formulas; not a full 3-D stellarator Alfvén-continuum validation."
+    },
+    {
+      "file": "external_code_artifact_metrics.json",
+      "format": "json",
+      "status": "smoke-test",
+      "claim": "Development figure generated from analytic/local continuum formulas; not a full 3-D stellarator Alfvén-continuum validation."
+    },
+    {
+      "file": "boozer_continuum_coupling.png",
+      "format": "png",
+      "status": "smoke-test",
+      "claim": "Development figure generated from analytic/local continuum formulas; not a full 3-D stellarator Alfvén-continuum validation."
+    },
+    {
+      "file": "continuum_artifact_dashboard.png",
+      "format": "png",
+      "status": "smoke-test",
+      "claim": "Development figure generated from analytic/local continuum formulas; not a full 3-D stellarator Alfvén-continuum validation."
+    },
+    {
+      "file": "figure_manifest.json",
+      "format": "json",
+      "status": "smoke-test",
+      "claim": "Development figure generated from analytic/local continuum formulas; not a full 3-D stellarator Alfvén-continuum validation."
+    },
+    {
+      "file": "boozmn_differentiable_design_study_summary.json",
+      "format": "json",
+      "status": "smoke-test",
+      "claim": "Development figure generated from analytic/local continuum formulas; not a full 3-D stellarator Alfvén-continuum validation."
+    },
+    {
+      "file": "landreman_paul_convergence_dashboard.png",
+      "format": "png",
+      "status": "smoke-test",
+      "claim": "Development figure generated from analytic/local continuum formulas; not a full 3-D stellarator Alfvén-continuum validation."
+    },
+    {
+      "file": "differentiable_design_study.svg",
+      "format": "svg",
+      "status": "smoke-test",
+      "claim": "Development figure generated from analytic/local continuum formulas; not a full 3-D stellarator Alfvén-continuum validation."
+    },
+    {
+      "file": "equations_overview.svg",
+      "format": "svg",
+      "status": "smoke-test",
+      "claim": "Development figure generated from analytic/local continuum formulas; not a full 3-D stellarator Alfvén-continuum validation."
+    },
+    {
+      "file": "coverage.svg",
+      "format": "svg",
+      "status": "smoke-test",
+      "claim": "Development figure generated from analytic/local continuum formulas; not a full 3-D stellarator Alfvén-continuum validation."
+    },
+    {
+      "file": "equations_overview.png",
+      "format": "png",
+      "status": "smoke-test",
+      "claim": "Development figure generated from analytic/local continuum formulas; not a full 3-D stellarator Alfvén-continuum validation."
+    },
+    {
+      "file": "differentiable_design_study.png",
+      "format": "png",
+      "status": "smoke-test",
+      "claim": "Development figure generated from analytic/local continuum formulas; not a full 3-D stellarator Alfvén-continuum validation."
+    },
+    {
+      "file": "landreman_paul_convergence_dashboard.svg",
+      "format": "svg",
+      "status": "smoke-test",
+      "claim": "Development figure generated from analytic/local continuum formulas; not a full 3-D stellarator Alfvén-continuum validation."
+    },
+    {
+      "file": "continuum_artifact_dashboard.svg",
+      "format": "svg",
+      "status": "smoke-test",
+      "claim": "Development figure generated from analytic/local continuum formulas; not a full 3-D stellarator Alfvén-continuum validation."
+    },
+    {
+      "file": "boozer_continuum_coupling.svg",
+      "format": "svg",
+      "status": "smoke-test",
+      "claim": "Development figure generated from analytic/local continuum formulas; not a full 3-D stellarator Alfvén-continuum validation."
+    },
+    {
+      "file": "global_gap_fastion_dashboard.svg",
+      "format": "svg",
+      "status": "smoke-test",
+      "claim": "Development figure generated from analytic/local continuum formulas; not a full 3-D stellarator Alfvén-continuum validation."
+    },
+    {
+      "file": "boozmn_differentiable_design_study.png",
+      "format": "png",
+      "status": "smoke-test",
+      "claim": "Development figure generated from analytic/local continuum formulas; not a full 3-D stellarator Alfvén-continuum validation."
+    },
+    {
+      "file": "vmec_jax_solve_convergence.png",
+      "format": "png",
+      "status": "smoke-test",
+      "claim": "Development figure generated from analytic/local continuum formulas; not a full 3-D stellarator Alfvén-continuum validation."
+    },
+    {
+      "file": "basic_alfven_gap_map.svg",
+      "format": "svg",
+      "status": "smoke-test",
+      "claim": "Development figure generated from analytic/local continuum formulas; not a full 3-D stellarator Alfvén-continuum validation."
+    },
+    {
+      "file": "analytic_continuum_scaling.png",
+      "format": "png",
+      "status": "smoke-test",
+      "claim": "Development figure generated from analytic/local continuum formulas; not a full 3-D stellarator Alfvén-continuum validation."
+    },
+    {
+      "file": "boozer_harmonic_validation.svg",
+      "format": "svg",
+      "status": "smoke-test",
+      "claim": "Development figure generated from analytic/local continuum formulas; not a full 3-D stellarator Alfvén-continuum validation."
+    },
+    {
+      "file": "09_stellgap_ctok_gap_anchored_global_screen.png",
+      "format": "png",
+      "status": "smoke-test",
+      "claim": "Development figure generated from analytic/local continuum formulas; not a full 3-D stellarator Alfvén-continuum validation."
+    },
+    {
+      "file": "03_landreman_paul_wout_continuum.png",
+      "format": "png",
+      "status": "smoke-test",
+      "claim": "Development figure generated from analytic/local continuum formulas; not a full 3-D stellarator Alfvén-continuum validation."
+    },
+    {
+      "file": "08_differentiable_sensitivity.svg",
+      "format": "svg",
+      "status": "smoke-test",
+      "claim": "Development figure generated from analytic/local continuum formulas; not a full 3-D stellarator Alfvén-continuum validation."
+    },
+    {
+      "file": "10_ae3d_matrix_eigenmode_parity.png",
+      "format": "png",
+      "status": "smoke-test",
+      "claim": "Development figure generated from analytic/local continuum formulas; not a full 3-D stellarator Alfvén-continuum validation."
+    },
+    {
+      "file": "04_boozer_representation.png",
+      "format": "png",
+      "status": "smoke-test",
+      "claim": "Development figure generated from analytic/local continuum formulas; not a full 3-D stellarator Alfvén-continuum validation."
+    },
+    {
+      "file": "04_boozer_representation.svg",
+      "format": "svg",
+      "status": "smoke-test",
+      "claim": "Development figure generated from analytic/local continuum formulas; not a full 3-D stellarator Alfvén-continuum validation."
+    },
+    {
+      "file": "08_differentiable_sensitivity.png",
+      "format": "png",
+      "status": "smoke-test",
+      "claim": "Development figure generated from analytic/local continuum formulas; not a full 3-D stellarator Alfvén-continuum validation."
+    },
+    {
+      "file": "10_ae3d_matrix_eigenmode_parity.svg",
+      "format": "svg",
+      "status": "smoke-test",
+      "claim": "Development figure generated from analytic/local continuum formulas; not a full 3-D stellarator Alfvén-continuum validation."
+    },
+    {
+      "file": "03_landreman_paul_wout_continuum.svg",
+      "format": "svg",
+      "status": "smoke-test",
+      "claim": "Development figure generated from analytic/local continuum formulas; not a full 3-D stellarator Alfvén-continuum validation."
+    },
+    {
+      "file": "09_stellgap_ctok_gap_anchored_global_screen.svg",
+      "format": "svg",
+      "status": "smoke-test",
+      "claim": "Development figure generated from analytic/local continuum formulas; not a full 3-D stellarator Alfvén-continuum validation."
+    },
+    {
+      "file": "05_boozer_local_3d_continuum.png",
+      "format": "png",
+      "status": "smoke-test",
+      "claim": "Development figure generated from analytic/local continuum formulas; not a full 3-D stellarator Alfvén-continuum validation."
+    },
+    {
+      "file": "02_convergence_validation.png",
+      "format": "png",
+      "status": "smoke-test",
+      "claim": "Development figure generated from analytic/local continuum formulas; not a full 3-D stellarator Alfvén-continuum validation."
+    },
+    {
+      "file": "01_gap_taxonomy.svg",
+      "format": "svg",
+      "status": "smoke-test",
+      "claim": "Development figure generated from analytic/local continuum formulas; not a full 3-D stellarator Alfvén-continuum validation."
+    },
+    {
+      "file": "06_global_radial_eigenmodes.svg",
+      "format": "svg",
+      "status": "smoke-test",
+      "claim": "Development figure generated from analytic/local continuum formulas; not a full 3-D stellarator Alfvén-continuum validation."
+    },
+    {
+      "file": "07_fast_ion_drive_damping.png",
+      "format": "png",
+      "status": "smoke-test",
+      "claim": "Development figure generated from analytic/local continuum formulas; not a full 3-D stellarator Alfvén-continuum validation."
+    },
+    {
+      "file": "07_fast_ion_drive_damping.svg",
+      "format": "svg",
+      "status": "smoke-test",
+      "claim": "Development figure generated from analytic/local continuum formulas; not a full 3-D stellarator Alfvén-continuum validation."
+    },
+    {
+      "file": "06_global_radial_eigenmodes.png",
+      "format": "png",
+      "status": "smoke-test",
+      "claim": "Development figure generated from analytic/local continuum formulas; not a full 3-D stellarator Alfvén-continuum validation."
+    },
+    {
+      "file": "publication_figure_suite_summary.json",
+      "format": "json",
+      "status": "smoke-test",
+      "claim": "Development figure generated from analytic/local continuum formulas; not a full 3-D stellarator Alfvén-continuum validation."
+    },
+    {
+      "file": "05_boozer_local_3d_continuum.svg",
+      "format": "svg",
+      "status": "smoke-test",
+      "claim": "Development figure generated from analytic/local continuum formulas; not a full 3-D stellarator Alfvén-continuum validation."
+    },
+    {
+      "file": "01_gap_taxonomy.png",
+      "format": "png",
+      "status": "smoke-test",
+      "claim": "Development figure generated from analytic/local continuum formulas; not a full 3-D stellarator Alfvén-continuum validation."
+    },
+    {
+      "file": "02_convergence_validation.svg",
+      "format": "svg",
       "status": "smoke-test",
       "claim": "Development figure generated from analytic/local continuum formulas; not a full 3-D stellarator Alfvén-continuum validation."
     }

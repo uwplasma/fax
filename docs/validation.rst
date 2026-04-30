@@ -79,6 +79,9 @@ tags, and command. The current gates are:
 * ``fast_ion_eigenfunction_drive_localization``: checks that mode-resolved
   fast-ion drive follows eigenfunction overlap with a resonant pressure
   gradient profile.
+* ``fast_ion_gyro_landau_closure_signs``: checks that the reduced
+  gyro-Landau closure peaks at resonance, preserves the pressure-gradient
+  drive sign, and applies the documented damping offset.
 * ``boozer_harmonic_projection``: checks Boozer ``|B|`` harmonic
   reconstruction/projection and Fourier orthogonality on a synthetic spectrum.
 * ``boozer_straight_field_line_phase``: checks that Boozer harmonic phases have
@@ -116,8 +119,18 @@ tags, and command. The current gates are:
   frequencies, mode structures, and residuals.
 * ``boozmn_metric_radial_stiffness_hermitian``: checks the real-geometry
   Boozer radial derivative energy matrix for Hermiticity and positivity.
+* ``boozmn_global_angular_convergence``: checks real-``boozmn`` global radial
+  block eigenfrequencies against a refined Boozer angular quadrature grid.
+* ``boozmn_global_radial_surface_coarsening``: checks lowest real-``boozmn``
+  global radial block modes under a documented surface-coarsening perturbation.
+* ``boozmn_global_boundary_and_stiffness_variants``: checks finite,
+  low-residual global radial block solves for Dirichlet/Neumann boundaries and
+  metric/mass radial-stiffness variants.
 * ``stellgap_ctok_local_continuum``: compares FAX local 3-D Boozer continuum
   branches against the public ORNL STELLGAP CTOK test problem.
+* ``stellgap_ctok_largest_gap_parity``: compares the largest local
+  adjacent-branch gap center and width on matched CTOK surfaces between FAX
+  and public STELLGAP outputs.
 * ``stellgap_public_postprocess_parity``: reproduces the STELLGAP
   ``post_process.f`` convention that converts public ``alfven_spec`` rows into
   the published ``alfven_post`` frequency table.
@@ -198,9 +211,9 @@ sweep. Branch matrices on coarser radial grids are interpolated onto the
 reference radial grid before relative L2 errors are computed.
 
 These are scaffold acceptance gates. Publication claims about 3-D stellarator
-continuum gaps now start from the STELLGAP CTOK local-continuum gate, but still
-require more geometries, global AE3D/CAS3D/FAR3D comparisons, and
-resolution-convergence reports.
+continuum gaps now start from the STELLGAP CTOK local-continuum and local-gap
+gates, but still require more geometries, global AE3D/CAS3D/FAR3D
+comparisons, executable runtime packets, and resolution-convergence reports.
 
 First Local Stellarator Target
 ------------------------------

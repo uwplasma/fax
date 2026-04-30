@@ -56,6 +56,7 @@ BENCHMARK_FAMILY_DESCRIPTIONS: dict[str, str] = {
     "global-krylov": "sparse Krylov global radial block eigensolve with exact-spectrum gate",
     "ae3d-artifact": "public AE3D generalized matrix dense-spectrum parity gate",
     "stellgap-ctok": "public STELLGAP CTOK local Boozer continuum parity gate",
+    "stellgap-executable": "bounded local STELLGAP CTOK executable attempt with runtime/status capture",
     "vmec-boozer": "live vmec_jax solve through booz_xform_jax and FAX local 3-D continuum gate",
 }
 
@@ -160,6 +161,8 @@ def run_named_benchmark_family(
         return _run_ae3d_artifact_family(repeats=repeats, warmups=warmups)
     if family == "stellgap-ctok":
         return _run_stellgap_ctok_family(repeats=repeats, warmups=warmups)
+    if family == "stellgap-executable":
+        return _run_stellgap_executable_family(repeats=repeats, warmups=warmups)
     if family == "vmec-boozer":
         return _run_vmec_boozer_family(repeats=repeats, warmups=warmups)
     known = ", ".join(known_benchmark_families())
@@ -546,6 +549,58 @@ def _run_stellgap_ctok_family(*, repeats: int, warmups: int) -> BenchmarkFamilyR
             "matched_surface_count": comparison.count,
             "mean_relative_error": comparison.mean_relative_error,
             "max_relative_error": comparison.max_relative_error,
+        },
+    )
+
+
+def _run_stellgap_executable_family(*, repeats: int, warmups: int) -> BenchmarkFamilyResult:
+    from .cross_code import run_stellgap_ctok_executable
+
+    def kernel():
+        return run_stellgap_ctok_executable(timeout_seconds=1800.0)
+
+    start = time.perf_counter()
+    first = kernel()
+    cold_seconds = time.perf_counter() - start
+    if first.status != "completed":
+        return _family_result(
+            family="stellgap-executable",
+            label=BENCHMARK_FAMILY_DESCRIPTIONS["stellgap-executable"],
+            status=first.status,
+            gate_passed=False,
+            physics_metric="external executable completed and produced alfven_spec",
+            metric_value=None,
+            tolerance=0.0,
+            cold_seconds=None if first.status == "skipped" else cold_seconds,
+            warm_result=None,
+            details={
+                "returncode": first.returncode,
+                "elapsed_seconds_reported_by_runner": first.elapsed_seconds,
+                "output_files": list(first.output_files),
+                "stdout_tail": first.stdout_tail,
+                "stderr_tail": first.stderr_tail,
+                "executable": first.executable,
+            },
+        )
+
+    warm_result = time_callable("stellgap_ctok_executable", kernel, warmups=warmups, repeats=repeats)
+    return _family_result(
+        family="stellgap-executable",
+        label=BENCHMARK_FAMILY_DESCRIPTIONS["stellgap-executable"],
+        status=first.status,
+        gate_passed=first.status == "completed",
+        physics_metric="external executable completed and produced alfven_spec",
+        metric_value=0.0,
+        tolerance=0.0,
+        cold_seconds=cold_seconds,
+        warm_result=warm_result,
+        details={
+            "returncode": first.returncode,
+            "elapsed_seconds_reported_by_runner": first.elapsed_seconds,
+            "output_files": list(first.output_files),
+            "stdout_tail": first.stdout_tail,
+            "stderr_tail": first.stderr_tail,
+            "executable": first.executable,
         },
     )
 

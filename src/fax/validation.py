@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from pathlib import Path
 from types import SimpleNamespace
 from typing import Any, Callable
@@ -42,10 +42,17 @@ from .cross_code import (
     ae3d_matrix_symmetry_summary,
     ae3d_omega2_eigenvalue_error,
     stellgap_ctok_local_continuum_error,
+    stellgap_ctok_gap_parity,
     stellgap_postprocess_error,
 )
 from .equilibrium import analytic_circular_tokamak, analytic_cylinder, from_vmec_wout
-from .fast_ions import FastIonPopulation, eigenfunction_fast_ion_drive, reduced_fast_ion_drive
+from .fast_ions import (
+    FastIonPopulation,
+    GyroLandauClosure,
+    eigenfunction_fast_ion_drive,
+    gyro_landau_closure_drive,
+    reduced_fast_ion_drive,
+)
 from .gap_models import bae_accumulation_frequency_hz, basic_alfven_gap_map, tae_gap_estimate
 from .global_modes import (
     RadialBlockEigenmodeProblem,
@@ -712,6 +719,54 @@ def _gate_fast_ion_eigenfunction_drive_localization() -> GateResult:
     )
 
 
+def _gate_fast_ion_gyro_landau_closure_signs() -> GateResult:
+    gate_id = "fast_ion_gyro_landau_closure_signs"
+    tolerance = 1.0e-12
+    population = FastIonPopulation(
+        density_fraction=0.04,
+        pressure_gradient=-2.0,
+        transit_frequency_hz=35_000.0,
+        precession_frequency_hz=4_000.0,
+        resonance_width_hz=2_500.0,
+    )
+    closure = GyroLandauClosure(
+        resonant_coefficient=1.3,
+        dispersive_coefficient=0.2,
+        diamagnetic_frequency_hz=2_000.0,
+        thermal_landau_damping_hz=3.0,
+    )
+    resonant_frequency = 2.0 * population.precession_frequency_hz + population.transit_frequency_hz
+    resonant_drive = gyro_landau_closure_drive(
+        resonant_frequency,
+        toroidal_mode=2,
+        transit_harmonic=1,
+        population=population,
+        closure=closure,
+    )
+    stabilizing_population = replace(population, pressure_gradient=jnp.abs(population.pressure_gradient))
+    stabilizing_drive = gyro_landau_closure_drive(
+        resonant_frequency,
+        toroidal_mode=2,
+        transit_harmonic=1,
+        population=stabilizing_population,
+        closure=closure,
+    )
+    off_resonant_drive = gyro_landau_closure_drive(
+        resonant_frequency + 12.0 * population.resonance_width_hz,
+        toroidal_mode=2,
+        transit_harmonic=1,
+        population=population,
+        closure=closure,
+    )
+    metric = 0.0 if float(resonant_drive) > float(off_resonant_drive) > 0.0 and float(stabilizing_drive) < 0.0 else 1.0
+    return _pass_fail(
+        gate_id,
+        metric,
+        tolerance,
+        "gyro-Landau closure drive has the expected resonant peak and pressure-gradient sign",
+    )
+
+
 def _synthetic_boozer_spectrum() -> BoozerSpectrum:
     return BoozerSpectrum(
         source="synthetic_validation",
@@ -840,6 +895,21 @@ def _wout_like_from_netcdf(path: Path) -> SimpleNamespace:
 def _local_external_file(*parts: str) -> Path | None:
     path = Path("/Users/rogerio/local").joinpath(*parts)
     return path if path.exists() else None
+
+
+def _slice_boozer_geometry_surfaces(geometry: BoozerGeometry, indices: Any) -> BoozerGeometry:
+    index_array = jnp.asarray(indices, dtype=int)
+    updates: dict[str, Any] = {
+        "s": geometry.s[index_array],
+        "bmnc": geometry.bmnc[index_array],
+        "iota": geometry.iota[index_array],
+        "boozer_i": geometry.boozer_i[index_array],
+        "boozer_g": geometry.boozer_g[index_array],
+    }
+    for name in ("bmns", "rmnc", "rmns", "zmns", "zmnc", "pmns", "pmnc", "gmnc", "gmns"):
+        value = getattr(geometry, name)
+        updates[name] = None if value is None else value[index_array]
+    return replace(geometry, **updates)
 
 
 def _gate_boozer_harmonic_projection() -> GateResult:
@@ -1297,6 +1367,131 @@ def _gate_boozmn_metric_radial_stiffness_hermitian() -> GateResult:
     )
 
 
+def _gate_boozmn_global_angular_convergence() -> GateResult:
+    gate_id = "boozmn_global_angular_convergence"
+    tolerance = 1.0e-3
+    fixture = _booz_xform_fixture("boozmn_LandremanSenguptaPlunk_section5p3.nc")
+    if fixture is None:
+        return GateResult(
+            gate_id=gate_id,
+            status="skipped",
+            metric=float("nan"),
+            tolerance=tolerance,
+            message="missing local booz_xform_jax boozmn_LandremanSenguptaPlunk_section5p3.nc fixture",
+        )
+    geometry = read_boozmn_geometry(fixture)
+    harmonics = jnp.asarray([[1.0, 0.0], [2.0, 1.0]])
+    coarse = solve_radial_block_eigenmodes(
+        radial_block_problem_from_boozer_geometry(
+            geometry,
+            harmonics,
+            mass_density=3.4e-8,
+            theta_points=16,
+            zeta_points=16,
+        )
+    )
+    reference = solve_radial_block_eigenmodes(
+        radial_block_problem_from_boozer_geometry(
+            geometry,
+            harmonics,
+            mass_density=3.4e-8,
+            theta_points=32,
+            zeta_points=32,
+        )
+    )
+    metric = float(max_relative_error(coarse.frequencies_hz[:4], reference.frequencies_hz[:4]))
+    return _pass_fail(
+        gate_id,
+        metric,
+        tolerance,
+        "real-boozmn global radial block frequencies are stable under angular quadrature refinement",
+    )
+
+
+def _gate_boozmn_global_radial_surface_coarsening() -> GateResult:
+    gate_id = "boozmn_global_radial_surface_coarsening"
+    tolerance = 2.0e-2
+    fixture = _booz_xform_fixture("boozmn_LandremanSenguptaPlunk_section5p3.nc")
+    if fixture is None:
+        return GateResult(
+            gate_id=gate_id,
+            status="skipped",
+            metric=float("nan"),
+            tolerance=tolerance,
+            message="missing local booz_xform_jax boozmn_LandremanSenguptaPlunk_section5p3.nc fixture",
+        )
+    geometry = read_boozmn_geometry(fixture)
+    harmonics = jnp.asarray([[1.0, 0.0], [2.0, 1.0]])
+    full = solve_radial_block_eigenmodes(
+        radial_block_problem_from_boozer_geometry(
+            geometry,
+            harmonics,
+            mass_density=3.4e-8,
+            theta_points=16,
+            zeta_points=16,
+        )
+    )
+    coarse_geometry = _slice_boozer_geometry_surfaces(geometry, jnp.asarray([0, 1, 3, 4]))
+    coarse = solve_radial_block_eigenmodes(
+        radial_block_problem_from_boozer_geometry(
+            coarse_geometry,
+            harmonics,
+            mass_density=3.4e-8,
+            theta_points=16,
+            zeta_points=16,
+        )
+    )
+    metric = float(relative_l2_error(coarse.frequencies_hz[:2], full.frequencies_hz[:2]))
+    return _pass_fail(
+        gate_id,
+        metric,
+        tolerance,
+        "lowest real-boozmn global radial block modes are stable under a one-surface coarsening check",
+    )
+
+
+def _gate_boozmn_global_boundary_and_stiffness_variants() -> GateResult:
+    gate_id = "boozmn_global_boundary_and_stiffness_variants"
+    tolerance = 2.0e-5
+    fixture = _booz_xform_fixture("boozmn_LandremanSenguptaPlunk_section5p3.nc")
+    if fixture is None:
+        return GateResult(
+            gate_id=gate_id,
+            status="skipped",
+            metric=float("nan"),
+            tolerance=tolerance,
+            message="missing local booz_xform_jax boozmn_LandremanSenguptaPlunk_section5p3.nc fixture",
+        )
+    geometry = read_boozmn_geometry(fixture)
+    harmonics = jnp.asarray([[1.0, 0.0], [2.0, 1.0]])
+    residuals = []
+    finite_failure = 0.0
+    for boundary_condition in ("dirichlet", "neumann"):
+        for radial_stiffness_method in ("metric", "mass"):
+            result = solve_radial_block_eigenmodes(
+                radial_block_problem_from_boozer_geometry(
+                    geometry,
+                    harmonics,
+                    mass_density=3.4e-8,
+                    radial_stiffness_method=radial_stiffness_method,
+                    radial_coupling_fraction=0.004,
+                    theta_points=16,
+                    zeta_points=16,
+                    boundary_condition=boundary_condition,
+                )
+            )
+            residuals.append(float(jnp.max(result.residuals[:4])))
+            if not bool(jnp.all(jnp.isfinite(result.frequencies_hz[:4]))):
+                finite_failure = 1.0
+    metric = max(max(residuals), finite_failure)
+    return _pass_fail(
+        gate_id,
+        metric,
+        tolerance,
+        "real-boozmn global block operator stays finite and low-residual for Dirichlet/Neumann and metric/mass radial stiffness variants",
+    )
+
+
 def _gate_stellgap_ctok_local_continuum() -> GateResult:
     gate_id = "stellgap_ctok_local_continuum"
     tolerance = 4.0e-2
@@ -1322,6 +1517,35 @@ def _gate_stellgap_ctok_local_continuum() -> GateResult:
         comparison.p95_relative_error,
         tolerance,
         f"FAX local Boozer continuum matches ORNL STELLGAP CTOK test output on {comparison.count} matched surfaces",
+    )
+
+
+def _gate_stellgap_ctok_largest_gap_parity() -> GateResult:
+    gate_id = "stellgap_ctok_largest_gap_parity"
+    tolerance = 6.0e-2
+    boozmn = _local_external_file("Stellgap_test_inputs", "boozmn_ctok.nc")
+    alfven_post = _local_external_file("Stellgap_test_problem", "alfven_post")
+    if boozmn is None or alfven_post is None:
+        return GateResult(
+            gate_id=gate_id,
+            status="skipped",
+            metric=float("nan"),
+            tolerance=tolerance,
+            message="missing local ORNL STELLGAP CTOK test artifacts under /Users/rogerio/local",
+        )
+    parity = stellgap_ctok_gap_parity(
+        boozmn_path=boozmn,
+        alfven_post_path=alfven_post,
+        mass_density=2.0 * PROTON_MASS * 1.0e19,
+        theta_points=32,
+        zeta_points=32,
+    )
+    metric = max(parity.p95_largest_gap_center_relative_error, parity.p95_largest_gap_width_relative_error)
+    return _pass_fail(
+        gate_id,
+        metric,
+        tolerance,
+        f"FAX and STELLGAP CTOK largest local gap centers/widths agree on {parity.count} matched surfaces",
     )
 
 
@@ -2060,6 +2284,17 @@ def registered_validation_gates() -> tuple[ValidationGate, ...]:
             _runner=_gate_fast_ion_eigenfunction_drive_localization,
         ),
         ValidationGate(
+            gate_id="fast_ion_gyro_landau_closure_signs",
+            title="Gyro-Landau fast-ion closure signs",
+            layer="fast-ion",
+            quantity="resonant peak and pressure-gradient sign",
+            tolerance=1.0e-12,
+            citation="FAR3D gyro-fluid Landau-closure model retains resonant EP drive/damping through energetic-particle density and parallel-momentum moments",
+            command="python -m pytest tests/test_fast_ions.py tests/test_validation_registry.py",
+            tags=("fast-ion", "landau-closure", "far3d", "resonance"),
+            _runner=_gate_fast_ion_gyro_landau_closure_signs,
+        ),
+        ValidationGate(
             gate_id="boozer_harmonic_projection",
             title="Boozer harmonic projection",
             layer="boozer",
@@ -2225,6 +2460,39 @@ def registered_validation_gates() -> tuple[ValidationGate, ...]:
             _runner=_gate_boozmn_metric_radial_stiffness_hermitian,
         ),
         ValidationGate(
+            gate_id="boozmn_global_angular_convergence",
+            title="Real boozmn global angular convergence",
+            layer="global-eigenmode",
+            quantity="relative frequency change under angular refinement",
+            tolerance=1.0e-3,
+            citation="Real-boozmn global radial block frequencies must be stable under Boozer theta/zeta quadrature refinement",
+            command="python -m pytest -m requires_booz_xform_jax tests/test_boozer.py tests/test_validation_registry.py",
+            tags=("boozer", "global", "convergence", "boozmn", "angular"),
+            _runner=_gate_boozmn_global_angular_convergence,
+        ),
+        ValidationGate(
+            gate_id="boozmn_global_radial_surface_coarsening",
+            title="Real boozmn radial surface coarsening",
+            layer="global-eigenmode",
+            quantity="relative lowest-mode frequency change",
+            tolerance=2.0e-2,
+            citation="Real-boozmn global radial block lowest modes must be stable under a documented radial-surface coarsening check",
+            command="python -m pytest -m requires_booz_xform_jax tests/test_boozer.py tests/test_validation_registry.py",
+            tags=("boozer", "global", "convergence", "boozmn", "radial"),
+            _runner=_gate_boozmn_global_radial_surface_coarsening,
+        ),
+        ValidationGate(
+            gate_id="boozmn_global_boundary_and_stiffness_variants",
+            title="Real boozmn boundary/stiffness variants",
+            layer="global-eigenmode",
+            quantity="maximum residual and finite-output check",
+            tolerance=2.0e-5,
+            citation="Real-boozmn global radial block operator must remain finite and low-residual for Dirichlet/Neumann boundaries and metric/mass radial stiffness variants",
+            command="python -m pytest -m requires_booz_xform_jax tests/test_boozer.py tests/test_validation_registry.py",
+            tags=("boozer", "global", "boundary", "stiffness", "boozmn"),
+            _runner=_gate_boozmn_global_boundary_and_stiffness_variants,
+        ),
+        ValidationGate(
             gate_id="stellgap_ctok_local_continuum",
             title="STELLGAP CTOK local continuum comparison",
             layer="cross-code",
@@ -2234,6 +2502,17 @@ def registered_validation_gates() -> tuple[ValidationGate, ...]:
             command="python -m pytest tests/test_validation_registry.py",
             tags=("cross-code", "stellgap", "boozer", "continuum"),
             _runner=_gate_stellgap_ctok_local_continuum,
+        ),
+        ValidationGate(
+            gate_id="stellgap_ctok_largest_gap_parity",
+            title="STELLGAP CTOK largest local-gap parity",
+            layer="cross-code",
+            quantity="p95 largest-gap center/width relative error",
+            tolerance=6.0e-2,
+            citation="ORNL STELLGAP CTOK public continuum branches compared against FAX real-boozmn local 3-D Boozer largest adjacent-branch gap centers and widths",
+            command="python -m pytest tests/test_cross_code.py tests/test_validation_registry.py",
+            tags=("cross-code", "stellgap", "gap", "boozer", "continuum"),
+            _runner=_gate_stellgap_ctok_largest_gap_parity,
         ),
         ValidationGate(
             gate_id="stellgap_public_postprocess_parity",

@@ -203,7 +203,10 @@ and weights it by normalized eigenfunction intensity:
 
 The radial trapezoid rule is used for profile weighting. This makes drive
 screens differentiable with respect to profile parameters, mode frequencies,
-and eigenfunction structure. It does not yet solve drift-kinetic equations.
+and eigenfunction structure. ``GyroLandauClosure`` uses the same projection
+path with resonant, dispersive, diamagnetic, and thermal-Landau damping
+coefficients so external FAR3D/CAS3D-K parity can calibrate a documented
+closure. It does not yet solve drift-kinetic equations.
 
 Plot Generation
 ---------------
@@ -219,5 +222,6 @@ Performance Measurement
 ``fax benchmark`` separates cold compile time from warmed runtime where
 possible. Benchmark families currently include analytic local branches, global
 block dense solves, sparse/Krylov solves, matrix-free application, VMEC/Boozer
-adapters, STELLGAP artifacts, and AE3D artifacts. Runtime tables are not
-physics claims unless the associated validation metric also passes.
+adapters, STELLGAP artifacts, a bounded STELLGAP executable status capture,
+and AE3D artifacts. Runtime tables are not physics claims unless the associated
+validation metric also passes and external executable status is ``completed``.

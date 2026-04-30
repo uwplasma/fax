@@ -111,7 +111,8 @@ Current Figures
 
    First public cross-code comparison dashboard: FAX local 3-D Boozer
    continuum branches overlaid on ORNL STELLGAP CTOK output, with a radial
-   spectrum-error panel.
+   spectrum-error panel. The validation registry also checks largest
+   adjacent-branch local gap centers and widths on the same matched surfaces.
 
 .. figure:: _static/external_code_artifact_dashboard.svg
    :alt: STELLGAP and AE3D public artifact parity dashboard.

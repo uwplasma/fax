@@ -1305,10 +1305,10 @@ Sources:
 Turn the reduced physics layers into publication-grade stellarator validation
 and differentiable design studies that can produce new FAX-native results:
 
-1. Extend the first STELLGAP CTOK local-continuum parity gate to additional STELLGAP/literature geometries, then add true AE3D/CAS3D/FAR3D global-mode parity where input/output data and executable builds are available.
-2. Add convergence gates for real `boozmn` harmonic truncation, Boozer angular grids, radial surface sampling, radial block resolution, and local/global branch sensitivity.
+1. Extend the STELLGAP CTOK local-continuum and largest-local-gap gates to additional STELLGAP/literature geometries, then add true AE3D/CAS3D/FAR3D global-mode parity where input/output data and executable builds are available.
+2. Extend the new real-`boozmn` angular, radial-surface, boundary-condition, and radial-stiffness convergence gates to larger radial grids, Boozer harmonic truncation sweeps, and multiple geometries.
 3. Add additional radial boundary-condition variants beyond Dirichlet/Neumann and validate them on analytic and cross-code targets.
-4. Upgrade perturbative fast-ion drive/damping from the current eigenfunction-weighted screen toward FAR3D/CAS3D-K comparable closures, with sign, resonance, and growth-rate gates.
+4. Calibrate the reduced gyro-Landau fast-ion drive/damping closure against FAR3D/CAS3D-K comparable outputs, with sign, resonance, growth-rate, and eigenfunction-overlap gates.
 5. Wire `boozer_pipeline_mode_avoidance_objective` to a real differentiable `vmec_jax`/`booz_xform_jax` builder and add finite-difference/adjoint consistency plots for VMEC-to-stability gradients.
 6. Use the differentiable-design study API on real VMEC/Boozer geometries to produce novel design maps: sensitivity-ranked boundary/profile variables, UQ-aware AE risk bands, inverse-designed resonance avoidance, and alpha/beam resonance robustness scans.
 7. Publish the staged `v0.0.1` GitHub release when GitHub Actions are available so the PyPI trusted-publishing workflow can complete.
@@ -1344,12 +1344,14 @@ validated comparison family:
 
 Implementation status: `fax benchmark` now supports named benchmark families
 (`analytic-local`, `global-block`, `global-matrix-free`, `global-krylov`,
-`vmec-boozer`, `ae3d-artifact`, `stellgap-ctok`) and writes JSON/CSV artifacts
-plus the first `benchmark_family_packet` docs plot. Next, add Markdown reports,
-JAX-native matrix-free eigensolver families, executable STELLGAP/AE3D timings
-once portable builds are stable, and GPU memory telemetry. Do not claim a
-speedup unless the physics metric also passes the corresponding validation
-gate.
+`vmec-boozer`, `ae3d-artifact`, `stellgap-ctok`, `stellgap-executable`) and
+writes JSON/CSV artifacts plus the first `benchmark_family_packet` docs plot.
+The executable STELLGAP family records completed/failed/timeout/skipped status
+and must not be used as a speed comparison until it produces `alfven_spec`
+cleanly. Next, add Markdown reports, JAX-native matrix-free eigensolver
+families, executable AE3D timings once portable builds are stable, and GPU
+memory telemetry. Do not claim a speedup unless the physics metric also passes
+the corresponding validation gate.
 
 ### 2026-04-29 Real-Boozer TOML Global Eigenmode Workflow
 
@@ -1368,3 +1370,46 @@ Docs and README now include the real-Boozer CLI commands and a generated
 handoff gap: the same validated real-Boozer block operator is now exercised
 through the end-user TOML, artifact, and plotting path rather than only through
 Python examples and registry gates.
+
+### 2026-04-30 STELLGAP Gap Parity, Boozer Convergence, And Gyro-Landau Closure
+
+Advanced the remaining validation lanes without overstating external-code
+parity:
+
+- Added `stellgap_ctok_gap_parity`, which compares FAX and public ORNL
+  STELLGAP CTOK largest adjacent-branch local gap centers and widths on
+  matched surfaces. This is stronger than artifact parsing and complements the
+  existing p95 branch-frequency gate, but it is still a local continuum/gap
+  comparison rather than a full global eigenmode comparison.
+- Added `run_stellgap_ctok_executable` and the `stellgap-executable` benchmark
+  family. The runner copies public CTOK inputs into a temporary directory and
+  records return code, output files, stdout/stderr tails, and elapsed time. On
+  the current local gfortran/OpenMPI build, `/Users/rogerio/local/Stellgap/xstgap`
+  still fails while opening an invalid `alfven_spec...` path, so the benchmark
+  records `failed` status and no runtime parity claim is made.
+- Added real-`boozmn` global radial block gates for angular quadrature
+  convergence, radial surface coarsening, and Dirichlet/Neumann plus
+  metric/mass radial-stiffness variants. These keep the global radial 3-D
+  operator protected while the external global parity data are being assembled.
+- Added `GyroLandauClosure`, `gyro_landau_closure_drive`, and
+  `gyro_landau_eigenfunction_drive` as the first reduced FAR3D/CAS3D-K-facing
+  fast-ion closure API. The current gate verifies resonance peaking,
+  pressure-gradient sign, differentiability, and damping offsets. It is not
+  yet calibrated to FAR3D/CAS3D-K growth rates.
+- Updated README, ReadTheDocs pages, changelog, release notes, validation
+  registry tests, and benchmark tests to make these claim boundaries explicit.
+
+Remaining open lanes after this milestone:
+
+1. Obtain runnable or archived global AE3D/CAS3D/FAR3D/STELLGAP input/output
+   pairs for true FAX-vs-code global eigenfrequency and mode-structure parity.
+2. Repair or rebuild the local STELLGAP CTOK executable path so `xstgap`
+   produces `alfven_spec` reliably; only then add it to runtime comparison
+   tables.
+3. Calibrate the gyro-Landau closure coefficients against FAR3D/CAS3D-K
+   kinetic growth/damping references.
+4. Wire a real differentiable VMEC boundary/design-variable builder into the
+   existing `boozer_pipeline_*` objectives and add finite-difference checks at
+   the VMEC input-variable level.
+5. Tag and publish `v0.0.1` through GitHub/PyPI once Actions restart and the
+   local release gate is still green.
