@@ -31,8 +31,10 @@ CAS3D/CAS3D-K/FAR3D kinetic growth-rate validation
    with CAS3D-K and FAR3D on matched distributions, equilibria, and mode
    structures. Current status: in progress. Synthetic gyro-Landau closure
    recovery, the held-out ``fax kinetic-parity`` contract, and ``fax
-   far3d-ingest`` for FAR3D ``lincheck`` output are implemented, but real
-   kinetic growth-rate parity is not.
+   far3d-ingest`` for FAR3D ``lincheck`` output are implemented. Real FAR3D
+   GPU artifacts now cover parser traceability, run-length convergence, and a
+   finite-beta scan, but calibrated held-out kinetic growth-rate parity is not
+   complete.
 
 Fully calibrated fast-ion drive/damping
    The reduced fast-ion closure must be calibrated, cross-validated, and given
@@ -69,7 +71,9 @@ First Implementation Steps
 3. Define the FAR3D/CAS3D-K growth-rate data schema and add the first archived
    calibration/validation case. The schema, ``fax kinetic-parity``, and FAR3D
    ``lincheck`` ingestion are now implemented in :doc:`kinetic_validation`;
-   real archived FAR3D or CAS3D-K cases remain to be added.
+   real FAR3D GPU artifacts exist for runtime, convergence, and finite-beta
+   scan development. Held-out closure parity against FAR3D/CAS3D-K remains to
+   be added.
 4. Choose a small set of VMEC boundary variables for the first end-to-end
    differentiable design check and compare JAX gradients to finite differences.
 5. Keep ``fax maturity`` and this page updated whenever a milestone moves from

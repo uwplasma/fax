@@ -138,3 +138,41 @@ Regenerate the figure with:
 .. code-block:: bash
 
    python examples/research/far3d_gpu_convergence_ladder.py --output-dir docs/_static
+
+FAR3D Fast-Ion Beta Scan
+------------------------
+
+With the 200-step run length established as stable for this small diagnostic,
+the next bounded FAR3D executable run scanned the energetic-particle beta input
+``bet0_f = 0.000, 0.010, 0.030, 0.060, 0.090`` for the same public DIII-D
+case. The runs were archived under
+``external_artifacts/far3d/gpu_diiid_nvhpc_beta_scan`` and completed in 12
+seconds total on ``office``.
+
+The finite-beta branch is monotonic in the parsed FAR3D ``lincheck`` mean
+growth estimates:
+
+* ``bet0_f = 0.010``: mean ``gam = 0.0147696554``;
+* ``bet0_f = 0.030``: mean ``gam = 0.0511065958``;
+* ``bet0_f = 0.060``: mean ``gam = 0.1006467917``;
+* ``bet0_f = 0.090``: mean ``gam = 0.177477``.
+
+A finite-beta linear fit gives slope ``2.0007`` in FAR3D code units per
+``bet0_f``. The ``bet0_f = 0`` run is kept in the artifact set as a control:
+its printed growth estimates have a much larger across-field/harmonic spread
+(``0.8968795``) and are not used as a calibrated branch point.
+
+.. figure:: _static/far3d_gpu_beta_scan.svg
+   :alt: FAR3D GPU fast-ion beta scan dashboard.
+
+   FAR3D GPU finite-beta scan for the public DIII-D example. The beta-zero
+   control is drawn separately; the finite-beta points show a monotonic growth
+   trend that is useful for closure-calibration development. This remains a
+   single-geometry FAR3D artifact, not a calibrated FAX/FAR3D kinetic parity
+   result.
+
+Regenerate the figure with:
+
+.. code-block:: bash
+
+   python examples/research/far3d_gpu_beta_scan.py --output-dir docs/_static

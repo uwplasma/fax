@@ -239,6 +239,51 @@ def default_benchmark_manifest() -> tuple[BenchmarkManifestEntry, ...]:
                 "and comparing FAX closure predictions against held-out growth rates."
             ),
         ),
+        BenchmarkManifestEntry(
+            benchmark_id="far3d_diiid_gpu_fastion_beta_scan",
+            code="FAR3D",
+            geometry="DIII-D public example Eq_DIIID_RS",
+            physics_model="single-geometry FAR3D fast-ion beta scan of lincheck growth estimates",
+            claim_level="finite-beta scan artifact, not calibrated FAX/FAR3D kinetic parity",
+            status="active",
+            artifacts=(
+                BenchmarkArtifact(
+                    role="FAR3D beta=0.000 control lincheck output",
+                    path=str(REPO_ROOT / "external_artifacts/far3d/gpu_diiid_nvhpc_beta_scan/beta_0p000/farprt0000"),
+                ),
+                BenchmarkArtifact(
+                    role="FAR3D beta=0.010 lincheck output",
+                    path=str(REPO_ROOT / "external_artifacts/far3d/gpu_diiid_nvhpc_beta_scan/beta_0p010/farprt0000"),
+                ),
+                BenchmarkArtifact(
+                    role="FAR3D beta=0.030 lincheck output",
+                    path=str(REPO_ROOT / "external_artifacts/far3d/gpu_diiid_nvhpc_beta_scan/beta_0p030/farprt0000"),
+                ),
+                BenchmarkArtifact(
+                    role="FAR3D beta=0.060 lincheck output",
+                    path=str(REPO_ROOT / "external_artifacts/far3d/gpu_diiid_nvhpc_beta_scan/beta_0p060/farprt0000"),
+                ),
+                BenchmarkArtifact(
+                    role="FAR3D beta=0.090 lincheck output",
+                    path=str(REPO_ROOT / "external_artifacts/far3d/gpu_diiid_nvhpc_beta_scan/beta_0p090/farprt0000"),
+                ),
+            ),
+            expected_metrics={
+                "finite_beta_mean_growth_slope_code_units_per_beta": 2.0007,
+                "beta_0p09_mean_growth_code_units": 0.177477,
+                "finite_beta_monotonic_growth": 1.0,
+                "beta_zero_control_growth_spread_code_units": 0.8968795,
+            },
+            validation_gate_ids=(
+                "far3d_fastion_beta_scan_monotonic_finite_beta_branch",
+                "far3d_gpu_diiid_artifact_ingestion",
+            ),
+            next_parity_step=(
+                "Fit the FAX reduced gyro-Landau closure on a subset of FAR3D "
+                "beta/distribution points and test it against held-out FAR3D "
+                "growth-rate outputs, then repeat on at least one stellarator geometry."
+            ),
+        ),
     )
 
 

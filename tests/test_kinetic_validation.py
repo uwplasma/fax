@@ -10,6 +10,7 @@ import pytest
 
 from fax.far3d import (
     far3d_lincheck_convergence,
+    far3d_lincheck_parameter_scan,
     far3d_rows_to_kinetic_dataset,
     load_far3d_lincheck_dataset,
     read_far3d_lincheck,
@@ -28,6 +29,7 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 FAR3D_GPU_ARTIFACT = REPO_ROOT / "external_artifacts/far3d/gpu_diiid_nvhpc/farprt0000"
 FAR3D_GPU_DATASET = REPO_ROOT / "external_artifacts/far3d/gpu_diiid_nvhpc/kinetic_dataset.json"
 FAR3D_GPU_CONVERGENCE_DIR = REPO_ROOT / "external_artifacts/far3d/gpu_diiid_nvhpc_convergence"
+FAR3D_GPU_BETA_SCAN_DIR = REPO_ROOT / "external_artifacts/far3d/gpu_diiid_nvhpc_beta_scan"
 
 
 def _dataset() -> KineticGrowthRateDataset:
@@ -393,3 +395,36 @@ def test_far3d_lincheck_convergence_rejects_missing_or_inconsistent_inputs(tmp_p
     empty.write_text("no lincheck rows here\n", encoding="utf-8")
     with pytest.raises(ValueError, match="no FAR3D lincheck rows"):
         far3d_lincheck_convergence({1: empty})
+
+
+def test_archived_far3d_gpu_beta_scan_has_monotonic_finite_beta_growth_branch():
+    paths = {
+        0.00: FAR3D_GPU_BETA_SCAN_DIR / "beta_0p000/farprt0000",
+        0.01: FAR3D_GPU_BETA_SCAN_DIR / "beta_0p010/farprt0000",
+        0.03: FAR3D_GPU_BETA_SCAN_DIR / "beta_0p030/farprt0000",
+        0.06: FAR3D_GPU_BETA_SCAN_DIR / "beta_0p060/farprt0000",
+        0.09: FAR3D_GPU_BETA_SCAN_DIR / "beta_0p090/farprt0000",
+    }
+
+    points = far3d_lincheck_parameter_scan(paths)
+
+    assert [point.parameter_value for point in points] == [0.0, 0.01, 0.03, 0.06, 0.09]
+    assert all(point.row_count == 24 for point in points)
+    finite_beta_growth = [point.mean_growth_code_units for point in points[1:]]
+    assert finite_beta_growth == sorted(finite_beta_growth)
+    assert points[1].mean_growth_code_units == pytest.approx(0.014769655416666666)
+    assert points[2].mean_growth_code_units == pytest.approx(0.05110659583333333)
+    assert points[-1].mean_growth_code_units == pytest.approx(0.17747700000000002)
+    assert points[-1].spread_growth_code_units == pytest.approx(0.0)
+    assert points[0].spread_growth_code_units > 0.8
+    assert points[-1].to_dict()["dominant_mode_label"]
+
+
+def test_far3d_lincheck_parameter_scan_rejects_empty_inputs(tmp_path: Path):
+    with pytest.raises(ValueError, match="at least one"):
+        far3d_lincheck_parameter_scan({})
+
+    empty = tmp_path / "empty.out"
+    empty.write_text("no lincheck rows here\n", encoding="utf-8")
+    with pytest.raises(ValueError, match="no FAR3D lincheck rows"):
+        far3d_lincheck_parameter_scan({0.1: empty})

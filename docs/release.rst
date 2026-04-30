@@ -65,8 +65,10 @@ state before publishing:
   archived with its run-reported normalization, and the same case has a
   50/100/200/400-step run-length ladder. The 200-step ``lincheck`` rows agree
   with the 400-step reference below ``3e-5`` maximum relative growth-rate
-  difference. This is still not a kinetic growth-rate parity claim because it
-  is one DIII-D input, not a matched multi-geometry FAR3D/CAS3D-K benchmark.
+  difference. A first ``bet0_f`` scan shows a monotonic finite-beta growth
+  branch with the beta-zero run retained as a control. This is still not a
+  kinetic growth-rate parity claim because it is one DIII-D input, not a
+  matched multi-geometry FAR3D/CAS3D-K benchmark.
 * CAS3D and converged FAR3D parity remain pending until runnable input/output
   pairs or portable benchmark builds are available.
 

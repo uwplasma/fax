@@ -140,6 +140,20 @@ difference for common mode labels. This is a useful convergence screen for
 future FAR3D parity packets, but it is still one DIII-D case and not a
 multi-geometry kinetic validation set.
 
+The first parameter scan using that run length is archived under
+``external_artifacts/far3d/gpu_diiid_nvhpc_beta_scan``. It scans
+``bet0_f = 0.000, 0.010, 0.030, 0.060, 0.090`` and checks that the finite-beta
+branch has monotonically increasing mean ``lincheck`` growth:
+
+.. figure:: _static/far3d_gpu_beta_scan.svg
+   :alt: FAR3D GPU fast-ion beta scan dashboard.
+
+   FAR3D finite-beta growth trend for the public DIII-D example. The
+   ``bet0_f = 0`` point is flagged as a control because its printed growth
+   estimates have a large across-field/harmonic spread. The finite-beta trend
+   is a useful next calibration target, but this is not yet a held-out
+   FAX-vs-FAR3D kinetic parity result.
+
 Python API
 ----------
 

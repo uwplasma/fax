@@ -94,6 +94,39 @@ class Far3dLincheckConvergencePoint:
         }
 
 
+@dataclass(frozen=True)
+class Far3dLincheckScanPoint:
+    """Summary of FAR3D ``lincheck`` rows at one scan parameter value."""
+
+    parameter_value: float
+    row_count: int
+    mean_growth_code_units: float
+    mean_omega_code_units: float
+    max_growth_code_units: float
+    min_growth_code_units: float
+    spread_growth_code_units: float
+    spread_omega_code_units: float
+    dominant_mode_label: str
+    dominant_mode_growth_code_units: float
+    dominant_mode_omega_code_units: float
+
+    def to_dict(self) -> dict[str, float | int | str]:
+        """Return a JSON-serializable scan record."""
+        return {
+            "parameter_value": self.parameter_value,
+            "row_count": self.row_count,
+            "mean_growth_code_units": self.mean_growth_code_units,
+            "mean_omega_code_units": self.mean_omega_code_units,
+            "max_growth_code_units": self.max_growth_code_units,
+            "min_growth_code_units": self.min_growth_code_units,
+            "spread_growth_code_units": self.spread_growth_code_units,
+            "spread_omega_code_units": self.spread_omega_code_units,
+            "dominant_mode_label": self.dominant_mode_label,
+            "dominant_mode_growth_code_units": self.dominant_mode_growth_code_units,
+            "dominant_mode_omega_code_units": self.dominant_mode_omega_code_units,
+        }
+
+
 def read_far3d_lincheck(path: str | Path, *, variables: tuple[str, ...] | None = None) -> tuple[Far3dLinearGrowthRow, ...]:
     """Read FAR3D ``lincheck`` rows from a run log or ``confil`` output.
 
@@ -192,6 +225,38 @@ def far3d_lincheck_convergence(
                 max_abs_omega_delta_to_reference=max(omega_delta),
                 max_relative_growth_delta_to_reference=max(growth_relative_delta),
                 max_relative_omega_delta_to_reference=max(omega_relative_delta),
+            )
+        )
+    return tuple(points)
+
+
+def far3d_lincheck_parameter_scan(
+    paths_by_parameter: Mapping[float, str | Path],
+) -> tuple[Far3dLincheckScanPoint, ...]:
+    """Summarize FAR3D ``lincheck`` output over a scalar parameter scan."""
+    if not paths_by_parameter:
+        raise ValueError("at least one FAR3D scan output is required")
+    points: list[Far3dLincheckScanPoint] = []
+    for parameter, path in sorted((float(key), value) for key, value in paths_by_parameter.items()):
+        rows = read_far3d_lincheck(path)
+        if not rows:
+            raise ValueError(f"no FAR3D lincheck rows found for parameter {parameter}")
+        growth = tuple(row.growth_rate_code_units for row in rows)
+        omega = tuple(row.omega_code_units for row in rows)
+        dominant = max(rows, key=lambda row: row.growth_rate_code_units)
+        points.append(
+            Far3dLincheckScanPoint(
+                parameter_value=parameter,
+                row_count=len(rows),
+                mean_growth_code_units=_mean(growth),
+                mean_omega_code_units=_mean(omega),
+                max_growth_code_units=max(growth),
+                min_growth_code_units=min(growth),
+                spread_growth_code_units=max(growth) - min(growth),
+                spread_omega_code_units=max(omega) - min(omega),
+                dominant_mode_label=dominant.mode_label,
+                dominant_mode_growth_code_units=dominant.growth_rate_code_units,
+                dominant_mode_omega_code_units=dominant.omega_code_units,
             )
         )
     return tuple(points)

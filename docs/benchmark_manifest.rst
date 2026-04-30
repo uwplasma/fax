@@ -43,6 +43,15 @@ Current Entries
    the 200-step output is within ``2.6e-5`` growth-rate relative error of the
    400-step reference. It is not multi-geometry FAR3D/CAS3D-K kinetic parity.
 
+``far3d_diiid_gpu_fastion_beta_scan``
+   FAR3D public DIII-D fast-ion beta scan at
+   ``bet0_f = 0.000, 0.010, 0.030, 0.060, 0.090`` using the same GPU
+   executable and 200-step run length. The finite-beta branch is monotonic in
+   parsed mean ``lincheck`` growth, with slope about ``2.0007`` FAR3D code
+   units per ``bet0_f``. The beta-zero run is retained as a control because
+   its growth spread is large; this is a single-geometry scan artifact, not a
+   calibrated kinetic parity benchmark.
+
 Why This Matters
 ----------------
 

@@ -38,6 +38,7 @@ python examples/research/stellgap_ctok_comparison.py
 python examples/research/external_code_artifact_dashboard.py
 python examples/research/far3d_gpu_lincheck_artifact.py
 python examples/research/far3d_gpu_convergence_ladder.py
+python examples/research/far3d_gpu_beta_scan.py
 python examples/research/publication_figure_suite.py
 ```
 
@@ -169,6 +170,19 @@ plots convergence of the parsed `lincheck` rows against the 400-step reference.
 It shows that the 200-step artifact is stable to better than `3e-5` in maximum
 relative growth-rate difference for common mode labels. This is still a
 single-case convergence screen, not FAR3D/CAS3D-K kinetic parity.
+
+## FAR3D GPU Fast-Ion Beta Scan
+
+```bash
+python examples/research/far3d_gpu_beta_scan.py
+```
+
+This reads the archived FAR3D DIII-D `bet0_f = 0.000, 0.010, 0.030, 0.060,
+0.090` scan and plots the finite-beta growth trend, real-frequency trend,
+growth spread, and highest-beta mode cloud. The beta-zero case is shown as a
+control rather than a calibrated branch point. This is the first executable
+FAR3D parameter-scan artifact for closure-calibration development, not a
+held-out FAX/FAR3D kinetic parity result.
 
 ## Publication Figure Suite
 

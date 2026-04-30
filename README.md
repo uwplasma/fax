@@ -183,9 +183,10 @@ The v0.0.1 gate currently covers:
   Boozer continuum,
 - FAR3D GPU executable-run traceability for the public DIII-D example, with
   parsed `lincheck` growth/frequency rows and a run-reported code-frequency
-  normalization.
+  normalization, a 50/100/200/400-step convergence ladder, and a finite-beta
+  parameter scan.
 
-Current headline local metrics are 232 passing tests, 95.3% coverage,
+Current headline local metrics are 234 passing tests, 95.3% coverage,
 STELLGAP CTOK p95 sorted-spectrum relative error about 2.55%, AE3D dense
 spectrum max relative error about 1.6e-6, and AE3D B-weighted mode-shape error
 about 5.2e-8 for the checked public modes; AE3D mode-peak closest-continuum
@@ -207,7 +208,10 @@ normalization. The repository includes one real FAR3D/NVHPC GPU run artifact
 for parser and runtime traceability; it is not yet a converged kinetic parity
 benchmark. A follow-on `maxstp = 50, 100, 200, 400` ladder on the same case
 shows the 200-step `lincheck` output within `3e-5` maximum relative
-growth-rate difference of the 400-step reference.
+growth-rate difference of the 400-step reference. A first `bet0_f` scan on the
+same executable/input shows a monotonic finite-beta growth branch and keeps the
+beta-zero output as a flagged control, still not as calibrated FAR3D/FAX
+kinetic parity.
 
 ```bash
 fax far3d-ingest far3d.out --dataset-id far3d_ctok_linear_v1 \
@@ -216,6 +220,8 @@ fax far3d-ingest far3d.out --dataset-id far3d_ctok_linear_v1 \
 ```
 
 ![FAR3D GPU lincheck artifact](docs/_static/far3d_gpu_lincheck_artifact.png)
+
+![FAR3D GPU finite-beta scan](docs/_static/far3d_gpu_beta_scan.png)
 
 ## What Is New Relative To Legacy AE Codes
 

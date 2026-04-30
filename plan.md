@@ -1812,3 +1812,40 @@ now stable enough to serve as a parser/convergence fixture, but not enough to
 calibrate or validate the FAX fast-ion closure. The next step is a true FAR3D
 physics benchmark suite: beta/distribution scans, at least one stellarator
 case, documented mode IDs and units, and held-out growth-rate comparisons.
+
+### 2026-04-30 FAR3D Fast-Ion Beta Scan Artifact
+
+Advanced the FAR3D lane from run-length convergence to a first bounded
+parameter scan:
+
+- ran the same public DIII-D ``Eq_DIIID_RS`` FAR3D GPU executable/input on
+  ``office`` at ``bet0_f = 0.000, 0.010, 0.030, 0.060, 0.090`` with
+  ``maxstp = 200``,
+- archived compact ``farprt0000``, ``farin``, ``stdout``, ``stderr``,
+  runtime, and extracted ``lincheck`` rows under
+  ``external_artifacts/far3d/gpu_diiid_nvhpc_beta_scan``,
+- added ``Far3dLincheckScanPoint`` and
+  ``far3d_lincheck_parameter_scan`` for scalar FAR3D parameter scans,
+- added real-artifact regression tests proving all scan points have 24
+  ``lincheck`` rows and that the finite-beta branch has monotonically
+  increasing mean growth,
+- added a benchmark-manifest entry for
+  ``far3d_diiid_gpu_fastion_beta_scan``,
+- added ``examples/research/far3d_gpu_beta_scan.py``,
+- generated ``docs/_static/far3d_gpu_beta_scan.{png,svg}``,
+- updated README, docs, examples, release notes, and the benchmark manifest.
+
+Observed metrics for this DIII-D artifact:
+
+- total scan runtime on ``office``: 12 seconds,
+- finite-beta mean-growth values: ``0.0147696554``, ``0.0511065958``,
+  ``0.1006467917``, ``0.177477`` in FAR3D code units,
+- finite-beta linear slope: ``2.0007`` code units per ``bet0_f``,
+- beta-zero control growth spread: ``0.8968795`` code units.
+
+Important scope: this is the first FAR3D executable parameter-scan artifact
+and is useful for developing the closure-calibration workflow, but it is still
+one DIII-D reduced-MHD/gyrofluid case. It is not calibrated FAX/FAR3D kinetic
+parity. The next step is to fit FAX reduced gyro-Landau closure coefficients
+on a subset of FAR3D beta/distribution points, validate on held-out points,
+and repeat the workflow on at least one stellarator geometry.

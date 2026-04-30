@@ -141,6 +141,14 @@ Current Figures
    This is a single-case convergence screen, not a multi-geometry kinetic
    parity result.
 
+.. figure:: _static/far3d_gpu_beta_scan.svg
+   :alt: FAR3D GPU fast-ion beta scan dashboard.
+
+   FAR3D GPU fast-ion beta scan for the same public DIII-D case. The
+   ``bet0_f = 0`` control is plotted separately, while the finite-beta branch
+   gives a monotonic growth trend for future closure calibration. This is a
+   single-geometry FAR3D artifact, not calibrated kinetic parity.
+
 .. figure:: _static/continuum_artifact_dashboard.svg
    :alt: Dashboard generated from fax continuum artifacts.
 

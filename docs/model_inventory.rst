@@ -191,5 +191,6 @@ External executable status capture
 
 Still planned
    Broader STELLGAP geometries, FAX-vs-AE3D global radial mode comparisons,
-   CAS3D/CAS3D-K benchmarks, FAR3D growth-rate comparisons, and GPU/runtime
+   CAS3D/CAS3D-K benchmarks, held-out FAR3D growth-rate parity beyond the
+   current runtime/convergence/finite-beta artifacts, and GPU/runtime
    comparisons against executable reference codes.

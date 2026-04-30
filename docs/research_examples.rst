@@ -317,6 +317,22 @@ compares the ``maxstp = 50, 100, 200, 400`` ``lincheck`` rows against the
 ``3e-5`` maximum relative growth-rate error for common mode labels. Treat this
 as a convergence screen for one FAR3D DIII-D input, not as kinetic parity.
 
+FAR3D GPU Fast-Ion Beta Scan
+----------------------------
+
+Run after the archived FAR3D beta-scan artifacts are present in the repository:
+
+.. code-block:: bash
+
+   python examples/research/far3d_gpu_beta_scan.py
+
+This reads ``external_artifacts/far3d/gpu_diiid_nvhpc_beta_scan`` and compares
+``bet0_f = 0.000, 0.010, 0.030, 0.060, 0.090``. The finite-beta branch has
+monotonically increasing parsed mean ``lincheck`` growth, while the beta-zero
+run is shown as a control because its printed growth spread is large. Treat
+this as the first executable FAR3D parameter-scan artifact for closure
+development, not as held-out FAX/FAR3D kinetic parity.
+
 Publication Figure Suite
 ------------------------
 
