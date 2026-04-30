@@ -48,6 +48,7 @@ available:
 
 .. code-block:: bash
 
+   fax far3d-ingest far3d.out --dataset-id far3d_case --geometry-id ctok --frequency-scale-hz 2.0e6 --output kinetic_dataset.json
    fax kinetic-parity kinetic_dataset.json predictions.json --json
 
 Local quality gate while GitHub Actions is unavailable:

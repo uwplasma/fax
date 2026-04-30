@@ -1718,3 +1718,28 @@ public AE3D modes. This is a real global-mode placement check and a useful
 paper figure metric, but it is still not final native FAX-vs-AE3D global
 operator parity. The next RG-1 step remains constructing a matched native FAX
 global operator comparison with external eigenfrequencies and eigenfunctions.
+
+### 2026-04-30 FAR3D Lincheck Ingestion
+
+Started turning the RG-2/RG-3 kinetic contract into an external-code ingestion
+workflow:
+
+- inspected local FAR3D `src/lincheck.f90` and confirmed the diagnostic rows
+  printed as `variable : m=... n=... gam=... om_r=...`,
+- added `fax.far3d.Far3dLinearGrowthRow`,
+- added `read_far3d_lincheck` for FAR3D run logs/unit-6 output,
+- added `far3d_rows_to_kinetic_dataset` and `load_far3d_lincheck_dataset`,
+- added the `fax far3d-ingest` CLI command,
+- documented the workflow in README and `docs/kinetic_validation.rst`,
+- added parser, conversion, public export, and CLI tests,
+- reran the local FAR3D CMake build and confirmed it still blocks at
+  `src/matrix.f90: use cudafor` because `cudafor.mod` is unavailable on the
+  current CPU toolchain; `matrix_cpu.f90` exists upstream, so the next external
+  code task is a portable CPU build recipe or archived FAR3D outputs.
+
+Important scope: this is not yet FAR3D kinetic parity. The parser preserves
+native FAR3D `gam` and `om_r` code units and requires an explicit
+`frequency_scale_hz`/`growth_rate_scale_hz` before creating the FAX
+Hz-normalized validation packet. The next step is to obtain or run one portable
+FAR3D linear benchmark with documented normalizations, ingest it, and make the
+resulting held-out growth-rate gate part of the benchmark manifest.

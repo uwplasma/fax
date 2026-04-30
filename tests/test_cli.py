@@ -164,6 +164,48 @@ def test_cli_kinetic_parity_reports_held_out_growth_rate_gate(tmp_path, capsys):
     assert payload["validation_sign_accuracy"] == 1.0
 
 
+def test_cli_far3d_ingest_writes_kinetic_dataset(tmp_path, capsys):
+    far3d_output = tmp_path / "far3d.out"
+    dataset_path = tmp_path / "far3d_dataset.json"
+    far3d_output.write_text(
+        """
+ psi     : m=   4 n=   1 gam=  1.00000E-03 om_r=  4.00000E-02
+ nfast   : m=   5 n=   1 gam= -2.00000D-03 om_r=  5.00000D-02
+""",
+        encoding="utf-8",
+    )
+
+    assert (
+        main(
+            [
+                "far3d-ingest",
+                str(far3d_output),
+                "--dataset-id",
+                "cli_far3d",
+                "--geometry-id",
+                "ctok",
+                "--frequency-scale-hz",
+                "2000000",
+                "--growth-rate-scale-hz",
+                "1000000",
+                "--variable",
+                "psi",
+                "--output",
+                str(dataset_path),
+                "--json",
+            ]
+        )
+        == 0
+    )
+    payload = json.loads(capsys.readouterr().out)
+    written = json.loads(dataset_path.read_text(encoding="utf-8"))
+    assert payload == written
+    assert payload["dataset_id"] == "cli_far3d"
+    assert len(payload["cases"]) == 1
+    assert payload["cases"][0]["frequency_hz"] == 80_000.0
+    assert payload["cases"][0]["growth_rate_hz"] == 1_000.0
+
+
 def test_cli_validate_default_prints_progress(tmp_path, capsys):
     config_path = tmp_path / "case.toml"
     config_path.write_text("[run]\ncase = \"validate_progress\"\n", encoding="utf-8")

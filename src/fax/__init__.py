@@ -71,6 +71,12 @@ from .fast_ions import (
     gyro_landau_closure_drive,
     gyro_landau_eigenfunction_drive,
 )
+from .far3d import (
+    Far3dLinearGrowthRow,
+    far3d_rows_to_kinetic_dataset,
+    load_far3d_lincheck_dataset,
+    read_far3d_lincheck,
+)
 from .gap_models import (
     BasicAlfvenGapMap,
     CoupledGapBranches,
@@ -212,9 +218,11 @@ __all__ = [
     "FaxConfig",
     "FastIonPopulation",
     "FastIonModeDriveResult",
+    "Far3dLinearGrowthRow",
     "GyroLandauClosure",
     "GyroLandauCalibrationResult",
     "fit_gyro_landau_eigenfunction_closure",
+    "far3d_rows_to_kinetic_dataset",
     "KineticGrowthRateCase",
     "KineticGrowthRateDataset",
     "KineticGrowthRateParity",
@@ -261,6 +269,7 @@ __all__ = [
     "boozer_global_isolated_mode_omega2",
     "boozer_pipeline_isolated_mode_avoidance_objective",
     "landreman_paul_qa_lowres",
+    "load_far3d_lincheck_dataset",
     "load_continuum_artifacts",
     "load_convergence_artifacts",
     "load_global_eigenmode_artifacts",
@@ -303,6 +312,7 @@ __all__ = [
     "radial_block_rayleigh_omega2",
     "radial_block_stiffness_matvec",
     "read_boozmn_geometry",
+    "read_far3d_lincheck",
     "run",
     "run_benchmark",
     "run_named_benchmark_family",

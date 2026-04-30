@@ -4,12 +4,14 @@ from __future__ import annotations
 
 import argparse
 import json
+from pathlib import Path
 import sys
 
 from . import __version__
 from .benchmark_manifest import benchmark_manifest_markdown, benchmark_manifest_summary
 from .benchmarks import known_benchmark_families
 from .config import ConfigError, FaxConfig, load_config
+from .far3d import load_far3d_lincheck_dataset, read_far3d_lincheck
 from .kinetic_validation import (
     kinetic_growth_rate_parity,
     kinetic_growth_rate_parity_markdown,
@@ -70,7 +72,7 @@ def build_parser() -> argparse.ArgumentParser:
         description=(
             "Run or inspect differentiable Alfvén eigenmode calculations from a TOML file. "
             "Subcommands: validate, continuum, eigenmodes, convergence, benchmark, benchmark-manifest, "
-            "kinetic-parity, maturity, plot-continuum, plot-global, plot-convergence."
+            "kinetic-parity, far3d-ingest, maturity, plot-continuum, plot-global, plot-convergence."
         ),
     )
     parser.add_argument("config", nargs="?", help="Path to a fax TOML configuration file.")
@@ -199,6 +201,53 @@ def build_command_parser() -> argparse.ArgumentParser:
         help="Minimum held-out growth-rate sign accuracy required for a passing parity gate.",
     )
 
+    far3d = subparsers.add_parser(
+        "far3d-ingest",
+        help="Convert FAR3D lincheck growth/frequency rows into a FAX kinetic dataset.",
+    )
+    far3d.add_argument("lincheck_output", help="FAR3D run log or unit-6 output containing lincheck rows.")
+    far3d.add_argument("--dataset-id", required=True, help="Dataset identifier for the generated FAX packet.")
+    far3d.add_argument("--geometry-id", required=True, help="Geometry identifier for all imported rows.")
+    far3d.add_argument(
+        "--frequency-scale-hz",
+        type=float,
+        required=True,
+        help="Multiplier from FAR3D om_r code units to frequency in Hz.",
+    )
+    far3d.add_argument(
+        "--growth-rate-scale-hz",
+        type=float,
+        help="Multiplier from FAR3D gam code units to growth rate in Hz. Defaults to --frequency-scale-hz.",
+    )
+    far3d.add_argument(
+        "--growth-rate-uncertainty-hz",
+        type=float,
+        help="Absolute one-sigma uncertainty assigned to each imported growth rate.",
+    )
+    far3d.add_argument(
+        "--relative-growth-rate-uncertainty",
+        type=float,
+        default=0.1,
+        help="Relative uncertainty used when --growth-rate-uncertainty-hz is omitted.",
+    )
+    far3d.add_argument(
+        "--split",
+        choices=("calibration", "validation"),
+        default="validation",
+        help="Dataset split assigned to imported rows.",
+    )
+    far3d.add_argument(
+        "--variable",
+        action="append",
+        default=[],
+        help="Import only this FAR3D lincheck variable, e.g. psi or nfast. May be repeated.",
+    )
+    far3d.add_argument("--citation", default="", help="Citation or benchmark provenance note for the generated dataset.")
+    far3d.add_argument("--notes", default="", help="Additional notes added to every imported case.")
+    far3d.add_argument("--output", help="Optional path for the generated dataset JSON.")
+    far3d.add_argument("--json", action="store_true", help="Print only the generated dataset JSON.")
+    far3d.add_argument("--quiet", action="store_true", help="Alias for --json.")
+
     plot = subparsers.add_parser("plot-continuum", help="Plot artifacts written by fax continuum.")
     plot.add_argument("artifact_dir", help="Directory containing continuum_summary.json and continuum_branches.csv.")
     plot.add_argument("--output-dir", help="Directory for generated figures; defaults to artifact_dir.")
@@ -269,6 +318,7 @@ def main(argv: list[str] | None = None) -> int:
         "benchmark",
         "benchmark-manifest",
         "kinetic-parity",
+        "far3d-ingest",
         "maturity",
         "plot-continuum",
         "plot-global",
@@ -317,6 +367,8 @@ def _main_command(argv: list[str]) -> int:
         return _main_benchmark_manifest(args)
     if args.command == "kinetic-parity":
         return _main_kinetic_parity(args)
+    if args.command == "far3d-ingest":
+        return _main_far3d_ingest(args)
     if args.command == "plot-continuum":
         return _main_plot_continuum(args)
     if args.command == "plot-convergence":
@@ -445,6 +497,54 @@ def _main_kinetic_parity(args: argparse.Namespace) -> int:
     else:
         print(kinetic_growth_rate_parity_markdown(parity))
     return 0 if parity.passed else 1
+
+
+def _main_far3d_ingest(args: argparse.Namespace) -> int:
+    machine_readable = bool(args.json or args.quiet)
+    variables = tuple(args.variable) if args.variable else None
+    try:
+        rows = read_far3d_lincheck(args.lincheck_output, variables=variables)
+        if not rows:
+            variable_note = f" matching variables {variables}" if variables else ""
+            raise ValueError(f"no FAR3D lincheck rows found{variable_note}")
+        dataset = load_far3d_lincheck_dataset(
+            args.lincheck_output,
+            dataset_id=args.dataset_id,
+            geometry_id=args.geometry_id,
+            frequency_scale_hz=args.frequency_scale_hz,
+            growth_rate_scale_hz=args.growth_rate_scale_hz,
+            growth_rate_uncertainty_hz=args.growth_rate_uncertainty_hz,
+            relative_growth_rate_uncertainty=args.relative_growth_rate_uncertainty,
+            split=args.split,
+            citation=args.citation,
+            notes=args.notes,
+            variables=variables,
+        )
+    except (FileNotFoundError, OSError, ValueError) as exc:
+        print(f"fax: {exc}", file=sys.stderr)
+        return 2
+
+    payload = dataset.to_dict()
+    payload_text = json.dumps(payload, indent=2, sort_keys=True)
+    if args.output:
+        output_path = Path(args.output)
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        output_path.write_text(payload_text + "\n", encoding="utf-8")
+
+    if machine_readable:
+        print(payload_text)
+    else:
+        print(f"FAX FAR3D ingest: parsed {len(rows)} lincheck rows")
+        print(f"Dataset: {dataset.dataset_id}")
+        print(f"Geometry: {args.geometry_id}")
+        print(f"Frequency scale [Hz/code-unit]: {args.frequency_scale_hz:.6g}")
+        growth_scale = args.growth_rate_scale_hz if args.growth_rate_scale_hz is not None else args.frequency_scale_hz
+        print(f"Growth-rate scale [Hz/code-unit]: {growth_scale:.6g}")
+        if args.output:
+            print(f"Wrote dataset: {args.output}")
+        else:
+            print(payload_text)
+    return 0
 
 
 def _main_plot_convergence(args: argparse.Namespace) -> int:

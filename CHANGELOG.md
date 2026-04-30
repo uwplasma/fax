@@ -27,7 +27,9 @@ Initial research release for FAX.
 - Public ORNL AE3D eigenvalue-answer parser/residual smoke gate.
 - Public ORNL STELLGAP post-processing parity gate and AE3D omega2/matrix artifact gates.
 - Public ORNL AE3D global matrix frequency and mode-shape parity gate using the public `A x = lambda B x` artifacts and `B`-weighted eigenvector correlations.
+- Public ORNL AE3D global-mode continuum-placement gate against the FAX CTOK local Boozer continuum.
 - Bounded STELLGAP CTOK executable runtime/status capture benchmark family.
+- FAR3D `lincheck` growth/frequency parser, `fax far3d-ingest` CLI, and conversion into the held-out kinetic growth-rate validation schema with explicit unit normalization.
 - Differentiable gyro-Landau closure calibration from eigenfunction-weighted growth-rate targets.
 - External-code artifact dashboard example and generated README/docs figure.
 - README status badges for tests, docs, publish, ReadTheDocs, coverage, PyPI, Python versions, license, Ruff, and JAX.
@@ -66,7 +68,8 @@ identity checks, real `boozmn` local 3-D Boozer geometry/operator checks,
 real-Boozer global radial convergence variants, reduced fast-ion resonance
 ordering, reduced gyro-Landau closure signs and coefficient calibration,
 STELLGAP CTOK largest local-gap parity, STELLGAP executable status capture, AE3D
-public matrix/mode-shape parity, and VMEC/Boozer adapter smoke tests.
+public matrix/mode-shape and continuum-placement parity, FAR3D growth-rate
+ingestion-schema validation, and VMEC/Boozer adapter smoke tests.
 
 ### Local Release Gate
 
@@ -76,7 +79,8 @@ The v0.0.1 release candidate was checked locally with:
 - `python tools/qa_figures.py`
 - `python -m ruff check .`
 - `python -m mypy src/fax`
-- `python -m pytest -q`
+- `python -m coverage run --source=src/fax -m pytest`
+- `python -m coverage report --fail-under=95`
 - `sphinx-build -W -b html docs docs/_build/html`
 - `python -m build`
 - `python -m twine check dist/*`

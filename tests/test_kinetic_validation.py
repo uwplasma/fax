@@ -8,11 +8,13 @@ import jax.numpy as jnp
 import numpy as np
 import pytest
 
+from fax.far3d import far3d_rows_to_kinetic_dataset, load_far3d_lincheck_dataset, read_far3d_lincheck
 from fax.kinetic_validation import (
     KineticGrowthRateCase,
     KineticGrowthRateDataset,
     kinetic_growth_rate_loss,
     kinetic_growth_rate_parity,
+    kinetic_growth_rate_parity_markdown,
     load_kinetic_growth_rate_dataset,
     load_kinetic_growth_rate_predictions,
 )
@@ -106,6 +108,33 @@ def test_kinetic_growth_rate_dataset_enforces_reviewer_contracts():
         KineticGrowthRateDataset(cases=(dataset.cases[0], dataset.cases[0]))
 
 
+def test_kinetic_growth_rate_case_rejects_nonphysical_reference_metadata():
+    base = {
+        "case_id": "case",
+        "source_code": "FAR3D",
+        "geometry_id": "geom",
+        "mode_id": "mode",
+        "frequency_hz": 10.0,
+        "growth_rate_hz": 1.0,
+        "growth_rate_uncertainty_hz": 0.5,
+        "toroidal_mode": 1,
+    }
+
+    invalid_edits = [
+        ({"case_id": ""}, "case_id"),
+        ({"geometry_id": ""}, "geometry_id"),
+        ({"mode_id": ""}, "mode_id"),
+        ({"frequency_hz": 0.0}, "frequency_hz"),
+        ({"growth_rate_hz": float("nan")}, "growth_rate_hz"),
+        ({"resonance_radius": 1.2}, "resonance_radius"),
+        ({"source_code": "UNKNOWN"}, "source_code"),
+        ({"split": "bad-split"}, "split"),
+    ]
+    for edit, message in invalid_edits:
+        with pytest.raises(ValueError, match=message):
+            KineticGrowthRateCase(**(base | edit))
+
+
 def test_kinetic_growth_rate_parity_uses_held_out_cases_and_uncertainty_weights():
     dataset = _dataset()
     predicted = jnp.asarray([132.0, -31.0, 86.0, -28.0])
@@ -129,6 +158,18 @@ def test_kinetic_growth_rate_parity_uses_held_out_cases_and_uncertainty_weights(
     assert not failed.passed
     assert failed.status == "failed"
     assert failed.validation_sign_accuracy == 0.0
+
+
+def test_kinetic_growth_rate_parity_markdown_reports_reviewer_metrics():
+    dataset = _dataset()
+    parity = kinetic_growth_rate_parity(dataset, jnp.asarray([132.0, -31.0, 86.0, -28.0]), min_validation_count=2)
+
+    report = kinetic_growth_rate_parity_markdown(parity)
+
+    assert "# Kinetic Growth-Rate Parity" in report
+    assert "Validation normalized RMS error" in report
+    assert "| `far3d_validation_core` |" in report
+    assert "86" in report
 
 
 def test_kinetic_growth_rate_loss_is_differentiable():
@@ -166,3 +207,118 @@ def test_kinetic_growth_rate_dataset_and_predictions_load_from_json(tmp_path: Pa
     missing_path.write_text(json.dumps({"predictions": {"far3d_train_core": 1.0}}), encoding="utf-8")
     with pytest.raises(ValueError, match="missing kinetic predictions"):
         load_kinetic_growth_rate_predictions(missing_path, dataset=loaded)
+
+    list_dataset_path = tmp_path / "list_dataset.json"
+    list_dataset_path.write_text(json.dumps([dataset.cases[0].to_dict()]), encoding="utf-8")
+    assert load_kinetic_growth_rate_dataset(list_dataset_path).case_ids == ("far3d_train_core",)
+
+    invalid_dataset_path = tmp_path / "invalid_dataset.json"
+    invalid_dataset_path.write_text(json.dumps(3.14), encoding="utf-8")
+    with pytest.raises(ValueError, match="JSON object or list"):
+        load_kinetic_growth_rate_dataset(invalid_dataset_path)
+
+    short_predictions_path = tmp_path / "short_predictions.json"
+    short_predictions_path.write_text(json.dumps([1.0]), encoding="utf-8")
+    with pytest.raises(ValueError, match="prediction list length"):
+        load_kinetic_growth_rate_predictions(short_predictions_path, dataset=loaded)
+
+    invalid_predictions_path = tmp_path / "invalid_predictions.json"
+    invalid_predictions_path.write_text(json.dumps("bad"), encoding="utf-8")
+    with pytest.raises(ValueError, match="JSON mapping or list"):
+        load_kinetic_growth_rate_predictions(invalid_predictions_path, dataset=loaded)
+
+    with pytest.raises(ValueError, match="matching shapes"):
+        kinetic_growth_rate_loss(jnp.asarray([1.0]), jnp.asarray([1.0, 2.0]), jnp.asarray([1.0, 1.0]))
+    with pytest.raises(ValueError, match="one value per dataset case"):
+        kinetic_growth_rate_parity(loaded, jnp.asarray([1.0]))
+
+
+def test_far3d_lincheck_parser_reads_native_growth_and_frequency_rows(tmp_path: Path):
+    output = tmp_path / "far3d.out"
+    output.write_text(
+        """
+ copy of in:
+ psi     : m=   4 n=   1 gam=  1.25000E-03 om_r=  5.00000E-02
+ phi     : m=   5 n=   1 gam= -2.50000D-04 om_r= -6.00000D-02
+ uzt     : this is not a lincheck row
+ nfast   : m=   6 n=   2 gam=  0.00000E+00 om_r=  7.00000E-02
+""",
+        encoding="utf-8",
+    )
+
+    rows = read_far3d_lincheck(output)
+    assert [row.variable for row in rows] == ["psi", "phi", "nfast"]
+    assert rows[0].mode_label == "psi_m4_n1"
+    assert rows[0].to_dict()["variable"] == "psi"
+    np.testing.assert_allclose(rows[0].growth_rate_code_units, 1.25e-3)
+    np.testing.assert_allclose(rows[1].omega_code_units, -6.0e-2)
+    assert rows[2].line_number == 6
+
+    filtered = read_far3d_lincheck(output, variables=("PHI",))
+    assert len(filtered) == 1
+    assert filtered[0].variable == "phi"
+
+
+def test_far3d_lincheck_rows_convert_to_kinetic_growth_rate_dataset(tmp_path: Path):
+    output = tmp_path / "far3d.out"
+    output.write_text(
+        """
+ psi     : m=   4 n=   1 gam=  1.00000E-03 om_r=  4.00000E-02
+ phi     : m=   5 n=   2 gam= -2.00000E-03 om_r= -8.00000E-02
+""",
+        encoding="utf-8",
+    )
+    rows = read_far3d_lincheck(output)
+
+    dataset = far3d_rows_to_kinetic_dataset(
+        rows,
+        dataset_id="far3d_fixture",
+        geometry_id="ctok",
+        frequency_scale_hz=2.0e6,
+        growth_rate_scale_hz=1.0e6,
+        relative_growth_rate_uncertainty=0.2,
+        split="calibration",
+        citation="FAR3D lincheck fixture",
+    )
+
+    assert dataset.dataset_id == "far3d_fixture"
+    assert dataset.cases[0].case_id == "far3d_fixture_psi_m4_n1"
+    assert dataset.cases[0].frequency_hz == 80_000.0
+    assert dataset.cases[0].growth_rate_hz == 1_000.0
+    assert dataset.cases[0].growth_rate_uncertainty_hz == 200.0
+    assert dataset.cases[0].split == "calibration"
+    assert dataset.cases[1].toroidal_mode == 2
+    assert dataset.cases[1].frequency_hz == 160_000.0
+    assert "omega_code_units=-0.08" in dataset.cases[1].notes
+
+    loaded = load_far3d_lincheck_dataset(
+        output,
+        dataset_id="far3d_loaded",
+        geometry_id="ctok",
+        frequency_scale_hz=2.0e6,
+        growth_rate_uncertainty_hz=50.0,
+        variables=("psi",),
+    )
+    assert len(loaded.cases) == 1
+    assert loaded.cases[0].growth_rate_uncertainty_hz == 50.0
+
+    with pytest.raises(ValueError, match="at least one FAR3D"):
+        far3d_rows_to_kinetic_dataset((), dataset_id="empty", geometry_id="ctok", frequency_scale_hz=1.0)
+    with pytest.raises(ValueError, match="scales must be positive"):
+        far3d_rows_to_kinetic_dataset(rows, dataset_id="bad", geometry_id="ctok", frequency_scale_hz=0.0)
+    with pytest.raises(ValueError, match="relative_growth_rate_uncertainty"):
+        far3d_rows_to_kinetic_dataset(
+            rows,
+            dataset_id="bad",
+            geometry_id="ctok",
+            frequency_scale_hz=1.0,
+            relative_growth_rate_uncertainty=0.0,
+        )
+    with pytest.raises(ValueError, match="growth_rate_uncertainty_hz"):
+        far3d_rows_to_kinetic_dataset(
+            rows,
+            dataset_id="bad",
+            geometry_id="ctok",
+            frequency_scale_hz=1.0,
+            growth_rate_uncertainty_hz=0.0,
+        )

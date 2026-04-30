@@ -37,6 +37,9 @@ API
 .. automodule:: fax.kinetic_validation
    :members:
 
+.. automodule:: fax.far3d
+   :members:
+
 .. automodule:: fax.gaps
    :members:
 

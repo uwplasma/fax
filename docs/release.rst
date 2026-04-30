@@ -27,7 +27,8 @@ Until GitHub Actions resume, this local gate is mandatory:
    python tools/qa_figures.py
    python -m ruff check .
    python -m mypy src/fax
-   python -m pytest -q
+   python -m coverage run --source=src/fax -m pytest
+   python -m coverage report --fail-under=95
    sphinx-build -W -b html docs docs/_build/html
    python -m build
    python -m twine check dist/*
@@ -59,6 +60,9 @@ state before publishing:
   ``alfven_spec``.
 * ``ae3d-global-mode`` is public AE3D matrix/eigenvector parity, not native
   FAX-vs-AE3D operator parity.
+* ``far3d-ingest`` converts FAR3D ``lincheck`` rows into the FAX kinetic
+  validation schema, but is not a kinetic growth-rate parity claim until a
+  documented FAR3D run and normalization are archived.
 * CAS3D/FAR3D parity remains pending until runnable input/output pairs or
   portable executable builds are available.
 

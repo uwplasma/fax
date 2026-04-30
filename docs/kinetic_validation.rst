@@ -69,6 +69,36 @@ Run the gate:
    fax kinetic-parity kinetic_dataset.json predictions.json
    fax kinetic-parity kinetic_dataset.json predictions.json --json
 
+FAR3D Ingestion
+---------------
+
+FAR3D writes linear growth/frequency estimates in its ``lincheck`` diagnostic
+using native normalized units. FAX can now parse those rows directly, but it
+requires an explicit normalization scale before producing a Hz-based validation
+packet:
+
+.. code-block:: bash
+
+   fax far3d-ingest far3d.out \
+     --dataset-id far3d_ctok_linear_v1 \
+     --geometry-id ctok \
+     --frequency-scale-hz 2.0e6 \
+     --growth-rate-scale-hz 2.0e6 \
+     --variable psi \
+     --output kinetic_dataset.json
+
+This command parses rows of the form:
+
+.. code-block:: text
+
+   psi     : m=   4 n=   1 gam=  1.23456E-03 om_r=  5.67890E-02
+
+and records both the converted values and the original FAR3D ``gam``/``om_r``
+code-unit values in each case note. The normalization is intentionally explicit:
+until a FAR3D benchmark packet documents its input, output, and unit conversion,
+the resulting JSON is an ingestion artifact, not a completed kinetic parity
+claim.
+
 Python API
 ----------
 
@@ -86,6 +116,21 @@ Python API
    predicted = jnp.asarray([124.0, -27.0])
    report = kinetic_growth_rate_parity(dataset, predicted)
    gradient = jax.grad(lambda scale: kinetic_growth_rate_loss(scale * predicted, dataset.growth_rate_hz, dataset.growth_rate_uncertainty_hz))(1.0)
+
+FAR3D output can be ingested from Python:
+
+.. code-block:: python
+
+   from fax import load_far3d_lincheck_dataset, read_far3d_lincheck
+
+   rows = read_far3d_lincheck("far3d.out", variables=("psi", "nfast"))
+   dataset = load_far3d_lincheck_dataset(
+       "far3d.out",
+       dataset_id="far3d_ctok_linear_v1",
+       geometry_id="ctok",
+       frequency_scale_hz=2.0e6,
+       variables=("psi", "nfast"),
+   )
 
 The report is a validation contract. It does not turn the current reduced
 gyro-Landau closure into a kinetic-code replacement until real FAR3D/CAS3D-K

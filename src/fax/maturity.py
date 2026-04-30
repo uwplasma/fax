@@ -53,8 +53,9 @@ def registered_research_grade_milestones() -> tuple[ResearchGradeMilestone, ...]
             status="in_progress",
             current_state=(
                 "STELLGAP CTOK local-continuum/gap parity and AE3D public matrix/"
-                "mode-shape artifact parity are implemented. Native FAX global "
-                "operator parity against AE3D/CAS3D/STELLGAP is not yet closed."
+                "mode-shape plus continuum-placement artifact parity are implemented. "
+                "Native FAX global operator parity against AE3D/CAS3D/STELLGAP is "
+                "not yet closed."
             ),
             target_state=(
                 "FAX native global 3-D operator reproduces matched AE3D, CAS3D/"
@@ -88,11 +89,12 @@ def registered_research_grade_milestones() -> tuple[ResearchGradeMilestone, ...]
         ResearchGradeMilestone(
             milestone_id="kinetic_growth_rate_parity",
             title="CAS3D-K and FAR3D kinetic growth-rate validation",
-            status="planned",
+            status="in_progress",
             current_state=(
                 "FAX has reduced fast-ion resonance screens and synthetic gyro-Landau "
                 "coefficient-recovery gates plus a FAR3D/CAS3D-K growth-rate dataset "
-                "contract and held-out parity CLI. It has no populated real kinetic "
+                "contract, held-out parity CLI, and FAR3D lincheck ingestion with "
+                "explicit unit normalization. It has no populated real kinetic "
                 "growth-rate parity case yet."
             ),
             target_state=(
@@ -118,7 +120,7 @@ def registered_research_grade_milestones() -> tuple[ResearchGradeMilestone, ...]
                 "fast-ion benchmark input/output archive",
             ),
             next_steps=(
-                "Build or archive one portable FAR3D linear benchmark in the kinetic dataset schema",
+                "Use far3d-ingest on one portable FAR3D linear benchmark with documented unit conversion",
                 "Add a CAS3D-K-style perturbative reference table in the same schema when available",
                 "Fit closure coefficients only on training cases and test on held-out cases",
             ),

@@ -198,6 +198,14 @@ Current external-code artifacts are tracked by `fax benchmark-manifest` and
 [the benchmark manifest](docs/benchmark_manifest.rst).
 FAR3D/CAS3D-K growth-rate packets are checked with `fax kinetic-parity`; this
 is a held-out validation contract, not yet a completed kinetic-code replacement.
+FAR3D `lincheck` logs can be converted into that schema with explicit unit
+normalization:
+
+```bash
+fax far3d-ingest far3d.out --dataset-id far3d_ctok_linear_v1 \
+  --geometry-id ctok --frequency-scale-hz 2.0e6 \
+  --growth-rate-scale-hz 2.0e6 --output kinetic_dataset.json
+```
 
 ## What Is New Relative To Legacy AE Codes
 
