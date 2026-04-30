@@ -27,5 +27,7 @@ def test_recent_public_exports_exist():
     assert fax.far3d_lincheck_parameter_scan
     assert fax.read_far3d_lincheck
     assert fax.VmecEquilibriaCase
+    assert fax.available_vmec_equilibria_boozmn_cases
     assert fax.available_vmec_equilibria_cases
+    assert fax.slice_boozer_geometry_surfaces
     assert fax.vmec_equilibria_catalog

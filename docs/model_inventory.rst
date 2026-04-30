@@ -50,6 +50,14 @@ VMEC-equilibria catalog
    This is a ``smoke-tested`` adapter/screening layer, not native
    Boozer/global cross-code parity.
 
+VMEC-equilibria public Boozer artifacts
+   ``available_vmec_equilibria_boozmn_cases`` selects catalog entries with
+   public ``boozmn`` files. ``examples/research/vmec_equilibria_boozer_global.py``
+   runs those artifacts through the global radial 3-D Boozer operator and
+   checks Boozer-Jacobian identity, residuals, boundary-condition variants, and
+   metric-vs-mass radial stiffness variants. This is a ``smoke-tested``
+   public-artifact global-operator gate, not an external-code parity result.
+
 Metric geometry
    ``fax.metric.MetricGeometry`` stores angular grids, Jacobian weights,
    magnetic field strength, density, and field-line derivative coefficients.

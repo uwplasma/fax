@@ -54,6 +54,10 @@ Equilibrium Helpers
    Filter the VMEC-equilibria catalog to cases whose ``wout`` files are present
    in the local clone.
 
+``available_vmec_equilibria_boozmn_cases``
+   Filter the VMEC-equilibria catalog to cases whose public ``boozmn`` files
+   are present in the local clone.
+
 Mode and Continuum Helpers
 --------------------------
 
@@ -104,6 +108,10 @@ Boozer Geometry
 
 ``read_boozmn_geometry``
    Read real ``boozmn`` geometry harmonics.
+
+``slice_boozer_geometry_surfaces``
+   Coarsen or select radial surfaces from a ``BoozerGeometry`` while preserving
+   harmonic content and metadata.
 
 ``run_booz_xform_jax_geometry_from_wout``
    Run local ``booz_xform_jax`` from a VMEC ``wout`` file.

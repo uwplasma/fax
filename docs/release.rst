@@ -76,6 +76,11 @@ state before publishing:
   profile-continuum catalog over HSX, W7-X, NCSX, ARIES-CS, LHD, TJ-II, QHS,
   and ITER-like references. This is a geometry-matrix screening artifact, not
   full Boozer/global cross-code parity.
+* ``examples/research/vmec_equilibria_boozer_global.py`` reads the public
+  ``boozmn`` subset in that clone and runs HSX/Ku-Boozer cases through the
+  global radial 3-D Boozer operator with residual, boundary-condition, and
+  radial-stiffness variant metrics. This is still not AE3D/CAS3D/STELLGAP
+  parity, but it closes the public-artifact Boozer/global adapter lane.
 
 Do not publish the existing ``v0.0.1`` draft until the tag points at the final
 release commit and the full local release gate above is green.

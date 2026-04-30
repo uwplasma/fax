@@ -197,6 +197,30 @@ full Boozer/global cross-code parity.
    rotational-transform profiles, device geometry spread, profile-continuum
    frequency scales, and field-strength trends.
 
+VMEC-Equilibria Boozer Global Operator
+--------------------------------------
+
+Run:
+
+.. code-block:: bash
+
+   python examples/research/vmec_equilibria_boozer_global.py --root /Users/rogerio/local/vmec_equilibria
+
+This reads public ``boozmn`` artifacts in the same external clone, currently
+HSX QHS, HSX mirror, and a Ku-Boozer quasi-helical case, then assembles FAX's
+global radial 3-D Boozer operator on a coarsened radial grid. It writes
+SVG/PNG, CSV, and JSON artifacts for lowest global frequencies, radial
+envelopes, Boozer-Jacobian identity errors, and boundary/stiffness variants.
+This is a public-artifact global-operator gate toward multi-geometry parity,
+not a claim of AE3D/CAS3D/STELLGAP physics agreement.
+
+.. figure:: _static/vmec_equilibria_boozer_global.svg
+   :alt: VMEC-equilibria public Boozer global radial operator comparison.
+
+   Public VMEC-equilibria ``boozmn`` artifacts propagated through the FAX
+   global radial 3-D Boozer operator, with boundary-condition and
+   radial-stiffness variant checks.
+
 Real ``boozmn`` Local 3-D Continuum
 -----------------------------------
 

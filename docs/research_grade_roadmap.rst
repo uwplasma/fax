@@ -57,6 +57,10 @@ Multi-geometry cross-code benchmark suite
    W7-X, NCSX, ARIES-CS, LHD, TJ-II, QHS, and ITER-like references for
    profile-continuum adapter screening; the remaining step is to promote this
    into Boozer/global operator and external-code parity on the same geometries.
+   A public ``boozmn`` subset now exercises HSX and Ku-Boozer cases through the
+   FAX global radial 3-D Boozer operator with boundary/stiffness variants. The
+   remaining acceptance gate is still matched AE3D/CAS3D/STELLGAP physics
+   parity on those or equivalent geometries.
 
 Final no-proxy/no-reduced-model release gate
    This remains blocked until the previous milestones pass. Reduced models may
@@ -80,8 +84,9 @@ First Implementation Steps
    be added.
 4. Choose a small set of VMEC boundary variables for the first end-to-end
    differentiable design check and compare JAX gradients to finite differences.
-5. Use the VMEC-equilibria catalog to select the next HSX/W7-X/LHD/NCSX
-   Boozer/global parity cases, then add matching STELLGAP/AE3D/CAS3D/FAR3D
-   artifacts where possible.
+5. Use the VMEC-equilibria public Boozer subset to select the next
+   HSX/Ku-Boozer parity cases, then add matching STELLGAP/AE3D/CAS3D/FAR3D
+   artifacts where possible. Extend to W7-X/LHD/NCSX once Boozer artifacts are
+   generated reproducibly.
 6. Keep ``fax maturity`` and this page updated whenever a milestone moves from
    planned to in-progress or complete.

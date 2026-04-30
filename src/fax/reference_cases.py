@@ -50,6 +50,7 @@ class VmecEquilibriaCase:
     relative_vmec_input: Path | None
     references: tuple[str, ...]
     tags: tuple[str, ...]
+    relative_boozmn: Path | None = None
 
     def wout_path(self, *, root: str | Path | None = None) -> Path:
         """Return the absolute local VMEC ``wout`` path."""
@@ -60,6 +61,12 @@ class VmecEquilibriaCase:
         if self.relative_vmec_input is None:
             return None
         return vmec_equilibria_root(root=root) / self.relative_vmec_input
+
+    def boozmn_path(self, *, root: str | Path | None = None) -> Path | None:
+        """Return the absolute local Boozer ``boozmn`` path, if cataloged."""
+        if self.relative_boozmn is None:
+            return None
+        return vmec_equilibria_root(root=root) / self.relative_boozmn
 
     def missing_paths(self, *, root: str | Path | None = None) -> tuple[Path, ...]:
         """Return required local paths that are unavailable."""
@@ -72,6 +79,11 @@ class VmecEquilibriaCase:
     def is_available(self, *, root: str | Path | None = None) -> bool:
         """Return whether all required local paths exist."""
         return not self.missing_paths(root=root)
+
+    def is_boozmn_available(self, *, root: str | Path | None = None) -> bool:
+        """Return whether a cataloged local ``boozmn`` artifact exists."""
+        boozmn = self.boozmn_path(root=root)
+        return boozmn is not None and boozmn.exists()
 
 
 def local_root() -> Path:
@@ -109,6 +121,17 @@ def vmec_equilibria_catalog() -> tuple[VmecEquilibriaCase, ...]:
             relative_vmec_input=None,
             references=(repo, "HSX/QHS_vac/README"),
             tags=("stellarator", "quasi-helical", "vacuum", "boozmn-available"),
+            relative_boozmn=Path("HSX/QHS_vac/boozmn_HSX_QHS_vac.nc"),
+        ),
+        VmecEquilibriaCase(
+            case_id="hsx_mirror_flip14",
+            family="HSX",
+            description="HSX mirror configuration with public Boozer harmonics.",
+            relative_wout=Path("HSX/Mirror_flip14/wout_MIRFL14_11p.nc"),
+            relative_vmec_input=None,
+            references=(repo, "HSX/Mirror_flip14"),
+            tags=("stellarator", "quasi-helical", "mirror", "boozmn-available"),
+            relative_boozmn=Path("HSX/Mirror_flip14/boozmn_MIRFL14_11p.nc"),
         ),
         VmecEquilibriaCase(
             case_id="hsx_filtered",
@@ -136,6 +159,16 @@ def vmec_equilibria_catalog() -> tuple[VmecEquilibriaCase, ...]:
             relative_vmec_input=Path("QHS46/ns201/input.qhs46_ns201"),
             references=(repo, "QHS46/wistell_website_base_case/README"),
             tags=("stellarator", "quasi-helical", "wistell"),
+        ),
+        VmecEquilibriaCase(
+            case_id="ku_boozer_n4qh_b4_a79a",
+            family="Ku-Boozer",
+            description="Ku-Boozer 2011 Nuclear Fusion quasi-helical stellarator with public Boozer harmonics.",
+            relative_wout=Path("KuBoozer_2011_NuclFusion_QHS/n4qh.b4.a79a/wout_n4qh.b4.a79a.nc"),
+            relative_vmec_input=Path("KuBoozer_2011_NuclFusion_QHS/n4qh.b4.a79a/input.n4qh.b4.a79a"),
+            references=(repo, "Ku and Boozer 2011 Nuclear Fusion quasi-helical stellarator"),
+            tags=("stellarator", "quasi-helical", "literature", "boozmn-available"),
+            relative_boozmn=Path("KuBoozer_2011_NuclFusion_QHS/n4qh.b4.a79a/boozmn_n4qh.b4.a79a.nc"),
         ),
         VmecEquilibriaCase(
             case_id="w7x_standard",
@@ -206,6 +239,11 @@ def vmec_equilibria_catalog() -> tuple[VmecEquilibriaCase, ...]:
 def available_vmec_equilibria_cases(*, root: str | Path | None = None) -> tuple[VmecEquilibriaCase, ...]:
     """Return cataloged VMEC-equilibria cases available on this machine."""
     return tuple(case for case in vmec_equilibria_catalog() if case.is_available(root=root))
+
+
+def available_vmec_equilibria_boozmn_cases(*, root: str | Path | None = None) -> tuple[VmecEquilibriaCase, ...]:
+    """Return cataloged VMEC-equilibria cases with local ``boozmn`` artifacts."""
+    return tuple(case for case in vmec_equilibria_catalog() if case.is_boozmn_available(root=root))
 
 
 def landreman_paul_qa_lowres(*, root: str | Path | None = None) -> ReferenceCase:

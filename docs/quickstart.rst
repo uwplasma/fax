@@ -46,6 +46,7 @@ Use the public VMEC-equilibria repository as a broad geometry matrix:
 
    git clone https://github.com/landreman/vmec_equilibria /Users/rogerio/local/vmec_equilibria
    python examples/research/vmec_equilibria_catalog.py --root /Users/rogerio/local/vmec_equilibria
+   python examples/research/vmec_equilibria_boozer_global.py --root /Users/rogerio/local/vmec_equilibria
 
 Run a FAR3D/CAS3D-K growth-rate parity packet once a dataset and predictions
 are available:

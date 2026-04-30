@@ -214,6 +214,27 @@ class BoozerGeometry:
         )
 
 
+def slice_boozer_geometry_surfaces(geometry: BoozerGeometry, indices: Any) -> BoozerGeometry:
+    """Return a Boozer geometry restricted to selected radial surfaces.
+
+    This is useful for convergence ladders and fast public-artifact examples
+    where a high-resolution ``boozmn`` file should be coarsened without changing
+    the angular harmonic content or metadata.
+    """
+    index_array = jnp.asarray(indices, dtype=int)
+    updates: dict[str, Any] = {
+        "s": jnp.take(geometry.s, index_array, axis=0),
+        "bmnc": jnp.take(geometry.bmnc, index_array, axis=0),
+        "iota": jnp.take(geometry.iota, index_array, axis=0),
+        "boozer_i": jnp.take(geometry.boozer_i, index_array, axis=0),
+        "boozer_g": jnp.take(geometry.boozer_g, index_array, axis=0),
+    }
+    for name in ("bmns", "rmnc", "rmns", "zmns", "zmnc", "pmns", "pmnc", "gmnc", "gmns"):
+        value = getattr(geometry, name)
+        updates[name] = None if value is None else jnp.take(value, index_array, axis=0)
+    return replace(geometry, **updates)
+
+
 @dataclass(frozen=True)
 class BoozerGeometryGrid:
     """Sampled Boozer geometry fields on ``(s, theta_B, zeta_B)`` grids."""

@@ -173,6 +173,7 @@ checkout as an external geometry matrix:
 ```bash
 git clone https://github.com/landreman/vmec_equilibria /Users/rogerio/local/vmec_equilibria
 python examples/research/vmec_equilibria_catalog.py --root /Users/rogerio/local/vmec_equilibria
+python examples/research/vmec_equilibria_boozer_global.py --root /Users/rogerio/local/vmec_equilibria
 ```
 
 ![VMEC-equilibria catalog](docs/_static/vmec_equilibria_catalog.png)
@@ -196,8 +197,11 @@ The v0.0.1 gate currently covers:
   parsed `lincheck` growth/frequency rows and a run-reported code-frequency
   normalization, a 50/100/200/400-step convergence ladder, and a finite-beta
   parameter scan.
+* Public VMEC-equilibria Boozer artifacts for HSX and Ku-Boozer QHS cases,
+  propagated through FAX's global radial 3-D Boozer operator with
+  boundary-condition and radial-stiffness variants.
 
-Current headline local metrics are 236 passing tests, 95% coverage,
+Current headline local metrics are 237 passing tests, 95% coverage,
 STELLGAP CTOK p95 sorted-spectrum relative error about 2.55%, AE3D dense
 spectrum max relative error about 1.6e-6, and AE3D B-weighted mode-shape error
 about 5.2e-8 for the checked public modes; AE3D mode-peak closest-continuum

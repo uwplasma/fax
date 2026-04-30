@@ -1884,3 +1884,28 @@ not full Boozer/global cross-code parity. The next step is to select a small
 held-out subset from this catalog, run BOOZ_XFORM/booz_xform_jax for matched
 Boozer geometry where needed, and promote those cases into STELLGAP/AE3D/CAS3D
 or FAR3D parity packets.
+
+### 2026-04-30 VMEC-Equilibria Public Boozer Global Operator
+
+Promoted the VMEC-equilibria lane from profile-only screening to public
+``boozmn`` global-operator checks:
+
+- extended ``VmecEquilibriaCase`` with optional ``relative_boozmn`` metadata
+  and path helpers,
+- added ``available_vmec_equilibria_boozmn_cases`` and cataloged HSX QHS, HSX
+  mirror, and Ku-Boozer QHS public Boozer artifacts,
+- added public ``slice_boozer_geometry_surfaces`` for radial coarsening and
+  convergence examples,
+- added tests that read the actual public ``boozmn`` artifacts when the clone
+  is present, assemble the global radial 3-D Boozer operator, and check finite
+  eigenfrequencies, small residuals, and the Boozer-Jacobian identity,
+- added ``examples/research/vmec_equilibria_boozer_global.py``,
+- generated ``docs/_static/vmec_equilibria_boozer_global.{png,svg}``,
+  ``vmec_equilibria_boozer_global.csv``, and
+  ``vmec_equilibria_boozer_global_summary.json``,
+- updated README, docs, examples, release notes, changelog, and this plan.
+
+Scope: this closes the public-artifact Boozer/global adapter lane for the
+available VMEC-equilibria ``boozmn`` subset. It is still not full
+AE3D/CAS3D/STELLGAP parity because no external eigenmode spectra are matched
+to these geometries yet.

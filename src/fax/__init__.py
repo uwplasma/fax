@@ -39,6 +39,7 @@ from .boozer import (
     run_vmec_jax_boozer_truncation_convergence,
     run_vmec_jax_fixed_boundary_boozer_geometry,
     run_vmec_jax_fixed_boundary_wout_data,
+    slice_boozer_geometry_surfaces,
 )
 from .config import FaxConfig, load_config
 from .continuum import continuum_branch_matrix, local_continuum_frequency_hz
@@ -177,6 +178,7 @@ from .plotting import (
 from .reference_cases import (
     ReferenceCase,
     VmecEquilibriaCase,
+    available_vmec_equilibria_boozmn_cases,
     available_vmec_equilibria_cases,
     landreman_paul_qa_lowres,
     vmec_equilibria_catalog,
@@ -285,6 +287,7 @@ __all__ = [
     "boozer_global_isolated_mode_omega2",
     "boozer_pipeline_isolated_mode_avoidance_objective",
     "landreman_paul_qa_lowres",
+    "available_vmec_equilibria_boozmn_cases",
     "available_vmec_equilibria_cases",
     "vmec_equilibria_catalog",
     "vmec_equilibria_root",
@@ -347,6 +350,7 @@ __all__ = [
     "run_vmec_jax_boozer_truncation_convergence",
     "run_vmec_jax_fixed_boundary_boozer_geometry",
     "run_vmec_jax_fixed_boundary_wout_data",
+    "slice_boozer_geometry_surfaces",
     "run_continuum",
     "run_convergence",
     "run_global_eigenmodes",

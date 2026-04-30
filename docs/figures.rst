@@ -215,6 +215,15 @@ Current Figures
    W7-X, NCSX, ARIES-CS, LHD, TJ-II, QHS, and an ITER-like control. This is a
    broad adapter/screening artifact, not full Boozer/global parity.
 
+.. figure:: _static/vmec_equilibria_boozer_global.svg
+   :alt: VMEC-equilibria public Boozer global radial operator comparison.
+
+   Public ``landreman/vmec_equilibria`` Boozer artifact gate. FAX reads HSX
+   and Ku-Boozer ``boozmn`` files, assembles the global radial 3-D Boozer
+   operator, and compares boundary-condition and radial-stiffness variants.
+   This advances the multi-geometry lane from profile ``wout`` screening to
+   public Boozer/global operator checks, but it is not external-code parity.
+
 .. figure:: _static/benchmark_family_packet.svg
    :alt: FAX benchmark families with physics gates.
 
