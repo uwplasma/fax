@@ -1,13 +1,21 @@
 from __future__ import annotations
 
 import json
+from pathlib import Path
 import runpy
 import sys
 
+import numpy as np
 import pytest
 
+from fax.boozer import read_boozmn_geometry
 from fax.cli import main
+from fax.global_modes import radial_block_problem_from_boozer_geometry, solve_radial_block_eigenmodes
+from fax.modes import stellarator_mode_family
 from fax.reference_cases import landreman_paul_qa_lowres
+
+
+BOOZ_XFORM_TEST_FILES = Path("/Users/rogerio/local/booz_xform_jax/tests/test_files")
 
 
 def test_cli_example(capsys):
@@ -180,6 +188,74 @@ field_periods = 1
     assert (artifact_dir / "global_eigenmodes.csv").exists()
     assert (artifact_dir / "global_mode_structures.csv").exists()
     assert len((artifact_dir / "global_eigenmodes.csv").read_text(encoding="utf-8").splitlines()) == 6
+
+
+@pytest.mark.requires_booz_xform_jax
+def test_cli_eigenmodes_real_boozmn_artifacts_match_direct_block_solve(tmp_path, capsys):
+    boozmn = BOOZ_XFORM_TEST_FILES / "boozmn_LandremanSenguptaPlunk_section5p3.nc"
+    if not boozmn.exists():
+        pytest.skip(f"missing local booz_xform_jax fixture: {boozmn}")
+
+    output_dir = tmp_path / "boozmn_global_outputs"
+    config_path = tmp_path / "boozmn_global.toml"
+    config_path.write_text(
+        f"""
+[run]
+case = "boozmn_global_cli"
+model = "global_eigenmode"
+output_dir = "{output_dir}"
+
+[equilibrium]
+source = "wout"
+use_boozer = true
+boozmn = "{boozmn}"
+
+[grid]
+radial_points = 5
+m_max = 2
+n_max = 1
+field_periods = 3
+
+[physics]
+density_scale = 1.0
+""",
+        encoding="utf-8",
+    )
+
+    assert main(["eigenmodes", str(config_path), "--max-modes", "4", "--json"]) == 0
+    payload = json.loads(capsys.readouterr().out)
+    artifact_dir = output_dir / "eigenmodes"
+
+    assert payload["case"] == "boozmn_global_cli"
+    assert payload["operator"] == "boozmn_global_3d_radial_block"
+    assert payload["geometry"]["source"] == "boozmn"
+    assert payload["reported_mode_count"] == 4
+    assert payload["harmonic_count"] == 2
+    assert payload["residual_p95"] < 2.0e-5
+    assert (artifact_dir / "global_eigenmode_summary.json").exists()
+    assert (artifact_dir / "global_eigenmode_metrics.json").exists()
+    assert (artifact_dir / "global_mode_structures.csv").exists()
+
+    geometry = read_boozmn_geometry(boozmn)
+    harmonics = stellarator_mode_family(
+        poloidal_modes=range(1, 3),
+        base_n=1,
+        field_periods=geometry.field_periods,
+        sidebands=(0,),
+    ).as_array()
+    problem = radial_block_problem_from_boozer_geometry(
+        geometry,
+        harmonics,
+        mass_density=3.4e-8,
+        radial_stiffness_method="metric",
+        theta_points=16,
+        zeta_points=16,
+        boundary_condition="dirichlet",
+    )
+    direct = solve_radial_block_eigenmodes(problem)
+    modes_csv = np.loadtxt(artifact_dir / "global_eigenmodes.csv", delimiter=",", skiprows=1)
+    np.testing.assert_allclose(modes_csv[:4, 2], np.asarray(direct.frequencies_hz[:4]), rtol=1.0e-10, atol=1.0e-6)
+    np.testing.assert_allclose(modes_csv[:4, 3], np.asarray(direct.residuals[:4]), rtol=1.0e-10, atol=1.0e-12)
 
 
 def test_cli_convergence_json_writes_artifacts(tmp_path, capsys):

@@ -1350,3 +1350,21 @@ JAX-native matrix-free eigensolver families, executable STELLGAP/AE3D timings
 once portable builds are stable, and GPU memory telemetry. Do not claim a
 speedup unless the physics metric also passes the corresponding validation
 gate.
+
+### 2026-04-29 Real-Boozer TOML Global Eigenmode Workflow
+
+Added `examples/boozmn_global_eigenmodes.toml` so users can run the
+metric-derived real-Boozer radial block operator through the public
+`fax eigenmodes` and `fax plot-global` workflow. Added a CLI integration test
+that runs this TOML path against the local
+`boozmn_LandremanSenguptaPlunk_section5p3.nc` fixture, verifies the operator
+is reported as `boozmn_global_3d_radial_block`, checks residuals below the
+registered real-geometry gate, and compares the written CSV frequencies and
+residuals against a direct call to `radial_block_problem_from_boozer_geometry`
+and `solve_radial_block_eigenmodes`.
+
+Docs and README now include the real-Boozer CLI commands and a generated
+`boozmn_global_eigenmode_artifact_dashboard` figure. This closes an important
+handoff gap: the same validated real-Boozer block operator is now exercised
+through the end-user TOML, artifact, and plotting path rather than only through
+Python examples and registry gates.

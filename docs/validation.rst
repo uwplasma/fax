@@ -313,6 +313,14 @@ yet full 3-D Alfvén-continuum validation.
    validates the radial block operator and mode-structure plumbing before
    cross-code STELLGAP/AE3D benchmarking.
 
+.. figure:: _static/boozmn_global_eigenmode_artifact_dashboard.svg
+   :alt: User-facing real-Boozer global eigenmode artifact dashboard.
+
+   User-facing real-Boozer workflow gate. The TOML/CLI path writes
+   eigenfrequency, residual, and mode-structure artifacts, and the test suite
+   compares those artifacts against the direct metric-derived radial block
+   solve on the same ``boozmn`` geometry.
+
 .. figure:: _static/stellgap_ctok_comparison.svg
    :alt: STELLGAP CTOK comparison dashboard.
 

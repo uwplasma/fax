@@ -32,6 +32,11 @@ Configuration Examples
    ``fax eigenmodes`` and ``fax plot-global`` without requiring external
    Boozer or VMEC artifacts.
 
+``examples/boozmn_global_eigenmodes.toml``
+   Real-Boozer TOML-driven global radial block case. It requires the
+   neighboring ``booz_xform_jax`` checkout fixture and exercises the same
+   ``fax eigenmodes`` artifact path users will run on new ``boozmn`` files.
+
 Validation Packet
 -----------------
 
@@ -203,12 +208,13 @@ Run:
 
    fax eigenmodes examples/global_eigenmodes.toml
    fax plot-global outputs/global_eigenmodes/eigenmodes --output-dir outputs/global_eigenmodes/figures
+   fax eigenmodes examples/boozmn_global_eigenmodes.toml --max-modes 6
+   fax plot-global outputs/boozmn_global_eigenmodes/eigenmodes --output-dir outputs/boozmn_global_eigenmodes/figures
 
 The first command writes frequencies, generalized-eigen residuals, and
 ``(mode, surface, harmonic)`` mode structures. The second command turns those
-artifacts into a publication-draft dashboard. To run a real-Boozer global
-operator through the same workflow, set ``equilibrium.boozmn`` in the TOML
-file.
+artifacts into a publication-draft dashboard. The second pair uses a real
+``boozmn`` file and the metric-derived 3-D radial block operator.
 
 .. figure:: _static/global_eigenmode_artifact_dashboard.svg
    :alt: Global eigenmode artifact dashboard generated from the TOML workflow.
@@ -216,6 +222,12 @@ file.
    TOML-driven global eigenmode artifact dashboard: frequencies, residuals,
    radial envelope norms, and harmonic content from the public
    ``fax eigenmodes``/``fax plot-global`` workflow.
+
+.. figure:: _static/boozmn_global_eigenmode_artifact_dashboard.svg
+   :alt: Real-Boozer global eigenmode artifact dashboard generated from the TOML workflow.
+
+   Real-Boozer TOML-driven global eigenmode artifact dashboard generated from
+   the same public workflow and checked against the direct radial block solve.
 
 Real ``boozmn`` Differentiable Design Study
 -------------------------------------------

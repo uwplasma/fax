@@ -136,6 +136,14 @@ Current Figures
    user-facing global-mode artifact path: reported eigenfrequencies, residuals,
    radial envelope norms, and harmonic content.
 
+.. figure:: _static/boozmn_global_eigenmode_artifact_dashboard.svg
+   :alt: Dashboard generated from fax eigenmodes artifacts for a real boozmn input.
+
+   Real-Boozer TOML workflow dashboard generated from ``fax eigenmodes`` and
+   ``fax plot-global`` artifacts. The corresponding integration test compares
+   the written CSV frequencies and residuals against the direct metric-derived
+   radial block solve.
+
 .. figure:: _static/metric_residual_convergence.svg
    :alt: Metric residual and angular-grid convergence checks.
 

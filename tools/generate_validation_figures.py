@@ -1040,6 +1040,28 @@ def generate_global_eigenmode_artifact_dashboard(output_dir: Path) -> list[Path]
         )
 
 
+def generate_boozmn_global_eigenmode_artifact_dashboard(output_dir: Path) -> list[Path]:
+    """Generate a dashboard from the TOML/CLI real-boozmn global workflow path."""
+    path = Path("/Users/rogerio/local/booz_xform_jax/tests/test_files/boozmn_LandremanSenguptaPlunk_section5p3.nc")
+    if not path.exists():
+        raise FileNotFoundError(f"booz_xform_jax boozmn fixture not found: {path}")
+
+    with tempfile.TemporaryDirectory(prefix="fax-boozmn-global-eigenmode-artifacts-") as tmp:
+        config = FaxConfig(
+            run=RunConfig(case="boozmn_global_eigenmodes", model="global_eigenmode", output_dir=tmp),
+            equilibrium=EquilibriumConfig(source="wout", use_boozer=True, boozmn=str(path)),
+            grid=GridConfig(radial_points=5, m_max=2, n_max=1, field_periods=3),
+        )
+        run_global_eigenmodes(config, progress=False, max_modes=6)
+        return list(
+            plot_global_eigenmode_artifacts(
+                Path(tmp) / "eigenmodes",
+                output_dir=output_dir,
+                stem="boozmn_global_eigenmode_artifact_dashboard",
+            )
+        )
+
+
 def generate_workflow_diagram(output_dir: Path) -> list[Path]:
     """Generate a newcomer-facing input/operator/output workflow diagram."""
     plt = _setup_matplotlib()
@@ -1680,6 +1702,7 @@ def main(argv: list[str] | None = None) -> int:
         generate_external_code_artifact_dashboard(output_dir),
         generate_continuum_artifact_dashboard(output_dir),
         generate_global_eigenmode_artifact_dashboard(output_dir),
+        generate_boozmn_global_eigenmode_artifact_dashboard(output_dir),
         generate_metric_residual_convergence(output_dir),
         generate_landreman_convergence_dashboard(output_dir),
         generate_vmec_boozer_bridge_convergence(output_dir),
