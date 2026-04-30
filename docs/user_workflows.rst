@@ -234,6 +234,14 @@ Perform sensitivity analysis
    Use JAX ``grad``/``jacfwd`` on the documented objective functions. Record
    finite-difference checks for publication.
 
+Differentiate VMEC boundary designs
+   Use ``fax.vmec_boozer_design`` or run
+   ``examples/research/vmec_boozer_alfven_design_gradient.py``. This starts
+   from VMEC boundary Fourier coefficients, solves the differentiable
+   fixed-boundary VMEC path, transforms the state with ``booz_xform_jax``, and
+   evaluates a FAX global Alfvén risk objective. Always keep the generated
+   AD/finite-difference gradient parity plot with the run artifacts.
+
 Perform uncertainty propagation
    Use ``linearized_radial_mode_uncertainty`` or
    ``linearized_boozer_global_mode_uncertainty`` with a covariance matrix.

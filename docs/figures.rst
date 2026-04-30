@@ -232,6 +232,14 @@ Current Figures
    Boozer truncations, and propagates the generated geometry through the
    global radial 3-D Boozer operator.
 
+.. figure:: _static/vmec_boozer_alfven_design_gradient.svg
+   :alt: VMEC boundary to Boozer to FAX design-gradient dashboard.
+
+   VMEC-boundary design-gradient gate. FAX differentiates a Landreman-Paul QA
+   boundary Fourier coefficient through ``vmec_jax``, ``booz_xform_jax``, and a
+   FAX global Alfvén risk objective, then checks the gradient with centered
+   finite differences.
+
 .. figure:: _static/benchmark_family_packet.svg
    :alt: FAX benchmark families with physics gates.
 

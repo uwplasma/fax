@@ -87,6 +87,27 @@ The next executable layer is built around publication-style design studies:
    builder API, enabling future ``vmec_jax -> booz_xform_jax -> FAX`` design
    studies to optimize mode families without invalid single-mode gradients.
 
+``fax.vmec_boozer_design``
+   Provides the first maintained in-memory design-variable path from VMEC
+   boundary Fourier coefficients to FAX Alfvén risk metrics. The chain is
+
+   .. math::
+
+      \delta \mathbf{x}_b
+      \mapsto \mathbf{X}_{\mathrm{VMEC}}(\delta \mathbf{x}_b)
+      \mapsto \{B_{mn}^{B}, \sqrt{g}_{mn}^{B}, \iota, G, I\}
+      \mapsto K(\delta \mathbf{x}_b) u
+      = \omega^2 M(\delta \mathbf{x}_b) u
+      \mapsto J_{\mathrm{risk}} .
+
+   ``validate_vmec_boundary_alfven_gradient`` checks the JAX gradient of this
+   scalar risk objective against centered finite differences and then performs
+   one line-searched boundary-shape descent step. The current default uses
+   ``vmec_jax.solve_fixed_boundary_from_boundary`` with
+   ``differentiable=True``; production studies should run VMEC iteration,
+   Boozer truncation, radial-surface, angular-quadrature, and gradient
+   convergence ladders before claiming a final design result.
+
 The example
 
 .. code-block:: bash
@@ -116,6 +137,24 @@ The real-Boozer counterpart is:
    Differentiable design on a real ``boozmn`` global 3-D radial operator. This
    is the bridge from validated real-Boozer forward operators to FAX-native
    optimization, UQ, and sensitivity studies on stellarator geometry.
+
+The VMEC-boundary counterpart is:
+
+.. code-block:: bash
+
+   python examples/research/vmec_boozer_alfven_design_gradient.py
+
+It writes a figure and JSON packet showing initial and post-step global mode
+frequencies, AD/finite-difference gradient agreement for selected boundary
+Fourier coefficients, and reduction of the smooth Alfvén risk objective.
+
+.. figure:: _static/vmec_boozer_alfven_design_gradient.svg
+   :alt: VMEC boundary to Boozer to FAX design-gradient dashboard.
+
+   End-to-end VMEC-boundary Alfvén risk-gradient check on the
+   Landreman-Paul QA low-resolution input. The middle panel is the reviewer
+   gate: JAX and centered finite-difference gradients agree for the selected
+   boundary coefficient.
 
 Power-Plant Assessment
 ----------------------

@@ -2,7 +2,7 @@
   "case": "benchmark_family_packet",
   "families": [
     {
-      "cold_seconds": 0.35719716700259596,
+      "cold_seconds": 0.39984516601543874,
       "details": {
         "artifact_size_bytes": 9702,
         "harmonic_count": 4,
@@ -25,20 +25,20 @@
       "label": "public continuum workflow with generalized-eigen residual gate",
       "metric_value": 9.131428421408066e-15,
       "physics_metric": "p95 generalized-eigen residual",
-      "process_max_rss_bytes": 3468460032,
+      "process_max_rss_bytes": 2927378432,
       "status": "completed",
       "tolerance": 1e-06,
       "warm_result": {
-        "max_seconds": 0.008014625054784119,
-        "median_seconds": 0.008014625054784119,
-        "min_seconds": 0.008014625054784119,
+        "max_seconds": 0.017255667014978826,
+        "median_seconds": 0.017255667014978826,
+        "min_seconds": 0.017255667014978826,
         "name": "continuum_warm_no_artifacts",
         "repeats": 1,
         "warmups": 0
       }
     },
     {
-      "cold_seconds": 0.03728745807893574,
+      "cold_seconds": 0.04601729102432728,
       "details": {
         "frequency_max_hz": 1412917.4279973626,
         "frequency_min_hz": 108.6468357577859,
@@ -60,20 +60,20 @@
       "label": "profile-limit continuum matrix with analytic density-scaling gate",
       "metric_value": 5.107667783642402e-16,
       "physics_metric": "max density-scaling relative error",
-      "process_max_rss_bytes": 3470622720,
+      "process_max_rss_bytes": 2933719040,
       "status": "completed",
       "tolerance": 5e-12,
       "warm_result": {
-        "max_seconds": 0.0010635420912876725,
-        "median_seconds": 0.0010635420912876725,
-        "min_seconds": 0.0010635420912876725,
+        "max_seconds": 0.0012000419665127993,
+        "median_seconds": 0.0012000419665127993,
+        "min_seconds": 0.0012000419665127993,
         "name": "analytic_local_continuum",
         "repeats": 1,
         "warmups": 0
       }
     },
     {
-      "cold_seconds": 0.20758366596419364,
+      "cold_seconds": 0.26397041708696634,
       "details": {
         "checked_modes": 24,
         "harmonic_count": 3,
@@ -96,20 +96,20 @@
       "label": "global radial block eigensolve with exact finite-difference spectrum gate",
       "metric_value": 3.77055066792297e-15,
       "physics_metric": "max exact discrete-spectrum relative error",
-      "process_max_rss_bytes": 3478126592,
+      "process_max_rss_bytes": 2958098432,
       "status": "completed",
       "tolerance": 6e-06,
       "warm_result": {
-        "max_seconds": 0.04065612505655736,
-        "median_seconds": 0.04065612505655736,
-        "min_seconds": 0.04065612505655736,
+        "max_seconds": 0.04692983394488692,
+        "median_seconds": 0.04692983394488692,
+        "min_seconds": 0.04692983394488692,
         "name": "global_radial_block",
         "repeats": 1,
         "warmups": 0
       }
     },
     {
-      "cold_seconds": 1.1700688749551773,
+      "cold_seconds": 0.9707121669780463,
       "details": {
         "harmonic_count": 4,
         "mass_matvec_relative_error": 0.0,
@@ -133,26 +133,26 @@
       "label": "JAX matrix-free global radial operator with dense/Rayleigh parity gates",
       "metric_value": 5.0950259629952484e-14,
       "physics_metric": "max dense-matvec/Rayleigh relative error",
-      "process_max_rss_bytes": 3570548736,
+      "process_max_rss_bytes": 3058073600,
       "status": "completed",
       "tolerance": 1e-10,
       "warm_result": {
-        "max_seconds": 3.324996214359999e-05,
-        "median_seconds": 3.324996214359999e-05,
-        "min_seconds": 3.324996214359999e-05,
+        "max_seconds": 1.095794141292572e-05,
+        "median_seconds": 1.095794141292572e-05,
+        "min_seconds": 1.095794141292572e-05,
         "name": "global_radial_matrix_free_apply",
         "repeats": 1,
         "warmups": 0
       }
     },
     {
-      "cold_seconds": 0.039188207942061126,
+      "cold_seconds": 0.04099829203914851,
       "details": {
         "checked_modes": 24,
         "harmonic_count": 4,
         "matrix_dimension": 872,
         "matrix_nonzeros": 2608,
-        "max_residual": 1.2194357720091001e-13,
+        "max_residual": 1.2147439182907997e-13,
         "radial_points": 220
       },
       "environment": {
@@ -168,15 +168,15 @@
       "family": "global-krylov",
       "gate_passed": true,
       "label": "sparse Krylov global radial block eigensolve with exact-spectrum gate",
-      "metric_value": 2.1572652700134806e-14,
+      "metric_value": 2.3909690075982743e-14,
       "physics_metric": "max sparse Krylov exact-spectrum relative error",
-      "process_max_rss_bytes": 3570548736,
+      "process_max_rss_bytes": 3060203520,
       "status": "completed",
       "tolerance": 2e-05,
       "warm_result": {
-        "max_seconds": 0.01697441702708602,
-        "median_seconds": 0.01697441702708602,
-        "min_seconds": 0.01697441702708602,
+        "max_seconds": 0.01696904096752405,
+        "median_seconds": 0.01696904096752405,
+        "min_seconds": 0.01696904096752405,
         "name": "global_radial_sparse_krylov",
         "repeats": 1,
         "warmups": 0

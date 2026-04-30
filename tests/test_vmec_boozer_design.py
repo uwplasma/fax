@@ -1,0 +1,81 @@
+from __future__ import annotations
+
+from pathlib import Path
+
+import numpy as np
+import pytest
+
+from fax.vmec_boozer_design import (
+    VmecBoozerFaxDesignSettings,
+    prepare_vmec_boozer_fax_design_context,
+    validate_vmec_boundary_alfven_gradient,
+    vmec_boundary_fax_frequencies,
+)
+
+
+@pytest.mark.requires_vmec_jax
+@pytest.mark.requires_booz_xform_jax
+def test_landreman_paul_vmec_boundary_boozer_fax_gradient_matches_finite_difference():
+    pytest.importorskip("vmec_jax")
+    pytest.importorskip("booz_xform_jax")
+    input_path = Path("/Users/rogerio/local/vmec_jax/examples/data/input.LandremanPaul2021_QA_lowres")
+    if not input_path.exists():
+        pytest.skip(f"missing local Landreman-Paul VMEC input: {input_path}")
+
+    settings = VmecBoozerFaxDesignSettings(
+        input_path=input_path,
+        parameter_count=1,
+        surfaces=(0.25, 0.40, 0.55, 0.70),
+        mboz=3,
+        nboz=3,
+        theta_points=8,
+        zeta_points=8,
+        vmec_max_iter=4,
+    )
+    result = validate_vmec_boundary_alfven_gradient(
+        settings,
+        finite_difference_step=1.0e-4,
+        descent_step=1.0e-3,
+    )
+
+    assert result.parameter_names == ("rc01",)
+    assert result.relative_gradient_error < 5.0e-5
+    assert float(result.descent_objective) < float(result.objective)
+    assert float(result.descent_step_norm) > 0.0
+    np.testing.assert_allclose(
+        np.asarray(result.gradient),
+        np.asarray(result.finite_difference_gradient),
+        rtol=5.0e-5,
+        atol=1.0e-10,
+    )
+    assert np.all(np.isfinite(np.asarray(result.initial_frequencies_hz)))
+    assert np.all(np.asarray(result.initial_frequencies_hz) > 0.0)
+
+
+@pytest.mark.requires_vmec_jax
+@pytest.mark.requires_booz_xform_jax
+def test_vmec_boundary_fax_frequency_map_uses_selected_boundary_parameters():
+    pytest.importorskip("vmec_jax")
+    pytest.importorskip("booz_xform_jax")
+    input_path = Path("/Users/rogerio/local/vmec_jax/examples/data/input.LandremanPaul2021_QA_lowres")
+    if not input_path.exists():
+        pytest.skip(f"missing local Landreman-Paul VMEC input: {input_path}")
+
+    settings = VmecBoozerFaxDesignSettings(
+        input_path=input_path,
+        parameter_count=2,
+        surfaces=(0.25, 0.40, 0.55, 0.70),
+        mboz=3,
+        nboz=3,
+        theta_points=8,
+        zeta_points=8,
+        vmec_max_iter=1,
+    )
+    context = prepare_vmec_boozer_fax_design_context(settings)
+    frequencies0 = vmec_boundary_fax_frequencies(np.zeros(2), context)
+    frequencies1 = vmec_boundary_fax_frequencies(np.asarray([1.0e-3, -1.0e-3]), context)
+
+    assert context.parameter_names[:2] == ("rc01", "zs01")
+    assert frequencies0.shape == (3,)
+    assert np.all(np.isfinite(np.asarray(frequencies0)))
+    assert np.linalg.norm(np.asarray(frequencies1 - frequencies0)) > 0.0

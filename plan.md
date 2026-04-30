@@ -1934,3 +1934,42 @@ low truncation and produce finite global frequencies with residuals near dense
 eigensolver precision. LHD also runs, but the low-truncation Jacobian identity
 error is much larger, so it should enter as a convergence-ladder target rather
 than a first acceptance gate.
+
+### 2026-04-30 VMEC Boundary -> Boozer -> FAX Design Gradient
+
+Started closing the end-to-end differentiable optimization lane with an actual
+VMEC boundary-coefficient objective:
+
+- added ``fax.vmec_boozer_design`` with reusable
+  ``VmecBoozerFaxDesignSettings`` and ``VmecBoozerFaxDesignContext`` objects,
+- implemented the in-memory chain
+  ``VMEC boundary coefficients -> vmec_jax differentiable fixed-boundary state
+  -> booz_xform_jax Boozer harmonics/Jacobian -> FAX global radial Alfvén
+  objective``,
+- added ``validate_vmec_boundary_alfven_gradient`` to compare JAX gradients
+  against centered finite differences and then take one line-searched
+  boundary-shape descent step,
+- added ``landreman_paul_vmec_boundary_alfven_gradient`` to the validation
+  registry,
+- added physics tests in ``tests/test_vmec_boozer_design.py`` using the local
+  Landreman-Paul QA low-resolution VMEC input,
+- added ``examples/research/vmec_boozer_alfven_design_gradient.py`` and docs
+  explaining how to generate the gradient-parity/risk-reduction plot,
+- updated README, API docs, optimization docs, validation docs, user workflows,
+  research examples, and the research-grade roadmap.
+
+Observed first-pass Landreman-Paul QA metrics with one selected boundary
+coefficient (``rc01``), ``mboz=nboz=3``, four radial surfaces, and four
+differentiable fixed-boundary VMEC steps:
+
+- AD/centered-finite-difference relative gradient error about ``3.4e-9``,
+- initial smooth Alfvén risk objective about ``4.9888e-1``,
+- one normalized line-search descent step reduces the objective by about
+  ``5.5e-6`` in absolute units for the intentionally tiny default step.
+
+Scope: this is the first maintained VMEC-design-variable gradient path through
+FAX. It uses ``vmec_jax.solve_fixed_boundary_from_boundary`` with
+``differentiable=True``. The next reviewer-grade step is a convergence ladder
+over VMEC iteration count, boundary parameter set, Boozer truncation, radial
+surfaces, angular quadrature, and risk-window definitions, followed by
+alignment with the high-iteration VMEC2000/discrete-adjoint tape path.

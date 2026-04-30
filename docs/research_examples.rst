@@ -111,6 +111,22 @@ before and after the design move.
    research-workflow capability, while full 3-D operator parity remains a
    separate validation lane.
 
+VMEC Boundary Alfvén Design Gradient
+------------------------------------
+
+Run:
+
+.. code-block:: bash
+
+   python examples/research/vmec_boozer_alfven_design_gradient.py --output-dir outputs/vmec_boozer_alfven_design_gradient
+
+This starts from the Landreman-Paul QA VMEC input, selects low-order boundary
+Fourier coefficients, runs the differentiable fixed-boundary ``vmec_jax`` path,
+transforms the resulting state with ``booz_xform_jax``, and evaluates a FAX
+global radial Alfvén risk objective. The generated plot compares JAX and
+centered-finite-difference gradients and shows the effect of one line-searched
+boundary-shape descent step.
+
 Basic BAE/TAE/EAE Gap Map
 -------------------------
 

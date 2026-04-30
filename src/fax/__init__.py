@@ -185,6 +185,16 @@ from .reference_cases import (
     vmec_equilibria_root,
 )
 from .runner import RunSummary, run
+from .vmec_boozer_design import (
+    VmecBoozerFaxDesignContext,
+    VmecBoozerFaxDesignSettings,
+    VmecBoozerFaxGradientValidation,
+    prepare_vmec_boozer_fax_design_context,
+    validate_vmec_boundary_alfven_gradient,
+    vmec_boundary_alfven_risk_objective,
+    vmec_boundary_fax_frequencies,
+    vmec_state_to_boozer_geometry,
+)
 from .workflows import (
     BenchmarkRunSummary,
     ContinuumRunSummary,
@@ -264,6 +274,9 @@ __all__ = [
     "SparseRadialBlockEigenmodeResult",
     "ReferenceCase",
     "VmecEquilibriaCase",
+    "VmecBoozerFaxDesignContext",
+    "VmecBoozerFaxDesignSettings",
+    "VmecBoozerFaxGradientValidation",
     "ResearchGradeMilestone",
     "RunSummary",
     "StellgapContinuumData",
@@ -311,6 +324,7 @@ __all__ = [
     "plot_basic_alfven_gap_map",
     "plot_convergence_artifacts",
     "plot_global_eigenmode_artifacts",
+    "prepare_vmec_boozer_fax_design_context",
     "boozer_global_cluster_mean_avoidance_objective",
     "boozer_global_cluster_mean_frequency_hz",
     "boozer_global_cluster_mean_omega2",
@@ -355,6 +369,7 @@ __all__ = [
     "run_convergence",
     "run_global_eigenmodes",
     "run_validation",
+    "validate_vmec_boundary_alfven_gradient",
     "registered_research_grade_milestones",
     "research_grade_ready",
     "research_grade_report_markdown",
@@ -364,6 +379,9 @@ __all__ = [
     "metric_continuum_matrices",
     "metric_from_equilibrium",
     "metric_from_vmec_wout",
+    "vmec_boundary_alfven_risk_objective",
+    "vmec_boundary_fax_frequencies",
+    "vmec_state_to_boozer_geometry",
     "solve_radial_block_eigenmodes",
     "solve_radial_block_eigenmodes_sparse",
     "solve_radial_eigenmodes",

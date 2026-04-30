@@ -55,6 +55,9 @@ API
 .. automodule:: fax.optimization
    :members:
 
+.. automodule:: fax.vmec_boozer_design
+   :members:
+
 .. automodule:: fax.boozer
    :members:
 

@@ -45,8 +45,13 @@ End-to-end differentiable VMEC/Boozer/FAX optimization
    Actual VMEC boundary/profile variables must differentiate through a
    controlled ``vmec_jax`` solve, ``booz_xform_jax`` transform, FAX operator,
    eigenvalue objective, and finite-difference/adjoint verification. Current
-   status: in progress through builder APIs and live bridge checks, but not yet
-   reviewer-grade shape gradients.
+   status: in progress. The first maintained VMEC-boundary gradient gate now
+   differentiates Landreman-Paul QA boundary coefficients through the
+   differentiable fixed-boundary ``vmec_jax`` path, ``booz_xform_jax`` Boozer
+   harmonics, and a FAX global Alfvén risk objective, with centered
+   finite-difference parity and a descent check. Remaining work is to extend
+   this to high-iteration converged VMEC2000 residual solves, multi-parameter
+   adjoint/pullback checks, and multi-geometry optimization campaigns.
 
 Multi-geometry cross-code benchmark suite
    Reactor-design claims require a curated benchmark matrix covering
@@ -88,6 +93,11 @@ First Implementation Steps
    be added.
 4. Choose a small set of VMEC boundary variables for the first end-to-end
    differentiable design check and compare JAX gradients to finite differences.
+   This is implemented for the Landreman-Paul QA low-resolution input via
+   ``fax.vmec_boozer_design`` and
+   ``examples/research/vmec_boozer_alfven_design_gradient.py``. The next step
+   is a convergence ladder over VMEC iteration count, Boozer truncation,
+   surfaces, angular quadrature, and additional boundary coefficients.
 5. Use the VMEC-equilibria public Boozer subset to select the next
    HSX/Ku-Boozer parity cases, then add matching STELLGAP/AE3D/CAS3D/FAR3D
    artifacts where possible. Extend to W7-X/LHD/NCSX once Boozer artifacts are

@@ -33,6 +33,7 @@ python examples/research/boozer_harmonic_validation.py
 python examples/research/boozmn_3d_continuum.py
 python examples/research/boozmn_global_3d_eigenmodes.py
 python examples/research/boozmn_differentiable_design_study.py
+python examples/research/vmec_boozer_alfven_design_gradient.py
 python examples/research/vmec_boozer_convergence.py
 python examples/research/vmec_equilibria_catalog.py
 python examples/research/vmec_equilibria_boozer_global.py
@@ -77,6 +78,19 @@ operator: frequency sensitivities, linearized UQ bands, a gradient-based design
 move, and fast-ion growth projected onto the optimized global eigenfunctions.
 It is the current bridge from validated real-Boozer operators toward
 publication-grade differentiable stellarator design studies.
+
+## VMEC Boundary Alfvén Design Gradient
+
+```bash
+python examples/research/vmec_boozer_alfven_design_gradient.py --output-dir outputs/vmec_boozer_alfven_design_gradient
+```
+
+This is the first full in-memory differentiability showcase from actual VMEC
+boundary Fourier coefficients through `vmec_jax`, `booz_xform_jax`, and a FAX
+global Alfvén risk objective. It compares the JAX gradient with centered finite
+differences, then takes one line-searched boundary-shape step that lowers the
+smooth mode-in-window risk. Increase `--vmec-max-iter`, Boozer truncation, and
+surface count for production studies after the gradient gate passes.
 
 ## Basic Alfvén Gap Map
 

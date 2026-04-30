@@ -187,6 +187,11 @@ tags, and command. The current gates are:
   ``vmec_jax`` iteration ladder on the Landreman-Paul QA input, transforms
   each iterate through ``booz_xform_jax``, and compares Boozer ``|B|`` plus FAX
   local continuum frequencies against the converged reference ``wout``.
+* ``landreman_paul_vmec_boundary_alfven_gradient``: differentiates an actual
+  VMEC boundary Fourier coefficient through the in-memory
+  ``vmec_jax -> booz_xform_jax -> FAX`` chain, checks the smooth global-mode
+  risk-objective gradient against centered finite differences, and verifies
+  that one line-searched shape step lowers the risk metric.
 * ``landreman_paul_continuum_finite``: checks that the Landreman-Paul profile
   and metric continuum branches are finite and have small eigensolve residuals.
 * ``landreman_paul_radial_sampling_convergence``: checks VMEC-backed radial
@@ -259,6 +264,12 @@ nearby Boozer harmonic truncations.
 The ``landreman_paul_vmec_jax_boozer_operator_angular_convergence`` gate then
 holds the Boozer geometry fixed and checks angular quadrature convergence of
 the local 3-D operator itself.
+The ``landreman_paul_vmec_boundary_alfven_gradient`` gate is the first
+design-variable differentiability gate on this same reference family. It uses
+the differentiable fixed-boundary VMEC path and must be followed by
+VMEC-iteration, Boozer-truncation, surface-count, and finite-difference
+convergence ladders before using a boundary-gradient result as a final
+reactor-design recommendation.
 
 Current Validation Figures
 --------------------------

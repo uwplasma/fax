@@ -34,6 +34,12 @@ Configuration and CLI
    gate. This is the ingestion path for real kinetic validation data; it does
    not by itself calibrate the current reduced closure.
 
+``fax.vmec_boozer_design``
+   Optional end-to-end design helpers for actual VMEC boundary Fourier
+   coefficients. These functions require local ``vmec_jax`` and
+   ``booz_xform_jax`` installations and keep the boundary-to-Boozer-to-FAX
+   gradient path in memory.
+
 Equilibrium Helpers
 -------------------
 
@@ -258,6 +264,17 @@ Optimization
 
 ``boozer_pipeline_cluster_mean_avoidance_objective``
    Builder-based crossing-safe cluster objective.
+
+``prepare_vmec_boozer_fax_design_context``
+   Build the reusable static context for VMEC-boundary design evaluations.
+
+``vmec_boundary_fax_frequencies``
+   Map selected VMEC boundary coefficient perturbations to FAX global Alfvén
+   eigenfrequencies through ``vmec_jax`` and ``booz_xform_jax``.
+
+``validate_vmec_boundary_alfven_gradient``
+   Compare the JAX gradient of the VMEC-boundary Alfvén risk objective against
+   centered finite differences and perform one line-searched descent step.
 
 Validation, Figures, and Benchmarks
 -----------------------------------

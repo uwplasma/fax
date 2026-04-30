@@ -23,7 +23,9 @@ profile and metric continuum operators, real `boozmn` local 3-D Boozer
 operators, reduced global radial eigenmodes, differentiable eigenvalue and
 cluster objectives, reduced gyro-Landau fast-ion closures, STELLGAP CTOK local
 continuum/gap parity, AE3D public matrix/eigenmode parity, and an archived
-FAR3D GPU build/run `lincheck` ingestion artifact.
+FAR3D GPU build/run `lincheck` ingestion artifact. It also has a maintained
+in-memory VMEC boundary-coefficient gradient path through `vmec_jax`,
+`booz_xform_jax`, and a FAX global Alfvén risk objective.
 
 ![FAX workflow](docs/_static/workflow_io_diagram.png)
 
@@ -134,6 +136,15 @@ python examples/research/basic_alfven_gap_map.py
 
 ![Basic Alfvén gap map](docs/_static/basic_alfven_gap_map.png)
 
+Check an end-to-end VMEC-boundary design gradient:
+
+```bash
+python examples/research/vmec_boozer_alfven_design_gradient.py \
+  --output-dir outputs/vmec_boozer_alfven_design_gradient
+```
+
+![VMEC boundary Alfvén design gradient](docs/_static/vmec_boozer_alfven_design_gradient.png)
+
 Run the ten-figure publication packet:
 
 ```bash
@@ -188,6 +199,9 @@ The v0.0.1 gate currently covers:
   angular/radial convergence, and Dirichlet/Neumann radial boundary variants,
 - isolated-eigenvalue custom-JVP gradients, cluster-mean gradients for mode
   crossings, finite-difference sensitivity checks, and linearized UQ examples,
+- Landreman-Paul QA VMEC boundary-coefficient gradients through
+  `vmec_jax -> booz_xform_jax -> FAX`, checked against centered finite
+  differences and a one-step Alfvén-risk descent,
 - reduced fast-ion resonance signs, eigenfunction weighting, and calibrated
   gyro-Landau closure coefficient recovery,
 - STELLGAP CTOK local-continuum and largest-local-gap parity,
@@ -204,7 +218,7 @@ The v0.0.1 gate currently covers:
 * Live `booz_xform_jax` generation from public W7-X/NCSX VMEC-equilibria
   `wout` files into FAX global radial 3-D Boozer diagnostics.
 
-Current headline local metrics are 238 passing tests, 95% coverage,
+Current headline local metrics are 240 passing tests, 95% coverage,
 STELLGAP CTOK p95 sorted-spectrum relative error about 2.55%, AE3D dense
 spectrum max relative error about 1.6e-6, and AE3D B-weighted mode-shape error
 about 5.2e-8 for the checked public modes; AE3D mode-peak closest-continuum
@@ -252,11 +266,13 @@ only batch eigenvalue production:
 - Machine-readable TOML, JSON, CSV, Markdown, and figure artifacts from the CLI.
 - Cross-code artifact gates that are part of the test suite, not just notebooks.
 - Publication figure generation and QA as first-class workflows.
-- Builder APIs intended for `vmec_jax -> booz_xform_jax -> FAX` optimization.
+- Direct builder and VMEC-boundary APIs for `vmec_jax -> booz_xform_jax -> FAX`
+  optimization studies.
 
 The remaining paper-grade lanes are native global FAX-vs-AE3D/STELLGAP
 operator parity, CAS3D/CAS3D-K and FAR3D growth-rate comparisons, calibrated
-kinetic closures, and converged VMEC boundary/design-variable gradients.
+kinetic closures, and high-iteration converged VMEC boundary/design-variable
+gradient campaigns across multiple geometries.
 
 ## Development
 
