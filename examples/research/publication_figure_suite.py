@@ -38,6 +38,7 @@ from fax.boozer import (  # noqa: E402
 from fax.config import EquilibriumConfig, FaxConfig, GridConfig, RunConfig  # noqa: E402
 from fax.continuum import continuum_branch_matrix  # noqa: E402
 from fax.cross_code import (  # noqa: E402
+    ae3d_continuum_placement_parity,
     ae3d_dense_spectrum_parity,
     ae3d_global_mode_parity,
     ae3d_matrix_eigenmode_parity,
@@ -67,6 +68,7 @@ DEFAULT_BOOZMN = Path("/Users/rogerio/local/booz_xform_jax/tests/test_files/booz
 DEFAULT_STELLGAP_BOOZMN = Path("/Users/rogerio/local/Stellgap_test_inputs/boozmn_ctok.nc")
 DEFAULT_STELLGAP_POST = Path("/Users/rogerio/local/Stellgap_test_problem/alfven_post")
 DEFAULT_AE3D_DIR = Path("/Users/rogerio/local/AE3D_test_problem")
+DEFAULT_AE3D_BOOZMN = Path("/Users/rogerio/local/AE3D_test_inputs/boozmn_ctok.nc")
 
 
 CaseRunner = Callable[[Path, tuple[str, ...]], dict[str, object]]
@@ -490,6 +492,18 @@ def _case_ae3d_matrix_parity(output_dir: Path, formats: tuple[str, ...]) -> dict
         egn_mode_path=egn_mode,
         max_modes=8,
     )
+    placement = (
+        ae3d_continuum_placement_parity(
+            egn_mode_path=egn_mode,
+            boozmn_path=DEFAULT_AE3D_BOOZMN,
+            mass_density=2.0 * PROTON_MASS * 1.0e19,
+            max_modes=128,
+            theta_points=32,
+            zeta_points=32,
+        )
+        if DEFAULT_AE3D_BOOZMN.exists()
+        else None
+    )
     modes = np.asarray(data.modes)
     first_mode = np.abs(modes[0])
     fig, axes = plt.subplots(1, 3, figsize=(12.8, 3.9), constrained_layout=True)
@@ -510,11 +524,13 @@ def _case_ae3d_matrix_parity(output_dir: Path, formats: tuple[str, ...]) -> dict
         parity.max_frequency_relative_error,
         dense_parity.max_eigenvalue_relative_error,
         global_parity.max_mass_weighted_mode_shape_error,
+        placement.p95_closest_branch_relative_error if placement is not None else np.nan,
+        placement.max_closest_branch_relative_error if placement is not None else np.nan,
     ]
     axes[2].bar(
-        ["max res.", "p95 res.", "Rayleigh", "freq.", "dense eig.", "shape"],
+        ["max res.", "p95 res.", "Rayleigh", "freq.", "dense eig.", "shape", "place p95", "place max"],
         metrics,
-        color=["#2458a6", "#72b7b2", "#b13f2a", "#2e7d32", "#b279a2", "#499894"],
+        color=["#2458a6", "#72b7b2", "#b13f2a", "#2e7d32", "#b279a2", "#499894", "#f28e2b", "#8cd17d"],
     )
     axes[2].set_yscale("log")
     axes[2].set_title("AE3D matrix/eigenmode parity")
@@ -530,6 +546,12 @@ def _case_ae3d_matrix_parity(output_dir: Path, formats: tuple[str, ...]) -> dict
         "dense_spectrum_max_frequency_relative_error": dense_parity.max_frequency_relative_error,
         "global_mode_max_frequency_relative_error": global_parity.max_frequency_relative_error,
         "global_mode_max_mass_weighted_mode_shape_error": global_parity.max_mass_weighted_mode_shape_error,
+        "continuum_placement_p95_closest_branch_relative_error": None
+        if placement is None
+        else placement.p95_closest_branch_relative_error,
+        "continuum_placement_max_closest_branch_relative_error": None
+        if placement is None
+        else placement.max_closest_branch_relative_error,
     }
 
 

@@ -2,9 +2,14 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import jax.numpy as jnp
+import numpy as np
 import pytest
 
 from fax.cross_code import (
+    Ae3dEigenmodeData,
+    ae3d_continuum_placement_from_arrays,
+    ae3d_continuum_placement_parity,
     ae3d_dense_spectrum_parity,
     ae3d_eigenvalue_residual_summary,
     ae3d_global_mode_parity,
@@ -109,6 +114,35 @@ def test_ae3d_dense_spectrum_parity_solves_known_generalized_problem(tmp_path: P
     assert global_parity.max_frequency_relative_error < 1.0e-14
     assert global_parity.max_euclidean_mode_shape_error < 1.0e-14
     assert global_parity.max_mass_weighted_mode_shape_error < 1.0e-14
+
+
+def test_ae3d_continuum_placement_from_arrays_identifies_peak_surface_and_branch():
+    data = Ae3dEigenmodeData(
+        eigenvalue_omega2=jnp.asarray([100.0**2, 150.0**2]),
+        rho=jnp.asarray([0.2, 0.5, 0.8]),
+        harmonics=jnp.asarray([[1, 2], [2, 2], [3, 2]]),
+        modes=jnp.asarray(
+            [
+                [[0.1, 0.0, 0.0], [1.0, 0.0, 0.0], [0.2, 0.0, 0.0]],
+                [[0.0, 0.2, 0.0], [0.0, 0.1, 0.0], [0.0, 2.0, 0.0]],
+            ]
+        ),
+    )
+    continuum = jnp.asarray(
+        [
+            [90.0, 130.0, 210.0],
+            [100.0, 140.0, 220.0],
+            [110.0, 150.0, 230.0],
+        ]
+    )
+
+    parity = ae3d_continuum_placement_from_arrays(data, continuum_frequency_khz=continuum, continuum_s=data.rho)
+
+    assert parity.count == 2
+    assert parity.p95_closest_branch_relative_error == 0.0
+    assert parity.max_closest_branch_relative_error == 0.0
+    np.testing.assert_array_equal(np.asarray(parity.closest_harmonic), np.asarray([[1, 2], [2, 2]]))
+    np.testing.assert_allclose(np.asarray(parity.peak_s), np.asarray([0.5, 0.8]))
 
 
 @pytest.mark.requires_booz_xform_jax
@@ -234,6 +268,29 @@ def test_ae3d_public_global_mode_shape_parity_passes_or_skips():
     assert parity.max_frequency_relative_error < 2.0e-6
     assert parity.max_euclidean_mode_shape_error < 1.0e-6
     assert parity.max_mass_weighted_mode_shape_error < 1.0e-6
+
+
+@pytest.mark.requires_booz_xform_jax
+def test_ae3d_public_global_mode_continuum_placement_passes_or_skips():
+    root = Path("/Users/rogerio/local/AE3D_test_problem")
+    egn_mode = root / "egn_mode_asci.dat"
+    boozmn = Path("/Users/rogerio/local/AE3D_test_inputs/boozmn_ctok.nc")
+    if not egn_mode.exists() or not boozmn.exists():
+        pytest.skip("missing local ORNL AE3D public eigenmode or CTOK boozmn artifacts")
+
+    parity = ae3d_continuum_placement_parity(
+        egn_mode_path=egn_mode,
+        boozmn_path=boozmn,
+        mass_density=2.0 * PROTON_MASS * 1.0e19,
+        max_modes=128,
+        theta_points=32,
+        zeta_points=32,
+    )
+
+    assert parity.count == 128
+    assert parity.p95_closest_branch_relative_error < 3.0e-2
+    assert parity.max_closest_branch_relative_error < 3.0e-2
+    assert parity.mean_peak_harmonic_energy_fraction > 0.3
 
 
 def test_stellgap_executable_runner_reports_clean_status(tmp_path: Path):

@@ -96,6 +96,7 @@ def test_cross_code_validation_gates_pass_or_skip_cleanly():
         "ae3d_public_matrix_eigenmode_parity",
         "ae3d_public_dense_spectrum_parity",
         "ae3d_public_global_mode_shape_parity",
+        "ae3d_public_continuum_placement_parity",
     ):
         result = run_validation_gate(gate_id)
 

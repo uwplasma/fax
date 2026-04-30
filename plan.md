@@ -1698,3 +1698,23 @@ distribution parameters, and calibration-vs-validation split. The next step is
 to populate this contract with real FAR3D/CAS3D-K or literature growth-rate
 artifacts, then fit reduced closure coefficients only on calibration cases and
 test them on held-out cases.
+
+### 2026-04-30 AE3D Global-Mode Continuum-Placement Gate
+
+Added a stronger RG-1 intermediate cross-code physics gate:
+
+- `fax.cross_code.ae3d_continuum_placement_parity`,
+- `fax.cross_code.ae3d_continuum_placement_from_arrays`,
+- validation gate `ae3d_public_continuum_placement_parity`,
+- benchmark-manifest expected metric and artifact requirement,
+- publication-suite metric update for the AE3D parity figure.
+
+The gate reads public AE3D global eigenmodes, identifies each mode's dominant
+harmonic and radial peak surface, evaluates the FAX local CTOK Boozer continuum
+for the same harmonics, and checks the distance from the AE3D eigenfrequency to
+the closest FAX local continuum branch at that surface. The current acceptance
+metric is p95 closest-branch relative error below `3e-2` for the first 128
+public AE3D modes. This is a real global-mode placement check and a useful
+paper figure metric, but it is still not final native FAX-vs-AE3D global
+operator parity. The next RG-1 step remains constructing a matched native FAX
+global operator comparison with external eigenfrequencies and eigenfunctions.

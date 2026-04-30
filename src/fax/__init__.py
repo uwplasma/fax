@@ -44,6 +44,7 @@ from .config import FaxConfig, load_config
 from .continuum import continuum_branch_matrix, local_continuum_frequency_hz
 from .cross_code import (
     Ae3dEigenvalueData,
+    Ae3dContinuumPlacementParity,
     Ae3dGlobalModeParity,
     Ae3dMatrixSummary,
     Ae3dOmega2Data,
@@ -54,6 +55,8 @@ from .cross_code import (
     StellgapContinuumData,
     StellgapGapParity,
     StellgapSpectrumData,
+    ae3d_continuum_placement_parity,
+    ae3d_continuum_placement_from_arrays,
     ae3d_global_mode_parity,
     run_stellgap_ctok_executable,
     stellgap_ctok_gap_parity,
@@ -180,6 +183,7 @@ __all__ = [
     "ContinuumRunSummary",
     "ContinuumArtifacts",
     "Ae3dEigenvalueData",
+    "Ae3dContinuumPlacementParity",
     "Ae3dGlobalModeParity",
     "Ae3dMatrixSummary",
     "Ae3dOmega2Data",
@@ -302,6 +306,8 @@ __all__ = [
     "run",
     "run_benchmark",
     "run_named_benchmark_family",
+    "ae3d_continuum_placement_parity",
+    "ae3d_continuum_placement_from_arrays",
     "ae3d_global_mode_parity",
     "run_stellgap_ctok_executable",
     "stellgap_ctok_gap_parity",

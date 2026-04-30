@@ -10,6 +10,9 @@ API
 .. automodule:: fax.benchmark_manifest
    :members:
 
+.. automodule:: fax.cross_code
+   :members:
+
 .. automodule:: fax.runner
    :members:
 

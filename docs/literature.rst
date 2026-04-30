@@ -144,5 +144,7 @@ Current quantitative external-code status:
   problem and compares the first 8 published global mode structures from
   ``egn_mode_asci.dat``. The current max frequency relative error is
   ``8.17e-7`` and the max ``B``-weighted mode-shape error is ``5.20e-8``.
-  This closes AE3D public artifact/matrix/mode-shape parity, but not the
-  broader FAX reduced-operator vs AE3D full-operator validation lane.
+  FAX also checks that public AE3D global-mode peak locations sit near the
+  closest FAX CTOK local Boozer continuum branch. This closes AE3D public
+  artifact/matrix/mode-shape/placement parity, but not the broader FAX
+  reduced-operator vs AE3D full-operator validation lane.

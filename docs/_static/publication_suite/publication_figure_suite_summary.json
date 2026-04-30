@@ -92,6 +92,8 @@
     },
     {
       "case": "10_ae3d_matrix_eigenmode_parity",
+      "continuum_placement_max_closest_branch_relative_error": 0.026442205768779436,
+      "continuum_placement_p95_closest_branch_relative_error": 0.023676675262132296,
       "count": 8,
       "dense_spectrum_max_eigenvalue_relative_error": 1.633579871643743e-06,
       "dense_spectrum_max_frequency_relative_error": 8.167902694136567e-07,

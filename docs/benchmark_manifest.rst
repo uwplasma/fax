@@ -26,7 +26,8 @@ Current Entries
 
 ``ae3d_public_matrix_mode_shape``
    AE3D public generalized matrix problem. This supports matrix, dense-spectrum,
-   and B-weighted mode-shape artifact parity. It does not yet prove that the
+   B-weighted mode-shape artifact parity, and AE3D global-mode peak placement
+   against the FAX CTOK local Boozer continuum. It does not yet prove that the
    native FAX reduced/global operator reproduces AE3D's full operator.
 
 Why This Matters

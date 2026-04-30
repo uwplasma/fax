@@ -178,12 +178,14 @@ The v0.0.1 gate currently covers:
   gyro-Landau closure coefficient recovery,
 - STELLGAP CTOK local-continuum and largest-local-gap parity,
 - AE3D public `A x = lambda B x` matrix, spectrum, and B-weighted mode-shape
-  parity.
+  parity, plus AE3D global-mode peak placement against the FAX CTOK local
+  Boozer continuum.
 
-Current headline local metrics are 206 passing tests, 95.1% coverage,
+Current headline local metrics are 221 passing tests, 95.1% coverage,
 STELLGAP CTOK p95 sorted-spectrum relative error about 2.55%, AE3D dense
 spectrum max relative error about 1.6e-6, and AE3D B-weighted mode-shape error
-about 5.2e-8 for the checked public modes.
+about 5.2e-8 for the checked public modes; AE3D mode-peak closest-continuum
+placement p95 error is below 3%.
 
 ![Validation summary](docs/_static/validation_gate_summary.png)
 

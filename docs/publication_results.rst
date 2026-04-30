@@ -119,7 +119,8 @@ Figure Suite
    independently solves the public generalized matrix problem. Current metrics:
    max residual ``3.29e-6`` for the first eight modes, dense-spectrum max
    eigenvalue relative error ``1.63e-6``, global-mode max frequency relative
-   error ``8.17e-7``, and max ``B``-weighted mode-shape error ``5.20e-8``.
+   error ``8.17e-7``, max ``B``-weighted mode-shape error ``5.20e-8``, and
+   AE3D mode-peak closest-continuum placement p95 error below ``3e-2``.
 
 Cross-Code Status
 -----------------
@@ -131,10 +132,11 @@ STELLGAP CTOK
    47 seconds on the local CPU environment.
 
 AE3D
-   FAX has public artifact, sparse matrix, dense eigensolver, and mode-shape
-   parity for the released AE3D CTOK problem. This is the strongest currently
-   available public AE3D comparison from local artifacts, but not yet a native
-   FAX reduced-operator versus AE3D full-operator comparison.
+   FAX has public artifact, sparse matrix, dense eigensolver, mode-shape, and
+   continuum-placement parity for the released AE3D CTOK problem. This is the
+   strongest currently available public AE3D comparison from local artifacts,
+   but not yet a native FAX reduced-operator versus AE3D full-operator
+   comparison.
 
 CAS3D/FAR3D
    These remain planned parity lanes until runnable public input/output pairs,

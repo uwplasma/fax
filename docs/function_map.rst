@@ -267,6 +267,10 @@ Validation, Figures, and Benchmarks
    Solve AE3D public generalized matrices and compare published frequencies
    plus Euclidean and ``B``-weighted eigenvector correlations.
 
+``ae3d_continuum_placement_parity``
+   Place public AE3D global eigenmode peaks on the FAX CTOK local Boozer
+   continuum and report closest-branch frequency errors.
+
 ``stellgap_ctok_gap_parity``
    Compare FAX and public STELLGAP CTOK largest local gap center/width metrics.
 

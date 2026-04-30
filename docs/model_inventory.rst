@@ -176,9 +176,10 @@ Implemented artifact gates
    STELLGAP CTOK local-continuum comparison, STELLGAP post-processing parity,
    STELLGAP CTOK largest local-gap center/width comparison, AE3D public matrix
    symmetry, AE3D matrix/eigenmode residuals, AE3D omega2 convention parity,
-   independent dense-spectrum parity, and AE3D global mode-shape parity using
+   independent dense-spectrum parity, AE3D global mode-shape parity using
    the public generalized matrices and ``B``-weighted eigenvector
-   correlations.
+   correlations, and AE3D global-mode peak placement against the FAX CTOK local
+   Boozer continuum.
 
 External executable status capture
    ``run_stellgap_ctok_executable`` copies the public CTOK STELLGAP inputs to a

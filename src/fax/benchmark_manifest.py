@@ -130,17 +130,20 @@ def default_benchmark_manifest() -> tuple[BenchmarkManifestEntry, ...]:
                 BenchmarkArtifact(role="AE3D eigenmode table", path="/Users/rogerio/local/AE3D_test_problem/egn_mode_asci.dat"),
                 BenchmarkArtifact(role="AE3D eigenvalue table", path="/Users/rogerio/local/AE3D_test_problem/egn_values.dat"),
                 BenchmarkArtifact(role="AE3D raw omega2 table", path="/Users/rogerio/local/AE3D_test_problem/omega2.dat"),
+                BenchmarkArtifact(role="CTOK Boozer geometry for continuum placement", path="/Users/rogerio/local/AE3D_test_inputs/boozmn_ctok.nc"),
             ),
             expected_metrics={
                 "max_frequency_relative_error": 2.0e-6,
                 "max_mass_weighted_mode_shape_error": 2.0e-6,
                 "max_matrix_relative_asymmetry": 2.0e-6,
+                "p95_continuum_placement_relative_error": 3.0e-2,
             },
             validation_gate_ids=(
                 "ae3d_public_matrix_symmetry",
                 "ae3d_public_matrix_eigenmode_parity",
                 "ae3d_public_dense_spectrum_parity",
                 "ae3d_public_global_mode_shape_parity",
+                "ae3d_public_continuum_placement_parity",
             ),
             next_parity_step=(
                 "Map AE3D basis/boundary conventions to a native FAX global operator "

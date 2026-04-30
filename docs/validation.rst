@@ -162,6 +162,11 @@ tags, and command. The current gates are:
   against ``egn_mode_asci.dat`` using Euclidean and ``B``-weighted
   correlations. This is public matrix parity, not yet native FAX-operator
   parity.
+* ``ae3d_public_continuum_placement_parity``: uses public AE3D global
+  eigenmodes, their dominant-harmonic radial peak locations, and the CTOK
+  Boozer geometry to check that each AE3D global eigenfrequency lies near the
+  closest FAX local Boozer continuum branch. This is a global-mode placement
+  physics gate, still short of full native FAX-vs-AE3D operator parity.
 * ``landreman_paul_adapter_smoke``: checks the Landreman-Paul QA VMEC ``wout``
   profile and metric adapters when local data are available.
 * ``landreman_paul_vmec_jax_boozer_in_memory``: runs a one-iteration
@@ -360,7 +365,9 @@ also parsed in local validation so future global-eigenmode parity work starts
 from tested artifact readers. FAX now verifies AE3D's public matrix/eigenmode
 triplet internally through residuals and Rayleigh quotients, and independently
 re-solves the public generalized matrix problem to recover the published
-spectrum. This is still external matrix/eigenmode parity, not yet a claim that
+spectrum. FAX also places public AE3D global eigenmode peaks on its CTOK local
+Boozer continuum and checks the closest-branch frequency error. This is still
+external matrix/eigenmode plus continuum-placement parity, not yet a claim that
 the current reduced FAX radial operator reproduces AE3D's full physics
 operator.
 

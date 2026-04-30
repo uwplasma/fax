@@ -36,6 +36,7 @@ from .boozer import (
 )
 from .continuum import continuum_branch_matrix, local_continuum_frequency_hz
 from .cross_code import (
+    ae3d_continuum_placement_parity,
     ae3d_dense_spectrum_parity,
     ae3d_eigenvalue_residual_summary,
     ae3d_global_mode_parity,
@@ -1816,6 +1817,40 @@ def _gate_ae3d_public_global_mode_shape_parity() -> GateResult:
     )
 
 
+def _gate_ae3d_public_continuum_placement_parity() -> GateResult:
+    gate_id = "ae3d_public_continuum_placement_parity"
+    tolerance = 3.0e-2
+    egn_mode = _local_external_file("AE3D_test_problem", "egn_mode_asci.dat")
+    boozmn = _local_external_file("AE3D_test_inputs", "boozmn_ctok.nc")
+    if egn_mode is None or boozmn is None:
+        return GateResult(
+            gate_id=gate_id,
+            status="skipped",
+            metric=float("nan"),
+            tolerance=tolerance,
+            message="missing local ORNL AE3D eigenmode or CTOK boozmn artifacts under /Users/rogerio/local",
+        )
+    parity = ae3d_continuum_placement_parity(
+        egn_mode_path=egn_mode,
+        boozmn_path=boozmn,
+        mass_density=2.0 * PROTON_MASS * 1.0e19,
+        max_modes=128,
+        theta_points=32,
+        zeta_points=32,
+    )
+    return _pass_fail(
+        gate_id,
+        parity.p95_closest_branch_relative_error,
+        tolerance,
+        (
+            "AE3D public global eigenmode frequencies sit near the closest FAX local "
+            f"Boozer continuum branch at their peak radial location for {parity.count} modes; "
+            f"p95 closest-branch error={parity.p95_closest_branch_relative_error:.3g}, "
+            f"mean dominant-harmonic energy fraction={parity.mean_peak_harmonic_energy_fraction:.3g}"
+        ),
+    )
+
+
 def _gate_landreman_paul_adapter_smoke() -> GateResult:
     gate_id = "landreman_paul_adapter_smoke"
     tolerance = 0.0
@@ -2707,6 +2742,17 @@ def registered_validation_gates() -> tuple[ValidationGate, ...]:
             command="python -m pytest tests/test_validation_registry.py tests/test_cross_code.py",
             tags=("cross-code", "ae3d", "matrix", "eigenmode", "mode-shape", "parity"),
             _runner=_gate_ae3d_public_global_mode_shape_parity,
+        ),
+        ValidationGate(
+            gate_id="ae3d_public_continuum_placement_parity",
+            title="AE3D public global-mode continuum-placement parity",
+            layer="cross-code",
+            quantity="p95 closest local-continuum branch relative error",
+            tolerance=3.0e-2,
+            citation="ORNL AE3D public egn_mode_asci.dat and CTOK Boozer geometry; global eigenmode peak placement compared with FAX local Boozer continuum branches",
+            command="python -m pytest tests/test_validation_registry.py tests/test_cross_code.py",
+            tags=("cross-code", "ae3d", "boozer", "continuum", "eigenmode", "placement"),
+            _runner=_gate_ae3d_public_continuum_placement_parity,
         ),
         ValidationGate(
             gate_id="landreman_paul_adapter_smoke",

@@ -150,6 +150,28 @@ class Ae3dGlobalModeParity:
 
 
 @dataclass(frozen=True)
+class Ae3dContinuumPlacementParity:
+    """AE3D global-mode placement relative to a FAX local continuum."""
+
+    count: int
+    surface_count: int
+    harmonic_count: int
+    max_closest_branch_relative_error: float
+    p95_closest_branch_relative_error: float
+    max_dominant_branch_relative_error: float
+    p95_dominant_branch_relative_error: float
+    mean_peak_harmonic_energy_fraction: float
+    min_peak_harmonic_energy_fraction: float
+    reference_frequency_khz: jax.Array
+    closest_continuum_frequency_khz: jax.Array
+    dominant_continuum_frequency_khz: jax.Array
+    peak_s: jax.Array
+    matched_s: jax.Array
+    dominant_harmonic: jax.Array
+    closest_harmonic: jax.Array
+
+
+@dataclass(frozen=True)
 class StellgapGapParity:
     """Gap-center/width parity against STELLGAP continuum branches."""
 
@@ -615,6 +637,131 @@ def ae3d_global_mode_parity(
         p95_euclidean_mode_shape_error=float(np.percentile(euclidean_array, 95.0)),
         max_mass_weighted_mode_shape_error=float(np.max(mass_array)),
         p95_mass_weighted_mode_shape_error=float(np.percentile(mass_array, 95.0)),
+    )
+
+
+def ae3d_continuum_placement_parity(
+    *,
+    egn_mode_path: str | Path,
+    boozmn_path: str | Path,
+    mass_density: Any,
+    max_modes: int = 128,
+    theta_points: int = 32,
+    zeta_points: int = 32,
+) -> Ae3dContinuumPlacementParity:
+    """Compare AE3D global-mode radial placement with the FAX local continuum.
+
+    For each AE3D mode, FAX finds the dominant harmonic by integrated
+    eigenfunction energy, locates the radial surface where that harmonic peaks,
+    and compares the AE3D eigenfrequency with the closest FAX local Boozer
+    continuum branch on that surface. This is a global-mode physics placement
+    gate, not final native FAX-vs-AE3D operator parity.
+    """
+    data = read_ae3d_eigenmodes(egn_mode_path, max_modes=max_modes)
+    geometry = read_boozmn_geometry(boozmn_path)
+    continuum_khz = (
+        boozer_3d_continuum_frequencies_hz(
+            geometry,
+            data.harmonics,
+            mass_density=mass_density,
+            theta_points=theta_points,
+            zeta_points=zeta_points,
+        )
+        / 1.0e3
+    )
+    return ae3d_continuum_placement_from_arrays(
+        data,
+        continuum_frequency_khz=continuum_khz,
+        continuum_s=geometry.s,
+    )
+
+
+def ae3d_continuum_placement_from_arrays(
+    data: Ae3dEigenmodeData,
+    *,
+    continuum_frequency_khz: Any,
+    continuum_s: Any,
+) -> Ae3dContinuumPlacementParity:
+    """Return AE3D mode-placement metrics for a supplied local continuum."""
+    modes = np.asarray(data.modes, dtype=float)
+    eigenvalues = np.asarray(data.eigenvalue_omega2, dtype=float)
+    rho = np.asarray(data.rho, dtype=float)
+    harmonics = np.asarray(data.harmonics, dtype=int)
+    continuum = np.asarray(continuum_frequency_khz, dtype=float)
+    surface_grid = np.asarray(continuum_s, dtype=float)
+    if modes.ndim != 3:
+        raise ValueError("AE3D modes must have shape (mode, surface, harmonic)")
+    if continuum.shape != (surface_grid.shape[0], harmonics.shape[0]):
+        raise ValueError("continuum_frequency_khz must have shape (surface_count, harmonic_count)")
+    if modes.shape[1] != rho.shape[0] or modes.shape[2] != harmonics.shape[0]:
+        raise ValueError("AE3D mode array dimensions must match rho and harmonics")
+
+    reference_frequency: list[float] = []
+    closest_frequency: list[float] = []
+    dominant_frequency: list[float] = []
+    peak_s: list[float] = []
+    matched_s: list[float] = []
+    dominant_harmonic_rows: list[tuple[int, int]] = []
+    closest_harmonic_rows: list[tuple[int, int]] = []
+    closest_errors: list[float] = []
+    dominant_errors: list[float] = []
+    peak_energy_fraction: list[float] = []
+    for mode_index in range(modes.shape[0]):
+        eigenvalue = float(eigenvalues[mode_index])
+        if eigenvalue <= 0.0:
+            continue
+        frequency = float(np.sqrt(eigenvalue))
+        mode = modes[mode_index]
+        energy = np.sum(np.abs(mode) ** 2, axis=0)
+        total_energy = max(float(np.sum(energy)), 1.0e-30)
+        dominant_harmonic_index = int(np.argmax(energy))
+        dominant_amplitude = np.abs(mode[:, dominant_harmonic_index])
+        peak_index = int(np.argmax(dominant_amplitude))
+        surface = float(rho[peak_index])
+        continuum_surface_index = int(np.argmin(np.abs(surface_grid - surface)))
+        branch = continuum[continuum_surface_index]
+        closest_harmonic_index = int(np.argmin(np.abs(branch - frequency)))
+        closest = float(branch[closest_harmonic_index])
+        dominant = float(branch[dominant_harmonic_index])
+        denominator = max(abs(frequency), 1.0e-30)
+
+        reference_frequency.append(frequency)
+        closest_frequency.append(closest)
+        dominant_frequency.append(dominant)
+        peak_s.append(surface)
+        matched_s.append(float(surface_grid[continuum_surface_index]))
+        dominant_harmonic_rows.append(
+            (int(harmonics[dominant_harmonic_index, 0]), int(harmonics[dominant_harmonic_index, 1]))
+        )
+        closest_harmonic_rows.append(
+            (int(harmonics[closest_harmonic_index, 0]), int(harmonics[closest_harmonic_index, 1]))
+        )
+        closest_errors.append(abs(closest - frequency) / denominator)
+        dominant_errors.append(abs(dominant - frequency) / denominator)
+        peak_energy_fraction.append(float(energy[dominant_harmonic_index]) / total_energy)
+
+    if not reference_frequency:
+        raise ValueError("no positive AE3D eigenvalues were available for continuum placement")
+    closest_array = np.asarray(closest_errors, dtype=float)
+    dominant_array = np.asarray(dominant_errors, dtype=float)
+    peak_energy_array = np.asarray(peak_energy_fraction, dtype=float)
+    return Ae3dContinuumPlacementParity(
+        count=len(reference_frequency),
+        surface_count=int(continuum.shape[0]),
+        harmonic_count=int(continuum.shape[1]),
+        max_closest_branch_relative_error=float(np.max(closest_array)),
+        p95_closest_branch_relative_error=float(np.percentile(closest_array, 95.0)),
+        max_dominant_branch_relative_error=float(np.max(dominant_array)),
+        p95_dominant_branch_relative_error=float(np.percentile(dominant_array, 95.0)),
+        mean_peak_harmonic_energy_fraction=float(np.mean(peak_energy_array)),
+        min_peak_harmonic_energy_fraction=float(np.min(peak_energy_array)),
+        reference_frequency_khz=jnp.asarray(reference_frequency),
+        closest_continuum_frequency_khz=jnp.asarray(closest_frequency),
+        dominant_continuum_frequency_khz=jnp.asarray(dominant_frequency),
+        peak_s=jnp.asarray(peak_s),
+        matched_s=jnp.asarray(matched_s),
+        dominant_harmonic=jnp.asarray(dominant_harmonic_rows, dtype=int),
+        closest_harmonic=jnp.asarray(closest_harmonic_rows, dtype=int),
     )
 
 
