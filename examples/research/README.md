@@ -34,6 +34,7 @@ python examples/research/boozmn_3d_continuum.py
 python examples/research/boozmn_global_3d_eigenmodes.py
 python examples/research/boozmn_differentiable_design_study.py
 python examples/research/vmec_boozer_convergence.py
+python examples/research/vmec_equilibria_catalog.py
 python examples/research/stellgap_ctok_comparison.py
 python examples/research/external_code_artifact_dashboard.py
 python examples/research/far3d_gpu_lincheck_artifact.py
@@ -120,6 +121,18 @@ This runs the local Landreman-Paul QA ``vmec_jax`` input through the in-memory
 truncation and angular quadrature for the local 3-D Boozer operator. It is a
 production-readiness smoke check for the live bridge, not a converged VMEC
 physics benchmark.
+
+## VMEC-Equilibria Multi-Geometry Catalog
+
+```bash
+python examples/research/vmec_equilibria_catalog.py --root /Users/rogerio/local/vmec_equilibria
+```
+
+This reads selected `wout*.nc` files from the external
+`landreman/vmec_equilibria` clone and writes a profile-continuum catalog over
+HSX, W7-X, NCSX, ARIES-CS, LHD, TJ-II, QHS, and ITER-like references. It is the
+first broad geometry-matrix screen for FAX examples. It is still a
+profile-level VMEC-`wout` catalog, not full Boozer/global cross-code parity.
 
 ## STELLGAP CTOK Cross-Code Comparison
 

@@ -166,6 +166,17 @@ sensitivity = jax.grad(first_mode)(0.0)
 More examples are in [examples/research](examples/research/README.md) and
 [the research examples documentation](docs/research_examples.rst).
 
+FAX can also read the public
+[`landreman/vmec_equilibria`](https://github.com/landreman/vmec_equilibria)
+checkout as an external geometry matrix:
+
+```bash
+git clone https://github.com/landreman/vmec_equilibria /Users/rogerio/local/vmec_equilibria
+python examples/research/vmec_equilibria_catalog.py --root /Users/rogerio/local/vmec_equilibria
+```
+
+![VMEC-equilibria catalog](docs/_static/vmec_equilibria_catalog.png)
+
 ## Validation And Cross-Code Status
 
 The v0.0.1 gate currently covers:
@@ -186,7 +197,7 @@ The v0.0.1 gate currently covers:
   normalization, a 50/100/200/400-step convergence ladder, and a finite-beta
   parameter scan.
 
-Current headline local metrics are 234 passing tests, 95.3% coverage,
+Current headline local metrics are 236 passing tests, 95% coverage,
 STELLGAP CTOK p95 sorted-spectrum relative error about 2.55%, AE3D dense
 spectrum max relative error about 1.6e-6, and AE3D B-weighted mode-shape error
 about 5.2e-8 for the checked public modes; AE3D mode-peak closest-continuum

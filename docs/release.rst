@@ -71,6 +71,11 @@ state before publishing:
   matched multi-geometry FAR3D/CAS3D-K benchmark.
 * CAS3D and converged FAR3D parity remain pending until runnable input/output
   pairs or portable benchmark builds are available.
+* ``examples/research/vmec_equilibria_catalog.py`` reads a local clone of
+  ``landreman/vmec_equilibria`` and generates a broad VMEC-``wout``
+  profile-continuum catalog over HSX, W7-X, NCSX, ARIES-CS, LHD, TJ-II, QHS,
+  and ITER-like references. This is a geometry-matrix screening artifact, not
+  full Boozer/global cross-code parity.
 
 Do not publish the existing ``v0.0.1`` draft until the tag points at the final
 release commit and the full local release gate above is green.

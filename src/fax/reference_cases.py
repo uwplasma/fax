@@ -34,9 +34,178 @@ class ReferenceCase:
         return not self.missing_paths()
 
 
+@dataclass(frozen=True)
+class VmecEquilibriaCase:
+    """One equilibrium from the external ``landreman/vmec_equilibria`` repo.
+
+    The repository is intentionally kept outside the FAX source tree because it
+    is a large data checkout. Paths are resolved at runtime from
+    ``FAX_VMEC_EQUILIBRIA_ROOT`` or the default local workspace clone.
+    """
+
+    case_id: str
+    family: str
+    description: str
+    relative_wout: Path
+    relative_vmec_input: Path | None
+    references: tuple[str, ...]
+    tags: tuple[str, ...]
+
+    def wout_path(self, *, root: str | Path | None = None) -> Path:
+        """Return the absolute local VMEC ``wout`` path."""
+        return vmec_equilibria_root(root=root) / self.relative_wout
+
+    def vmec_input_path(self, *, root: str | Path | None = None) -> Path | None:
+        """Return the absolute local VMEC input path, if cataloged."""
+        if self.relative_vmec_input is None:
+            return None
+        return vmec_equilibria_root(root=root) / self.relative_vmec_input
+
+    def missing_paths(self, *, root: str | Path | None = None) -> tuple[Path, ...]:
+        """Return required local paths that are unavailable."""
+        paths: list[Path] = [self.wout_path(root=root)]
+        vmec_input = self.vmec_input_path(root=root)
+        if vmec_input is not None:
+            paths.append(vmec_input)
+        return tuple(path for path in paths if not path.exists())
+
+    def is_available(self, *, root: str | Path | None = None) -> bool:
+        """Return whether all required local paths exist."""
+        return not self.missing_paths(root=root)
+
+
 def local_root() -> Path:
     """Return the local workspace root used for external reference cases."""
     return Path(os.environ.get("FAX_LOCAL_ROOT", Path.home() / "local")).expanduser()
+
+
+def vmec_equilibria_root(*, root: str | Path | None = None) -> Path:
+    """Return the local clone root for ``landreman/vmec_equilibria``."""
+    if root is not None:
+        return Path(root).expanduser()
+    return Path(
+        os.environ.get(
+            "FAX_VMEC_EQUILIBRIA_ROOT",
+            str(local_root() / "vmec_equilibria"),
+        )
+    ).expanduser()
+
+
+def vmec_equilibria_catalog() -> tuple[VmecEquilibriaCase, ...]:
+    """Return the curated multi-geometry VMEC-equilibria benchmark catalog.
+
+    These are not bundled into the Python package. They are external literature
+    or device equilibria used to exercise FAX on a broad set of already
+    converged VMEC ``wout`` files: quasi-helical, quasi-axisymmetric, heliotron,
+    heliac, optimized stellarator, reactor, and axisymmetric references.
+    """
+    repo = "https://github.com/landreman/vmec_equilibria"
+    return (
+        VmecEquilibriaCase(
+            case_id="hsx_qhs_vac",
+            family="HSX",
+            description="HSX quasi-helically symmetric vacuum equilibrium.",
+            relative_wout=Path("HSX/QHS_vac/wout_HSX_QHS_vac.nc"),
+            relative_vmec_input=None,
+            references=(repo, "HSX/QHS_vac/README"),
+            tags=("stellarator", "quasi-helical", "vacuum", "boozmn-available"),
+        ),
+        VmecEquilibriaCase(
+            case_id="hsx_filtered",
+            family="HSX",
+            description="HSX configuration filtered to reduce modular-ripple harmonics.",
+            relative_wout=Path("HSX/filtered_to_remove_modular_ripple/wout_hsxt.nc"),
+            relative_vmec_input=Path("HSX/filtered_to_remove_modular_ripple/input.hsxt"),
+            references=(repo, "HSX/filtered_to_remove_modular_ripple/README"),
+            tags=("stellarator", "quasi-helical", "filtered"),
+        ),
+        VmecEquilibriaCase(
+            case_id="nuhrenberg_zille_qhs_ns51",
+            family="Nuhrenberg-Zille",
+            description="Nuhrenberg-Zille 1988 quasi-helically symmetric reference.",
+            relative_wout=Path("NuhrenbergZille_1988_QHS/ns51/wout_NuhrenbergZille_1988_QHS.nc"),
+            relative_vmec_input=Path("NuhrenbergZille_1988_QHS/ns51/input.NuhrenbergZille_1988_QHS"),
+            references=(repo, "Nuhrenberg and Zille 1988 quasi-helical stellarator reference"),
+            tags=("stellarator", "quasi-helical", "literature"),
+        ),
+        VmecEquilibriaCase(
+            case_id="qhs46_ns201",
+            family="QHS46",
+            description="QHS46 WISTELL quasi-helical base case.",
+            relative_wout=Path("QHS46/ns201/wout_qhs46_ns201.nc"),
+            relative_vmec_input=Path("QHS46/ns201/input.qhs46_ns201"),
+            references=(repo, "QHS46/wistell_website_base_case/README"),
+            tags=("stellarator", "quasi-helical", "wistell"),
+        ),
+        VmecEquilibriaCase(
+            case_id="w7x_standard",
+            family="W7-X",
+            description="W7-X standard configuration from the public VMEC-equilibria set.",
+            relative_wout=Path("W7-X/Standard/wout.nc"),
+            relative_vmec_input=Path("W7-X/Standard/input.txt"),
+            references=(repo, "W7-X/Standard/README"),
+            tags=("stellarator", "optimized", "w7-x"),
+        ),
+        VmecEquilibriaCase(
+            case_id="w7x_high_mirror",
+            family="W7-X",
+            description="W7-X high-mirror configuration from the public VMEC-equilibria set.",
+            relative_wout=Path("W7-X/HighMirror/wout.nc"),
+            relative_vmec_input=Path("W7-X/HighMirror/input.txt"),
+            references=(repo, "W7-X/HighMirror/README"),
+            tags=("stellarator", "optimized", "w7-x"),
+        ),
+        VmecEquilibriaCase(
+            case_id="ncsx_li383",
+            family="NCSX",
+            description="NCSX li383 finite-beta stellarator equilibrium.",
+            relative_wout=Path("NCSX/li383_1.4m/wout_li383_1.4m.nc"),
+            relative_vmec_input=Path("NCSX/li383_1.4m/input.li383_1.4m"),
+            references=(repo, "NCSX/li383_1.4m"),
+            tags=("stellarator", "quasi-axisymmetric", "ncsx"),
+        ),
+        VmecEquilibriaCase(
+            case_id="aries_cs",
+            family="ARIES-CS",
+            description="ARIES-CS reactor-scale compact-stellarator equilibrium.",
+            relative_wout=Path("ARIES-CS/n3are_R7.75B5.7/wout_n3are_R7.75B5.7.nc"),
+            relative_vmec_input=Path("ARIES-CS/n3are_R7.75B5.7/input.n3are_R7.75B5.7"),
+            references=(repo, "ARIES-CS/README"),
+            tags=("stellarator", "reactor", "compact-stellarator"),
+        ),
+        VmecEquilibriaCase(
+            case_id="lhd_090493t2330",
+            family="LHD",
+            description="Large Helical Device experimental equilibrium.",
+            relative_wout=Path("LHD/090493t2330/wout_LHD_090493t2330.nc"),
+            relative_vmec_input=None,
+            references=(repo, "LHD/090493t2330/README"),
+            tags=("stellarator", "heliotron", "experiment"),
+        ),
+        VmecEquilibriaCase(
+            case_id="tjii_100_44_64",
+            family="TJ-II",
+            description="TJ-II heliac equilibrium.",
+            relative_wout=Path("TJ-II/100_44_64_0/wout_100_44_64_0.0.nc"),
+            relative_vmec_input=Path("TJ-II/100_44_64_0/input.100_44_64_0.0"),
+            references=(repo, "TJ-II/100_44_64_0"),
+            tags=("stellarator", "heliac", "experiment"),
+        ),
+        VmecEquilibriaCase(
+            case_id="iter_model",
+            family="ITER",
+            description="Axisymmetric ITER-like VMEC reference for tokamak contrast.",
+            relative_wout=Path("ITER_model/ns201/wout_ITERModel.nc"),
+            relative_vmec_input=Path("ITER_model/ns201/input.ITERModel"),
+            references=(repo, "ITER_model/README"),
+            tags=("tokamak", "axisymmetric", "control"),
+        ),
+    )
+
+
+def available_vmec_equilibria_cases(*, root: str | Path | None = None) -> tuple[VmecEquilibriaCase, ...]:
+    """Return cataloged VMEC-equilibria cases available on this machine."""
+    return tuple(case for case in vmec_equilibria_catalog() if case.is_available(root=root))
 
 
 def landreman_paul_qa_lowres(*, root: str | Path | None = None) -> ReferenceCase:
@@ -78,4 +247,3 @@ def landreman_paul_qa_lowres(*, root: str | Path | None = None) -> ReferenceCase
         ),
         tags=("stellarator", "quasi-axisymmetric", "vmec", "lowres", "first-reference"),
     )
-

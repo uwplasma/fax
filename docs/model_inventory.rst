@@ -41,6 +41,15 @@ VMEC ``wout`` profiles
    QA case is the local stellarator reference target. This path is
    ``smoke-tested`` and protected by finite-output and radial-sampling gates.
 
+VMEC-equilibria catalog
+   ``fax.reference_cases.vmec_equilibria_catalog`` records a curated subset of
+   the public ``landreman/vmec_equilibria`` repository: HSX, W7-X, NCSX,
+   ARIES-CS, LHD, TJ-II, QHS, and ITER-like references. The catalog lets tests
+   and examples run the same FAX profile-continuum adapter over a broad
+   multi-device geometry matrix without bundling the large external data repo.
+   This is a ``smoke-tested`` adapter/screening layer, not native
+   Boozer/global cross-code parity.
+
 Metric geometry
    ``fax.metric.MetricGeometry`` stores angular grids, Jacobian weights,
    magnetic field strength, density, and field-line derivative coefficients.

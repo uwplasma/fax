@@ -174,7 +174,14 @@ from .plotting import (
     plot_convergence_artifacts,
     plot_global_eigenmode_artifacts,
 )
-from .reference_cases import ReferenceCase, landreman_paul_qa_lowres
+from .reference_cases import (
+    ReferenceCase,
+    VmecEquilibriaCase,
+    available_vmec_equilibria_cases,
+    landreman_paul_qa_lowres,
+    vmec_equilibria_catalog,
+    vmec_equilibria_root,
+)
 from .runner import RunSummary, run
 from .workflows import (
     BenchmarkRunSummary,
@@ -254,6 +261,7 @@ __all__ = [
     "RadialEigenmodeResult",
     "SparseRadialBlockEigenmodeResult",
     "ReferenceCase",
+    "VmecEquilibriaCase",
     "ResearchGradeMilestone",
     "RunSummary",
     "StellgapContinuumData",
@@ -277,6 +285,9 @@ __all__ = [
     "boozer_global_isolated_mode_omega2",
     "boozer_pipeline_isolated_mode_avoidance_objective",
     "landreman_paul_qa_lowres",
+    "available_vmec_equilibria_cases",
+    "vmec_equilibria_catalog",
+    "vmec_equilibria_root",
     "load_far3d_lincheck_dataset",
     "load_continuum_artifacts",
     "load_convergence_artifacts",

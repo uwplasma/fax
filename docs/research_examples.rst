@@ -169,6 +169,34 @@ Boozer harmonic truncation and local 3-D operator angular quadrature
 convergence. It writes a compact figure and prints JSON metrics; it is not a
 converged VMEC physics benchmark.
 
+VMEC-Equilibria Multi-Geometry Catalog
+--------------------------------------
+
+Clone the public equilibrium repository once:
+
+.. code-block:: bash
+
+   git clone https://github.com/landreman/vmec_equilibria /Users/rogerio/local/vmec_equilibria
+
+Then run:
+
+.. code-block:: bash
+
+   python examples/research/vmec_equilibria_catalog.py --root /Users/rogerio/local/vmec_equilibria
+
+This reads selected VMEC ``wout*.nc`` files from the external clone and builds
+a broad profile-continuum catalog spanning HSX, W7-X, NCSX, ARIES-CS, LHD,
+TJ-II, QHS, and an ITER-like axisymmetric control. It writes SVG/PNG, CSV, and
+JSON artifacts. This is a multi-geometry adapter and screening benchmark, not
+full Boozer/global cross-code parity.
+
+.. figure:: _static/vmec_equilibria_catalog.svg
+   :alt: VMEC-equilibria multi-geometry profile-continuum catalog.
+
+   Multi-geometry VMEC ``wout`` catalog from ``landreman/vmec_equilibria``:
+   rotational-transform profiles, device geometry spread, profile-continuum
+   frequency scales, and field-strength trends.
+
 Real ``boozmn`` Local 3-D Continuum
 -----------------------------------
 

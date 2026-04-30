@@ -46,6 +46,14 @@ Equilibrium Helpers
 ``from_vmec_wout``
    Minimal VMEC ``wout`` profile adapter used by Landreman-Paul QA examples.
 
+``vmec_equilibria_catalog``
+   Return the curated external ``landreman/vmec_equilibria`` geometry matrix
+   used by the multi-device catalog example.
+
+``available_vmec_equilibria_cases``
+   Filter the VMEC-equilibria catalog to cases whose ``wout`` files are present
+   in the local clone.
+
 Mode and Continuum Helpers
 --------------------------
 

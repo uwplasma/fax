@@ -53,6 +53,10 @@ Multi-geometry cross-code benchmark suite
    quasi-axisymmetric, quasi-helical, tokamak, heliotron/heliac, and
    reactor-relevant configurations with convergence ladders, runtime metadata,
    external-code parity, and fixture hashes. Current status: in progress.
+   A first ``landreman/vmec_equilibria`` VMEC-``wout`` catalog now spans HSX,
+   W7-X, NCSX, ARIES-CS, LHD, TJ-II, QHS, and ITER-like references for
+   profile-continuum adapter screening; the remaining step is to promote this
+   into Boozer/global operator and external-code parity on the same geometries.
 
 Final no-proxy/no-reduced-model release gate
    This remains blocked until the previous milestones pass. Reduced models may
@@ -76,5 +80,8 @@ First Implementation Steps
    be added.
 4. Choose a small set of VMEC boundary variables for the first end-to-end
    differentiable design check and compare JAX gradients to finite differences.
-5. Keep ``fax maturity`` and this page updated whenever a milestone moves from
+5. Use the VMEC-equilibria catalog to select the next HSX/W7-X/LHD/NCSX
+   Boozer/global parity cases, then add matching STELLGAP/AE3D/CAS3D/FAR3D
+   artifacts where possible.
+6. Keep ``fax maturity`` and this page updated whenever a milestone moves from
    planned to in-progress or complete.

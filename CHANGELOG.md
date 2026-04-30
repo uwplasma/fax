@@ -54,6 +54,7 @@ Initial research release for FAX.
 - Research example for Boozer harmonic convention validation.
 - Research example for applying the local 3-D Boozer continuum operator to a real `boozmn` file and generating a plot/JSON packet.
 - Research example for solving the global radial 3-D Boozer eigenmode problem and plotting radial envelopes/harmonic structure.
+- VMEC-equilibria catalog API and research example for reading the external `landreman/vmec_equilibria` multi-geometry `wout` matrix and generating profile-continuum screening plots.
 - ReadTheDocs/Sphinx docs, GitHub Actions definitions for tests/docs/publish, and PyPI trusted-publishing workflow.
 - Publication-results documentation page tying the ten publication-suite figures to claim levels, metrics, commands, and remaining publication lanes.
 

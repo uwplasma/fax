@@ -206,6 +206,15 @@ Current Figures
    It holds the Boozer geometry fixed and refines only the angular quadrature
    used by the local 3-D surface operator.
 
+.. figure:: _static/vmec_equilibria_catalog.svg
+   :alt: VMEC-equilibria multi-geometry profile-continuum catalog.
+
+   Public ``landreman/vmec_equilibria`` multi-geometry catalog. FAX reads
+   selected VMEC ``wout`` files and compares profile-level rotational
+   transform, device scale, and local continuum frequency scales over HSX,
+   W7-X, NCSX, ARIES-CS, LHD, TJ-II, QHS, and an ITER-like control. This is a
+   broad adapter/screening artifact, not full Boozer/global parity.
+
 .. figure:: _static/benchmark_family_packet.svg
    :alt: FAX benchmark families with physics gates.
 

@@ -1849,3 +1849,38 @@ one DIII-D reduced-MHD/gyrofluid case. It is not calibrated FAX/FAR3D kinetic
 parity. The next step is to fit FAX reduced gyro-Landau closure coefficients
 on a subset of FAR3D beta/distribution points, validate on held-out points,
 and repeat the workflow on at least one stellarator geometry.
+
+### 2026-04-30 VMEC-Equilibria Multi-Geometry Catalog
+
+Started closing the multi-geometry reactor-design lane using the public
+``landreman/vmec_equilibria`` repository:
+
+- used the existing local clone at ``/Users/rogerio/local/vmec_equilibria``,
+- added ``VmecEquilibriaCase``, ``vmec_equilibria_catalog``,
+  ``available_vmec_equilibria_cases``, and ``vmec_equilibria_root`` to
+  ``fax.reference_cases``,
+- cataloged HSX QHS, HSX filtered, Nuhrenberg-Zille QHS, QHS46, W7-X standard,
+  W7-X high-mirror, NCSX li383, ARIES-CS, LHD, TJ-II, and an ITER-like
+  axisymmetric control,
+- added real-``wout`` tests that run the FAX profile-continuum adapter over
+  the available external catalog cases and check finite continuum branches,
+- added ``examples/research/vmec_equilibria_catalog.py``,
+- generated ``docs/_static/vmec_equilibria_catalog.{png,svg}``,
+  ``vmec_equilibria_catalog.csv``, and
+  ``vmec_equilibria_catalog_summary.json``,
+- updated README, docs, examples, release notes, changelog, and this plan.
+
+Observed catalog coverage on this machine:
+
+- 11 available VMEC ``wout`` files,
+- field periods from 1 to 10,
+- aspect ratios from 3.0 to 11.7,
+- iota profiles covering positive and negative helicity conventions,
+- profile-continuum median scales from about 29 kHz to 2.4 MHz for the chosen
+  screening harmonic family.
+
+Important scope: this is a broad geometry-matrix and adapter benchmark. It is
+not full Boozer/global cross-code parity. The next step is to select a small
+held-out subset from this catalog, run BOOZ_XFORM/booz_xform_jax for matched
+Boozer geometry where needed, and promote those cases into STELLGAP/AE3D/CAS3D
+or FAR3D parity packets.
