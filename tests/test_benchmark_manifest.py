@@ -16,6 +16,7 @@ def test_default_benchmark_manifest_has_current_external_cases():
 
     assert "stellgap_ctok_local_continuum_gap" in ids
     assert "ae3d_public_matrix_mode_shape" in ids
+    assert "far3d_diiid_gpu_lincheck_artifact" in ids
     assert all(entry.validation_gate_ids for entry in entries)
     assert all(entry.expected_metrics for entry in entries)
 
@@ -37,7 +38,9 @@ def test_benchmark_manifest_markdown_mentions_claim_boundaries():
     assert "Benchmark Manifest" in report
     assert "STELLGAP" in report
     assert "AE3D" in report
+    assert "FAR3D" in report
     assert "not native FAX operator parity" in report
+    assert "not calibrated kinetic parity" in report
 
 
 def test_benchmark_artifact_hash_contract_tracks_fixture_bytes(tmp_path):

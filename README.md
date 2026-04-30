@@ -22,7 +22,8 @@ FAR3D, or STELLGAP. It does provide a tested JAX foundation for research:
 profile and metric continuum operators, real `boozmn` local 3-D Boozer
 operators, reduced global radial eigenmodes, differentiable eigenvalue and
 cluster objectives, reduced gyro-Landau fast-ion closures, STELLGAP CTOK local
-continuum/gap parity, and AE3D public matrix/eigenmode parity.
+continuum/gap parity, AE3D public matrix/eigenmode parity, and an archived
+FAR3D GPU build/run `lincheck` ingestion artifact.
 
 ![FAX workflow](docs/_static/workflow_io_diagram.png)
 
@@ -179,9 +180,12 @@ The v0.0.1 gate currently covers:
 - STELLGAP CTOK local-continuum and largest-local-gap parity,
 - AE3D public `A x = lambda B x` matrix, spectrum, and B-weighted mode-shape
   parity, plus AE3D global-mode peak placement against the FAX CTOK local
-  Boozer continuum.
+  Boozer continuum,
+- FAR3D GPU executable-run traceability for the public DIII-D example, with
+  parsed `lincheck` growth/frequency rows and a run-reported code-frequency
+  normalization.
 
-Current headline local metrics are 221 passing tests, 95.1% coverage,
+Current headline local metrics are 230 passing tests, 95.3% coverage,
 STELLGAP CTOK p95 sorted-spectrum relative error about 2.55%, AE3D dense
 spectrum max relative error about 1.6e-6, and AE3D B-weighted mode-shape error
 about 5.2e-8 for the checked public modes; AE3D mode-peak closest-continuum
@@ -199,13 +203,17 @@ Current external-code artifacts are tracked by `fax benchmark-manifest` and
 FAR3D/CAS3D-K growth-rate packets are checked with `fax kinetic-parity`; this
 is a held-out validation contract, not yet a completed kinetic-code replacement.
 FAR3D `lincheck` logs can be converted into that schema with explicit unit
-normalization:
+normalization. The repository includes one real FAR3D/NVHPC GPU run artifact
+for parser and runtime traceability; it is not yet a converged kinetic parity
+benchmark.
 
 ```bash
 fax far3d-ingest far3d.out --dataset-id far3d_ctok_linear_v1 \
   --geometry-id ctok --frequency-scale-hz 2.0e6 \
   --growth-rate-scale-hz 2.0e6 --output kinetic_dataset.json
 ```
+
+![FAR3D GPU lincheck artifact](docs/_static/far3d_gpu_lincheck_artifact.png)
 
 ## What Is New Relative To Legacy AE Codes
 

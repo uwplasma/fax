@@ -1743,3 +1743,40 @@ native FAR3D `gam` and `om_r` code units and requires an explicit
 Hz-normalized validation packet. The next step is to obtain or run one portable
 FAR3D linear benchmark with documented normalizations, ingest it, and make the
 resulting held-out growth-rate gate part of the benchmark manifest.
+
+### 2026-04-30 FAR3D GPU Build/Run Artifact
+
+Closed the first external FAR3D executable-runtime lane on the `office` GPU
+host:
+
+- cloned `DSfusion/FAR3d` under `/home/rjorge/local/FAR3d`,
+- confirmed the CPU matrix path can build with the existing conda Fortran/MPI
+  toolchain when `matrix_cpu.f90` is copied over `src/matrix.f90`,
+- installed a user-space minimal NVIDIA HPC SDK 25.9 payload because the full
+  installer filled the host filesystem and system compilers did not provide
+  CUDA Fortran `cudafor.mod`,
+- built upstream FAR3D `src/matrix.f90` with NVHPC/OpenACC/CUDA Fortran using
+  the bundled HPC-X MPI runtime,
+- resolved the runtime MPI prefix issue by launching with
+  `mpirun -np 1 --prefix "$OPAL_PREFIX" ./far3d.x`,
+- translated the public DIII-D `Eq_DIIID_RS` example into current `farin`
+  namelist form and ran a bounded `maxstp=20` GPU test,
+- archived compact run artifacts under
+  `external_artifacts/far3d/gpu_diiid_nvhpc`,
+- ingested `farprt0000` into
+  `external_artifacts/far3d/gpu_diiid_nvhpc/kinetic_dataset.json` using the
+  FAR3D-reported conversion factor `599.81341 kHz` per code-frequency unit,
+- added a benchmark-manifest entry,
+- added parser/ingestion tests for the real artifact,
+- added `examples/research/far3d_gpu_lincheck_artifact.py`,
+- generated `docs/_static/far3d_gpu_lincheck_artifact.{png,svg}`,
+- documented the build/run recipe and scope in `docs/external_codes.rst`,
+  `docs/kinetic_validation.rst`, README, release notes, and examples.
+
+Important scope: this is a real external-code executable/build and ingestion
+artifact, not converged FAR3D kinetic parity. The run is intentionally short
+and exists to prove the CUDA-Fortran build, current-input translation, MPI
+launch, parser, and normalization path. The next FAR3D lane is a documented
+linear benchmark run long enough for converged growth rates, with complete
+input/output hashes, runtime metadata, and calibration-vs-held-out validation
+against the FAX fast-ion closure.

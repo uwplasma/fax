@@ -3,6 +3,7 @@ include README.md
 include CHANGELOG.md
 include pyproject.toml
 recursive-include docs *.rst *.py *.json *.png *.svg
+recursive-include external_artifacts *
 recursive-include examples *.md *.py *.toml
 recursive-include tests *.py
 recursive-include tools *.py

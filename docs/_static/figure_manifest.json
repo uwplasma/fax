@@ -87,7 +87,7 @@
       "layer": "convergence",
       "quantity": "relative frequency error across radial refinement",
       "tolerance": 0.005,
-      "citation": "Smooth analytic radial-grid convergence check for the shear-Alfven metric-matrix scaffold",
+      "citation": "Smooth analytic radial-grid convergence check for the shear-Alfven metric-matrix operator",
       "command": "python -m pytest tests/test_metric.py tests/test_validation_registry.py",
       "tags": [
         "metric",
@@ -550,7 +550,7 @@
     },
     {
       "id": "boozmn_3d_continuum_finite",
-      "title": "Real boozmn 3-D local continuum smoke test",
+      "title": "Real boozmn 3-D local continuum finite-output check",
       "layer": "boozer",
       "quantity": "Hermitian error and finite-output check",
       "tolerance": 2e-05,
@@ -566,7 +566,7 @@
     },
     {
       "id": "boozmn_global_3d_eigenmode_finite",
-      "title": "Real boozmn global radial 3-D eigenmode smoke test",
+      "title": "Real boozmn global radial 3-D eigenmode finite-output check",
       "layer": "global-eigenmode",
       "quantity": "maximum residual and finite-output check",
       "tolerance": 2e-05,
@@ -787,8 +787,25 @@
       ]
     },
     {
+      "id": "ae3d_public_continuum_placement_parity",
+      "title": "AE3D public global-mode continuum-placement parity",
+      "layer": "cross-code",
+      "quantity": "p95 closest local-continuum branch relative error",
+      "tolerance": 0.03,
+      "citation": "ORNL AE3D public egn_mode_asci.dat and CTOK Boozer geometry; global eigenmode peak placement compared with FAX local Boozer continuum branches",
+      "command": "python -m pytest tests/test_validation_registry.py tests/test_cross_code.py",
+      "tags": [
+        "cross-code",
+        "ae3d",
+        "boozer",
+        "continuum",
+        "eigenmode",
+        "placement"
+      ]
+    },
+    {
       "id": "landreman_paul_adapter_smoke",
-      "title": "Landreman-Paul QA VMEC adapter smoke test",
+      "title": "Landreman-Paul QA VMEC adapter finite-output check",
       "layer": "adapter",
       "quantity": "finite/positive metric-field check",
       "tolerance": 0.0,
@@ -806,7 +823,7 @@
       "layer": "adapter",
       "quantity": "relative Boozer Jacobian identity error",
       "tolerance": 0.01,
-      "citation": "Landreman & Paul, Phys. Rev. Lett. 128, 035001 (2022); one-iteration vmec_jax/booz_xform_jax/FAX in-memory integration smoke gate",
+      "citation": "Landreman & Paul, Phys. Rev. Lett. 128, 035001 (2022); one-iteration vmec_jax/booz_xform_jax/FAX in-memory integration gate",
       "command": "python -m pytest -m requires_vmec_jax tests/test_boozer.py tests/test_validation_registry.py",
       "tags": [
         "vmec_jax",
@@ -823,7 +840,7 @@
       "layer": "convergence",
       "quantity": "maximum field/frequency/Jacobian truncation error",
       "tolerance": 0.01,
-      "citation": "Landreman & Paul, Phys. Rev. Lett. 128, 035001 (2022); Boozer truncation convergence smoke gate on the live vmec_jax/booz_xform_jax/FAX bridge",
+      "citation": "Landreman & Paul, Phys. Rev. Lett. 128, 035001 (2022); Boozer truncation convergence gate on the live vmec_jax/booz_xform_jax/FAX bridge",
       "command": "python -m pytest -m requires_vmec_jax tests/test_boozer.py tests/test_validation_registry.py",
       "tags": [
         "vmec_jax",
@@ -840,7 +857,7 @@
       "layer": "convergence",
       "quantity": "relative local 3-D frequency error and Hermitian error",
       "tolerance": 0.005,
-      "citation": "Landreman & Paul, Phys. Rev. Lett. 128, 035001 (2022); Boozer local-operator angular quadrature convergence smoke gate on the live bridge",
+      "citation": "Landreman & Paul, Phys. Rev. Lett. 128, 035001 (2022); Boozer local-operator angular quadrature convergence gate on the live bridge",
       "command": "python -m pytest -m requires_vmec_jax tests/test_boozer.py tests/test_validation_registry.py",
       "tags": [
         "vmec_jax",
@@ -889,7 +906,7 @@
       "layer": "adapter",
       "quantity": "relative branch error under radial sampling refinement",
       "tolerance": 0.08,
-      "citation": "Landreman & Paul, Phys. Rev. Lett. 128, 035001 (2022), arXiv:2108.03711; adapter sampling smoke test",
+      "citation": "Landreman & Paul, Phys. Rev. Lett. 128, 035001 (2022), arXiv:2108.03711; adapter sampling convergence check",
       "command": "python -m pytest -m requires_vmec_jax tests/test_validation_registry.py",
       "tags": [
         "vmec",

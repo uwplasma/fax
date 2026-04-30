@@ -99,6 +99,39 @@ until a FAR3D benchmark packet documents its input, output, and unit conversion,
 the resulting JSON is an ingestion artifact, not a completed kinetic parity
 claim.
 
+Archived FAR3D GPU Artifact
+---------------------------
+
+The repository now includes the first real FAR3D executable-run artifact:
+``external_artifacts/far3d/gpu_diiid_nvhpc/farprt0000``. It was generated on
+the ``office`` GPU host from ``DSfusion/FAR3d`` commit ``c76bdfe`` using a
+CUDA-Fortran/NVHPC build and the public DIII-D ``Eq_DIIID_RS`` example adapted
+to FAR3D's current ``farin`` namelist format.
+
+The run reported ``599.81341 kHz`` per FAR3D code-frequency unit. FAX therefore
+archives a parser-ready kinetic dataset at
+``external_artifacts/far3d/gpu_diiid_nvhpc/kinetic_dataset.json`` with
+``frequency_scale_hz = growth_rate_scale_hz = 599813.41``.
+
+Regenerate the ingestion packet with:
+
+.. code-block:: bash
+
+   fax far3d-ingest external_artifacts/far3d/gpu_diiid_nvhpc/farprt0000 \
+     --dataset-id far3d_diiid_gpu_nvhpc_20step \
+     --geometry-id diiid_rs_public_example \
+     --frequency-scale-hz 599813.41 \
+     --growth-rate-scale-hz 599813.41 \
+     --relative-growth-rate-uncertainty 0.2 \
+     --output external_artifacts/far3d/gpu_diiid_nvhpc/kinetic_dataset.json
+
+.. figure:: _static/far3d_gpu_lincheck_artifact.svg
+   :alt: FAR3D GPU lincheck artifact dashboard.
+
+   Parsed ``lincheck`` growth and frequency estimates from the real FAR3D GPU
+   run. This closes the FAR3D build/run/parser traceability step; it is not yet
+   a converged growth-rate parity result.
+
 Python API
 ----------
 

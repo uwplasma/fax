@@ -36,6 +36,7 @@ python examples/research/boozmn_differentiable_design_study.py
 python examples/research/vmec_boozer_convergence.py
 python examples/research/stellgap_ctok_comparison.py
 python examples/research/external_code_artifact_dashboard.py
+python examples/research/far3d_gpu_lincheck_artifact.py
 python examples/research/publication_figure_suite.py
 ```
 
@@ -144,6 +145,17 @@ public AE3D generalized matrix spectrum and global mode shapes, and writes a
 figure plus JSON metrics.
 These are prerequisite convention gates before full physics parity against
 AE3D/CAS3D/FAR3D.
+
+## FAR3D GPU Lincheck Artifact
+
+```bash
+python examples/research/far3d_gpu_lincheck_artifact.py
+```
+
+This reads the archived FAR3D DIII-D GPU run under
+`external_artifacts/far3d/gpu_diiid_nvhpc`, parses the `lincheck` rows, applies
+the run-reported code-to-kHz conversion, and writes a compact dashboard. It is a
+build/run/parser traceability example, not a converged kinetic parity result.
 
 ## Publication Figure Suite
 

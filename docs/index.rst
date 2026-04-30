@@ -35,6 +35,7 @@ claim levels, :doc:`equations` for the implemented models, and
    publication_results
    research_grade_roadmap
    benchmark_manifest
+   external_codes
    kinetic_validation
    figures
    validation

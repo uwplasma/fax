@@ -286,6 +286,21 @@ generalized eigensolve of AE3D's public ``A x = lambda B x`` matrix problem.
 These checks are intentionally artifact-level; the next physics step is full
 global FAX eigenmode parity against AE3D/CAS3D/FAR3D cases.
 
+FAR3D GPU Lincheck Artifact
+---------------------------
+
+Run after the archived FAR3D GPU artifacts are present in the repository:
+
+.. code-block:: bash
+
+   python examples/research/far3d_gpu_lincheck_artifact.py
+
+This reads ``external_artifacts/far3d/gpu_diiid_nvhpc/farprt0000``, parses
+FAR3D ``lincheck`` growth/frequency rows, applies the FAR3D-reported
+``599.81341 kHz`` per code-frequency-unit conversion, and writes a dashboard
+plus JSON metrics. The example verifies the external executable/build and
+ingestion path. It is not a converged kinetic growth-rate parity benchmark.
+
 Publication Figure Suite
 ------------------------
 

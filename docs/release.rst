@@ -61,10 +61,11 @@ state before publishing:
 * ``ae3d-global-mode`` is public AE3D matrix/eigenvector parity, not native
   FAX-vs-AE3D operator parity.
 * ``far3d-ingest`` converts FAR3D ``lincheck`` rows into the FAX kinetic
-  validation schema, but is not a kinetic growth-rate parity claim until a
-  documented FAR3D run and normalization are archived.
-* CAS3D/FAR3D parity remains pending until runnable input/output pairs or
-  portable executable builds are available.
+  validation schema. A short FAR3D/NVHPC GPU DIII-D runtime artifact is now
+  archived with its run-reported normalization, but it is still not a kinetic
+  growth-rate parity claim because the run is not a converged FAR3D benchmark.
+* CAS3D and converged FAR3D parity remain pending until runnable input/output
+  pairs or portable benchmark builds are available.
 
 Do not publish the existing ``v0.0.1`` draft until the tag points at the final
 release commit and the full local release gate above is green.

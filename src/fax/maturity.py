@@ -94,8 +94,9 @@ def registered_research_grade_milestones() -> tuple[ResearchGradeMilestone, ...]
                 "FAX has reduced fast-ion resonance screens and synthetic gyro-Landau "
                 "coefficient-recovery gates plus a FAR3D/CAS3D-K growth-rate dataset "
                 "contract, held-out parity CLI, and FAR3D lincheck ingestion with "
-                "explicit unit normalization. It has no populated real kinetic "
-                "growth-rate parity case yet."
+                "explicit unit normalization. A real FAR3D/NVHPC GPU DIII-D short-run "
+                "artifact is archived and parser-tested, but it is not a converged "
+                "kinetic growth-rate parity case yet."
             ),
             target_state=(
                 "FAX reproduces selected CAS3D-K/FAR3D energetic-particle growth/"
@@ -103,7 +104,7 @@ def registered_research_grade_milestones() -> tuple[ResearchGradeMilestone, ...]
                 "overlap metrics on matched equilibria and distributions."
             ),
             blocking_items=(
-                "Runnable CAS3D-K/FAR3D binaries or archived benchmark outputs",
+                "Converged CAS3D-K/FAR3D benchmark outputs beyond the short FAR3D runtime artifact",
                 "Matched energetic-particle distribution and thermal damping definitions",
                 "Agreement criteria for growth rate, sign, threshold, and localization",
             ),
@@ -120,7 +121,7 @@ def registered_research_grade_milestones() -> tuple[ResearchGradeMilestone, ...]
                 "fast-ion benchmark input/output archive",
             ),
             next_steps=(
-                "Use far3d-ingest on one portable FAR3D linear benchmark with documented unit conversion",
+                "Extend the FAR3D GPU run to a converged linear benchmark with documented unit conversion",
                 "Add a CAS3D-K-style perturbative reference table in the same schema when available",
                 "Fit closure coefficients only on training cases and test on held-out cases",
             ),

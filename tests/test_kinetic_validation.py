@@ -19,6 +19,10 @@ from fax.kinetic_validation import (
     load_kinetic_growth_rate_predictions,
 )
 
+REPO_ROOT = Path(__file__).resolve().parents[1]
+FAR3D_GPU_ARTIFACT = REPO_ROOT / "external_artifacts/far3d/gpu_diiid_nvhpc/farprt0000"
+FAR3D_GPU_DATASET = REPO_ROOT / "external_artifacts/far3d/gpu_diiid_nvhpc/kinetic_dataset.json"
+
 
 def _dataset() -> KineticGrowthRateDataset:
     return KineticGrowthRateDataset(
@@ -322,3 +326,31 @@ def test_far3d_lincheck_rows_convert_to_kinetic_growth_rate_dataset(tmp_path: Pa
             frequency_scale_hz=1.0,
             growth_rate_uncertainty_hz=0.0,
         )
+
+
+def test_archived_far3d_gpu_lincheck_artifact_is_parser_ready():
+    rows = read_far3d_lincheck(FAR3D_GPU_ARTIFACT)
+
+    assert len(rows) == 24
+    assert {row.variable for row in rows} == {"psi", "phi", "pr", "nfast", "vfast", "vthfast"}
+    assert {row.n for row in rows} == {1}
+    assert min(row.m for row in rows) == 1
+    assert max(row.m for row in rows) == 4
+    assert max(row.growth_rate_code_units for row in rows) == pytest.approx(0.258901)
+    assert max(abs(row.omega_code_units) for row in rows) == pytest.approx(0.474362)
+
+    psi_rows = read_far3d_lincheck(FAR3D_GPU_ARTIFACT, variables=("psi",))
+    assert [row.m for row in psi_rows] == [1, 2, 3, 4]
+
+
+def test_archived_far3d_gpu_ingestion_packet_preserves_run_normalization():
+    dataset = load_kinetic_growth_rate_dataset(FAR3D_GPU_DATASET)
+
+    assert dataset.dataset_id == "far3d_diiid_gpu_nvhpc_20step"
+    assert len(dataset.cases) == 24
+    assert all(case.source_code == "FAR3D" for case in dataset.cases)
+    assert all(case.split == "validation" for case in dataset.cases)
+    assert dataset.cases[0].case_id == "far3d_diiid_gpu_nvhpc_20step_psi_m1_n1"
+    assert dataset.cases[0].frequency_hz == pytest.approx(0.365588 * 599_813.41)
+    assert dataset.cases[0].growth_rate_hz == pytest.approx(-0.417541 * 599_813.41)
+    assert "Short 20-step executable/build artifact" in dataset.cases[0].notes

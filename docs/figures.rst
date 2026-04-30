@@ -124,6 +124,14 @@ Current Figures
    AE3D generalized matrix problem. These are convention gates that precede
    full global-mode physics parity.
 
+.. figure:: _static/far3d_gpu_lincheck_artifact.svg
+   :alt: FAR3D GPU lincheck artifact dashboard.
+
+   FAR3D GPU executable-run artifact from the public DIII-D example: parsed
+   ``lincheck`` growth and frequency estimates, the run-reported
+   code-to-kHz conversion, and evolved-field summaries. This supports the
+   FAR3D build/run/parser lane, not calibrated kinetic parity.
+
 .. figure:: _static/continuum_artifact_dashboard.svg
    :alt: Dashboard generated from fax continuum artifacts.
 

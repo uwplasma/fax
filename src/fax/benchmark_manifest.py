@@ -13,6 +13,8 @@ import hashlib
 from pathlib import Path
 from typing import Any
 
+REPO_ROOT = Path(__file__).resolve().parents[2]
+
 
 @dataclass(frozen=True)
 class BenchmarkArtifact:
@@ -148,6 +150,52 @@ def default_benchmark_manifest() -> tuple[BenchmarkManifestEntry, ...]:
             next_parity_step=(
                 "Map AE3D basis/boundary conventions to a native FAX global operator "
                 "and compare FAX-computed modes against AE3D modes."
+            ),
+        ),
+        BenchmarkManifestEntry(
+            benchmark_id="far3d_diiid_gpu_lincheck_artifact",
+            code="FAR3D",
+            geometry="DIII-D public example Eq_DIIID_RS",
+            physics_model="reduced-MHD/gyrofluid linear lincheck output ingestion",
+            claim_level="GPU executable build/run and parser artifact, not calibrated kinetic parity",
+            status="active",
+            artifacts=(
+                BenchmarkArtifact(
+                    role="FAR3D run input",
+                    path=str(REPO_ROOT / "external_artifacts/far3d/gpu_diiid_nvhpc/farin"),
+                ),
+                BenchmarkArtifact(
+                    role="FAR3D unit-6 lincheck output",
+                    path=str(REPO_ROOT / "external_artifacts/far3d/gpu_diiid_nvhpc/farprt0000"),
+                ),
+                BenchmarkArtifact(
+                    role="FAX kinetic-validation ingestion packet",
+                    path=str(REPO_ROOT / "external_artifacts/far3d/gpu_diiid_nvhpc/kinetic_dataset.json"),
+                ),
+                BenchmarkArtifact(
+                    role="FAR3D profile output",
+                    path=str(REPO_ROOT / "external_artifacts/far3d/gpu_diiid_nvhpc/profiles.dat"),
+                    required=False,
+                ),
+                BenchmarkArtifact(
+                    role="FAR3D spectrum output",
+                    path=str(REPO_ROOT / "external_artifacts/far3d/gpu_diiid_nvhpc/spctr_0000"),
+                    required=False,
+                ),
+            ),
+            expected_metrics={
+                "lincheck_row_count": 24.0,
+                "frequency_scale_khz_per_code_unit": 599.81341,
+                "max_growth_code_units": 0.258901,
+            },
+            validation_gate_ids=(
+                "far3d_lincheck_parser",
+                "far3d_gpu_diiid_artifact_ingestion",
+            ),
+            next_parity_step=(
+                "Run a documented FAR3D linear growth-rate benchmark long enough "
+                "for converged growth rates, then compare calibrated FAX fast-ion "
+                "closure predictions on held-out cases."
             ),
         ),
     )
