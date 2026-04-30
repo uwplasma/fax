@@ -1,7 +1,7 @@
 Architecture
 ============
 
-The planned code is organized around pure, typed, JAX-transformable functions.
+The code is organized around pure, typed, JAX-transformable functions.
 The main layers are:
 
 Equilibrium adapters
@@ -16,10 +16,10 @@ Coordinate adapters
 Operators
    Build continuum and global-mode operators from metric coefficients,
    rotational transform, density profiles, and Fourier coupling matrices.
-   The current implementation includes both the profile-limit continuum formulas
-   and a first angular-grid metric matrix scaffold, so new physics can be
-   checked against an analytic reduction before it is treated as stellarator
-   validation.
+   The current implementation includes profile-limit continuum formulas,
+   angular-grid metric matrices, real-Boozer local operators, and reduced
+   radial block eigenmodes, so new physics can be checked against analytic
+   reductions before it is treated as stellarator validation.
 
 Solvers
    Provide dense JAX reference eigensolvers first, matrix-free JAX operator

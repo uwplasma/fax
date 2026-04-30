@@ -150,9 +150,10 @@ fast-ion density as reduced design coordinates; the next adapter step is to
 map those coordinates to actual ``vmec_jax`` boundary/profile variables and
 ``booz_xform_jax`` transform outputs.
 
-The live Landreman-Paul ``vmec_jax`` bridge is intentionally a smoke test today:
-it verifies object compatibility and finite downstream operators, but it uses a
-single VMEC iteration. Differentiable shape-gradient claims require a converged
-or otherwise controlled equilibrium solve, a Boozer-transform convergence
-study, and finite-difference or adjoint checks against actual VMEC boundary and
-profile variables.
+The live Landreman-Paul ``vmec_jax`` bridge is intentionally an adapter and
+convergence check today: it verifies object compatibility and finite downstream
+operators, and the solve-convergence ladder tracks how VMEC residual reduction
+propagates into Boozer geometry and FAX continuum errors. Differentiable
+shape-gradient claims require a converged or otherwise controlled equilibrium
+solve, a Boozer-transform convergence study, and finite-difference or adjoint
+checks against actual VMEC boundary and profile variables.

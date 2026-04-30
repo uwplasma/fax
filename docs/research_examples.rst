@@ -3,9 +3,9 @@ Research Examples
 
 The examples in ``examples/`` are intended to be runnable from a fresh editable
 checkout and to produce files that can be inspected by collaborators and
-reviewers. They use the current validated scaffold: analytic continuum limits,
-metric-matrix checks, VMEC ``wout`` adapter smoke tests, and differentiability
-demonstrations.
+reviewers. They use the current validated reduced-model stack: analytic
+continuum limits, metric-matrix checks, VMEC ``wout`` adapter tests, and
+differentiability demonstrations.
 
 Install the development extras first:
 
@@ -17,7 +17,7 @@ Configuration Examples
 ----------------------
 
 ``examples/analytic_circular_tokamak.toml``
-   Analytic continuum and metric scaffold case. Use it for first continuum,
+   Analytic continuum and metric case. Use it for first continuum,
    plotting, and local performance checks.
 
 ``examples/analytic_convergence.toml``

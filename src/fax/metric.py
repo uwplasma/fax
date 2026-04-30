@@ -1,11 +1,11 @@
-"""Metric-aware continuum matrix scaffolding.
+"""Metric-aware continuum matrix assembly.
 
-This module is the first angular-grid operator layer in FAX. It evaluates local
+This module is the angular-grid local operator layer in FAX. It evaluates local
 shear-Alfven continuum matrices from a flux-surface Jacobian, magnetic-field
 strength, density, and field-line derivative coefficients. The implementation
-is intentionally compact and validation-oriented: it has an analytic limit that
-reduces exactly to :mod:`fax.continuum`, while also accepting VMEC ``wout``
-Fourier data for early stellarator smoke tests.
+is validation-oriented: it has an analytic limit that reduces exactly to
+:mod:`fax.continuum`, while also accepting VMEC ``wout`` Fourier data for
+adapter, convergence, and operator tests.
 """
 
 from __future__ import annotations
@@ -285,9 +285,9 @@ def metric_from_vmec_wout(
 
     The adapter reconstructs ``sqrt(g)``, ``|B|``, and contravariant magnetic
     components from VMEC Nyquist Fourier coefficients. It is suitable for
-    smoke tests, symmetry checks, and operator plumbing. Full publication-grade
-    stellarator continuum validation still requires the documented STELLGAP/
-    AE3D comparison gates.
+    profile-to-metric checks, convergence sweeps, and operator diagnostics.
+    Full publication-grade stellarator continuum claims still require the
+    documented STELLGAP/AE3D comparison gates.
     """
     from netCDF4 import Dataset
 

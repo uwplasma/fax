@@ -1,8 +1,8 @@
-"""Equilibrium geometry containers and first reference adapters.
+"""Equilibrium geometry containers and reference adapters.
 
 The objects here are deliberately small. They give continuum and validation
-kernels a JAX-transformable geometry representation before the full VMEC/Boozer
-metric adapters are implemented.
+kernels a JAX-transformable profile representation, while Boozer-coordinate
+geometry lives in :mod:`fax.boozer`.
 """
 
 from __future__ import annotations
@@ -19,7 +19,7 @@ from .units import ion_mass_density
 
 
 DEFAULT_ION_DENSITY = 1.0e20
-"""Default ion number density in m^-3 for first continuum smoke tests."""
+"""Default ion number density in m^-3 for analytic continuum examples."""
 
 
 def _metadata_tuple(mapping: dict[str, Any] | tuple[tuple[str, Any], ...] | None) -> tuple[tuple[str, Any], ...]:
@@ -44,7 +44,7 @@ class EquilibriumGeometry:
     iota:
         Rotational-transform profile on the same radial grid as ``s``.
     magnetic_field:
-        Representative magnetic-field strength in tesla. For first smoke tests
+        Representative magnetic-field strength in tesla. For profile models,
         this is the flux-surface average or the ``(m,n)=(0,0)`` Fourier
         component of ``|B|``.
     mass_density:
@@ -208,7 +208,7 @@ def _axisymmetric_b00(dataset: Any, ns: int) -> np.ndarray:
         profile = np.abs(bmnc[:, int(zero_indices[0])])
 
     # VMEC full-grid quantities can carry a placeholder value on the magnetic
-    # axis. For profile-level smoke tests, copy the first positive neighbor so
+        # axis. For profile-level checks, copy the first positive neighbor so
     # continuum formulas do not see an unphysical zero magnetic field at s=0.
     positive = np.flatnonzero(profile > 0.0)
     if positive.size > 0 and profile[0] == 0.0:
@@ -253,9 +253,9 @@ def from_vmec_wout(
 ) -> EquilibriumGeometry:
     """Read a minimal ``EquilibriumGeometry`` from a VMEC ``wout`` netCDF file.
 
-    This adapter intentionally extracts only profile-level quantities needed by
-    first continuum smoke tests. Full 3-D metric/operator data will be added in
-    later milestones.
+    This adapter intentionally extracts profile-level quantities for continuum
+    and global scalar radial workflows. Full 3-D Boozer geometry should use
+    :func:`fax.boozer.read_boozmn_geometry` or the ``booz_xform_jax`` bridge.
     """
     from netCDF4 import Dataset
 

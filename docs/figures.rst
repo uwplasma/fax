@@ -24,16 +24,16 @@ Current Figures
    Implemented local-continuum and metric-matrix equations.
 
 .. figure:: _static/analytic_continuum_scaling.svg
-   :alt: Analytic large-aspect-ratio continuum smoke-test branches.
+   :alt: Analytic large-aspect-ratio continuum branches.
 
    Analytic large-aspect-ratio continuum branches. This supports formula,
-   scaling, and differentiability smoke tests.
+   scaling, and differentiability checks.
 
 .. figure:: _static/landreman_paul_qa_lowres_profiles.svg
    :alt: LandremanPaul2021 QA lowres profiles and local continuum branches.
 
    First VMEC-backed local reference target. This is a profile/adapter and
-   local-continuum smoke test, not full 3-D continuum validation.
+   local-continuum adapter check, not full 3-D continuum validation.
 
 .. figure:: _static/basic_alfven_gap_map.svg
    :alt: Basic BAE, TAE, and EAE Alfvén-continuum gap map.
@@ -44,7 +44,7 @@ Current Figures
    marker.
 
 .. figure:: _static/gap_sensitivity_dashboard.svg
-   :alt: Gap and sensitivity dashboard for the LandremanPaul2021 QA lowres smoke test.
+   :alt: Gap and sensitivity dashboard for the LandremanPaul2021 QA lowres case.
 
    Prototype dashboard for README/docs: mode-family branches, nearest-branch
    separation, and autodiff sensitivities.

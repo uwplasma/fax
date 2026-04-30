@@ -1,8 +1,9 @@
-"""Run orchestration for ``fax``.
+"""Dry-run orchestration for the top-level ``fax`` command.
 
-The current runner is intentionally a planning stub. It validates the public API
-shape used by the CLI and tests while making clear that physics kernels are not
-implemented yet.
+Executable physics workflows live in the ``validate``, ``continuum``,
+``eigenmodes``, ``convergence``, and ``benchmark`` subcommands. The historical
+top-level ``fax case.toml`` path remains a lightweight planning and
+configuration-inspection entry point so existing scripts keep working.
 """
 
 from __future__ import annotations
@@ -43,11 +44,11 @@ def run(
     stream: TextIO | None = None,
     dry_run: bool = False,
 ) -> RunSummary:
-    """Validate and describe a planned ``fax`` run.
+    """Validate a configuration and describe which workflows it can run.
 
-    Physics execution will be implemented after the operator and validation
-    layers in ``plan.md`` are added. Returning a structured summary now keeps the
-    CLI, examples, and future Python API stable.
+    This is intentionally a dry-run summary. Use ``run_continuum``,
+    ``run_global_eigenmodes``, ``run_validation``, or the matching CLI
+    subcommands for executed physics workflows.
     """
     import time
 
@@ -80,16 +81,18 @@ def run(
             if config.equilibrium.use_boozer:
                 reporter.log(f"Boozer coordinates requested: {config.equilibrium.boozmn or 'to be generated'}")
         elif name == "Plan physics operators":
-            reporter.log("current implementation: profile continuum, metric-matrix scaffold, and validation registry")
+            reporter.log(
+                "available workflows: validation, continuum, global eigenmodes, convergence, benchmarks"
+            )
             reporter.log(f"registered validation gates: {len(registered_validation_gates())}")
-            reporter.log("next operators: full VMEC/Boozer continuum coupling and global eigenmodes")
+            reporter.log("use subcommands for execution; this path is a configuration dry run")
         reporter.phase_done(status="done")
 
     summary = RunSummary(
         case=config.run.case,
         model=config.run.model,
         status="planned",
-        message="Physics kernels are not implemented in this scaffold commit.",
+        message="Dry-run summary completed. Use a workflow subcommand to execute physics operators.",
         config=config.to_dict(),
         elapsed_seconds=time.perf_counter() - start,
         phases=_phase_dicts(reporter.records),

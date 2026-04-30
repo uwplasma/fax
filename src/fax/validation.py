@@ -2208,7 +2208,7 @@ def registered_validation_gates() -> tuple[ValidationGate, ...]:
             layer="convergence",
             quantity="relative frequency error across radial refinement",
             tolerance=5.0e-3,
-            citation="Smooth analytic radial-grid convergence check for the shear-Alfven metric-matrix scaffold",
+            citation="Smooth analytic radial-grid convergence check for the shear-Alfven metric-matrix operator",
             command="python -m pytest tests/test_metric.py tests/test_validation_registry.py",
             tags=("metric", "convergence"),
             _runner=_gate_metric_radial_convergence,
@@ -2545,7 +2545,7 @@ def registered_validation_gates() -> tuple[ValidationGate, ...]:
         ),
         ValidationGate(
             gate_id="boozmn_3d_continuum_finite",
-            title="Real boozmn 3-D local continuum smoke test",
+            title="Real boozmn 3-D local continuum finite-output check",
             layer="boozer",
             quantity="Hermitian error and finite-output check",
             tolerance=2.0e-5,
@@ -2556,7 +2556,7 @@ def registered_validation_gates() -> tuple[ValidationGate, ...]:
         ),
         ValidationGate(
             gate_id="boozmn_global_3d_eigenmode_finite",
-            title="Real boozmn global radial 3-D eigenmode smoke test",
+            title="Real boozmn global radial 3-D eigenmode finite-output check",
             layer="global-eigenmode",
             quantity="maximum residual and finite-output check",
             tolerance=2.0e-5,
@@ -2710,7 +2710,7 @@ def registered_validation_gates() -> tuple[ValidationGate, ...]:
         ),
         ValidationGate(
             gate_id="landreman_paul_adapter_smoke",
-            title="Landreman-Paul QA VMEC adapter smoke test",
+            title="Landreman-Paul QA VMEC adapter finite-output check",
             layer="adapter",
             quantity="finite/positive metric-field check",
             tolerance=0.0,
@@ -2727,7 +2727,7 @@ def registered_validation_gates() -> tuple[ValidationGate, ...]:
             tolerance=1.0e-2,
             citation=(
                 "Landreman & Paul, Phys. Rev. Lett. 128, 035001 (2022); "
-                "one-iteration vmec_jax/booz_xform_jax/FAX in-memory integration smoke gate"
+                "one-iteration vmec_jax/booz_xform_jax/FAX in-memory integration gate"
             ),
             command="python -m pytest -m requires_vmec_jax tests/test_boozer.py tests/test_validation_registry.py",
             tags=("vmec_jax", "booz_xform_jax", "landreman-paul", "adapter", "boozer", "in-memory"),
@@ -2741,7 +2741,7 @@ def registered_validation_gates() -> tuple[ValidationGate, ...]:
             tolerance=1.0e-2,
             citation=(
                 "Landreman & Paul, Phys. Rev. Lett. 128, 035001 (2022); "
-                "Boozer truncation convergence smoke gate on the live vmec_jax/booz_xform_jax/FAX bridge"
+                "Boozer truncation convergence gate on the live vmec_jax/booz_xform_jax/FAX bridge"
             ),
             command="python -m pytest -m requires_vmec_jax tests/test_boozer.py tests/test_validation_registry.py",
             tags=("vmec_jax", "booz_xform_jax", "landreman-paul", "convergence", "boozer", "in-memory"),
@@ -2755,7 +2755,7 @@ def registered_validation_gates() -> tuple[ValidationGate, ...]:
             tolerance=5.0e-3,
             citation=(
                 "Landreman & Paul, Phys. Rev. Lett. 128, 035001 (2022); "
-                "Boozer local-operator angular quadrature convergence smoke gate on the live bridge"
+                "Boozer local-operator angular quadrature convergence gate on the live bridge"
             ),
             command="python -m pytest -m requires_vmec_jax tests/test_boozer.py tests/test_validation_registry.py",
             tags=("vmec_jax", "booz_xform_jax", "landreman-paul", "convergence", "boozer", "operator"),
@@ -2792,7 +2792,7 @@ def registered_validation_gates() -> tuple[ValidationGate, ...]:
             layer="adapter",
             quantity="relative branch error under radial sampling refinement",
             tolerance=8.0e-2,
-            citation="Landreman & Paul, Phys. Rev. Lett. 128, 035001 (2022), arXiv:2108.03711; adapter sampling smoke test",
+            citation="Landreman & Paul, Phys. Rev. Lett. 128, 035001 (2022), arXiv:2108.03711; adapter sampling convergence check",
             command="python -m pytest -m requires_vmec_jax tests/test_validation_registry.py",
             tags=("vmec", "landreman-paul", "adapter", "convergence"),
             _runner=_gate_landreman_paul_radial_sampling_convergence,

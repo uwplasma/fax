@@ -21,7 +21,7 @@ form proportional to ``n - m iota``. The production operator must use the full
 metric/Jacobian data from the selected coordinate representation rather than
 hard-coding this approximation.
 
-The first metric-matrix scaffold uses the harmonic convention
+The metric-matrix local operator uses the harmonic convention
 ``exp(i * (m * theta - n * zeta))`` and forms, on each flux surface,
 
 .. math::
@@ -36,7 +36,7 @@ The first metric-matrix scaffold uses the harmonic convention
    \phi_i^* \phi_j \right\rangle_{\theta,\zeta},
 
 with ``K x = omega^2 M x``. In the uniform straight-field-line fixture this
-reduces to the profile formula above. In VMEC ``wout`` smoke tests, ``J``,
+reduces to the profile formula above. In VMEC ``wout`` adapter checks, ``J``,
 ``B``, and contravariant field components are reconstructed from Nyquist
 Fourier coefficients. This is an operator-plumbing and symmetry milestone; the
 reviewer-facing stellarator validation still requires comparison with

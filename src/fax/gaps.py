@@ -1,4 +1,4 @@
-"""Gap and branch-separation diagnostics for continuum smoke tests."""
+"""Gap and branch-separation diagnostics for continuum screening studies."""
 
 from __future__ import annotations
 
@@ -66,9 +66,8 @@ def minimum_gap_summary(branches_hz: Any, surfaces: Any) -> ContinuumGapSummary:
 def branch_separation_objective(branches_hz: Any, *, floor_hz: float = 1.0) -> jnp.ndarray:
     """Smooth penalty that grows when branches get close.
 
-    This is a smoke-test objective for inverse-design demonstrations. It is not
+    This is a reduced objective for inverse-design demonstrations. It is not
     a physical stability metric by itself.
     """
     _sorted, gaps = sorted_branch_gaps(branches_hz)
     return jnp.mean(1.0 / (gaps + float(floor_hz)))
-

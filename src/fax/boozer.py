@@ -537,7 +537,7 @@ def run_vmec_jax_fixed_boundary_wout_data(
     """Run a short ``vmec_jax`` fixed-boundary solve and return ``wout`` data.
 
     The defaults are intentionally small so the function can serve as an
-    integration smoke-test path in local validation. Production studies should
+    integration-check path in local validation. Production studies should
     raise the VMEC iteration count and grid resolution, then run convergence
     gates before using the result for physics claims.
     """
@@ -593,7 +593,7 @@ def run_vmec_jax_fixed_boundary_boozer_geometry(
     """Run a short ``vmec_jax -> booz_xform_jax -> FAX`` in-memory pipeline.
 
     The defaults are intentionally small so the function can serve as an
-    integration smoke-test path in local validation.  Production studies should
+    integration-check path in local validation.  Production studies should
     raise the VMEC iteration count, grid resolution, and Boozer truncation, then
     run convergence gates before using the result for physics claims.
     """
@@ -770,7 +770,7 @@ def run_vmec_jax_boozer_solve_convergence(
     """Run a VMEC-iteration convergence ladder through Boozer/FAX.
 
     The default path intentionally uses ``vmec_jax``'s native fixed-boundary
-    grid and scan-based JAX iteration rather than the tiny smoke-test grid used
+    grid and scan-based JAX iteration rather than the tiny adapter-check grid used
     by :func:`run_vmec_jax_fixed_boundary_boozer_geometry`.  This makes the
     diagnostic a real solve-convergence check: each VMEC iterate is transformed
     through ``booz_xform_jax``, projected into the FAX local 3-D Boozer

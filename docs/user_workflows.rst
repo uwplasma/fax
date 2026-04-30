@@ -105,6 +105,12 @@ The figure scripts are executable examples:
    python examples/research/boozmn_differentiable_design_study.py
    python examples/research/publication_figure_suite.py
 
+For a first community run without external files, start with
+``basic_alfven_gap_map.py``, ``global_gap_fastion_screen.py``, and selected
+``publication_figure_suite.py`` cases such as ``--case 01 --case 02``. Real
+``boozmn`` and STELLGAP/AE3D examples require the optional local artifacts
+documented in :doc:`research_examples`.
+
 After regenerating figures, run:
 
 .. code-block:: bash

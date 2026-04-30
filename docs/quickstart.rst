@@ -26,7 +26,8 @@ Run the current validation gates and write a validation report:
    fax validate examples/minimal.toml
    fax validate examples/minimal.toml --tag metric --json
 
-Compute the current continuum scaffold and write branch/metric artifacts:
+Compute the current profile and metric continuum models and write branch/metric
+artifacts:
 
 .. code-block:: bash
 
@@ -79,8 +80,8 @@ Python calls can print the same progress stream:
    continuum = run_continuum(config, progress=True)
    global_modes = run_global_eigenmodes(load_config("examples/global_eigenmodes.toml"))
 
-The original ``fax case.toml --dry-run`` path reports a planned run. The
-``validate``, ``continuum``, ``eigenmodes``, ``convergence``, and
-``benchmark`` subcommands execute implemented workflows. Fast-ion drive remains
-available through Python/examples while the TOML-level fast-ion workflow is
-still planned.
+The original ``fax case.toml --dry-run`` path reports a configuration-planning
+summary. The ``validate``, ``continuum``, ``eigenmodes``, ``convergence``, and
+``benchmark`` subcommands execute implemented workflows. Fast-ion drive,
+gyro-Landau closure calibration, and differentiable design studies are
+available through the Python API and research examples.

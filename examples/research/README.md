@@ -1,12 +1,28 @@
 # FAX Research Examples
 
 These scripts are small, reproducible entry points for users who want to learn
-the current FAX scaffold and generate validation artifacts themselves.
+the current FAX workflows and generate validation artifacts themselves.
 
 Run them from the repository root after installing the development extras:
 
 ```bash
 python -m pip install -e ".[dev]"
+```
+
+Start with these three commands:
+
+```bash
+python examples/research/basic_alfven_gap_map.py
+python examples/research/global_gap_fastion_screen.py
+python examples/research/publication_figure_suite.py --case 01 --case 02
+```
+
+They require no external geometry artifacts and produce figures plus JSON
+summaries under `outputs/`.
+
+The full local example set is:
+
+```bash
 python examples/research/validation_packet.py
 python examples/research/density_sensitivity.py
 python examples/research/inverse_iota_shift.py
@@ -26,6 +42,11 @@ python examples/research/publication_figure_suite.py
 The examples intentionally use the analytic and Landreman-Paul low-resolution
 paths that are already covered by local tests and validation gates. They are
 research workflow templates, not final 3-D stellarator eigenmode validations.
+
+Scripts that take `--boozmn` or read `/Users/rogerio/local` use optional local
+STELLGAP/AE3D/BOOZ_XFORM artifacts. When those files are absent, use the
+analytic examples first and treat the external-code examples as parity checks
+to run after the artifacts are installed.
 
 ## Differentiable Design Study
 

@@ -147,7 +147,7 @@ def coupled_gap_branch_map(
     Hermitian ``omega^2`` matrix with fractional off-diagonal coupling
     ``coupling_strength * omega_m * omega_{m+delta_m}``. This reproduces the
     textbook TAE/EAE avoided-crossing picture quickly enough for examples and
-    validation smoke tests; it is not a replacement for the full continuum
+    validation checks; it is not a replacement for the full continuum
     operator.
     """
     estimate = coupled_gap_estimate(

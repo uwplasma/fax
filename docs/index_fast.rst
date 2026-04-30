@@ -3,5 +3,5 @@
 fax
 ===
 
-``fax`` is a differentiable JAX scaffold for stellarator Alfvén eigenmode and
-fast-ion stability research.
+``fax`` is a differentiable JAX code for stellarator Alfvén-continuum,
+eigenmode, fast-ion, and design-screening research.

@@ -150,7 +150,8 @@ Every generated documentation figure should answer:
 * Which equation or operator is being shown?
 * Which validation gate protects the result?
 * What metric and tolerance were used?
-* Is the figure a validated result, a smoke test, or a screening example?
+* Is the figure a validated result, an adapter/convergence check, or a
+  screening example?
 
 ``docs/_static/figure_manifest.json`` stores figure metadata. The validation
 dashboard visualizes gate metrics normalized by tolerance. The publication

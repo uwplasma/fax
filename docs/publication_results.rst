@@ -61,7 +61,7 @@ Figure Suite
 
    **Screening application.** The Landreman-Paul QA low-resolution VMEC
    ``wout`` path is exercised through FAX profile and local-continuum
-   diagnostics. This is an adapter and smoke-test figure, not a final
+   diagnostics. This is an adapter and regression-check figure, not a final
    high-resolution quasisymmetric-continuum validation.
 
 .. figure:: _static/publication_suite/04_boozer_representation.svg

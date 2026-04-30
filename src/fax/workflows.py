@@ -306,7 +306,7 @@ def run_convergence(
     mode_max_values: tuple[int, ...] = (2, 3, 4),
     write_artifacts: bool = True,
 ) -> ConvergenceRunSummary:
-    """Run radial, angular, and Fourier convergence sweeps for the continuum scaffold."""
+    """Run radial, angular, and Fourier convergence sweeps for continuum models."""
     config = config.validated()
     _apply_precision(config)
     radial_values = _positive_unique_ints(radial_points or (config.grid.radial_points,), name="radial_points")
@@ -877,7 +877,7 @@ def run_continuum(
     stream: TextIO | None = None,
     write_artifacts: bool = True,
 ) -> ContinuumRunSummary:
-    """Compute the current local and metric continuum scaffold and write artifacts."""
+    """Compute profile and metric continuum operators and write artifacts."""
     config = config.validated()
     _apply_precision(config)
     phase_specs = [
@@ -965,7 +965,7 @@ def run_continuum(
         case=config.run.case,
         model=config.run.model,
         status="completed",
-        message="Computed profile and metric-matrix continuum scaffold.",
+        message="Computed profile and metric-matrix continuum models.",
         config=config.to_dict(),
         elapsed_seconds=time.perf_counter() - start,
         phases=_phase_dicts(reporter.records),
@@ -1027,10 +1027,10 @@ def _load_profile_geometry(
         profile = _with_config_field_periods(profile, config)
         source = "analytic_circular_tokamak"
     else:
-        reporter.log("direct vmec_jax execution is planned; using analytic fixture until that adapter is implemented")
+        reporter.log("direct VMEC execution from TOML is not selected here; using analytic fixture")
         profile = analytic_circular_tokamak(radial_points=config.grid.radial_points)
         profile = _with_config_field_periods(profile, config)
-        source = "analytic_placeholder_for_vmec_jax"
+        source = "analytic_fixture_for_vmec_source"
 
     if config.physics.density_scale != 1.0:
         profile = profile.with_density_scale(config.physics.density_scale)
