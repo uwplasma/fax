@@ -98,9 +98,10 @@ The following public repositories and answer artifacts have been cloned under
   succeeded using Homebrew ``gcc-15`` for preprocessing, ``mpif90``, the local
   STELLOPT ``libstell`` tree, and explicit NetCDF C/Fortran library paths.
   ``xmetric ctok`` runs on the public CTOK input and regenerates
-  ``ae_metric.dat``/``tae_data_boozer``. ``xstgap`` still needs build/runtime
-  cleanup on this gfortran/OpenMPI stack before it can be an automated
-  executable parity gate.
+  ``ae_metric.dat``/``tae_data_boozer``. A rebuilt local ``xstgap`` now runs
+  the public CTOK problem as ``xstgap 99 2048`` in about 47 s and produces a
+  nonempty ``alfven_spec``; FAX records this through the
+  ``stellgap-executable`` benchmark family.
 * ``/Users/rogerio/local/AE3D`` from
   https://github.com/ORNL-Fusion/AE3D. The OSTI software record states that
   AE3D solves reduced-MHD shear-Alfvén eigenmodes and eigenfrequencies in 2-D
@@ -138,6 +139,10 @@ Current quantitative external-code status:
   conventions with max relative error about ``6.9e-7`` over 1287 modes, checks
   public AE3D sparse matrix symmetry, and verifies the first public AE3D
   eigenvectors against ``A x = lambda B x`` with max residual about
-  ``3.3e-6`` over the first 8 modes. This closes AE3D public artifact/matrix
-  parity, but not the broader FAX reduced-operator vs AE3D full-operator
-  validation lane.
+  ``3.3e-6`` over the first 8 modes.
+* FAX independently solves the 1287-dimensional public AE3D generalized matrix
+  problem and compares the first 8 published global mode structures from
+  ``egn_mode_asci.dat``. The current max frequency relative error is
+  ``8.17e-7`` and the max ``B``-weighted mode-shape error is ``5.20e-8``.
+  This closes AE3D public artifact/matrix/mode-shape parity, but not the
+  broader FAX reduced-operator vs AE3D full-operator validation lane.

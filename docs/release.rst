@@ -47,3 +47,20 @@ When Actions are available:
 
 If Actions are unavailable, create a draft release and publish it once the
 account-level Actions blocker has cleared.
+
+v0.0.1 Readiness Notes
+----------------------
+
+The local release candidate should include the current external-code parity
+state before publishing:
+
+* ``stellgap-executable`` completes the public CTOK run only when the local
+  executable accepts the documented ``xstgap 99 2048`` arguments and produces
+  ``alfven_spec``.
+* ``ae3d-global-mode`` is public AE3D matrix/eigenvector parity, not native
+  FAX-vs-AE3D operator parity.
+* CAS3D/FAR3D parity remains pending until runnable input/output pairs or
+  portable executable builds are available.
+
+Do not publish the existing ``v0.0.1`` draft until the tag points at the final
+release commit and the full local release gate above is green.

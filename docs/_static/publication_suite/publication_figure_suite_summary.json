@@ -102,6 +102,8 @@
         "/Users/rogerio/local/fax/docs/_static/publication_suite/10_ae3d_matrix_eigenmode_parity.svg",
         "/Users/rogerio/local/fax/docs/_static/publication_suite/10_ae3d_matrix_eigenmode_parity.png"
       ],
+      "global_mode_max_frequency_relative_error": 8.167902694136567e-07,
+      "global_mode_max_mass_weighted_mode_shape_error": 5.1977999793173524e-08,
       "harmonic_count": 13,
       "matrix_dimension": 1287,
       "max_frequency_relative_error": 8.16866631676143e-07,

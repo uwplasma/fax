@@ -8,6 +8,7 @@ from fax.fast_ions import (
     FastIonPopulation,
     GyroLandauClosure,
     eigenfunction_fast_ion_drive,
+    fit_gyro_landau_eigenfunction_closure,
     gyro_landau_closure_drive,
     gyro_landau_eigenfunction_drive,
     lorentzian_resonance_weight,
@@ -184,3 +185,76 @@ def test_gyro_landau_closure_has_resonant_signs_and_damping_offset():
         )
     )(0.02)
     assert float(gradient) > 0.0
+
+
+def test_gyro_landau_closure_fit_recovers_synthetic_eigenfunction_growth_and_is_differentiable():
+    s = jnp.linspace(0.0, 1.0, 96)
+    structures = jnp.stack(
+        [
+            jnp.exp(-((s - 0.25) / 0.12) ** 2),
+            jnp.exp(-((s - 0.42) / 0.10) ** 2),
+            jnp.exp(-((s - 0.58) / 0.11) ** 2),
+            jnp.exp(-((s - 0.76) / 0.13) ** 2),
+        ],
+        axis=0,
+    )[:, :, None]
+    population = FastIonPopulation(
+        density_fraction=0.03,
+        pressure_gradient=-(1.0 + 0.5 * s),
+        transit_frequency_hz=38_000.0 + 5_000.0 * s,
+        precession_frequency_hz=4_000.0 + 1_200.0 * s,
+        resonance_width_hz=2_200.0 + 250.0 * s,
+    )
+    closure = GyroLandauClosure(
+        resonant_coefficient=1.15,
+        dispersive_coefficient=0.32,
+        diamagnetic_frequency_hz=900.0,
+        thermal_landau_damping_hz=4.5,
+    )
+    frequencies = jnp.asarray([43_000.0, 47_000.0, 50_500.0, 54_500.0])
+    observed = gyro_landau_eigenfunction_drive(
+        frequencies,
+        structures,
+        s,
+        toroidal_mode=1,
+        transit_harmonics=(0, 1, 2),
+        population=population,
+        closure=closure,
+        drive_scale_hz=120.0,
+        damping_rate_hz=1.5,
+    ).net_growth_rate_hz
+
+    fitted = fit_gyro_landau_eigenfunction_closure(
+        frequencies,
+        structures,
+        s,
+        observed,
+        toroidal_mode=1,
+        transit_harmonics=(0, 1, 2),
+        population=population,
+        diamagnetic_frequency_hz=closure.diamagnetic_frequency_hz,
+        drive_scale_hz=120.0,
+        damping_rate_hz=1.5,
+    )
+
+    np.testing.assert_allclose(float(fitted.closure.resonant_coefficient), 1.15, rtol=1.0e-10, atol=1.0e-10)
+    np.testing.assert_allclose(float(fitted.closure.dispersive_coefficient), 0.32, rtol=1.0e-10, atol=1.0e-10)
+    np.testing.assert_allclose(float(fitted.closure.thermal_landau_damping_hz), 4.5, rtol=1.0e-10, atol=1.0e-10)
+    np.testing.assert_allclose(np.asarray(fitted.predicted_growth_rate_hz), np.asarray(observed), rtol=1.0e-10, atol=1.0e-10)
+    assert float(fitted.rms_residual_hz) < 1.0e-10
+
+    jacobian = jax.jacobian(
+        lambda growth: fit_gyro_landau_eigenfunction_closure(
+            frequencies,
+            structures,
+            s,
+            growth,
+            toroidal_mode=1,
+            transit_harmonics=(0, 1, 2),
+            population=population,
+            diamagnetic_frequency_hz=closure.diamagnetic_frequency_hz,
+            drive_scale_hz=120.0,
+            damping_rate_hz=1.5,
+        ).predicted_growth_rate_hz
+    )(observed)
+    assert np.all(np.isfinite(np.asarray(jacobian)))

@@ -333,9 +333,10 @@ summary if the local artifacts are unavailable.
    :alt: AE3D public matrix and eigenmode parity dashboard.
 
    Public AE3D sparse matrices and ``egn_mode_asci.dat`` eigenvectors checked
-   through ``A x = lambda B x`` residuals and Rayleigh-quotient errors. This is
-   now a real external matrix/eigenmode parity gate and a prerequisite for
-   future FAX-vs-AE3D operator-level validation.
+   through ``A x = lambda B x`` residuals, Rayleigh-quotient errors, dense
+   spectrum recovery, and ``B``-weighted mode-shape correlations. This is now a
+   real external matrix/eigenmode parity gate and a prerequisite for future
+   FAX-vs-AE3D operator-level validation.
 
 Regenerating Documentation Figures
 ----------------------------------

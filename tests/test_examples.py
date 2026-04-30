@@ -320,6 +320,8 @@ def test_external_code_artifact_dashboard_example_runs(tmp_path):
     assert payload["ae3d_a_matrix"]["relative_asymmetry"] < 1.0e-5
     assert payload["ae3d_b_matrix"]["relative_asymmetry"] < 1.0e-12
     assert payload["ae3d_dense_spectrum"]["max_eigenvalue_relative_error"] < 2.0e-6
+    assert payload["ae3d_global_mode"]["max_frequency_relative_error"] < 2.0e-6
+    assert payload["ae3d_global_mode"]["max_mass_weighted_mode_shape_error"] < 1.0e-6
     assert all(Path(path).exists() for path in payload["figures"])
 
 
@@ -391,4 +393,5 @@ def test_publication_suite_external_parity_cases_run_if_artifacts_exist(tmp_path
     assert by_case["09_stellgap_ctok_gap_anchored_global_screen"]["max_residual"] < 1.0e-10
     assert by_case["10_ae3d_matrix_eigenmode_parity"]["max_residual"] < 5.0e-6
     assert by_case["10_ae3d_matrix_eigenmode_parity"]["dense_spectrum_max_eigenvalue_relative_error"] < 2.0e-6
+    assert by_case["10_ae3d_matrix_eigenmode_parity"]["global_mode_max_mass_weighted_mode_shape_error"] < 1.0e-6
     assert all(Path(path).exists() for result in payload["results"] for path in result["figures"])

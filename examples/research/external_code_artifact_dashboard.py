@@ -15,6 +15,7 @@ jax.config.update("jax_enable_x64", True)
 from fax.cross_code import (  # noqa: E402
     ae3d_dense_spectrum_parity,
     ae3d_eigenvalue_residual_summary,
+    ae3d_global_mode_parity,
     ae3d_matrix_symmetry_summary,
     ae3d_omega2_eigenvalue_error,
     read_ae3d_eigenvalues,
@@ -51,6 +52,12 @@ def build_dashboard(stellgap_dir: Path, ae3d_dir: Path, output_dir: Path) -> dic
         b_matrix_path=b_matrix,
         egn_mode_path=egn_mode_path,
         max_modes=16,
+    )
+    global_parity = ae3d_global_mode_parity(
+        a_matrix_path=a_matrix,
+        b_matrix_path=b_matrix,
+        egn_mode_path=egn_mode_path,
+        max_modes=8,
     )
 
     stellgap_processed = stellgap_spec_postprocessed_continuum(alfven_spec)
@@ -96,19 +103,25 @@ def build_dashboard(stellgap_dir: Path, ae3d_dir: Path, output_dir: Path) -> dic
     axes[1, 0].set_xlabel("egn_values table")
     axes[1, 0].set_ylabel("FAX convention reproduction")
 
-    labels = ["A asym.", "B asym.", "AE3D residual", "omega2 error", "dense eig."]
+    labels = ["A asym.", "B asym.", "residual", "omega2", "dense eig.", "global freq.", "mode shape"]
     values = [
         a_summary.relative_asymmetry,
         b_summary.relative_asymmetry,
         ae3d_residual.max_residual,
         ae3d_comparison.max_relative_error,
         dense_parity.max_eigenvalue_relative_error,
+        global_parity.max_frequency_relative_error,
+        global_parity.max_mass_weighted_mode_shape_error,
     ]
-    axes[1, 1].bar(labels, values, color=["#4c78a8", "#72b7b2", "#f58518", "#54a24b", "#b279a2"])
+    axes[1, 1].bar(
+        labels,
+        values,
+        color=["#4c78a8", "#72b7b2", "#f58518", "#54a24b", "#b279a2", "#e45756", "#499894"],
+    )
     axes[1, 1].set_yscale("log")
     axes[1, 1].axhline(1.0e-5, color="k", ls="--", lw=1.0, label="matrix/eigenvalue gate")
     axes[1, 1].axhline(1.0e-2, color="#777777", ls=":", lw=1.0, label="residual gate")
-    axes[1, 1].set_title("AE3D matrix and spectrum parity")
+    axes[1, 1].set_title("AE3D matrix, spectrum, and mode-shape parity")
     axes[1, 1].set_ylabel("metric")
     axes[1, 1].tick_params(axis="x", rotation=18)
     axes[1, 1].legend(loc="upper right")
@@ -134,6 +147,17 @@ def build_dashboard(stellgap_dir: Path, ae3d_dir: Path, output_dir: Path) -> dic
             "p95_eigenvalue_relative_error": dense_parity.p95_eigenvalue_relative_error,
             "max_frequency_relative_error": dense_parity.max_frequency_relative_error,
             "p95_frequency_relative_error": dense_parity.p95_frequency_relative_error,
+        },
+        "ae3d_global_mode": {
+            "count": global_parity.count,
+            "matrix_dimension": global_parity.matrix_dimension,
+            "real_eigenvalue_count": global_parity.real_eigenvalue_count,
+            "max_frequency_relative_error": global_parity.max_frequency_relative_error,
+            "p95_frequency_relative_error": global_parity.p95_frequency_relative_error,
+            "max_euclidean_mode_shape_error": global_parity.max_euclidean_mode_shape_error,
+            "p95_euclidean_mode_shape_error": global_parity.p95_euclidean_mode_shape_error,
+            "max_mass_weighted_mode_shape_error": global_parity.max_mass_weighted_mode_shape_error,
+            "p95_mass_weighted_mode_shape_error": global_parity.p95_mass_weighted_mode_shape_error,
         },
         "figures": paths,
     }

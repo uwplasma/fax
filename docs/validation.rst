@@ -82,6 +82,9 @@ tags, and command. The current gates are:
 * ``fast_ion_gyro_landau_closure_signs``: checks that the reduced
   gyro-Landau closure peaks at resonance, preserves the pressure-gradient
   drive sign, and applies the documented damping offset.
+* ``fast_ion_gyro_landau_calibration``: checks that the differentiable
+  least-squares calibration layer recovers synthetic resonant, dispersive, and
+  thermal-Landau coefficients from eigenfunction-weighted growth rates.
 * ``boozer_harmonic_projection``: checks Boozer ``|B|`` harmonic
   reconstruction/projection and Fourier orthogonality on a synthetic spectrum.
 * ``boozer_straight_field_line_phase``: checks that Boozer harmonic phases have
@@ -150,6 +153,11 @@ tags, and command. The current gates are:
 * ``ae3d_public_dense_spectrum_parity``: independently solves the public AE3D
   dense generalized eigenproblem with SciPy/LAPACK and matches the first
   published ``omega^2`` eigenvalues from ``egn_mode_asci.dat``.
+* ``ae3d_public_global_mode_shape_parity``: independently solves the public
+  AE3D global matrix problem and compares both frequencies and eigenvectors
+  against ``egn_mode_asci.dat`` using Euclidean and ``B``-weighted
+  correlations. This is public matrix parity, not yet native FAX-operator
+  parity.
 * ``landreman_paul_adapter_smoke``: checks the Landreman-Paul QA VMEC ``wout``
   profile and metric adapters when local data are available.
 * ``landreman_paul_vmec_jax_boozer_in_memory``: runs a one-iteration

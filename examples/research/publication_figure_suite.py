@@ -39,6 +39,7 @@ from fax.config import EquilibriumConfig, FaxConfig, GridConfig, RunConfig  # no
 from fax.continuum import continuum_branch_matrix  # noqa: E402
 from fax.cross_code import (  # noqa: E402
     ae3d_dense_spectrum_parity,
+    ae3d_global_mode_parity,
     ae3d_matrix_eigenmode_parity,
     read_ae3d_eigenmodes,
     read_stellgap_alfven_post,
@@ -483,6 +484,12 @@ def _case_ae3d_matrix_parity(output_dir: Path, formats: tuple[str, ...]) -> dict
         egn_mode_path=egn_mode,
         max_modes=16,
     )
+    global_parity = ae3d_global_mode_parity(
+        a_matrix_path=a_matrix,
+        b_matrix_path=b_matrix,
+        egn_mode_path=egn_mode,
+        max_modes=8,
+    )
     modes = np.asarray(data.modes)
     first_mode = np.abs(modes[0])
     fig, axes = plt.subplots(1, 3, figsize=(12.8, 3.9), constrained_layout=True)
@@ -502,11 +509,12 @@ def _case_ae3d_matrix_parity(output_dir: Path, formats: tuple[str, ...]) -> dict
         parity.max_rayleigh_relative_error,
         parity.max_frequency_relative_error,
         dense_parity.max_eigenvalue_relative_error,
+        global_parity.max_mass_weighted_mode_shape_error,
     ]
     axes[2].bar(
-        ["max res.", "p95 res.", "Rayleigh", "freq.", "dense eig."],
+        ["max res.", "p95 res.", "Rayleigh", "freq.", "dense eig.", "shape"],
         metrics,
-        color=["#2458a6", "#72b7b2", "#b13f2a", "#2e7d32", "#b279a2"],
+        color=["#2458a6", "#72b7b2", "#b13f2a", "#2e7d32", "#b279a2", "#499894"],
     )
     axes[2].set_yscale("log")
     axes[2].set_title("AE3D matrix/eigenmode parity")
@@ -520,6 +528,8 @@ def _case_ae3d_matrix_parity(output_dir: Path, formats: tuple[str, ...]) -> dict
         **parity.__dict__,
         "dense_spectrum_max_eigenvalue_relative_error": dense_parity.max_eigenvalue_relative_error,
         "dense_spectrum_max_frequency_relative_error": dense_parity.max_frequency_relative_error,
+        "global_mode_max_frequency_relative_error": global_parity.max_frequency_relative_error,
+        "global_mode_max_mass_weighted_mode_shape_error": global_parity.max_mass_weighted_mode_shape_error,
     }
 
 

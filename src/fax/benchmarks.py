@@ -55,6 +55,7 @@ BENCHMARK_FAMILY_DESCRIPTIONS: dict[str, str] = {
     "global-matrix-free": "JAX matrix-free global radial operator with dense/Rayleigh parity gates",
     "global-krylov": "sparse Krylov global radial block eigensolve with exact-spectrum gate",
     "ae3d-artifact": "public AE3D generalized matrix dense-spectrum parity gate",
+    "ae3d-global-mode": "public AE3D global matrix frequency and mode-shape parity gate",
     "stellgap-ctok": "public STELLGAP CTOK local Boozer continuum parity gate",
     "stellgap-executable": "bounded local STELLGAP CTOK executable attempt with runtime/status capture",
     "vmec-boozer": "live vmec_jax solve through booz_xform_jax and FAX local 3-D continuum gate",
@@ -159,6 +160,8 @@ def run_named_benchmark_family(
         return _run_global_krylov_family(repeats=repeats, warmups=warmups)
     if family == "ae3d-artifact":
         return _run_ae3d_artifact_family(repeats=repeats, warmups=warmups)
+    if family == "ae3d-global-mode":
+        return _run_ae3d_global_mode_family(repeats=repeats, warmups=warmups)
     if family == "stellgap-ctok":
         return _run_stellgap_ctok_family(repeats=repeats, warmups=warmups)
     if family == "stellgap-executable":
@@ -493,6 +496,66 @@ def _run_ae3d_artifact_family(*, repeats: int, warmups: int) -> BenchmarkFamilyR
             "checked_modes": parity.count,
             "max_eigenvalue_relative_error": parity.max_eigenvalue_relative_error,
             "p95_frequency_relative_error": parity.p95_frequency_relative_error,
+        },
+    )
+
+
+def _run_ae3d_global_mode_family(*, repeats: int, warmups: int) -> BenchmarkFamilyResult:
+    from pathlib import Path
+
+    from .cross_code import ae3d_global_mode_parity
+
+    root = Path("/Users/rogerio/local/AE3D_test_problem")
+    a_matrix = root / "a_matrix.dat"
+    b_matrix = root / "b_matrix.dat"
+    egn_mode = root / "egn_mode_asci.dat"
+    if not all(path.exists() for path in (a_matrix, b_matrix, egn_mode)):
+        return _family_result(
+            family="ae3d-global-mode",
+            label=BENCHMARK_FAMILY_DESCRIPTIONS["ae3d-global-mode"],
+            status="skipped",
+            gate_passed=False,
+            physics_metric="max frequency plus mode-shape error",
+            metric_value=None,
+            tolerance=2.0e-6,
+            cold_seconds=None,
+            warm_result=None,
+            details={"reason": f"missing public AE3D artifacts under {root}"},
+        )
+
+    def kernel():
+        return ae3d_global_mode_parity(
+            a_matrix_path=a_matrix,
+            b_matrix_path=b_matrix,
+            egn_mode_path=egn_mode,
+            max_modes=8,
+        )
+
+    cold_seconds, warm_result, parity = _timed_family_call(
+        "ae3d_global_mode_parity",
+        kernel,
+        repeats=repeats,
+        warmups=warmups,
+    )
+    tolerance = 2.0e-6
+    metric = max(parity.max_frequency_relative_error, parity.max_mass_weighted_mode_shape_error)
+    return _family_result(
+        family="ae3d-global-mode",
+        label=BENCHMARK_FAMILY_DESCRIPTIONS["ae3d-global-mode"],
+        status="completed",
+        gate_passed=metric < tolerance,
+        physics_metric="max frequency plus mass-weighted mode-shape error",
+        metric_value=metric,
+        tolerance=tolerance,
+        cold_seconds=cold_seconds,
+        warm_result=warm_result,
+        details={
+            "matrix_dimension": parity.matrix_dimension,
+            "real_eigenvalue_count": parity.real_eigenvalue_count,
+            "checked_modes": parity.count,
+            "max_frequency_relative_error": parity.max_frequency_relative_error,
+            "max_euclidean_mode_shape_error": parity.max_euclidean_mode_shape_error,
+            "max_mass_weighted_mode_shape_error": parity.max_mass_weighted_mode_shape_error,
         },
     )
 

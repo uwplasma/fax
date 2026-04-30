@@ -38,6 +38,7 @@ from .continuum import continuum_branch_matrix, local_continuum_frequency_hz
 from .cross_code import (
     ae3d_dense_spectrum_parity,
     ae3d_eigenvalue_residual_summary,
+    ae3d_global_mode_parity,
     ae3d_matrix_eigenmode_parity,
     ae3d_matrix_symmetry_summary,
     ae3d_omega2_eigenvalue_error,
@@ -50,7 +51,9 @@ from .fast_ions import (
     FastIonPopulation,
     GyroLandauClosure,
     eigenfunction_fast_ion_drive,
+    fit_gyro_landau_eigenfunction_closure,
     gyro_landau_closure_drive,
+    gyro_landau_eigenfunction_drive,
     reduced_fast_ion_drive,
 )
 from .gap_models import bae_accumulation_frequency_hz, basic_alfven_gap_map, tae_gap_estimate
@@ -764,6 +767,77 @@ def _gate_fast_ion_gyro_landau_closure_signs() -> GateResult:
         metric,
         tolerance,
         "gyro-Landau closure drive has the expected resonant peak and pressure-gradient sign",
+    )
+
+
+def _gate_fast_ion_gyro_landau_calibration() -> GateResult:
+    gate_id = "fast_ion_gyro_landau_calibration"
+    tolerance = 1.0e-10
+    s = jnp.linspace(0.0, 1.0, 96)
+    mode_structures = jnp.stack(
+        [
+            jnp.exp(-((s - 0.25) / 0.12) ** 2),
+            jnp.exp(-((s - 0.42) / 0.10) ** 2),
+            jnp.exp(-((s - 0.58) / 0.11) ** 2),
+            jnp.exp(-((s - 0.76) / 0.13) ** 2),
+        ],
+        axis=0,
+    )[:, :, None]
+    population = FastIonPopulation(
+        density_fraction=0.03,
+        pressure_gradient=-(1.0 + 0.5 * s),
+        transit_frequency_hz=38_000.0 + 5_000.0 * s,
+        precession_frequency_hz=4_000.0 + 1_200.0 * s,
+        resonance_width_hz=2_200.0 + 250.0 * s,
+    )
+    reference = GyroLandauClosure(
+        resonant_coefficient=1.15,
+        dispersive_coefficient=0.32,
+        diamagnetic_frequency_hz=900.0,
+        thermal_landau_damping_hz=4.5,
+    )
+    frequencies = jnp.asarray([43_000.0, 47_000.0, 50_500.0, 54_500.0])
+    observed = gyro_landau_eigenfunction_drive(
+        frequencies,
+        mode_structures,
+        s,
+        toroidal_mode=1,
+        transit_harmonics=(0, 1, 2),
+        population=population,
+        closure=reference,
+        drive_scale_hz=120.0,
+        damping_rate_hz=1.5,
+    ).net_growth_rate_hz
+    fitted = fit_gyro_landau_eigenfunction_closure(
+        frequencies,
+        mode_structures,
+        s,
+        observed,
+        toroidal_mode=1,
+        transit_harmonics=(0, 1, 2),
+        population=population,
+        diamagnetic_frequency_hz=reference.diamagnetic_frequency_hz,
+        drive_scale_hz=120.0,
+        damping_rate_hz=1.5,
+    )
+    coefficient_error = jnp.max(
+        jnp.abs(
+            jnp.asarray(
+                [
+                    fitted.closure.resonant_coefficient - reference.resonant_coefficient,
+                    fitted.closure.dispersive_coefficient - reference.dispersive_coefficient,
+                    fitted.closure.thermal_landau_damping_hz - reference.thermal_landau_damping_hz,
+                ]
+            )
+        )
+    )
+    residual_scale = jnp.maximum(jnp.linalg.norm(observed), 1.0)
+    metric = float(jnp.maximum(coefficient_error, fitted.rms_residual_hz / residual_scale))
+    return _pass_fail(
+        gate_id,
+        metric,
+        tolerance,
+        "least-squares gyro-Landau closure calibration recovers synthetic resonant/dispersive/damping coefficients",
     )
 
 
@@ -1710,6 +1784,38 @@ def _gate_ae3d_public_dense_spectrum_parity() -> GateResult:
     )
 
 
+def _gate_ae3d_public_global_mode_shape_parity() -> GateResult:
+    gate_id = "ae3d_public_global_mode_shape_parity"
+    tolerance = 2.0e-6
+    a_matrix = _local_external_file("AE3D_test_problem", "a_matrix.dat")
+    b_matrix = _local_external_file("AE3D_test_problem", "b_matrix.dat")
+    egn_mode = _local_external_file("AE3D_test_problem", "egn_mode_asci.dat")
+    if a_matrix is None or b_matrix is None or egn_mode is None:
+        return GateResult(
+            gate_id=gate_id,
+            status="skipped",
+            metric=float("nan"),
+            tolerance=tolerance,
+            message="missing local ORNL AE3D sparse matrix/eigenmode artifacts under /Users/rogerio/local",
+        )
+    parity = ae3d_global_mode_parity(
+        a_matrix_path=a_matrix,
+        b_matrix_path=b_matrix,
+        egn_mode_path=egn_mode,
+        max_modes=8,
+    )
+    metric = max(parity.max_frequency_relative_error, parity.max_mass_weighted_mode_shape_error)
+    return _pass_fail(
+        gate_id,
+        metric,
+        tolerance,
+        (
+            "independent dense solve of ORNL AE3D public global matrices "
+            f"recovers {parity.count} published frequencies and B-weighted mode shapes"
+        ),
+    )
+
+
 def _gate_landreman_paul_adapter_smoke() -> GateResult:
     gate_id = "landreman_paul_adapter_smoke"
     tolerance = 0.0
@@ -2295,6 +2401,17 @@ def registered_validation_gates() -> tuple[ValidationGate, ...]:
             _runner=_gate_fast_ion_gyro_landau_closure_signs,
         ),
         ValidationGate(
+            gate_id="fast_ion_gyro_landau_calibration",
+            title="Gyro-Landau closure calibration",
+            layer="fast-ion",
+            quantity="coefficient recovery and residual error",
+            tolerance=1.0e-10,
+            citation="Reduced FAR3D/CAS3D-K-facing Landau closure coefficients fitted by differentiable eigenfunction-weighted least squares",
+            command="python -m pytest tests/test_fast_ions.py tests/test_validation_registry.py",
+            tags=("fast-ion", "landau-closure", "calibration", "far3d", "differentiable"),
+            _runner=_gate_fast_ion_gyro_landau_calibration,
+        ),
+        ValidationGate(
             gate_id="boozer_harmonic_projection",
             title="Boozer harmonic projection",
             layer="boozer",
@@ -2579,6 +2696,17 @@ def registered_validation_gates() -> tuple[ValidationGate, ...]:
             command="python -m pytest tests/test_validation_registry.py tests/test_cross_code.py",
             tags=("cross-code", "ae3d", "matrix", "spectrum", "parity"),
             _runner=_gate_ae3d_public_dense_spectrum_parity,
+        ),
+        ValidationGate(
+            gate_id="ae3d_public_global_mode_shape_parity",
+            title="AE3D public global mode-shape parity",
+            layer="cross-code",
+            quantity="maximum frequency or B-weighted mode-shape error",
+            tolerance=2.0e-6,
+            citation="ORNL AE3D public generalized matrices and egn_mode_asci.dat artifacts; independent SciPy/LAPACK eigensolve with B-inner-product eigenvector comparison",
+            command="python -m pytest tests/test_validation_registry.py tests/test_cross_code.py",
+            tags=("cross-code", "ae3d", "matrix", "eigenmode", "mode-shape", "parity"),
+            _runner=_gate_ae3d_public_global_mode_shape_parity,
         ),
         ValidationGate(
             gate_id="landreman_paul_adapter_smoke",

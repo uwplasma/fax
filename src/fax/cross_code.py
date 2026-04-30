@@ -135,6 +135,21 @@ class Ae3dDenseSpectrumParity:
 
 
 @dataclass(frozen=True)
+class Ae3dGlobalModeParity:
+    """Frequency and mode-shape parity for public AE3D global matrices."""
+
+    count: int
+    matrix_dimension: int
+    real_eigenvalue_count: int
+    max_frequency_relative_error: float
+    p95_frequency_relative_error: float
+    max_euclidean_mode_shape_error: float
+    p95_euclidean_mode_shape_error: float
+    max_mass_weighted_mode_shape_error: float
+    p95_mass_weighted_mode_shape_error: float
+
+
+@dataclass(frozen=True)
 class StellgapGapParity:
     """Gap-center/width parity against STELLGAP continuum branches."""
 
@@ -513,6 +528,96 @@ def ae3d_dense_spectrum_parity(
     )
 
 
+def ae3d_global_mode_parity(
+    *,
+    a_matrix_path: str | Path,
+    b_matrix_path: str | Path,
+    egn_mode_path: str | Path,
+    max_modes: int = 8,
+    imaginary_tolerance: float = 1.0e-7,
+) -> Ae3dGlobalModeParity:
+    """Solve public AE3D matrices and compare global mode structures.
+
+    This is the strongest public AE3D comparison currently possible from the
+    released artifacts: FAX independently solves the public generalized global
+    matrix problem and compares both eigenfrequencies and eigenvectors against
+    AE3D's published ``egn_mode_asci.dat`` mode structures. It validates the
+    matrix/eigensolver parity lane, not yet FAX's native reduced operator.
+    """
+    a_matrix = read_ae3d_sparse_matrix(a_matrix_path)
+    b_matrix = read_ae3d_sparse_matrix(b_matrix_path)
+    if a_matrix.shape != b_matrix.shape:
+        raise ValueError("AE3D A and B matrices must have matching shapes")
+
+    data = read_ae3d_eigenmodes(egn_mode_path, max_modes=max_modes)
+    reference_eigenvalues = np.asarray(data.eigenvalue_omega2, dtype=float)
+    reference_modes = np.asarray(data.modes, dtype=float).reshape((reference_eigenvalues.shape[0], -1))
+    reference_vector_size = int(reference_modes.size // max(reference_eigenvalues.size, 1))
+    if a_matrix.shape[0] != reference_vector_size:
+        raise ValueError(
+            f"AE3D matrix dimension {a_matrix.shape[0]} does not match eigenmode vector size {reference_vector_size}"
+        )
+    raw_eigenvalues, raw_eigenvectors = linalg.eig(
+        a_matrix.toarray(),
+        b_matrix.toarray(),
+        left=False,
+        right=True,
+        check_finite=False,
+        overwrite_a=True,
+        overwrite_b=True,
+    )
+    finite = np.isfinite(raw_eigenvalues)
+    real_scale = np.maximum(np.abs(raw_eigenvalues.real), 1.0)
+    real_mask = finite & (np.abs(raw_eigenvalues.imag) <= float(imaginary_tolerance) * real_scale)
+    computed_eigenvalues = raw_eigenvalues[real_mask].real
+    computed_eigenvectors = raw_eigenvectors[:, real_mask].real
+    if computed_eigenvalues.shape[0] < reference_eigenvalues.shape[0]:
+        raise ValueError("not enough real AE3D generalized eigenpairs for global mode parity")
+
+    cost = np.abs(computed_eigenvalues[:, None] - reference_eigenvalues[None, :])
+    row_indices, column_indices = linear_sum_assignment(cost)
+    matched_eigenvalues = np.empty_like(reference_eigenvalues)
+    matched_vectors = np.empty((reference_eigenvalues.shape[0], computed_eigenvectors.shape[0]), dtype=float)
+    matched_eigenvalues[column_indices] = computed_eigenvalues[row_indices]
+    matched_vectors[column_indices] = computed_eigenvectors[:, row_indices].T
+
+    reference_frequency = np.sqrt(np.maximum(reference_eigenvalues, 0.0))
+    computed_frequency = np.sqrt(np.maximum(matched_eigenvalues, 0.0))
+    frequency_error = np.abs(computed_frequency - reference_frequency) / np.maximum(reference_frequency, 1.0e-30)
+
+    b_dense = b_matrix.toarray()
+    euclidean_errors: list[float] = []
+    mass_errors: list[float] = []
+    for computed, reference in zip(matched_vectors, reference_modes, strict=True):
+        euclidean_corr = abs(float(np.vdot(computed, reference))) / max(
+            float(np.linalg.norm(computed) * np.linalg.norm(reference)),
+            1.0e-30,
+        )
+        reference_mass = b_dense @ reference
+        computed_mass_norm = np.sqrt(max(abs(float(np.vdot(computed, b_dense @ computed))), 1.0e-30))
+        reference_mass_norm = np.sqrt(max(abs(float(np.vdot(reference, reference_mass))), 1.0e-30))
+        mass_corr = abs(float(np.vdot(computed, reference_mass))) / max(
+            float(computed_mass_norm * reference_mass_norm),
+            1.0e-30,
+        )
+        euclidean_errors.append(max(0.0, 1.0 - min(euclidean_corr, 1.0)))
+        mass_errors.append(max(0.0, 1.0 - min(mass_corr, 1.0)))
+
+    euclidean_array = np.asarray(euclidean_errors, dtype=float)
+    mass_array = np.asarray(mass_errors, dtype=float)
+    return Ae3dGlobalModeParity(
+        count=int(reference_eigenvalues.shape[0]),
+        matrix_dimension=int(a_matrix.shape[0]),
+        real_eigenvalue_count=int(computed_eigenvalues.shape[0]),
+        max_frequency_relative_error=float(np.max(frequency_error)),
+        p95_frequency_relative_error=float(np.percentile(frequency_error, 95.0)),
+        max_euclidean_mode_shape_error=float(np.max(euclidean_array)),
+        p95_euclidean_mode_shape_error=float(np.percentile(euclidean_array, 95.0)),
+        max_mass_weighted_mode_shape_error=float(np.max(mass_array)),
+        p95_mass_weighted_mode_shape_error=float(np.percentile(mass_array, 95.0)),
+    )
+
+
 def stellgap_ctok_gap_parity(
     *,
     boozmn_path: str | Path,
@@ -588,6 +693,8 @@ def run_stellgap_ctok_executable(
     *,
     executable: str | Path = "/Users/rogerio/local/Stellgap/xstgap",
     input_dir: str | Path = "/Users/rogerio/local/Stellgap_test_inputs",
+    radial_points: int = 99,
+    fine_radial_points: int = 2048,
     timeout_seconds: float = 1800.0,
 ) -> ExternalExecutableRun:
     """Attempt a bounded STELLGAP CTOK executable run in a temporary directory.
@@ -619,8 +726,9 @@ def run_stellgap_ctok_executable(
             shutil.copy2(path, workdir / path.name)
         start = time.perf_counter()
         try:
+            command = [str(executable_path), str(int(radial_points)), str(int(fine_radial_points))]
             completed = subprocess.run(
-                [str(executable_path)],
+                command,
                 cwd=workdir,
                 check=False,
                 capture_output=True,
@@ -628,7 +736,9 @@ def run_stellgap_ctok_executable(
             )
             elapsed = time.perf_counter() - start
             outputs = tuple(sorted(path.name for path in workdir.iterdir() if path.is_file()))
-            status = "completed" if completed.returncode == 0 and "alfven_spec" in outputs else "failed"
+            alfven_spec = workdir / "alfven_spec"
+            produced_spectrum = alfven_spec.exists() and alfven_spec.stat().st_size > 0
+            status = "completed" if completed.returncode == 0 and produced_spectrum else "failed"
             return ExternalExecutableRun(
                 executable=str(executable_path),
                 status=status,

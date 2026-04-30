@@ -175,6 +175,11 @@ Fast-Ion Screens
    Project the reduced gyro-Landau closure onto global eigenfunction
    intensity and report net growth after damping offsets.
 
+``fit_gyro_landau_eigenfunction_closure``
+   Fit resonant, dispersive, and thermal-Landau closure coefficients from
+   eigenfunction-weighted growth rates using a differentiable least-squares
+   solve.
+
 Optimization
 ------------
 
@@ -233,6 +238,10 @@ Validation, Figures, and Benchmarks
 
 ``run_named_benchmark_family``
    Run a named benchmark family and return structured runtime data.
+
+``ae3d_global_mode_parity``
+   Solve AE3D public generalized matrices and compare published frequencies
+   plus Euclidean and ``B``-weighted eigenvector correlations.
 
 ``stellgap_ctok_gap_parity``
    Compare FAX and public STELLGAP CTOK largest local gap center/width metrics.

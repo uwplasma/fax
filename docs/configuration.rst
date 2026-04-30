@@ -69,11 +69,11 @@ The CLI uses ``[run] output_dir`` for durable local artifacts:
    ``--family`` values add named physics benchmark packets. Available families
    currently include ``analytic-local``, ``global-block``,
    ``global-matrix-free``, ``global-krylov``, ``stellgap-ctok``,
-   ``stellgap-executable``, ``ae3d-artifact``, and ``vmec-boozer``; each
-   reports a runtime next to the corresponding physics metric and tolerance.
-   The executable family records status for a bounded external STELLGAP run and
-   should only be interpreted as a runtime comparison when the status is
-   ``completed``.
+   ``stellgap-executable``, ``ae3d-artifact``, ``ae3d-global-mode``, and
+   ``vmec-boozer``; each reports a runtime next to the corresponding physics
+   metric and tolerance. The executable family records status for a bounded
+   external STELLGAP run and should only be interpreted as a runtime comparison
+   when the status is ``completed``.
 
 The JSON summaries are intended for scripts and regression checks. The
 Markdown validation report is intended for review packets and handoff notes.

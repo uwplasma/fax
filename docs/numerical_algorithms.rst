@@ -206,7 +206,18 @@ screens differentiable with respect to profile parameters, mode frequencies,
 and eigenfunction structure. ``GyroLandauClosure`` uses the same projection
 path with resonant, dispersive, diamagnetic, and thermal-Landau damping
 coefficients so external FAR3D/CAS3D-K parity can calibrate a documented
-closure. It does not yet solve drift-kinetic equations.
+closure. For fixed diamagnetic frequency, ``fit_gyro_landau_eigenfunction_closure``
+solves a small linear least-squares problem for the resonant coefficient, the
+dispersive coefficient, and the thermal damping offset:
+
+.. math::
+
+   \gamma_k =
+   S \left(C_0 A_k + C_1 B_k\right) - \gamma_{\mathrm{ext}} - \gamma_L.
+
+The fit is differentiable with respect to observed growth rates and profile
+inputs, and is protected by a coefficient-recovery gate. It does not yet solve
+drift-kinetic equations.
 
 Plot Generation
 ---------------

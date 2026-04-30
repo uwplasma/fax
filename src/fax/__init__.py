@@ -30,6 +30,7 @@ from .boozer import (
 from .config import FaxConfig, load_config
 from .cross_code import (
     Ae3dEigenvalueData,
+    Ae3dGlobalModeParity,
     Ae3dMatrixSummary,
     Ae3dOmega2Data,
     Ae3dResidualSummary,
@@ -39,6 +40,7 @@ from .cross_code import (
     StellgapContinuumData,
     StellgapGapParity,
     StellgapSpectrumData,
+    ae3d_global_mode_parity,
     run_stellgap_ctok_executable,
     stellgap_ctok_gap_parity,
 )
@@ -46,7 +48,9 @@ from .equilibrium import EquilibriumGeometry
 from .fast_ions import (
     FastIonModeDriveResult,
     FastIonPopulation,
+    GyroLandauCalibrationResult,
     GyroLandauClosure,
+    fit_gyro_landau_eigenfunction_closure,
     gyro_landau_closure_drive,
     gyro_landau_eigenfunction_drive,
 )
@@ -121,6 +125,7 @@ __all__ = [
     "ContinuumRunSummary",
     "ContinuumArtifacts",
     "Ae3dEigenvalueData",
+    "Ae3dGlobalModeParity",
     "Ae3dMatrixSummary",
     "Ae3dOmega2Data",
     "Ae3dResidualSummary",
@@ -143,6 +148,8 @@ __all__ = [
     "FastIonPopulation",
     "FastIonModeDriveResult",
     "GyroLandauClosure",
+    "GyroLandauCalibrationResult",
+    "fit_gyro_landau_eigenfunction_closure",
     "GradientDescentResult",
     "GeneralizedEigenclusterSensitivity",
     "GlobalEigenmodeArtifacts",
@@ -201,6 +208,7 @@ __all__ = [
     "run",
     "run_benchmark",
     "run_named_benchmark_family",
+    "ae3d_global_mode_parity",
     "run_stellgap_ctok_executable",
     "stellgap_ctok_gap_parity",
     "run_booz_xform_jax_from_wout_data",

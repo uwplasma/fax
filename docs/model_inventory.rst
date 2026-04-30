@@ -143,9 +143,11 @@ Reduced fast-ion drive
    Lorentzian overlap, pressure-gradient sign convention, and eigenfunction
    weighting. ``GyroLandauClosure`` adds calibrated resonant, dispersive,
    diamagnetic, and thermal-Landau damping coefficients so FAR3D/CAS3D-K
-   parity can fit coefficients without changing FAX sign conventions. This is
-   still a differentiable reduced closure, not a kinetic growth-rate
-   replacement for FAR3D or CAS3D-K.
+   parity can fit coefficients without changing FAX sign conventions.
+   ``fit_gyro_landau_eigenfunction_closure`` calibrates those coefficients by a
+   differentiable eigenfunction-weighted least-squares solve. This is still a
+   differentiable reduced closure, not a kinetic growth-rate replacement for
+   FAR3D or CAS3D-K.
 
 Optimization and UQ
 -------------------
@@ -174,14 +176,17 @@ Implemented artifact gates
    STELLGAP CTOK local-continuum comparison, STELLGAP post-processing parity,
    STELLGAP CTOK largest local-gap center/width comparison, AE3D public matrix
    symmetry, AE3D matrix/eigenmode residuals, AE3D omega2 convention parity,
-   and independent dense-spectrum parity.
+   independent dense-spectrum parity, and AE3D global mode-shape parity using
+   the public generalized matrices and ``B``-weighted eigenvector
+   correlations.
 
 External executable status capture
    ``run_stellgap_ctok_executable`` copies the public CTOK STELLGAP inputs to a
    temporary run directory, executes a bounded local ``xstgap`` attempt, and
    records stdout/stderr tails, elapsed time, return code, and output-file
-   status. It reports failed, skipped, or timed-out runs as benchmark metadata,
-   not as FAX runtime parity.
+   status. The current local executable run completes for ``xstgap 99 2048``
+   and produces ``alfven_spec``; failed, skipped, or timed-out runs remain
+   metadata only and are not speed comparisons.
 
 Still planned
    Broader STELLGAP geometries, FAX-vs-AE3D global radial mode comparisons,

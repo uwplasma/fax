@@ -26,7 +26,9 @@ Initial research scaffold release for FAX.
 - Public ORNL STELLGAP CTOK local-continuum and largest-local-gap comparison gates and generated figure.
 - Public ORNL AE3D eigenvalue-answer parser/residual smoke gate.
 - Public ORNL STELLGAP post-processing parity gate and AE3D omega2/matrix artifact gates.
+- Public ORNL AE3D global matrix frequency and mode-shape parity gate using the public `A x = lambda B x` artifacts and `B`-weighted eigenvector correlations.
 - Bounded STELLGAP CTOK executable runtime/status capture benchmark family.
+- Differentiable gyro-Landau closure calibration from eigenfunction-weighted growth-rate targets.
 - External-code artifact dashboard example and generated README/docs figure.
 - README status badges for tests, docs, publish, ReadTheDocs, coverage, PyPI, Python versions, license, Ruff, and JAX.
 - Differentiable radial-mode avoidance objective for early design-screen demonstrations.
@@ -61,8 +63,9 @@ consistency, radial/angular convergence, reduced radial eigenmode spectra,
 analytic gap centers, BAE/TAE/EAE reference ordering, Boozer-Jacobian metric
 identity checks, real `boozmn` local 3-D Boozer geometry/operator checks,
 real-Boozer global radial convergence variants, reduced fast-ion resonance
-ordering, reduced gyro-Landau closure signs, STELLGAP CTOK largest local-gap
-parity, and VMEC/Boozer adapter smoke tests.
+ordering, reduced gyro-Landau closure signs and coefficient calibration,
+STELLGAP CTOK largest local-gap parity, STELLGAP executable status capture, AE3D
+public matrix/mode-shape parity, and VMEC/Boozer adapter smoke tests.
 
 ### Local Release Gate
 

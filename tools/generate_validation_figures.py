@@ -41,6 +41,7 @@ from fax.continuum import continuum_branch_matrix
 from fax.cross_code import (
     ae3d_dense_spectrum_parity,
     ae3d_eigenvalue_residual_summary,
+    ae3d_global_mode_parity,
     ae3d_matrix_symmetry_summary,
     ae3d_omega2_eigenvalue_error,
     read_ae3d_eigenvalues,
@@ -894,6 +895,12 @@ def generate_external_code_artifact_dashboard(output_dir: Path) -> list[Path]:
         egn_mode_path=egn_mode_path,
         max_modes=16,
     )
+    global_parity = ae3d_global_mode_parity(
+        a_matrix_path=a_matrix,
+        b_matrix_path=b_matrix,
+        egn_mode_path=egn_mode_path,
+        max_modes=8,
+    )
     stellgap_processed = stellgap_spec_postprocessed_continuum(alfven_spec)
     stellgap_reference = read_stellgap_alfven_post(alfven_post)
     predicted = np.asarray(stellgap_processed.frequency_khz)
@@ -930,19 +937,27 @@ def generate_external_code_artifact_dashboard(output_dir: Path) -> list[Path]:
     axes[1, 0].set_xlabel("AE3D egn_values")
     axes[1, 0].set_ylabel("FAX reproduction")
 
-    labels = ["A asym.", "B asym.", "AE3D residual", "omega2 error", "dense eig."]
+    labels = ["A asym.", "B asym.", "residual", "omega2", "dense eig.", "global freq.", "mode shape"]
     values = [
         a_summary.relative_asymmetry,
         b_summary.relative_asymmetry,
         ae3d_residual.max_residual,
         ae3d_comparison.max_relative_error,
         dense_parity.max_eigenvalue_relative_error,
+        global_parity.max_frequency_relative_error,
+        global_parity.max_mass_weighted_mode_shape_error,
     ]
-    axes[1, 1].bar(labels, values, color=["#4c78a8", "#72b7b2", "#f58518", "#54a24b", "#b279a2"])
+    axes[1, 1].bar(
+        labels,
+        values,
+        color=["#4c78a8", "#72b7b2", "#f58518", "#54a24b", "#b279a2", "#e45756", "#499894"],
+    )
     axes[1, 1].set_yscale("log")
     axes[1, 1].axhline(1.0e-5, color="black", linestyle="--", linewidth=1.0, label="matrix/eigenvalue gate")
     axes[1, 1].axhline(1.0e-2, color="#777777", linestyle=":", linewidth=1.0, label="residual gate")
-    axes[1, 1].set_title(f"AE3D matrices: N={a_summary.dimension}, dense err={dense_parity.max_eigenvalue_relative_error:.2e}")
+    axes[1, 1].set_title(
+        f"AE3D matrices: N={a_summary.dimension}, shape err={global_parity.max_mass_weighted_mode_shape_error:.2e}"
+    )
     axes[1, 1].set_ylabel("metric")
     axes[1, 1].tick_params(axis="x", rotation=18)
     axes[1, 1].legend(loc="upper right", fontsize=8)
@@ -986,6 +1001,17 @@ def generate_external_code_artifact_dashboard(output_dir: Path) -> list[Path]:
             "p95_eigenvalue_relative_error": dense_parity.p95_eigenvalue_relative_error,
             "max_frequency_relative_error": dense_parity.max_frequency_relative_error,
             "p95_frequency_relative_error": dense_parity.p95_frequency_relative_error,
+        },
+        "ae3d_global_mode": {
+            "count": global_parity.count,
+            "matrix_dimension": global_parity.matrix_dimension,
+            "real_eigenvalue_count": global_parity.real_eigenvalue_count,
+            "max_frequency_relative_error": global_parity.max_frequency_relative_error,
+            "p95_frequency_relative_error": global_parity.p95_frequency_relative_error,
+            "max_euclidean_mode_shape_error": global_parity.max_euclidean_mode_shape_error,
+            "p95_euclidean_mode_shape_error": global_parity.p95_euclidean_mode_shape_error,
+            "max_mass_weighted_mode_shape_error": global_parity.max_mass_weighted_mode_shape_error,
+            "p95_mass_weighted_mode_shape_error": global_parity.p95_mass_weighted_mode_shape_error,
         },
     }
     (output_dir / "external_code_artifact_metrics.json").write_text(

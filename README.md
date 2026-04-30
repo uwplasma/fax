@@ -460,8 +460,18 @@ convergence dashboards. `fax benchmark` records cold runtime, warm runtime, and
 artifact size for local performance tracking. Repeated `--family` options add
 physics-tied benchmark packets such as `analytic-local`, `global-block`,
 `global-matrix-free`, `global-krylov`, `stellgap-ctok`,
-`stellgap-executable`, `ae3d-artifact`, and `vmec-boozer`; speed numbers are
-reported beside the relevant physics metric and tolerance.
+`stellgap-executable`, `ae3d-artifact`, `ae3d-global-mode`, and
+`vmec-boozer`; speed numbers are reported beside the relevant physics metric
+and tolerance.
+
+Current local external-code gates include STELLGAP CTOK local continuum/gap
+comparisons, a bounded STELLGAP executable run (`xstgap 99 2048` completed
+locally in about 47 s and produced `alfven_spec`), and AE3D public global
+matrix parity. The AE3D global gate independently solves the 1287-dimensional
+public generalized matrix problem and, for the first 8 published modes, reaches
+max frequency relative error `8.17e-7` and max B-weighted mode-shape error
+`5.20e-8`. These are artifact/matrix parity gates; native FAX-vs-AE3D full
+operator physics parity remains a separate validation lane.
 
 For machine-readable output:
 

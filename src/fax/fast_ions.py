@@ -70,6 +70,17 @@ class FastIonModeDriveResult:
     mode_weights: jax.Array
 
 
+@dataclass(frozen=True)
+class GyroLandauCalibrationResult:
+    """Least-squares calibration result for reduced gyro-Landau coefficients."""
+
+    closure: "GyroLandauClosure"
+    predicted_growth_rate_hz: jax.Array
+    residual_hz: jax.Array
+    rms_residual_hz: jax.Array
+    design_matrix: jax.Array
+
+
 @jax.tree_util.register_pytree_node_class
 @dataclass(frozen=True)
 class GyroLandauClosure:
@@ -280,6 +291,93 @@ def gyro_landau_eigenfunction_drive(
         net_growth_rate_hz=net_growth,
         resonance_overlap=weighted_overlap,
         mode_weights=mode_weights,
+    )
+
+
+def fit_gyro_landau_eigenfunction_closure(
+    frequencies_hz: Any,
+    mode_structures: Any,
+    s: Any,
+    observed_growth_rate_hz: Any,
+    *,
+    toroidal_mode: int,
+    transit_harmonics: tuple[int, ...],
+    population: FastIonPopulation,
+    diamagnetic_frequency_hz: Any = 0.0,
+    drive_scale_hz: Any = 1.0,
+    damping_rate_hz: Any = 0.0,
+    ridge: float = 0.0,
+) -> GyroLandauCalibrationResult:
+    """Fit reduced gyro-Landau coefficients to observed mode growth rates.
+
+    The fit is linear in ``C0``, ``C1``, and ``gamma_L`` when the diamagnetic
+    frequency is fixed:
+
+    ``gamma = drive_scale * (C0 A + C1 B) - damping - gamma_L``.
+
+    This gives FAR3D/CAS3D-K parity studies a reproducible calibration layer
+    before FAX has a first-principles drift-kinetic closure. The solve is a
+    small differentiable normal-equation solve with optional ridge
+    regularization.
+    """
+    frequencies = jnp.asarray(frequencies_hz)
+    structures = jnp.asarray(mode_structures)
+    radial_grid = jnp.asarray(s)
+    observed = jnp.asarray(observed_growth_rate_hz)
+    mode_weights = jnp.sum(jnp.abs(structures) ** 2, axis=-1)
+    norm = jnp.maximum(_trapz(mode_weights, radial_grid), 1.0e-30)
+    diamagnetic = jnp.asarray(diamagnetic_frequency_hz)
+
+    resonant_rows = []
+    dispersive_rows = []
+    for frequency in frequencies:
+        resonant_density = []
+        dispersive_density = []
+        for harmonic in transit_harmonics:
+            mismatch = resonance_mismatch_hz(
+                frequency,
+                toroidal_mode=toroidal_mode,
+                transit_harmonic=harmonic,
+                population=population,
+            )
+            width = jnp.maximum(population.resonance_width_hz, 1.0e-30)
+            normalized_mismatch = mismatch / width
+            denominator = 1.0 + normalized_mismatch**2
+            frequency_scale = jnp.maximum(jnp.abs(frequency), width)
+            diamagnetic_factor = 1.0 + diamagnetic / frequency_scale
+            base = -population.density_fraction * population.pressure_gradient * diamagnetic_factor
+            resonant_density.append(base / denominator)
+            dispersive_density.append(base * normalized_mismatch / denominator)
+        resonant_rows.append(jnp.sum(jnp.stack(resonant_density), axis=0))
+        dispersive_rows.append(jnp.sum(jnp.stack(dispersive_density), axis=0))
+
+    resonant_projection = _trapz(mode_weights * jnp.stack(resonant_rows), radial_grid) / norm
+    dispersive_projection = _trapz(mode_weights * jnp.stack(dispersive_rows), radial_grid) / norm
+    matrix = jnp.stack(
+        [
+            jnp.asarray(drive_scale_hz) * resonant_projection,
+            jnp.asarray(drive_scale_hz) * dispersive_projection,
+            -jnp.ones_like(resonant_projection),
+        ],
+        axis=1,
+    )
+    rhs = observed + jnp.asarray(damping_rate_hz)
+    normal = matrix.T @ matrix + jnp.asarray(ridge, dtype=matrix.dtype) * jnp.eye(matrix.shape[1], dtype=matrix.dtype)
+    coefficients = jnp.linalg.solve(normal, matrix.T @ rhs)
+    predicted = matrix @ coefficients - jnp.asarray(damping_rate_hz)
+    residual = predicted - observed
+    closure = GyroLandauClosure(
+        resonant_coefficient=coefficients[0],
+        dispersive_coefficient=coefficients[1],
+        diamagnetic_frequency_hz=diamagnetic,
+        thermal_landau_damping_hz=coefficients[2],
+    )
+    return GyroLandauCalibrationResult(
+        closure=closure,
+        predicted_growth_rate_hz=predicted,
+        residual_hz=residual,
+        rms_residual_hz=jnp.sqrt(jnp.mean(residual**2)),
+        design_matrix=matrix,
     )
 
 

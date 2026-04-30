@@ -47,6 +47,7 @@ def test_core_validation_gates_pass():
         "fast_ion_resonance_peak",
         "fast_ion_eigenfunction_drive_localization",
         "fast_ion_gyro_landau_closure_signs",
+        "fast_ion_gyro_landau_calibration",
         "boozer_harmonic_projection",
         "boozer_straight_field_line_phase",
         "boozer_constant_field_continuum",
@@ -94,6 +95,7 @@ def test_cross_code_validation_gates_pass_or_skip_cleanly():
         "ae3d_public_matrix_symmetry",
         "ae3d_public_matrix_eigenmode_parity",
         "ae3d_public_dense_spectrum_parity",
+        "ae3d_public_global_mode_shape_parity",
     ):
         result = run_validation_gate(gate_id)
 

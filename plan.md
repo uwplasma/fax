@@ -1344,11 +1344,12 @@ validated comparison family:
 
 Implementation status: `fax benchmark` now supports named benchmark families
 (`analytic-local`, `global-block`, `global-matrix-free`, `global-krylov`,
-`vmec-boozer`, `ae3d-artifact`, `stellgap-ctok`, `stellgap-executable`) and
-writes JSON/CSV artifacts plus the first `benchmark_family_packet` docs plot.
-The executable STELLGAP family records completed/failed/timeout/skipped status
-and must not be used as a speed comparison until it produces `alfven_spec`
-cleanly. Next, add Markdown reports, JAX-native matrix-free eigensolver
+`vmec-boozer`, `ae3d-artifact`, `ae3d-global-mode`, `stellgap-ctok`,
+`stellgap-executable`) and writes JSON/CSV artifacts plus the first
+`benchmark_family_packet` docs plot. The executable STELLGAP family records
+completed/failed/timeout/skipped status; the current local rebuilt CTOK run
+completes `xstgap 99 2048`, produces `alfven_spec`, and takes about 47 s on
+this Mac. Next, add Markdown reports, JAX-native matrix-free eigensolver
 families, executable AE3D timings once portable builds are stable, and GPU
 memory telemetry. Do not claim a speedup unless the physics metric also passes
 the corresponding validation gate.
@@ -1413,3 +1414,48 @@ Remaining open lanes after this milestone:
    the VMEC input-variable level.
 5. Tag and publish `v0.0.1` through GitHub/PyPI once Actions restart and the
    local release gate is still green.
+
+### 2026-04-30 AE3D Global Mode-Shape Parity And STELLGAP Executable Closure
+
+Closed two more external-code readiness lanes while keeping claim boundaries
+explicit:
+
+- Added `Ae3dGlobalModeParity` and `ae3d_global_mode_parity`. FAX now reads
+  ORNL AE3D public `a_matrix.dat`, `b_matrix.dat`, and `egn_mode_asci.dat`,
+  independently solves the 1287-dimensional generalized eigenproblem with
+  SciPy/LAPACK, matches the first 8 published real eigenpairs, and compares
+  frequencies plus Euclidean and `B`-weighted mode-shape correlations. Current
+  local metrics: max frequency relative error `8.17e-7`, max Euclidean
+  mode-shape error `6.58e-8`, and max `B`-weighted mode-shape error
+  `5.20e-8`, all below the `2.0e-6` gate.
+- Added registered gate `ae3d_public_global_mode_shape_parity` and benchmark
+  family `ae3d-global-mode`. This closes public AE3D artifact/matrix/mode-shape
+  parity, not native FAX reduced-operator vs AE3D full-operator physics parity.
+- Rebuilt the local STELLGAP executable path from the public source so
+  `run_stellgap_ctok_executable` can run `xstgap 99 2048`. The FAX benchmark
+  now passes when `alfven_spec` is produced; current local runtime is about
+  47 s for the public CTOK grid.
+- Added `fit_gyro_landau_eigenfunction_closure`, which calibrates reduced
+  gyro-Landau resonant, dispersive, and thermal damping coefficients from
+  eigenfunction-weighted growth rates through a differentiable least-squares
+  solve. The new gate `fast_ion_gyro_landau_calibration` recovers synthetic
+  FAR3D/CAS3D-K-facing coefficients to roundoff and protects the sign
+  convention before real growth-rate parity data are available.
+- Updated README, ReadTheDocs pages, changelog, validation registry tests, API
+  exports, benchmark tests, and cross-code/fast-ion tests.
+
+Remaining open lanes after this milestone:
+
+1. True native FAX-vs-AE3D/STELLGAP global operator parity on matched
+   equilibrium, radial basis, harmonic truncation, boundary-condition, and
+   normalization conventions.
+2. CAS3D/CAS3D-K and FAR3D parity once runnable binaries or archived
+   input/output pairs are available.
+3. Calibration of the reduced gyro-Landau closure against actual FAR3D/CAS3D-K
+   energetic-particle growth/damping results.
+4. Full end-to-end differentiable VMEC boundary/design-variable objectives
+   through vmec_jax, booz_xform_jax, and FAX with finite-difference/adjoint
+   consistency checks at the VMEC input-variable level.
+5. Final release hygiene: regenerate validation figures, run full local
+   release gate, align the `v0.0.1` tag with the final commit, publish the
+   GitHub release, and let PyPI trusted publishing run when Actions restart.
