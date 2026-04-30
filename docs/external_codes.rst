@@ -109,3 +109,32 @@ Next FAR3D parity steps:
 * compare FAX reduced fast-ion closure predictions against FAR3D growth rates
   with calibration and held-out validation splits,
 * repeat on at least one stellarator case before making broad fast-ion claims.
+
+FAR3D Run-Length Convergence Ladder
+-----------------------------------
+
+The next FAR3D step was a bounded run-length ladder on the same GPU executable
+and public DIII-D input. Runs with ``maxstp = 50, 100, 200, 400`` were archived
+under ``external_artifacts/far3d/gpu_diiid_nvhpc_convergence``. The full ladder
+ran in 15 seconds total on ``office``.
+
+The key result is that the 200-step output is already close to the 400-step
+reference for this small case:
+
+* maximum mode-by-mode relative ``gam`` difference: ``2.6e-5``;
+* maximum mode-by-mode relative ``om_r`` difference: ``6.8e-6``;
+* 400-step across-field/harmonic spread: zero at the printed FAR3D precision.
+
+.. figure:: _static/far3d_gpu_convergence_ladder.svg
+   :alt: FAR3D GPU run-length convergence ladder.
+
+   FAR3D GPU run-length convergence for the public DIII-D example. This is a
+   single-case convergence artifact that identifies a stable ``lincheck`` run
+   length for future parity work; it is still not a multi-geometry kinetic
+   benchmark or a calibrated fast-ion validation.
+
+Regenerate the figure with:
+
+.. code-block:: bash
+
+   python examples/research/far3d_gpu_convergence_ladder.py --output-dir docs/_static

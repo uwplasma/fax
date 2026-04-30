@@ -16,6 +16,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 import re
+from typing import Mapping
 
 from .kinetic_validation import KineticGrowthRateCase, KineticGrowthRateDataset
 
@@ -60,6 +61,39 @@ class Far3dLinearGrowthRow:
         }
 
 
+@dataclass(frozen=True)
+class Far3dLincheckConvergencePoint:
+    """Convergence metrics for one FAR3D ``lincheck`` run length."""
+
+    step_count: int
+    row_count: int
+    common_mode_count: int
+    mean_growth_code_units: float
+    mean_omega_code_units: float
+    spread_growth_code_units: float
+    spread_omega_code_units: float
+    max_abs_growth_delta_to_reference: float
+    max_abs_omega_delta_to_reference: float
+    max_relative_growth_delta_to_reference: float
+    max_relative_omega_delta_to_reference: float
+
+    def to_dict(self) -> dict[str, float | int]:
+        """Return a JSON-serializable convergence record."""
+        return {
+            "step_count": self.step_count,
+            "row_count": self.row_count,
+            "common_mode_count": self.common_mode_count,
+            "mean_growth_code_units": self.mean_growth_code_units,
+            "mean_omega_code_units": self.mean_omega_code_units,
+            "spread_growth_code_units": self.spread_growth_code_units,
+            "spread_omega_code_units": self.spread_omega_code_units,
+            "max_abs_growth_delta_to_reference": self.max_abs_growth_delta_to_reference,
+            "max_abs_omega_delta_to_reference": self.max_abs_omega_delta_to_reference,
+            "max_relative_growth_delta_to_reference": self.max_relative_growth_delta_to_reference,
+            "max_relative_omega_delta_to_reference": self.max_relative_omega_delta_to_reference,
+        }
+
+
 def read_far3d_lincheck(path: str | Path, *, variables: tuple[str, ...] | None = None) -> tuple[Far3dLinearGrowthRow, ...]:
     """Read FAR3D ``lincheck`` rows from a run log or ``confil`` output.
 
@@ -98,6 +132,69 @@ def read_far3d_lincheck(path: str | Path, *, variables: tuple[str, ...] | None =
             )
         )
     return tuple(rows)
+
+
+def far3d_lincheck_convergence(
+    paths_by_step: Mapping[int, str | Path],
+    *,
+    reference_step: int | None = None,
+) -> tuple[Far3dLincheckConvergencePoint, ...]:
+    """Compare FAR3D ``lincheck`` rows against a reference run length.
+
+    The convergence metric is intentionally mode-by-mode. Only labels present
+    in every run are compared, so a growing harmonic set cannot hide a
+    non-converged common mode.
+    """
+    if not paths_by_step:
+        raise ValueError("at least one FAR3D lincheck output is required")
+    rows_by_step = {int(step): read_far3d_lincheck(path) for step, path in paths_by_step.items()}
+    empty_steps = [step for step, rows in rows_by_step.items() if not rows]
+    if empty_steps:
+        raise ValueError(f"no FAR3D lincheck rows found for steps: {empty_steps}")
+    selected_reference_step = max(rows_by_step) if reference_step is None else int(reference_step)
+    if selected_reference_step not in rows_by_step:
+        raise ValueError(f"reference_step {selected_reference_step} is not present in paths_by_step")
+
+    labels = set(_rows_by_mode_label(rows_by_step[selected_reference_step]))
+    for rows in rows_by_step.values():
+        labels &= set(_rows_by_mode_label(rows))
+    if not labels:
+        raise ValueError("FAR3D lincheck outputs have no common mode labels")
+    ordered_labels = tuple(sorted(labels))
+    reference_rows = _rows_by_mode_label(rows_by_step[selected_reference_step])
+    tiny = 1.0e-300
+
+    points: list[Far3dLincheckConvergencePoint] = []
+    for step in sorted(rows_by_step):
+        rows_by_label = _rows_by_mode_label(rows_by_step[step])
+        growth = tuple(rows_by_label[label].growth_rate_code_units for label in ordered_labels)
+        omega = tuple(rows_by_label[label].omega_code_units for label in ordered_labels)
+        reference_growth = tuple(reference_rows[label].growth_rate_code_units for label in ordered_labels)
+        reference_omega = tuple(reference_rows[label].omega_code_units for label in ordered_labels)
+        growth_delta = tuple(abs(value - reference) for value, reference in zip(growth, reference_growth, strict=True))
+        omega_delta = tuple(abs(value - reference) for value, reference in zip(omega, reference_omega, strict=True))
+        growth_relative_delta = tuple(
+            delta / max(abs(reference), tiny) for delta, reference in zip(growth_delta, reference_growth, strict=True)
+        )
+        omega_relative_delta = tuple(
+            delta / max(abs(reference), tiny) for delta, reference in zip(omega_delta, reference_omega, strict=True)
+        )
+        points.append(
+            Far3dLincheckConvergencePoint(
+                step_count=step,
+                row_count=len(rows_by_step[step]),
+                common_mode_count=len(ordered_labels),
+                mean_growth_code_units=_mean(growth),
+                mean_omega_code_units=_mean(omega),
+                spread_growth_code_units=max(growth) - min(growth),
+                spread_omega_code_units=max(omega) - min(omega),
+                max_abs_growth_delta_to_reference=max(growth_delta),
+                max_abs_omega_delta_to_reference=max(omega_delta),
+                max_relative_growth_delta_to_reference=max(growth_relative_delta),
+                max_relative_omega_delta_to_reference=max(omega_relative_delta),
+            )
+        )
+    return tuple(points)
 
 
 def far3d_rows_to_kinetic_dataset(
@@ -199,6 +296,19 @@ def load_far3d_lincheck_dataset(
 
 def _parse_fortran_float(value: str) -> float:
     return float(value.replace("D", "E").replace("d", "e"))
+
+
+def _rows_by_mode_label(rows: tuple[Far3dLinearGrowthRow, ...]) -> dict[str, Far3dLinearGrowthRow]:
+    rows_by_label: dict[str, Far3dLinearGrowthRow] = {}
+    for row in rows:
+        if row.mode_label in rows_by_label:
+            raise ValueError(f"duplicate FAR3D lincheck mode label: {row.mode_label}")
+        rows_by_label[row.mode_label] = row
+    return rows_by_label
+
+
+def _mean(values: tuple[float, ...]) -> float:
+    return sum(values) / len(values)
 
 
 def _join_notes(prefix: str, detail: str) -> str:

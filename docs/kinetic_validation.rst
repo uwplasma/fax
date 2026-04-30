@@ -132,6 +132,14 @@ Regenerate the ingestion packet with:
    run. This closes the FAR3D build/run/parser traceability step; it is not yet
    a converged growth-rate parity result.
 
+The same executable/input pair now has an archived run-length ladder at
+``external_artifacts/far3d/gpu_diiid_nvhpc_convergence``. The 200-step
+``lincheck`` rows agree with the 400-step reference to ``2.6e-5`` in maximum
+relative growth-rate difference and ``6.8e-6`` in maximum relative frequency
+difference for common mode labels. This is a useful convergence screen for
+future FAR3D parity packets, but it is still one DIII-D case and not a
+multi-geometry kinetic validation set.
+
 Python API
 ----------
 

@@ -62,8 +62,11 @@ state before publishing:
   FAX-vs-AE3D operator parity.
 * ``far3d-ingest`` converts FAR3D ``lincheck`` rows into the FAX kinetic
   validation schema. A short FAR3D/NVHPC GPU DIII-D runtime artifact is now
-  archived with its run-reported normalization, but it is still not a kinetic
-  growth-rate parity claim because the run is not a converged FAR3D benchmark.
+  archived with its run-reported normalization, and the same case has a
+  50/100/200/400-step run-length ladder. The 200-step ``lincheck`` rows agree
+  with the 400-step reference below ``3e-5`` maximum relative growth-rate
+  difference. This is still not a kinetic growth-rate parity claim because it
+  is one DIII-D input, not a matched multi-geometry FAR3D/CAS3D-K benchmark.
 * CAS3D and converged FAR3D parity remain pending until runnable input/output
   pairs or portable benchmark builds are available.
 

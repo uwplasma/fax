@@ -37,6 +37,12 @@ Current Entries
    growth-rate parity result and should not be used as a closure-calibration
    benchmark without a longer documented run.
 
+``far3d_diiid_gpu_lincheck_convergence_ladder``
+   FAR3D public DIII-D run-length ladder at ``maxstp = 50, 100, 200, 400``.
+   This supports single-case ``lincheck`` convergence checks and documents that
+   the 200-step output is within ``2.6e-5`` growth-rate relative error of the
+   400-step reference. It is not multi-geometry FAR3D/CAS3D-K kinetic parity.
+
 Why This Matters
 ----------------
 

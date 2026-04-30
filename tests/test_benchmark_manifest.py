@@ -17,6 +17,7 @@ def test_default_benchmark_manifest_has_current_external_cases():
     assert "stellgap_ctok_local_continuum_gap" in ids
     assert "ae3d_public_matrix_mode_shape" in ids
     assert "far3d_diiid_gpu_lincheck_artifact" in ids
+    assert "far3d_diiid_gpu_lincheck_convergence_ladder" in ids
     assert all(entry.validation_gate_ids for entry in entries)
     assert all(entry.expected_metrics for entry in entries)
 

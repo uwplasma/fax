@@ -301,6 +301,22 @@ FAR3D ``lincheck`` growth/frequency rows, applies the FAR3D-reported
 plus JSON metrics. The example verifies the external executable/build and
 ingestion path. It is not a converged kinetic growth-rate parity benchmark.
 
+FAR3D GPU Convergence Ladder
+----------------------------
+
+Run after the archived FAR3D convergence artifacts are present in the
+repository:
+
+.. code-block:: bash
+
+   python examples/research/far3d_gpu_convergence_ladder.py
+
+This reads ``external_artifacts/far3d/gpu_diiid_nvhpc_convergence`` and
+compares the ``maxstp = 50, 100, 200, 400`` ``lincheck`` rows against the
+400-step reference. The current archived ladder shows the 200-step output below
+``3e-5`` maximum relative growth-rate error for common mode labels. Treat this
+as a convergence screen for one FAR3D DIII-D input, not as kinetic parity.
+
 Publication Figure Suite
 ------------------------
 

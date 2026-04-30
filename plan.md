@@ -1780,3 +1780,35 @@ launch, parser, and normalization path. The next FAR3D lane is a documented
 linear benchmark run long enough for converged growth rates, with complete
 input/output hashes, runtime metadata, and calibration-vs-held-out validation
 against the FAX fast-ion closure.
+
+### 2026-04-30 FAR3D Run-Length Convergence Ladder
+
+Advanced the FAR3D external-code lane from a single executable trace to a
+bounded convergence artifact:
+
+- ran the same public DIII-D `Eq_DIIID_RS` FAR3D GPU case on `office` at
+  `maxstp = 50, 100, 200, 400`,
+- archived compact `farprt0000`, `farin`, `stdout`, `stderr`, runtime, and
+  extracted `lincheck` rows under
+  `external_artifacts/far3d/gpu_diiid_nvhpc_convergence`,
+- added `Far3dLincheckConvergencePoint` and `far3d_lincheck_convergence`,
+- added real-artifact regression tests proving all four run lengths have the
+  same 24 common mode labels and that the 200-step output is below `5e-5`
+  growth and `2e-5` frequency relative error against the 400-step reference,
+- added a second FAR3D benchmark-manifest entry for the convergence ladder,
+- added `examples/research/far3d_gpu_convergence_ladder.py`,
+- generated `docs/_static/far3d_gpu_convergence_ladder.{png,svg}`,
+- updated README, docs, examples, release notes, and the benchmark manifest.
+
+Observed metrics for this DIII-D artifact:
+
+- total ladder runtime on `office`: 15 seconds,
+- 200-vs-400 maximum relative growth-rate difference: `2.6e-5`,
+- 200-vs-400 maximum relative real-frequency difference: `6.8e-6`,
+- 400-step across-field/harmonic spread: zero at printed FAR3D precision.
+
+Important scope: this is still one reduced-MHD/gyrofluid FAR3D input. It is
+now stable enough to serve as a parser/convergence fixture, but not enough to
+calibrate or validate the FAX fast-ion closure. The next step is a true FAR3D
+physics benchmark suite: beta/distribution scans, at least one stellarator
+case, documented mode IDs and units, and held-out growth-rate comparisons.

@@ -132,6 +132,15 @@ Current Figures
    code-to-kHz conversion, and evolved-field summaries. This supports the
    FAR3D build/run/parser lane, not calibrated kinetic parity.
 
+.. figure:: _static/far3d_gpu_convergence_ladder.svg
+   :alt: FAR3D GPU run-length convergence ladder.
+
+   FAR3D GPU run-length convergence ladder for the same public DIII-D case.
+   The 200-step ``lincheck`` rows match the 400-step reference to better than
+   ``3e-5`` in maximum relative growth-rate difference for common mode labels.
+   This is a single-case convergence screen, not a multi-geometry kinetic
+   parity result.
+
 .. figure:: _static/continuum_artifact_dashboard.svg
    :alt: Dashboard generated from fax continuum artifacts.
 

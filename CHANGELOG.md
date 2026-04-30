@@ -31,6 +31,7 @@ Initial research release for FAX.
 - Bounded STELLGAP CTOK executable runtime/status capture benchmark family.
 - FAR3D `lincheck` growth/frequency parser, `fax far3d-ingest` CLI, and conversion into the held-out kinetic growth-rate validation schema with explicit unit normalization.
 - Archived FAR3D/NVHPC GPU DIII-D public-example runtime artifact, parser-ready kinetic dataset, benchmark-manifest entry, and generated lincheck dashboard figure.
+- Archived FAR3D GPU run-length convergence ladder with 50/100/200/400-step outputs, convergence utility, tests, and generated dashboard figure.
 - Differentiable gyro-Landau closure calibration from eigenfunction-weighted growth-rate targets.
 - External-code artifact dashboard example and generated README/docs figure.
 - README status badges for tests, docs, publish, ReadTheDocs, coverage, PyPI, Python versions, license, Ruff, and JAX.
@@ -70,8 +71,8 @@ real-Boozer global radial convergence variants, reduced fast-ion resonance
 ordering, reduced gyro-Landau closure signs and coefficient calibration,
 STELLGAP CTOK largest local-gap parity, STELLGAP executable status capture, AE3D
 public matrix/mode-shape and continuum-placement parity, FAR3D growth-rate
-ingestion-schema validation with one real short GPU runtime artifact, and
-VMEC/Boozer adapter smoke tests.
+ingestion-schema validation with one real short GPU runtime artifact and a
+single-case run-length convergence ladder, and VMEC/Boozer adapter smoke tests.
 
 ### Local Release Gate
 

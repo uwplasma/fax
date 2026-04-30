@@ -20,5 +20,7 @@ def test_recent_public_exports_exist():
     assert fax.ae3d_continuum_placement_parity
     assert fax.KineticGrowthRateDataset
     assert fax.kinetic_growth_rate_parity
+    assert fax.Far3dLincheckConvergencePoint
     assert fax.Far3dLinearGrowthRow
+    assert fax.far3d_lincheck_convergence
     assert fax.read_far3d_lincheck

@@ -198,6 +198,47 @@ def default_benchmark_manifest() -> tuple[BenchmarkManifestEntry, ...]:
                 "closure predictions on held-out cases."
             ),
         ),
+        BenchmarkManifestEntry(
+            benchmark_id="far3d_diiid_gpu_lincheck_convergence_ladder",
+            code="FAR3D",
+            geometry="DIII-D public example Eq_DIIID_RS",
+            physics_model="run-length convergence of reduced-MHD/gyrofluid lincheck output",
+            claim_level="single-case run-length convergence artifact, not multi-geometry kinetic parity",
+            status="active",
+            artifacts=(
+                BenchmarkArtifact(
+                    role="FAR3D 50-step lincheck output",
+                    path=str(REPO_ROOT / "external_artifacts/far3d/gpu_diiid_nvhpc_convergence/step_50/farprt0000"),
+                ),
+                BenchmarkArtifact(
+                    role="FAR3D 100-step lincheck output",
+                    path=str(REPO_ROOT / "external_artifacts/far3d/gpu_diiid_nvhpc_convergence/step_100/farprt0000"),
+                ),
+                BenchmarkArtifact(
+                    role="FAR3D 200-step lincheck output",
+                    path=str(REPO_ROOT / "external_artifacts/far3d/gpu_diiid_nvhpc_convergence/step_200/farprt0000"),
+                ),
+                BenchmarkArtifact(
+                    role="FAR3D 400-step lincheck output",
+                    path=str(REPO_ROOT / "external_artifacts/far3d/gpu_diiid_nvhpc_convergence/step_400/farprt0000"),
+                ),
+            ),
+            expected_metrics={
+                "step200_max_relative_growth_delta_to_step400": 2.6e-5,
+                "step200_max_relative_omega_delta_to_step400": 6.8e-6,
+                "step400_growth_spread_code_units": 0.0,
+                "step400_omega_spread_code_units": 0.0,
+            },
+            validation_gate_ids=(
+                "far3d_lincheck_convergence_ladder",
+                "far3d_gpu_diiid_artifact_ingestion",
+            ),
+            next_parity_step=(
+                "Promote this from run-length convergence to physics parity by "
+                "running matched FAR3D cases across beta_fast/distribution scans "
+                "and comparing FAX closure predictions against held-out growth rates."
+            ),
+        ),
     )
 
 

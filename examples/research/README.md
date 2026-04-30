@@ -37,6 +37,7 @@ python examples/research/vmec_boozer_convergence.py
 python examples/research/stellgap_ctok_comparison.py
 python examples/research/external_code_artifact_dashboard.py
 python examples/research/far3d_gpu_lincheck_artifact.py
+python examples/research/far3d_gpu_convergence_ladder.py
 python examples/research/publication_figure_suite.py
 ```
 
@@ -156,6 +157,18 @@ This reads the archived FAR3D DIII-D GPU run under
 `external_artifacts/far3d/gpu_diiid_nvhpc`, parses the `lincheck` rows, applies
 the run-reported code-to-kHz conversion, and writes a compact dashboard. It is a
 build/run/parser traceability example, not a converged kinetic parity result.
+
+## FAR3D GPU Convergence Ladder
+
+```bash
+python examples/research/far3d_gpu_convergence_ladder.py
+```
+
+This reads the archived FAR3D DIII-D `maxstp = 50, 100, 200, 400` ladder and
+plots convergence of the parsed `lincheck` rows against the 400-step reference.
+It shows that the 200-step artifact is stable to better than `3e-5` in maximum
+relative growth-rate difference for common mode labels. This is still a
+single-case convergence screen, not FAR3D/CAS3D-K kinetic parity.
 
 ## Publication Figure Suite
 

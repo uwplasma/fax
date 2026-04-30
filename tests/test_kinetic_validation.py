@@ -8,7 +8,12 @@ import jax.numpy as jnp
 import numpy as np
 import pytest
 
-from fax.far3d import far3d_rows_to_kinetic_dataset, load_far3d_lincheck_dataset, read_far3d_lincheck
+from fax.far3d import (
+    far3d_lincheck_convergence,
+    far3d_rows_to_kinetic_dataset,
+    load_far3d_lincheck_dataset,
+    read_far3d_lincheck,
+)
 from fax.kinetic_validation import (
     KineticGrowthRateCase,
     KineticGrowthRateDataset,
@@ -22,6 +27,7 @@ from fax.kinetic_validation import (
 REPO_ROOT = Path(__file__).resolve().parents[1]
 FAR3D_GPU_ARTIFACT = REPO_ROOT / "external_artifacts/far3d/gpu_diiid_nvhpc/farprt0000"
 FAR3D_GPU_DATASET = REPO_ROOT / "external_artifacts/far3d/gpu_diiid_nvhpc/kinetic_dataset.json"
+FAR3D_GPU_CONVERGENCE_DIR = REPO_ROOT / "external_artifacts/far3d/gpu_diiid_nvhpc_convergence"
 
 
 def _dataset() -> KineticGrowthRateDataset:
@@ -354,3 +360,36 @@ def test_archived_far3d_gpu_ingestion_packet_preserves_run_normalization():
     assert dataset.cases[0].frequency_hz == pytest.approx(0.365588 * 599_813.41)
     assert dataset.cases[0].growth_rate_hz == pytest.approx(-0.417541 * 599_813.41)
     assert "Short 20-step executable/build artifact" in dataset.cases[0].notes
+
+
+def test_archived_far3d_gpu_convergence_ladder_reaches_stable_lincheck_values():
+    paths = {
+        50: FAR3D_GPU_CONVERGENCE_DIR / "step_50/farprt0000",
+        100: FAR3D_GPU_CONVERGENCE_DIR / "step_100/farprt0000",
+        200: FAR3D_GPU_CONVERGENCE_DIR / "step_200/farprt0000",
+        400: FAR3D_GPU_CONVERGENCE_DIR / "step_400/farprt0000",
+    }
+
+    points = far3d_lincheck_convergence(paths)
+
+    assert [point.step_count for point in points] == [50, 100, 200, 400]
+    assert all(point.row_count == 24 for point in points)
+    assert all(point.common_mode_count == 24 for point in points)
+    assert points[-1].spread_growth_code_units == pytest.approx(0.0)
+    assert points[-1].spread_omega_code_units == pytest.approx(0.0)
+    assert points[-2].max_relative_growth_delta_to_reference < 5.0e-5
+    assert points[-2].max_relative_omega_delta_to_reference < 2.0e-5
+    assert points[0].max_relative_growth_delta_to_reference > 0.4
+    assert points[0].to_dict()["step_count"] == 50
+
+
+def test_far3d_lincheck_convergence_rejects_missing_or_inconsistent_inputs(tmp_path: Path):
+    with pytest.raises(ValueError, match="at least one"):
+        far3d_lincheck_convergence({})
+    with pytest.raises(ValueError, match="reference_step"):
+        far3d_lincheck_convergence({1: FAR3D_GPU_ARTIFACT}, reference_step=2)
+
+    empty = tmp_path / "empty.out"
+    empty.write_text("no lincheck rows here\n", encoding="utf-8")
+    with pytest.raises(ValueError, match="no FAR3D lincheck rows"):
+        far3d_lincheck_convergence({1: empty})

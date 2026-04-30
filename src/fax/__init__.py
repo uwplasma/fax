@@ -72,7 +72,9 @@ from .fast_ions import (
     gyro_landau_eigenfunction_drive,
 )
 from .far3d import (
+    Far3dLincheckConvergencePoint,
     Far3dLinearGrowthRow,
+    far3d_lincheck_convergence,
     far3d_rows_to_kinetic_dataset,
     load_far3d_lincheck_dataset,
     read_far3d_lincheck,
@@ -218,10 +220,12 @@ __all__ = [
     "FaxConfig",
     "FastIonPopulation",
     "FastIonModeDriveResult",
+    "Far3dLincheckConvergencePoint",
     "Far3dLinearGrowthRow",
     "GyroLandauClosure",
     "GyroLandauCalibrationResult",
     "fit_gyro_landau_eigenfunction_closure",
+    "far3d_lincheck_convergence",
     "far3d_rows_to_kinetic_dataset",
     "KineticGrowthRateCase",
     "KineticGrowthRateDataset",
