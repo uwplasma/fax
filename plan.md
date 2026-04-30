@@ -1459,3 +1459,12 @@ Remaining open lanes after this milestone:
 5. Final release hygiene: regenerate validation figures, run full local
    release gate, align the `v0.0.1` tag with the final commit, publish the
    GitHub release, and let PyPI trusted publishing run when Actions restart.
+
+### 2026-04-30 v0.0.1 Publication Results Page
+
+Added `docs/publication_results.rst` as the release-facing publication packet.
+It collects the ten generated publication figures, claim levels, key metrics,
+external-code parity status, exact regeneration commands, local release gate,
+and remaining paper-quality lanes. README and the Sphinx index now point to
+this page, and the figure docs distinguish the current publication suite from
+future publication figures.

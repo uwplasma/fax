@@ -2,13 +2,13 @@
 
 ## v0.0.1 - 2026-04-24
 
-Initial research scaffold release for FAX.
+Initial research release for FAX.
 
 ### Added
 
 - MIT-licensed, pip-installable Python package with `fax` CLI.
 - TOML configuration loading with Python 3.10 `tomli` fallback and Python 3.11+ `tomllib`.
-- Analytic equilibrium fixtures, local shear-Alfven continuum formulas, and metric-matrix continuum scaffold.
+- Analytic equilibrium fixtures, local shear-Alfven continuum formulas, and metric-matrix continuum validation gates.
 - Reduced radial global-eigenmode operator with exact constant-profile spectrum and density-gradient gates.
 - Analytic TAE/EAE/HAE gap estimates and reduced fast-ion transit/precession resonance diagnostics.
 - Fast BAE/TAE/EAE large-aspect-ratio gap-map example with a publication-style figure.
@@ -50,13 +50,14 @@ Initial research scaffold release for FAX.
 - Research example for applying the local 3-D Boozer continuum operator to a real `boozmn` file and generating a plot/JSON packet.
 - Research example for solving the global radial 3-D Boozer eigenmode problem and plotting radial envelopes/harmonic structure.
 - ReadTheDocs/Sphinx docs, GitHub Actions definitions for tests/docs/publish, and PyPI trusted-publishing workflow.
+- Publication-results documentation page tying the ten publication-suite figures to claim levels, metrics, commands, and remaining publication lanes.
 
 The PyPI distribution name is `uwplasma-fax`; the import package and CLI remain
 `fax`.
 
 ### Validation Status
 
-This release is a validated scaffold, not a final 3-D stellarator eigenmode solver.
+This release is a validated reduced-model foundation, not a final 3-D stellarator eigenmode solver.
 Current gates cover analytic continuum limits, metric reduction to the profile
 limit, Hermiticity, generalized-eigensolve residuals, JAX density-gradient
 consistency, radial/angular convergence, reduced radial eigenmode spectra,

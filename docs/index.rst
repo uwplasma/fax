@@ -24,6 +24,7 @@ model.
    user_workflows
    demonstrations
    research_examples
+   publication_results
    figures
    validation
    validation_traceability

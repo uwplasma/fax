@@ -134,7 +134,8 @@ STELLGAP CTOK
 AE3D
    FAX parses public AE3D matrices, eigenvectors, omega2 tables, and reported
    residuals. It checks matrix symmetry, eigenmode residuals, Rayleigh errors,
-   omega2 convention parity, and independent dense-spectrum parity.
+   omega2 convention parity, independent dense-spectrum parity, and
+   ``B``-weighted mode-shape parity for the public generalized matrix problem.
 
 Future gates
    Full FAX-vs-AE3D global-mode parity, CAS3D/CAS3D-K global modes and kinetic
