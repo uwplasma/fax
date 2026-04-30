@@ -7,8 +7,10 @@ import json
 import sys
 
 from . import __version__
+from .benchmark_manifest import benchmark_manifest_markdown, benchmark_manifest_summary
 from .benchmarks import known_benchmark_families
 from .config import ConfigError, FaxConfig, load_config
+from .maturity import research_grade_report_markdown, research_grade_summary
 from .plotting import plot_continuum_artifacts, plot_convergence_artifacts, plot_global_eigenmode_artifacts
 from .runner import run
 from .workflows import (
@@ -61,7 +63,8 @@ def build_parser() -> argparse.ArgumentParser:
         prog="fax",
         description=(
             "Run or inspect differentiable Alfvén eigenmode calculations from a TOML file. "
-            "Subcommands: validate, continuum, eigenmodes, convergence, benchmark, plot-continuum, plot-global, plot-convergence."
+            "Subcommands: validate, continuum, eigenmodes, convergence, benchmark, benchmark-manifest, "
+            "maturity, plot-continuum, plot-global, plot-convergence."
         ),
     )
     parser.add_argument("config", nargs="?", help="Path to a fax TOML configuration file.")
@@ -148,6 +151,21 @@ def build_command_parser() -> argparse.ArgumentParser:
     benchmark.add_argument("--quiet", action="store_true", help="Suppress rich progress output and print only summary JSON.")
     benchmark.add_argument("--no-artifacts", action="store_true", help="Do not write benchmark artifact files.")
 
+    maturity = subparsers.add_parser(
+        "maturity",
+        help="Report remaining milestones for full no-proxy research-grade status.",
+    )
+    maturity.add_argument("--json", action="store_true", help="Print the maturity report as JSON.")
+    maturity.add_argument("--quiet", action="store_true", help="Alias for --json.")
+
+    benchmark_manifest = subparsers.add_parser(
+        "benchmark-manifest",
+        help="Report built-in external-code benchmark artifacts and claim levels.",
+    )
+    benchmark_manifest.add_argument("--json", action="store_true", help="Print the benchmark manifest as JSON.")
+    benchmark_manifest.add_argument("--quiet", action="store_true", help="Alias for --json.")
+    benchmark_manifest.add_argument("--hashes", action="store_true", help="Include SHA-256 hashes for present files.")
+
     plot = subparsers.add_parser("plot-continuum", help="Plot artifacts written by fax continuum.")
     plot.add_argument("artifact_dir", help="Directory containing continuum_summary.json and continuum_branches.csv.")
     plot.add_argument("--output-dir", help="Directory for generated figures; defaults to artifact_dir.")
@@ -216,6 +234,8 @@ def main(argv: list[str] | None = None) -> int:
         "eigenmodes",
         "convergence",
         "benchmark",
+        "benchmark-manifest",
+        "maturity",
         "plot-continuum",
         "plot-global",
         "plot-convergence",
@@ -257,6 +277,10 @@ def main(argv: list[str] | None = None) -> int:
 def _main_command(argv: list[str]) -> int:
     parser = build_command_parser()
     args = parser.parse_args(argv)
+    if args.command == "maturity":
+        return _main_maturity(args)
+    if args.command == "benchmark-manifest":
+        return _main_benchmark_manifest(args)
     if args.command == "plot-continuum":
         return _main_plot_continuum(args)
     if args.command == "plot-convergence":
@@ -343,6 +367,25 @@ def _main_plot_continuum(args: argparse.Namespace) -> int:
         print("FAX continuum artifact figures:")
         for path in paths:
             print(f"  {path}")
+    return 0
+
+
+def _main_maturity(args: argparse.Namespace) -> int:
+    machine_readable = bool(args.json or args.quiet)
+    summary = research_grade_summary()
+    if machine_readable:
+        print(json.dumps(summary, indent=2, sort_keys=True))
+    else:
+        print(research_grade_report_markdown())
+    return 0
+
+
+def _main_benchmark_manifest(args: argparse.Namespace) -> int:
+    machine_readable = bool(args.json or args.quiet)
+    if machine_readable:
+        print(json.dumps(benchmark_manifest_summary(include_hashes=bool(args.hashes)), indent=2, sort_keys=True))
+    else:
+        print(benchmark_manifest_markdown(include_hashes=bool(args.hashes)))
     return 0
 
 

@@ -1468,3 +1468,212 @@ external-code parity status, exact regeneration commands, local release gate,
 and remaining paper-quality lanes. README and the Sphinx index now point to
 this page, and the figure docs distinguish the current publication suite from
 future publication figures.
+
+### Full Research-Grade Completion Roadmap
+
+This section supersedes the scattered "remaining open lanes" notes as the
+single roadmap for reaching the final no-proxy, no-reduced-model, no-scaffold
+research-grade FAX target. Until every required milestone below is complete,
+FAX must continue to label reduced models, artifact parity, adapter checks,
+and screening applications explicitly in README, docs, validation reports, and
+publication figures.
+
+The machine-readable tracker is `fax.maturity` and the CLI report:
+
+```bash
+fax maturity
+fax maturity --json
+```
+
+#### RG-1 Full Native 3-D Stellarator Ideal-MHD Eigenmode Parity
+
+Goal: FAX native global 3-D operators reproduce matched AE3D, CAS3D/CONTI,
+and STELLGAP global eigenfrequencies, eigenfunctions, residuals,
+normalizations, harmonic conventions, mode labels, and boundary-condition
+variants on multiple stellarator geometries.
+
+Current status: in progress. Implemented gates include STELLGAP CTOK local
+continuum/gap parity and AE3D public matrix/eigenmode/mode-shape artifact
+parity. Missing: native FAX-vs-AE3D/STELLGAP/CAS3D global operator parity on
+matched operators and geometry.
+
+Acceptance gates:
+
+- analytic limits and residual checks for every retained ideal-MHD term,
+- radial, angular, harmonic, and boundary-condition convergence,
+- matched-basis AE3D frequency and eigenfunction parity,
+- STELLGAP global continuum/eigenmode parity where applicable,
+- CAS3D/CONTI ideal-MHD frequency and mode-family parity,
+- publication figures showing mode structures, residuals, convergence, and
+  code-to-code differences.
+
+Immediate next steps:
+
+1. Promote the current CTOK/STELLGAP and AE3D artifacts into a versioned
+   benchmark manifest with file hashes, conventions, expected metrics, and
+   local path discovery.
+2. Build a native FAX global parity driver that compares FAX modes to external
+   eigenfunctions rather than only re-solving external matrices.
+3. Add one additional non-CTOK stellarator geometry with literature or
+   cross-code global-mode data.
+
+#### RG-2 CAS3D/CAS3D-K/FAR3D Kinetic Growth-Rate Validation
+
+Goal: FAX energetic-particle drive/damping reproduces CAS3D-K and FAR3D
+growth rates, damping rates, thresholds, resonance localization, and trend
+directions on matched equilibria, distributions, and mode structures.
+
+Current status: planned/in progress. The reduced gyro-Landau closure API,
+sign gates, eigenfunction projection, and synthetic coefficient-recovery tests
+are implemented. Missing: real FAR3D/CAS3D-K growth-rate parity.
+
+Acceptance gates:
+
+- analytic resonance and sign checks,
+- FAR3D linear growth-rate parity on at least one stellarator and one tokamak
+  or reactor-relevant benchmark,
+- CAS3D-K perturbative growth-rate parity for matched mode structures,
+- distribution-function and resonance-width convergence,
+- held-out validation cases separate from calibration cases,
+- uncertainty estimates for calibrated growth-rate predictions.
+
+Immediate next steps:
+
+1. Define the FAR3D/CAS3D-K benchmark data schema.
+2. Create the first archived growth-rate fixture from FAR3D or literature.
+3. Add train/test calibration logic so fitted closure coefficients are not
+   validated on the same data that set them.
+
+#### RG-3 Fully Calibrated Fast-Ion Drive/Damping Replacement
+
+Goal: The FAX fast-ion model can replace kinetic-code calls within a declared
+domain of validity, with calibrated coefficients, cross-validation, uncertainty
+bands, and failure-mode diagnostics.
+
+Current status: in progress. Reduced resonance screens and gyro-Landau
+coefficient fitting exist, but they are not calibrated against real kinetic
+growth/damping references.
+
+Acceptance gates:
+
+- coefficient recovery on synthetic data,
+- calibration to real FAR3D/CAS3D-K cases,
+- held-out growth-rate prediction error below documented tolerance,
+- sign/threshold/localization parity,
+- sensitivity and UQ validation for fast-ion inputs,
+- docs that state domain of validity and failure modes.
+
+Immediate next steps:
+
+1. Add a `FastIonCalibrationDataset` schema with metadata, distribution
+   parameters, mode labels, growth rates, damping rates, and uncertainty.
+2. Add a calibration report workflow that writes train/test errors and plots.
+3. Add a validation gate that fails if held-out kinetic growth-rate parity is
+   missing for a claimed calibrated model.
+
+#### RG-4 End-To-End Differentiable VMEC/Boozer/FAX Optimization
+
+Goal: Actual VMEC boundary/profile variables differentiate through a
+controlled `vmec_jax` solve, `booz_xform_jax` transform, FAX operator,
+eigenvalue or growth-rate objective, and reviewer-grade finite-difference or
+adjoint checks.
+
+Current status: in progress. Builder-based Boozer objectives, live
+VMEC/Boozer adapter checks, VMEC solve-convergence ladders, and reduced
+parameter design demonstrations exist. Missing: gradients with respect to
+actual VMEC boundary/design variables through converged physics.
+
+Acceptance gates:
+
+- converged VMEC residual ladder,
+- Boozer transform truncation and quadrature convergence,
+- local/global FAX operator convergence,
+- isolated-mode and cluster objective gradient checks,
+- finite-difference versus JAX gradient agreement at VMEC input-variable level,
+- inverse-design example with post-optimization validation and cross-code
+  recheck.
+
+Immediate next steps:
+
+1. Select a small, stable VMEC boundary coefficient vector for the first design
+   study.
+2. Wrap a fixed-shape `vmec_jax -> booz_xform_jax -> FAX` builder that returns
+   a differentiable objective and all residual/convergence metadata.
+3. Add finite-difference checks for one isolated mode and one cluster-mean
+   objective.
+
+#### RG-5 Multi-Geometry Cross-Code Benchmark Suite
+
+Goal: FAX validation covers enough geometry and physics diversity to support
+broad stellarator reactor-design claims, not only one CTOK/STELLGAP fixture
+and one AE3D public matrix artifact.
+
+Current status: in progress. CTOK/STELLGAP and AE3D public artifacts are
+implemented; the benchmark-family CLI exists. Missing: a curated
+multi-geometry manifest, additional external-code cases, and runtime tables
+for matched physics.
+
+Acceptance gates:
+
+- benchmark manifest with hashes, sources, physics toggles, expected metrics,
+  and commands,
+- quasi-axisymmetric, quasi-helical, tokamak, heliotron/heliac, and
+  reactor-relevant cases,
+- convergence and parity figures for each case,
+- runtime comparisons with external-code status and hardware metadata,
+- no speed claim without a passing physics metric.
+
+Immediate next steps:
+
+1. Add `benchmark_manifest.json` and schema validation.
+2. Promote current CTOK and AE3D public artifacts into the manifest.
+3. Add at least one QH/heliotron-like geometry once trusted parity data are
+   available.
+
+#### RG-6 Final No-Proxy/No-Reduced-Model Release Gate
+
+Goal: Default FAX publication workflows use validated full-physics operators,
+and any optional reduced/screening model is explicitly labeled as such. No
+claim in README, docs, examples, or figures depends on an unvalidated proxy.
+
+Current status: blocked. This gate cannot pass until RG-1 through RG-5 are
+complete.
+
+Acceptance gates:
+
+- `fax maturity --json` reports all required milestones complete,
+- every default example is tied to full-physics validation or explicitly
+  labeled optional screening,
+- figure manifest and publication suite include claim level and validation
+  gate IDs for every panel,
+- docs contain no unsupported full-physics claims,
+- release checklist includes cross-code parity, kinetic validation,
+  differentiability validation, benchmark suite, and artifact hashes.
+
+Immediate next steps:
+
+1. Keep `fax maturity` reporting `not_complete` until all full-physics gates
+   pass.
+2. Add tests that fail if docs claim final no-proxy status prematurely.
+3. Move reduced models into explicitly labeled optional workflows once full
+   operators are available.
+
+### 2026-04-30 Full-Research-Grade Tracker Milestone
+
+Started implementing the full-research-grade roadmap by adding:
+
+- the machine-readable `fax.maturity` registry,
+- the `fax maturity` CLI command,
+- `docs/research_grade_roadmap.rst`,
+- the machine-readable `fax.benchmark_manifest` registry,
+- the `fax benchmark-manifest` CLI command,
+- `docs/benchmark_manifest.rst`.
+
+This does not close any physics parity gap by itself; it makes the remaining
+gaps explicit, testable, and visible to users and reviewers. The benchmark
+manifest now promotes the current CTOK/STELLGAP local-continuum/gap artifacts
+and AE3D public matrix/mode-shape artifacts into versioned manifest entries
+with claim levels, expected metrics, validation gate IDs, local paths, optional
+SHA-256 hashes, and the next parity step. The next coding lane is to use this
+manifest to drive native global parity comparisons rather than hard-coded
+local path checks.

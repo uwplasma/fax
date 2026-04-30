@@ -26,6 +26,20 @@ Run the current validation gates and write a validation report:
    fax validate examples/minimal.toml
    fax validate examples/minimal.toml --tag metric --json
 
+Inspect the remaining full-research-grade milestones:
+
+.. code-block:: bash
+
+   fax maturity
+   fax maturity --json
+
+Inspect the cross-code benchmark artifacts currently known to FAX:
+
+.. code-block:: bash
+
+   fax benchmark-manifest
+   fax benchmark-manifest --json --hashes
+
 Compute the current profile and metric continuum models and write branch/metric
 artifacts:
 

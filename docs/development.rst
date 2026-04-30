@@ -29,6 +29,20 @@ Inspect registered validation gates:
    for result in run_validation_suite():
        print(result.gate_id, result.status, result.metric, result.tolerance)
 
+Inspect full-research-grade blockers:
+
+.. code-block:: bash
+
+   fax maturity
+   fax maturity --json
+
+Inspect current external-code benchmark artifacts:
+
+.. code-block:: bash
+
+   fax benchmark-manifest
+   fax benchmark-manifest --json --hashes
+
 Local quality gate while GitHub Actions is unavailable:
 
 .. code-block:: bash

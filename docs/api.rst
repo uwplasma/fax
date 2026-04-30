@@ -7,6 +7,9 @@ API
 .. automodule:: fax.config
    :members:
 
+.. automodule:: fax.benchmark_manifest
+   :members:
+
 .. automodule:: fax.runner
    :members:
 
@@ -23,6 +26,9 @@ API
    :members:
 
 .. automodule:: fax.modes
+   :members:
+
+.. automodule:: fax.maturity
    :members:
 
 .. automodule:: fax.gaps

@@ -11,6 +11,13 @@ from .benchmarks import (
     run_named_benchmark_family,
     time_callable,
 )
+from .benchmark_manifest import (
+    BenchmarkArtifact,
+    BenchmarkManifestEntry,
+    benchmark_manifest_markdown,
+    benchmark_manifest_summary,
+    default_benchmark_manifest,
+)
 from .boozer import (
     BoozerGeometry,
     BoozerGeometryGrid,
@@ -113,6 +120,13 @@ from .metric import (
     metric_from_vmec_wout,
 )
 from .modes import ModeFamily
+from .maturity import (
+    ResearchGradeMilestone,
+    registered_research_grade_milestones,
+    research_grade_ready,
+    research_grade_report_markdown,
+    research_grade_summary,
+)
 from .optimization import (
     GradientDescentResult,
     LinearizedUncertaintyEstimate,
@@ -160,6 +174,8 @@ __all__ = [
     "Ae3dMatrixSummary",
     "Ae3dOmega2Data",
     "Ae3dResidualSummary",
+    "BenchmarkArtifact",
+    "BenchmarkManifestEntry",
     "BenchmarkRunSummary",
     "BenchmarkResult",
     "BenchmarkFamilyResult",
@@ -205,6 +221,7 @@ __all__ = [
     "RadialEigenmodeResult",
     "SparseRadialBlockEigenmodeResult",
     "ReferenceCase",
+    "ResearchGradeMilestone",
     "RunSummary",
     "StellgapContinuumData",
     "StellgapGapParity",
@@ -232,6 +249,9 @@ __all__ = [
     "load_global_eigenmode_artifacts",
     "load_config",
     "benchmark_environment",
+    "benchmark_manifest_markdown",
+    "benchmark_manifest_summary",
+    "default_benchmark_manifest",
     "known_benchmark_families",
     "process_max_rss_bytes",
     "plot_continuum_artifacts",
@@ -278,6 +298,10 @@ __all__ = [
     "run_convergence",
     "run_global_eigenmodes",
     "run_validation",
+    "registered_research_grade_milestones",
+    "research_grade_ready",
+    "research_grade_report_markdown",
+    "research_grade_summary",
     "boozer_pipeline_cluster_mean_avoidance_objective",
     "local_continuum_frequency_hz",
     "metric_continuum_matrices",

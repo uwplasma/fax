@@ -190,6 +190,10 @@ about 5.2e-8 for the checked public modes.
 Full traceability is in [validation](docs/validation.rst),
 [validation traceability](docs/validation_traceability.rst), and
 [publication results](docs/publication_results.rst).
+The remaining full-physics milestones are tracked by `fax maturity` and
+[the full research-grade roadmap](docs/research_grade_roadmap.rst).
+Current external-code artifacts are tracked by `fax benchmark-manifest` and
+[the benchmark manifest](docs/benchmark_manifest.rst).
 
 ## What Is New Relative To Legacy AE Codes
 

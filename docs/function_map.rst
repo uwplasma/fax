@@ -18,6 +18,16 @@ Configuration and CLI
    Contains CLI workflow helpers for continuum, global eigenmodes,
    convergence, validation, and benchmark commands.
 
+``fax.maturity``
+   Machine-readable full-research-grade milestone registry. The same data are
+   exposed through ``fax maturity`` and documented in
+   :doc:`research_grade_roadmap`.
+
+``fax.benchmark_manifest``
+   Machine-readable external-code artifact manifest. The same data are exposed
+   through ``fax benchmark-manifest`` and documented in
+   :doc:`benchmark_manifest`.
+
 Equilibrium Helpers
 -------------------
 

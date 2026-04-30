@@ -65,6 +65,22 @@ Run Validation Gates
    fax validate examples/minimal.toml --tag metric --json
    fax validate examples/minimal.toml --tag boozer --tag global
 
+Use ``fax maturity`` to inspect what still blocks final no-proxy/full-physics
+status:
+
+.. code-block:: bash
+
+   fax maturity
+   fax maturity --json
+
+Use ``fax benchmark-manifest`` to inspect which local STELLGAP/AE3D artifacts
+are known and hashable:
+
+.. code-block:: bash
+
+   fax benchmark-manifest
+   fax benchmark-manifest --json --hashes
+
 Use tags to focus on one layer while developing. Before pushing or making a
 publication figure, run the full local suite described in :doc:`development`.
 

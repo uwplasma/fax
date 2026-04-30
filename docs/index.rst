@@ -33,6 +33,8 @@ claim levels, :doc:`equations` for the implemented models, and
    demonstrations
    research_examples
    publication_results
+   research_grade_roadmap
+   benchmark_manifest
    figures
    validation
    validation_traceability

@@ -103,6 +103,23 @@ output_dir = "{output_dir}"
     assert (output_dir / "validation_report.md").exists()
 
 
+def test_cli_maturity_json_reports_not_complete(capsys):
+    assert main(["maturity", "--json"]) == 0
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["status"] == "not_complete"
+    assert payload["ready"] is False
+    ids = {milestone["milestone_id"] for milestone in payload["milestones"]}
+    assert "native_3d_ideal_mhd_parity" in ids
+
+
+def test_cli_benchmark_manifest_json_reports_current_cases(capsys):
+    assert main(["benchmark-manifest", "--json"]) == 0
+    payload = json.loads(capsys.readouterr().out)
+    ids = {entry["benchmark_id"] for entry in payload["entries"]}
+    assert "stellgap_ctok_local_continuum_gap" in ids
+    assert "ae3d_public_matrix_mode_shape" in ids
+
+
 def test_cli_validate_default_prints_progress(tmp_path, capsys):
     config_path = tmp_path / "case.toml"
     config_path.write_text("[run]\ncase = \"validate_progress\"\n", encoding="utf-8")
