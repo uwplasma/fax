@@ -9,16 +9,18 @@ import sys
 from . import __version__
 from .benchmarks import known_benchmark_families
 from .config import ConfigError, FaxConfig, load_config
-from .plotting import plot_continuum_artifacts, plot_convergence_artifacts
+from .plotting import plot_continuum_artifacts, plot_convergence_artifacts, plot_global_eigenmode_artifacts
 from .runner import run
 from .workflows import (
     BenchmarkRunSummary,
     ContinuumRunSummary,
     ConvergenceRunSummary,
+    GlobalEigenmodeRunSummary,
     ValidationRunSummary,
     run_benchmark,
     run_continuum,
     run_convergence,
+    run_global_eigenmodes,
     run_validation,
 )
 
@@ -59,7 +61,7 @@ def build_parser() -> argparse.ArgumentParser:
         prog="fax",
         description=(
             "Run or inspect differentiable Alfvén eigenmode calculations from a TOML file. "
-            "Subcommands: validate, continuum, convergence, benchmark, plot-continuum, plot-convergence."
+            "Subcommands: validate, continuum, eigenmodes, convergence, benchmark, plot-continuum, plot-global, plot-convergence."
         ),
     )
     parser.add_argument("config", nargs="?", help="Path to a fax TOML configuration file.")
@@ -93,6 +95,13 @@ def build_command_parser() -> argparse.ArgumentParser:
     continuum.add_argument("--json", action="store_true", help="Print only summary JSON; disables rich progress output.")
     continuum.add_argument("--quiet", action="store_true", help="Suppress rich progress output and print only summary JSON.")
     continuum.add_argument("--no-artifacts", action="store_true", help="Do not write continuum artifact files.")
+
+    eigenmodes = subparsers.add_parser("eigenmodes", help="Compute global radial eigenmodes and mode structures.")
+    eigenmodes.add_argument("config", help="Path to a fax TOML configuration file.")
+    eigenmodes.add_argument("--max-modes", type=int, default=8, help="Number of lowest modes to report in artifacts.")
+    eigenmodes.add_argument("--json", action="store_true", help="Print only summary JSON; disables rich progress output.")
+    eigenmodes.add_argument("--quiet", action="store_true", help="Suppress rich progress output and print only summary JSON.")
+    eigenmodes.add_argument("--no-artifacts", action="store_true", help="Do not write global eigenmode artifact files.")
 
     convergence = subparsers.add_parser("convergence", help="Run radial/angular/Fourier convergence sweeps.")
     convergence.add_argument("config", help="Path to a fax TOML configuration file.")
@@ -173,6 +182,28 @@ def build_command_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Suppress plain progress output and print generated paths as JSON.",
     )
+
+    plot_global = subparsers.add_parser("plot-global", help="Plot artifacts written by fax eigenmodes.")
+    plot_global.add_argument(
+        "artifact_dir",
+        help="Directory containing global_eigenmode_summary.json and global_mode_structures.csv.",
+    )
+    plot_global.add_argument("--output-dir", help="Directory for generated figures; defaults to artifact_dir.")
+    plot_global.add_argument("--stem", default="global_eigenmode_dashboard", help="Output figure filename stem.")
+    plot_global.add_argument("--max-modes", type=int, default=4, help="Number of radial envelopes to overlay.")
+    plot_global.add_argument(
+        "--format",
+        action="append",
+        default=[],
+        choices=("svg", "png", "pdf"),
+        help="Output format; may be repeated. Defaults to svg and png.",
+    )
+    plot_global.add_argument("--json", action="store_true", help="Print generated paths as JSON.")
+    plot_global.add_argument(
+        "--quiet",
+        action="store_true",
+        help="Suppress plain progress output and print generated paths as JSON.",
+    )
     return parser
 
 
@@ -182,9 +213,11 @@ def main(argv: list[str] | None = None) -> int:
     if argv_list and argv_list[0] in {
         "validate",
         "continuum",
+        "eigenmodes",
         "convergence",
         "benchmark",
         "plot-continuum",
+        "plot-global",
         "plot-convergence",
     }:
         return _main_command(argv_list)
@@ -228,6 +261,8 @@ def _main_command(argv: list[str]) -> int:
         return _main_plot_continuum(args)
     if args.command == "plot-convergence":
         return _main_plot_convergence(args)
+    if args.command == "plot-global":
+        return _main_plot_global(args)
 
     try:
         config = load_config(args.config)
@@ -237,7 +272,7 @@ def _main_command(argv: list[str]) -> int:
 
     machine_readable = bool(args.json or args.quiet)
     try:
-        summary: ValidationRunSummary | ContinuumRunSummary | ConvergenceRunSummary | BenchmarkRunSummary
+        summary: ValidationRunSummary | ContinuumRunSummary | GlobalEigenmodeRunSummary | ConvergenceRunSummary | BenchmarkRunSummary
         if args.command == "validate":
             summary = run_validation(
                 config,
@@ -250,6 +285,13 @@ def _main_command(argv: list[str]) -> int:
                 config,
                 progress=not machine_readable,
                 write_artifacts=not args.no_artifacts,
+            )
+        elif args.command == "eigenmodes":
+            summary = run_global_eigenmodes(
+                config,
+                progress=not machine_readable,
+                write_artifacts=not args.no_artifacts,
+                max_modes=args.max_modes,
             )
         elif args.command == "convergence":
             summary = run_convergence(
@@ -323,6 +365,31 @@ def _main_plot_convergence(args: argparse.Namespace) -> int:
         print(json.dumps(payload, indent=2, sort_keys=True))
     else:
         print("FAX convergence artifact figures:")
+        for path in paths:
+            print(f"  {path}")
+    return 0
+
+
+def _main_plot_global(args: argparse.Namespace) -> int:
+    machine_readable = bool(args.json or args.quiet)
+    formats = tuple(args.format) if args.format else ("svg", "png")
+    try:
+        paths = plot_global_eigenmode_artifacts(
+            args.artifact_dir,
+            output_dir=args.output_dir,
+            stem=args.stem,
+            formats=formats,
+            max_modes=args.max_modes,
+        )
+    except (ImportError, FileNotFoundError, OSError, ValueError) as exc:
+        print(f"fax: {exc}", file=sys.stderr)
+        return 2
+
+    payload = {"status": "completed", "figures": [str(path) for path in paths]}
+    if machine_readable:
+        print(json.dumps(payload, indent=2, sort_keys=True))
+    else:
+        print("FAX global eigenmode artifact figures:")
         for path in paths:
             print(f"  {path}")
     return 0

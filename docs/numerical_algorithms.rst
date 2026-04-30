@@ -114,6 +114,23 @@ JAX-differentiable production path. Its purpose is:
 The sparse solver reports frequencies, eigenvectors, mode structures,
 residuals, and the matrix handles used for verification.
 
+Global Workflow Artifacts
+-------------------------
+
+``run_global_eigenmodes`` is the TOML-facing orchestration layer around these
+operators. For analytic or VMEC-profile cases it builds
+``RadialEigenmodeProblem`` from the selected primary ``(m,n)`` harmonic and
+fills boundary amplitudes with the Dirichlet value. For ``boozmn`` cases it
+builds ``RadialBlockEigenmodeProblem`` with real Boozer local matrices and the
+metric-derived radial stiffness. The workflow writes:
+
+* sorted ``omega^2`` values, frequencies, and residuals,
+* ``(mode, surface, harmonic)`` amplitudes with real, imaginary, and magnitude
+  columns,
+* JSON metrics for residuals, radial-envelope maxima, and harmonic power
+  fractions,
+* enough geometry and mode-family metadata to reproduce the run.
+
 Matrix-Free Kernels
 -------------------
 

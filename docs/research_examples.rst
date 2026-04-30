@@ -27,6 +27,11 @@ Configuration Examples
    VMEC-backed Landreman-Paul QA low-resolution target. This requires the
    neighboring ``vmec_jax`` checkout data path documented in the README.
 
+``examples/global_eigenmodes.toml``
+   Small TOML-driven global radial eigenmode case. Use it to test
+   ``fax eigenmodes`` and ``fax plot-global`` without requiring external
+   Boozer or VMEC artifacts.
+
 Validation Packet
 -----------------
 
@@ -188,6 +193,29 @@ matrices, assembles the global radial block eigenproblem with Dirichlet radial
 boundaries, writes radial-envelope/harmonic-structure figures, and prints
 frequencies plus residuals as JSON. Use ``--boozmn path/to/boozmn.nc`` for a
 new geometry.
+
+TOML-Driven Global Eigenmodes
+-----------------------------
+
+Run:
+
+.. code-block:: bash
+
+   fax eigenmodes examples/global_eigenmodes.toml
+   fax plot-global outputs/global_eigenmodes/eigenmodes --output-dir outputs/global_eigenmodes/figures
+
+The first command writes frequencies, generalized-eigen residuals, and
+``(mode, surface, harmonic)`` mode structures. The second command turns those
+artifacts into a publication-draft dashboard. To run a real-Boozer global
+operator through the same workflow, set ``equilibrium.boozmn`` in the TOML
+file.
+
+.. figure:: _static/global_eigenmode_artifact_dashboard.svg
+   :alt: Global eigenmode artifact dashboard generated from the TOML workflow.
+
+   TOML-driven global eigenmode artifact dashboard: frequencies, residuals,
+   radial envelope norms, and harmonic content from the public
+   ``fax eigenmodes``/``fax plot-global`` workflow.
 
 Real ``boozmn`` Differentiable Design Study
 -------------------------------------------

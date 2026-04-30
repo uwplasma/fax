@@ -146,6 +146,42 @@ field_periods = 1
     assert len(branches.read_text(encoding="utf-8").splitlines()) == 13
 
 
+def test_cli_eigenmodes_json_writes_global_artifacts(tmp_path, capsys):
+    output_dir = tmp_path / "global_outputs"
+    config_path = tmp_path / "case.toml"
+    config_path.write_text(
+        f"""
+[run]
+case = "global_cli"
+model = "global_eigenmode"
+output_dir = "{output_dir}"
+
+[equilibrium]
+source = "analytic"
+
+[grid]
+radial_points = 12
+m_max = 2
+n_max = 1
+field_periods = 1
+""",
+        encoding="utf-8",
+    )
+
+    assert main(["eigenmodes", str(config_path), "--max-modes", "5", "--json"]) == 0
+    payload = json.loads(capsys.readouterr().out)
+    artifact_dir = output_dir / "eigenmodes"
+    assert payload["case"] == "global_cli"
+    assert payload["status"] == "completed"
+    assert payload["operator"] == "profile_radial_envelope"
+    assert payload["reported_mode_count"] == 5
+    assert payload["residual_p95"] < 1.0e-5
+    assert (artifact_dir / "global_eigenmode_summary.json").exists()
+    assert (artifact_dir / "global_eigenmodes.csv").exists()
+    assert (artifact_dir / "global_mode_structures.csv").exists()
+    assert len((artifact_dir / "global_eigenmodes.csv").read_text(encoding="utf-8").splitlines()) == 6
+
+
 def test_cli_convergence_json_writes_artifacts(tmp_path, capsys):
     output_dir = tmp_path / "convergence_outputs"
     config_path = tmp_path / "case.toml"

@@ -32,6 +32,17 @@ class ConvergenceArtifacts:
     metrics: dict[str, np.ndarray]
 
 
+@dataclass(frozen=True)
+class GlobalEigenmodeArtifacts:
+    """Loaded files produced by ``fax eigenmodes``."""
+
+    artifact_dir: Path
+    summary: dict[str, Any]
+    metrics: dict[str, Any]
+    modes: dict[str, np.ndarray]
+    structures: dict[str, np.ndarray]
+
+
 def load_continuum_artifacts(artifact_dir: str | Path) -> ContinuumArtifacts:
     """Load ``fax continuum`` JSON/CSV artifacts from a directory."""
     root = Path(artifact_dir).expanduser().resolve()
@@ -60,6 +71,30 @@ def load_convergence_artifacts(artifact_dir: str | Path) -> ConvergenceArtifacts
     summary = json.loads(summary_path.read_text(encoding="utf-8"))
     metrics = _read_numeric_csv(metrics_path)
     return ConvergenceArtifacts(artifact_dir=root, summary=summary, metrics=metrics)
+
+
+def load_global_eigenmode_artifacts(artifact_dir: str | Path) -> GlobalEigenmodeArtifacts:
+    """Load ``fax eigenmodes`` JSON/CSV artifacts from a directory."""
+    root = Path(artifact_dir).expanduser().resolve()
+    summary_path = root / "global_eigenmode_summary.json"
+    metrics_path = root / "global_eigenmode_metrics.json"
+    modes_path = root / "global_eigenmodes.csv"
+    structures_path = root / "global_mode_structures.csv"
+    missing = [str(path) for path in (summary_path, metrics_path, modes_path, structures_path) if not path.exists()]
+    if missing:
+        raise FileNotFoundError(f"missing global eigenmode artifact file(s): {', '.join(missing)}")
+
+    summary = json.loads(summary_path.read_text(encoding="utf-8"))
+    metrics = json.loads(metrics_path.read_text(encoding="utf-8"))
+    modes = _read_numeric_csv(modes_path)
+    structures = _read_numeric_csv(structures_path)
+    return GlobalEigenmodeArtifacts(
+        artifact_dir=root,
+        summary=summary,
+        metrics=metrics,
+        modes=modes,
+        structures=structures,
+    )
 
 
 def plot_continuum_artifacts(
@@ -122,6 +157,66 @@ def plot_continuum_artifacts(
     residual = artifacts.summary.get("metric_residual_p95")
     residual_text = "" if residual is None else f" | residual p95={float(residual):.2e}"
     fig.suptitle(f"{case}: continuum artifact dashboard{residual_text}", fontsize=12, weight="bold")
+
+    paths = _save_figure(fig, output_path, stem, formats=formats)
+    plt.close(fig)
+    return paths
+
+
+def plot_global_eigenmode_artifacts(
+    artifact_dir: str | Path,
+    *,
+    output_dir: str | Path | None = None,
+    stem: str = "global_eigenmode_dashboard",
+    formats: tuple[str, ...] = ("svg", "png"),
+    max_modes: int = 4,
+) -> tuple[Path, ...]:
+    """Plot frequency, residual, radial-envelope, and harmonic-content artifacts."""
+    artifacts = load_global_eigenmode_artifacts(artifact_dir)
+    output_path = Path(output_dir).expanduser().resolve() if output_dir is not None else artifacts.artifact_dir
+    output_path.mkdir(parents=True, exist_ok=True)
+    plt = _setup_matplotlib()
+
+    modes = artifacts.modes
+    structures = artifacts.structures
+    required_mode_columns = {"mode_index", "frequency_hz", "residual"}
+    required_structure_columns = {"mode_index", "s", "harmonic_index", "m", "n", "amplitude_abs"}
+    if not required_mode_columns.issubset(modes) or not required_structure_columns.issubset(structures):
+        raise ValueError("global eigenmode artifacts are missing required mode/structure columns")
+
+    mode_indices = np.asarray(modes["mode_index"], dtype=int)
+    frequencies_khz = np.asarray(modes["frequency_hz"], dtype=float) / 1.0e3
+    residuals = np.asarray(modes["residual"], dtype=float)
+    selected_modes = mode_indices[: max(1, int(max_modes))]
+    s_values, envelopes = _global_envelopes(structures, selected_modes)
+    harmonic_labels, harmonic_fraction = _global_harmonic_fraction(structures, int(selected_modes[0]))
+
+    fig, axes = plt.subplots(1, 3, figsize=(12.4, 3.7), constrained_layout=True)
+    axes[0].plot(mode_indices + 1, frequencies_khz, marker="o", linewidth=1.4, color="#2458a6")
+    axes[0].set_title("global eigenfrequencies")
+    axes[0].set_xlabel("mode index")
+    axes[0].set_ylabel("frequency [kHz]")
+    twin = axes[0].twinx()
+    twin.semilogy(mode_indices + 1, [_positive_plot_value(value) for value in residuals], marker="s", linewidth=1.0, color="#b13f2a")
+    twin.set_ylabel("relative residual")
+
+    for local_index, mode_index in enumerate(selected_modes):
+        axes[1].plot(s_values, envelopes[local_index], linewidth=1.4, label=f"mode {int(mode_index) + 1}")
+    axes[1].set_title("radial envelope norms")
+    axes[1].set_xlabel("normalized toroidal flux s")
+    axes[1].set_ylabel(r"$\sqrt{\sum_h |\xi_h|^2}$")
+    axes[1].legend(loc="best", fontsize=7)
+
+    axes[2].bar(harmonic_labels, harmonic_fraction, color="#2e7d32")
+    axes[2].set_title("first-mode harmonic content")
+    axes[2].set_ylabel("power fraction")
+    axes[2].set_ylim(0.0, 1.05)
+    axes[2].tick_params(axis="x", rotation=25)
+
+    operator = artifacts.summary.get("operator", "unknown operator")
+    residual_p95 = artifacts.summary.get("residual_p95")
+    residual_text = "" if residual_p95 is None else f" | residual p95={float(residual_p95):.2e}"
+    fig.suptitle(f"{artifacts.summary.get('case', 'unknown case')}: {operator}{residual_text}", fontsize=12, weight="bold")
 
     paths = _save_figure(fig, output_path, stem, formats=formats)
     plt.close(fig)
@@ -341,6 +436,40 @@ def _select_records(records: list[dict[str, float]], **criteria: int) -> list[di
             int(item.get("branch_count", 0)),
         ),
     )
+
+
+def _global_envelopes(structures: dict[str, np.ndarray], selected_modes: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+    s_all = np.asarray(structures["s"], dtype=float)
+    unique_s = np.asarray(sorted(set(float(value) for value in s_all)), dtype=float)
+    envelopes = np.zeros((len(selected_modes), unique_s.shape[0]), dtype=float)
+    radial_lookup = {float(value): index for index, value in enumerate(unique_s)}
+    mode_array = np.asarray(structures["mode_index"], dtype=int)
+    amplitude = np.asarray(structures["amplitude_abs"], dtype=float)
+    for local_mode_index, mode_index in enumerate(selected_modes):
+        mask = mode_array == int(mode_index)
+        for surface, value in zip(s_all[mask], amplitude[mask], strict=True):
+            envelopes[local_mode_index, radial_lookup[float(surface)]] += float(value) ** 2
+    return unique_s, np.sqrt(envelopes)
+
+
+def _global_harmonic_fraction(structures: dict[str, np.ndarray], mode_index: int) -> tuple[list[str], np.ndarray]:
+    mode_array = np.asarray(structures["mode_index"], dtype=int)
+    harmonic_array = np.asarray(structures["harmonic_index"], dtype=int)
+    m_array = np.asarray(structures["m"], dtype=int)
+    n_array = np.asarray(structures["n"], dtype=int)
+    amplitude = np.asarray(structures["amplitude_abs"], dtype=float)
+    mask = mode_array == int(mode_index)
+    harmonic_ids = np.asarray(sorted(set(int(value) for value in harmonic_array[mask])), dtype=int)
+    powers = []
+    labels: list[str] = []
+    for harmonic_id in harmonic_ids:
+        harmonic_mask = mask & (harmonic_array == harmonic_id)
+        powers.append(float(np.sum(amplitude[harmonic_mask] ** 2)))
+        first_index = int(np.flatnonzero(harmonic_mask)[0])
+        labels.append(f"({int(m_array[first_index])},{int(n_array[first_index])})")
+    power_array = np.asarray(powers, dtype=float)
+    denominator = max(float(np.sum(power_array)), 1.0e-30)
+    return labels, power_array / denominator
 
 
 def _plot_metric_curve(

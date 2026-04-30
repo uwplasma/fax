@@ -101,6 +101,12 @@ Block radial Boozer model
    are validated. Dense, sparse, and matrix-free application paths share the
    same finite-difference energy.
 
+TOML-driven global workflow
+   ``fax eigenmodes`` now exposes the scalar and real-Boozer global radial
+   paths through the same artifact workflow used by reviewers: JSON summaries,
+   eigenfrequency CSV files, mode-structure CSV files, and plotted dashboards.
+   This is the recommended user path before writing custom Python analysis.
+
 Sparse and matrix-free paths
    ``assemble_radial_block_sparse_matrices`` and
    ``solve_radial_block_eigenmodes_sparse`` are non-differentiable scale-up

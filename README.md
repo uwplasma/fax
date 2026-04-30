@@ -288,6 +288,13 @@ This figure is generated from files written by `fax continuum`: the branch CSV,
 summary JSON, and metrics JSON. It checks that user-facing artifacts are
 plot-ready and carry the same branch/gap information used by the docs.
 
+![Global eigenmode artifact dashboard](docs/_static/global_eigenmode_artifact_dashboard.png)
+
+This figure is generated from files written by `fax eigenmodes`: reported
+global eigenfrequencies, generalized-eigen residuals, radial envelope norms,
+and harmonic content. It validates the user-facing artifact path for global
+mode studies before users move to real-Boozer cases.
+
 ![Metric residual and convergence checks](docs/_static/metric_residual_convergence.png)
 
 This figure checks the first metric-matrix scaffold: diagonal frequencies
@@ -381,6 +388,8 @@ fax examples/landreman_paul_qa_lowres.toml --dry-run
 fax validate examples/minimal.toml --tag analytic
 fax continuum examples/landreman_paul_qa_lowres.toml
 fax plot-continuum outputs/landreman_paul_qa_lowres --output-dir outputs/landreman_paul_qa_lowres/figures
+fax eigenmodes examples/global_eigenmodes.toml
+fax plot-global outputs/global_eigenmodes/eigenmodes --output-dir outputs/global_eigenmodes/figures
 fax convergence examples/landreman_paul_qa_lowres.toml --radial-points 24 --radial-points 40
 fax plot-convergence outputs/landreman_paul_qa_lowres/convergence --output-dir outputs/landreman_paul_qa_lowres/figures
 fax benchmark examples/landreman_paul_qa_lowres.toml --repeats 3
@@ -404,6 +413,10 @@ what the code is doing so long runs do not look silent.
 continuum scaffold, then writes `continuum_summary.json`,
 `continuum_metrics.json`, and `continuum_branches.csv`. `fax plot-continuum`
 turns those continuum artifacts into SVG/PNG dashboard figures.
+`fax eigenmodes` runs the global radial eigenmode workflow and writes
+frequencies, residuals, and `(mode, surface, harmonic)` mode-structure
+artifacts under `run.output_dir/eigenmodes`. `fax plot-global` turns those
+mode artifacts into frequency/residual/envelope/harmonic-content dashboards.
 `fax convergence` sweeps radial resolution, angular resolution, and Fourier
 truncation, then writes a CSV/Markdown/JSON convergence report.
 `fax plot-convergence` turns those reports into radial/angular/Fourier
@@ -420,6 +433,8 @@ fax examples/minimal.toml --dry-run --json
 fax validate examples/minimal.toml --tag metric --json
 fax continuum examples/minimal.toml --json
 fax plot-continuum outputs --json
+fax eigenmodes examples/global_eigenmodes.toml --max-modes 6 --json
+fax plot-global outputs/global_eigenmodes/eigenmodes --json
 fax convergence examples/minimal.toml --radial-points 32 --radial-points 64 --json
 fax plot-convergence outputs/convergence --json
 fax benchmark examples/minimal.toml --repeats 1 --warmups 0 --json
@@ -494,6 +509,7 @@ Current figures:
 - `stellgap_ctok_comparison.svg`: public ORNL STELLGAP CTOK continuum comparison against FAX local 3-D Boozer branches.
 - `external_code_artifact_dashboard.svg`: STELLGAP/AE3D public artifact post-processing, eigenvalue-convention, matrix-symmetry, and residual checks.
 - `continuum_artifact_dashboard.svg`: dashboard generated from `fax continuum` artifacts.
+- `global_eigenmode_artifact_dashboard.svg`: dashboard generated from `fax eigenmodes` artifacts.
 - `metric_residual_convergence.svg`: metric-matrix residual and angular-grid check.
 - `landreman_paul_convergence_dashboard.svg`: VMEC-backed radial/angular/Fourier convergence smoke-test dashboard.
 - `vmec_boozer_bridge_convergence.svg`: live `vmec_jax -> booz_xform_jax -> FAX` Boozer truncation convergence smoke-test dashboard.
@@ -589,6 +605,9 @@ It currently establishes:
 - a global radial 3-D Boozer block eigenmode operator with radial envelopes,
   harmonic mode structures, residual diagnostics, and analytic constant-limit
   gates,
+- a TOML-driven `fax eigenmodes` workflow plus `fax plot-global` artifact
+  dashboard for global eigenfrequencies, residuals, envelopes, and harmonic
+  content,
 - metric-derived Boozer radial stiffness, Dirichlet/Neumann block boundary
   gates, isolated generalized-eigenvalue adjoint/custom-JVP sensitivity checks,
   real-Boozer isolated-mode custom-JVP design-gradient checks, degenerate

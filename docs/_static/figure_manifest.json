@@ -969,6 +969,18 @@
       "claim": "Development figure generated from analytic/local continuum formulas; not a full 3-D stellarator Alfvén-continuum validation."
     },
     {
+      "file": "global_eigenmode_artifact_dashboard.svg",
+      "format": "svg",
+      "status": "smoke-test",
+      "claim": "Development figure generated from analytic/local continuum formulas; not a full 3-D stellarator Alfvén-continuum validation."
+    },
+    {
+      "file": "global_eigenmode_artifact_dashboard.png",
+      "format": "png",
+      "status": "smoke-test",
+      "claim": "Development figure generated from analytic/local continuum formulas; not a full 3-D stellarator Alfvén-continuum validation."
+    },
+    {
       "file": "metric_residual_convergence.svg",
       "format": "svg",
       "status": "smoke-test",

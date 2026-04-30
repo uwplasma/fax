@@ -39,6 +39,18 @@ The CLI uses ``[run] output_dir`` for durable local artifacts:
    Reads the continuum JSON/CSV artifacts and writes publication-draft SVG/PNG
    dashboard figures.
 
+``fax eigenmodes case.toml``
+   Writes ``eigenmodes/global_eigenmode_summary.json``,
+   ``eigenmodes/global_eigenmode_metrics.json``,
+   ``eigenmodes/global_eigenmodes.csv``, and
+   ``eigenmodes/global_mode_structures.csv``. Analytic and VMEC-``wout``
+   configurations run the scalar radial envelope operator; configurations with
+   ``equilibrium.boozmn`` run the real-Boozer radial block operator.
+
+``fax plot-global artifact_dir``
+   Reads ``fax eigenmodes`` artifacts and writes a dashboard with frequencies,
+   residuals, radial envelope norms, and first-mode harmonic content.
+
 ``fax convergence case.toml``
    Writes ``convergence/convergence_summary.json``,
    ``convergence/convergence_metrics.csv``, and

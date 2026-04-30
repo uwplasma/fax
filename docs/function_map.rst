@@ -15,8 +15,8 @@ Configuration and CLI
    Execute the high-level run path for a parsed config.
 
 ``fax.workflows``
-   Contains CLI workflow helpers for continuum, convergence, validation, and
-   benchmark commands.
+   Contains CLI workflow helpers for continuum, global eigenmodes,
+   convergence, validation, and benchmark commands.
 
 Equilibrium Helpers
 -------------------
@@ -121,6 +121,10 @@ Global Modes
 ``solve_radial_block_eigenmodes_sparse``
    SciPy sparse/Krylov reference solver for larger block problems.
 
+``run_global_eigenmodes``
+   TOML-driven workflow that writes global eigenfrequency and mode-structure
+   artifacts for scalar profile or real-Boozer radial block operators.
+
 ``radial_block_stiffness_matvec`` and ``radial_block_mass_matvec``
    JAX-native matrix-free operator application.
 
@@ -211,6 +215,10 @@ Validation, Figures, and Benchmarks
 
 ``plot_basic_alfven_gap_map``
    Plot the fast BAE/TAE/EAE example.
+
+``plot_global_eigenmode_artifacts``
+   Plot ``fax eigenmodes`` frequency, residual, envelope, and harmonic-content
+   artifacts.
 
 ``run_named_benchmark_family``
    Run a named benchmark family and return structured runtime data.

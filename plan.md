@@ -1250,6 +1250,11 @@ Needed docs:
     - Added tests for cluster-mean objective gradients against centered finite differences and callable Boozer-builder differentiation.
     - Added registered gate `boozer_global_cluster_mean_design_gradient`.
     - Expanded ReadTheDocs with model inventory, numerical algorithms, validation traceability, user workflows, and function-map pages covering functionality, inputs/outputs, equations, algorithms, tests, plots, and current claim boundaries.
+  - 2026-04-29 global eigenmode CLI/artifact milestone:
+    - Added `run_global_eigenmodes` as the TOML-facing workflow for scalar profile radial modes and real-`boozmn` Boozer radial block modes.
+    - Added `fax eigenmodes` and `fax plot-global` so users can generate global eigenfrequencies, residuals, mode-structure CSV files, JSON metrics, and publication-draft dashboards without writing Python.
+    - Added `examples/global_eigenmodes.toml`, public plotting/load helpers, CLI/plot tests, and docs/README coverage for the new workflow.
+    - Added `global_eigenmode_artifact_dashboard` to the generated docs figure set and figure manifest.
 
 ### Local Testing Policy Until GitHub Actions Resume
 

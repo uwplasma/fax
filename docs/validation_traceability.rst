@@ -167,9 +167,9 @@ A reviewer-proof run packet should include:
 * figure manifest,
 * exact commands used to regenerate results.
 
-The CLI already writes JSON and Markdown reports for validation, convergence,
-benchmark, and continuum workflows. Publication examples should archive these
-reports alongside plots.
+The CLI already writes JSON/CSV/Markdown reports for validation, convergence,
+benchmark, continuum, and global-eigenmode workflows. Publication examples
+should archive these reports alongside plots.
 
 Claim Levels
 ------------

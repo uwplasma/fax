@@ -34,6 +34,8 @@ Initial research scaffold release for FAX.
   - `fax validate`
   - `fax continuum`
   - `fax plot-continuum`
+  - `fax eigenmodes`
+  - `fax plot-global`
   - `fax convergence`
   - `fax plot-convergence`
   - `fax benchmark`

@@ -83,11 +83,14 @@ from .optimization import (
 from .plotting import (
     ContinuumArtifacts,
     ConvergenceArtifacts,
+    GlobalEigenmodeArtifacts,
     load_continuum_artifacts,
     load_convergence_artifacts,
+    load_global_eigenmode_artifacts,
     plot_basic_alfven_gap_map,
     plot_continuum_artifacts,
     plot_convergence_artifacts,
+    plot_global_eigenmode_artifacts,
 )
 from .reference_cases import ReferenceCase, landreman_paul_qa_lowres
 from .runner import RunSummary, run
@@ -95,10 +98,12 @@ from .workflows import (
     BenchmarkRunSummary,
     ContinuumRunSummary,
     ConvergenceRunSummary,
+    GlobalEigenmodeRunSummary,
     ValidationRunSummary,
     run_benchmark,
     run_continuum,
     run_convergence,
+    run_global_eigenmodes,
     run_validation,
 )
 
@@ -128,6 +133,8 @@ __all__ = [
     "FastIonModeDriveResult",
     "GradientDescentResult",
     "GeneralizedEigenclusterSensitivity",
+    "GlobalEigenmodeArtifacts",
+    "GlobalEigenmodeRunSummary",
     "LinearizedUncertaintyEstimate",
     "MetricGeometry",
     "generalized_hermitian_cluster_mean_eigenvalue",
@@ -155,6 +162,7 @@ __all__ = [
     "landreman_paul_qa_lowres",
     "load_continuum_artifacts",
     "load_convergence_artifacts",
+    "load_global_eigenmode_artifacts",
     "load_config",
     "benchmark_environment",
     "known_benchmark_families",
@@ -162,6 +170,7 @@ __all__ = [
     "plot_continuum_artifacts",
     "plot_basic_alfven_gap_map",
     "plot_convergence_artifacts",
+    "plot_global_eigenmode_artifacts",
     "boozer_global_cluster_mean_avoidance_objective",
     "boozer_global_cluster_mean_frequency_hz",
     "boozer_global_cluster_mean_omega2",
@@ -186,6 +195,7 @@ __all__ = [
     "run_vmec_jax_fixed_boundary_wout_data",
     "run_continuum",
     "run_convergence",
+    "run_global_eigenmodes",
     "run_validation",
     "boozer_pipeline_cluster_mean_avoidance_objective",
     "solve_radial_block_eigenmodes_sparse",

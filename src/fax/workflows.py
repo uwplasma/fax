@@ -21,10 +21,19 @@ from .benchmarks import (
     run_named_benchmark_family,
     time_callable,
 )
-from .config import FaxConfig
+from .boozer import read_boozmn_geometry
+from .config import ConfigError, FaxConfig
 from .continuum import continuum_branch_matrix
 from .equilibrium import EquilibriumGeometry, analytic_circular_tokamak, from_vmec_wout
 from .gaps import ContinuumGapSummary, minimum_gap_summary
+from .global_modes import (
+    RadialBlockEigenmodeProblem,
+    radial_block_problem_from_boozer_geometry,
+    radial_problem_from_equilibrium,
+    solve_radial_block_eigenmodes,
+    solve_radial_block_eigenmodes_sparse,
+    solve_radial_eigenmodes,
+)
 from .metric import (
     MetricGeometry,
     diagonal_continuum_frequencies_hz,
@@ -116,6 +125,37 @@ class ConvergenceRunSummary:
     max_frequency_l2_error: float
     max_residual_p95: float
     records: list[dict[str, Any]]
+
+    def to_dict(self) -> dict[str, Any]:
+        """Return a strict JSON-serializable representation."""
+        return _json_safe(asdict(self))
+
+
+@dataclass(frozen=True)
+class GlobalEigenmodeRunSummary:
+    """Serializable summary for ``fax eigenmodes`` global radial solves."""
+
+    case: str
+    model: str
+    status: str
+    message: str
+    config: dict[str, Any]
+    elapsed_seconds: float
+    phases: list[dict[str, Any]]
+    output_dir: str | None
+    artifacts: dict[str, str]
+    geometry: dict[str, Any]
+    mode_family: dict[str, Any]
+    operator: str
+    radial_points: int
+    harmonic_count: int
+    boundary_condition: str
+    eigensolver: str
+    reported_mode_count: int
+    min_frequency_hz: float
+    max_frequency_hz: float
+    residual_max: float
+    residual_p95: float
 
     def to_dict(self) -> dict[str, Any]:
         """Return a strict JSON-serializable representation."""
@@ -477,6 +517,220 @@ def run_convergence(
         _write_convergence_csv(Path(artifacts["metrics_csv"]), records)
         _write_json(Path(artifacts["summary_json"]), summary.to_dict())
         Path(artifacts["report_markdown"]).write_text(_convergence_report_markdown(summary), encoding="utf-8")
+    reporter.summary(summary)
+    return summary
+
+
+def run_global_eigenmodes(
+    config: FaxConfig,
+    *,
+    progress: bool = True,
+    stream: TextIO | None = None,
+    write_artifacts: bool = True,
+    max_modes: int = 8,
+) -> GlobalEigenmodeRunSummary:
+    """Run the validated global radial eigenmode workflow and write artifacts.
+
+    Analytic and VMEC-``wout`` configurations use the scalar radial envelope
+    operator. Configurations with ``equilibrium.boozmn`` use the real-Boozer
+    3-D radial block operator with the metric-derived radial stiffness.
+    """
+    config = config.validated()
+    _apply_precision(config)
+    reported_mode_limit = int(max_modes)
+    if reported_mode_limit < 1:
+        raise ValueError("max_modes must be at least 1")
+    phase_specs = [
+        ("Validate global solve", "check TOML controls and requested eigensolver", 0.1),
+        ("Build global operator", "resolve geometry, harmonics, mass, and radial stiffness", 0.8),
+        ("Solve global eigenproblem", "compute frequencies, eigenvectors, and residuals", 0.6),
+        ("Write global artifacts", f"output_dir={config.run.output_dir}", 0.2),
+    ]
+    reporter = ProgressReporter(
+        enabled=progress,
+        stream=stream,
+        total_estimate_seconds=sum(phase[2] for phase in phase_specs),
+    )
+    start = time.perf_counter()
+    reporter.banner(config)
+
+    _start_phase(reporter, phase_specs[0])
+    reporter.log(f"requested model: {config.run.model}")
+    reporter.log(f"eigensolver: {config.numerics.eigensolver}")
+    reporter.log(f"reported mode limit: {reported_mode_limit}")
+    reporter.phase_done(status="done")
+
+    _start_phase(reporter, phase_specs[1])
+    problem: Any
+    if config.equilibrium.boozmn:
+        geometry_path = Path(config.equilibrium.boozmn).expanduser()
+        reporter.log(f"reading Boozer geometry: {geometry_path}")
+        boozer_geometry = read_boozmn_geometry(geometry_path)
+        family = _mode_family_from_config(config, field_periods=boozer_geometry.field_periods)
+        harmonics = family.as_array()
+        theta_points = _angular_points(max(config.grid.m_max, config.grid.n_max))
+        zeta_points = theta_points
+        mass_density = 3.4e-8 * float(config.physics.density_scale)
+        problem = radial_block_problem_from_boozer_geometry(
+            boozer_geometry,
+            harmonics,
+            mass_density=mass_density,
+            radial_stiffness_method="metric",
+            theta_points=theta_points,
+            zeta_points=zeta_points,
+            boundary_condition="dirichlet",
+        )
+        operator = "boozmn_global_3d_radial_block"
+        geometry_dict: dict[str, Any] = {
+            "source": "boozmn",
+            "path": str(geometry_path),
+            "name": boozer_geometry.source,
+            "field_periods": int(boozer_geometry.field_periods),
+            "radial_points": int(boozer_geometry.s.shape[0]),
+            "theta_points": theta_points,
+            "zeta_points": zeta_points,
+            "density_scale": float(config.physics.density_scale),
+            "mass_density_kg_per_m3": mass_density,
+            "metadata": [[key, value] for key, value in boozer_geometry.metadata],
+        }
+        reporter.log(
+            "Boozer operator: "
+            f"surfaces={problem.s.shape[0]}, harmonics={problem.harmonics.shape[0]}, "
+            f"theta=zeta={theta_points}"
+        )
+    elif config.equilibrium.use_boozer:
+        raise ConfigError("fax eigenmodes with equilibrium.use_boozer=true requires equilibrium.boozmn")
+    else:
+        profile_geometry, geometry_source = _load_profile_geometry(config, reporter=reporter)
+        family = _mode_family_from_config(config, field_periods=profile_geometry.field_periods)
+        selected_harmonic = _primary_mode_family_harmonic(family)
+        problem = radial_problem_from_equilibrium(
+            profile_geometry,
+            harmonic=(int(selected_harmonic[0]), int(selected_harmonic[1])),
+        )
+        operator = "profile_radial_envelope"
+        geometry_dict = {
+            "source": geometry_source,
+            "name": profile_geometry.name,
+            "field_periods": int(profile_geometry.field_periods),
+            "radial_points": int(profile_geometry.s.shape[0]),
+            "selected_harmonic": [int(selected_harmonic[0]), int(selected_harmonic[1])],
+            "density_scale": float(config.physics.density_scale),
+            "metadata": [[key, value] for key, value in profile_geometry.metadata],
+        }
+        reporter.log(
+            "profile radial operator: "
+            f"surfaces={problem.s.shape[0]}, harmonic=({int(selected_harmonic[0])},{int(selected_harmonic[1])})"
+        )
+    reporter.log(f"operator: {operator}")
+    reporter.phase_done(status="done")
+
+    _start_phase(reporter, phase_specs[2])
+    result: Any
+    if isinstance(problem, RadialBlockEigenmodeProblem):
+        matrix_dimension = (int(problem.s.shape[0]) - 2) * int(problem.harmonics.shape[0])
+        if config.numerics.eigensolver == "dense" or matrix_dimension <= 1:
+            result = solve_radial_block_eigenmodes(problem)
+        else:
+            sparse_count = min(reported_mode_limit, matrix_dimension - 1)
+            result = solve_radial_block_eigenmodes_sparse(problem, mode_count=sparse_count)
+        frequencies = result.frequencies_hz
+        omega2 = result.omega2
+        residuals = result.residuals
+        structures = result.mode_structures
+        harmonics = problem.harmonics
+        radial_grid = problem.s
+        boundary_condition = problem.boundary_condition
+    else:
+        result = solve_radial_eigenmodes(problem)
+        frequencies = result.frequencies_hz
+        omega2 = result.omega2
+        residuals = result.residuals
+        selected_harmonic = _primary_mode_family_harmonic(family)
+        harmonics = jnp.asarray([[float(selected_harmonic[0]), float(selected_harmonic[1])]])
+        radial_grid = problem.s
+        structures = _scalar_radial_mode_structures(radial_grid, result.eigenvectors)
+        boundary_condition = "dirichlet"
+    reported_count = min(reported_mode_limit, int(frequencies.shape[0]))
+    frequencies_reported = frequencies[:reported_count]
+    omega2_reported = omega2[:reported_count]
+    residuals_reported = residuals[:reported_count]
+    structures_reported = structures[:reported_count]
+    residual_max = float(jnp.max(residuals_reported))
+    residual_p95 = _percentile(residuals_reported, 95.0)
+    reporter.log(f"reported modes: {reported_count}")
+    reporter.log(f"frequency range: {_frequency_range_text(frequencies_reported)}")
+    reporter.log(f"global eigen residuals: max={residual_max:.3e}, p95={residual_p95:.3e}")
+    reporter.phase_done(status="done")
+
+    artifacts: dict[str, str] = {}
+    output_dir: str | None = None
+    _start_phase(reporter, phase_specs[3])
+    if write_artifacts:
+        output_path = _output_dir(config) / "eigenmodes"
+        output_path.mkdir(parents=True, exist_ok=True)
+        output_dir = str(output_path)
+        artifacts = {
+            "summary_json": str(output_path / "global_eigenmode_summary.json"),
+            "modes_csv": str(output_path / "global_eigenmodes.csv"),
+            "structures_csv": str(output_path / "global_mode_structures.csv"),
+            "metrics_json": str(output_path / "global_eigenmode_metrics.json"),
+        }
+        _write_global_modes_csv(
+            Path(artifacts["modes_csv"]),
+            omega2=omega2_reported,
+            frequencies_hz=frequencies_reported,
+            residuals=residuals_reported,
+        )
+        _write_global_structures_csv(
+            Path(artifacts["structures_csv"]),
+            s=radial_grid,
+            harmonics=harmonics,
+            mode_structures=structures_reported,
+        )
+        reporter.log(f"writing {artifacts['modes_csv']}")
+        reporter.log(f"writing {artifacts['structures_csv']}")
+        reporter.log(f"writing {artifacts['metrics_json']}")
+        reporter.log(f"writing {artifacts['summary_json']}")
+    else:
+        reporter.log("artifact writing disabled")
+    reporter.phase_done(status="done")
+
+    summary = GlobalEigenmodeRunSummary(
+        case=config.run.case,
+        model=config.run.model,
+        status="completed",
+        message="Completed global radial eigenmode solve.",
+        config=config.to_dict(),
+        elapsed_seconds=time.perf_counter() - start,
+        phases=_phase_dicts(reporter.records),
+        output_dir=output_dir,
+        artifacts=artifacts,
+        geometry=geometry_dict,
+        mode_family=_mode_family_dict_from_harmonics(harmonics, family=family),
+        operator=operator,
+        radial_points=int(radial_grid.shape[0]),
+        harmonic_count=int(harmonics.shape[0]),
+        boundary_condition=boundary_condition,
+        eigensolver=config.numerics.eigensolver,
+        reported_mode_count=reported_count,
+        min_frequency_hz=_finite_min(frequencies_reported),
+        max_frequency_hz=_finite_max(frequencies_reported),
+        residual_max=residual_max,
+        residual_p95=residual_p95,
+    )
+    if write_artifacts:
+        _write_json(
+            Path(artifacts["metrics_json"]),
+            _global_eigenmode_metrics_dict(
+                summary=summary,
+                omega2=omega2_reported,
+                frequencies_hz=frequencies_reported,
+                residuals=residuals_reported,
+                mode_structures=structures_reported,
+            ),
+        )
+        _write_json(Path(artifacts["summary_json"]), summary.to_dict())
     reporter.summary(summary)
     return summary
 
@@ -1199,6 +1453,122 @@ def _write_continuum_csv(
             )
 
 
+def _scalar_radial_mode_structures(s: Any, eigenvectors: Any) -> jax.Array:
+    vectors = jnp.asarray(eigenvectors)
+    mode_count = int(vectors.shape[1])
+    interior = jnp.moveaxis(vectors, 1, 0)[:, :, None]
+    boundary = jnp.zeros((mode_count, 1, 1), dtype=vectors.dtype)
+    if int(s.shape[0]) == int(vectors.shape[0]):
+        return interior
+    return jnp.concatenate([boundary, interior, boundary], axis=1)
+
+
+def _write_global_modes_csv(
+    path: Path,
+    *,
+    omega2: Any,
+    frequencies_hz: Any,
+    residuals: Any,
+) -> None:
+    omega2_array = np.asarray(omega2, dtype=float)
+    frequency_array = np.asarray(frequencies_hz, dtype=float)
+    residual_array = np.asarray(residuals, dtype=float)
+    with path.open("w", newline="", encoding="utf-8") as stream:
+        writer = csv.writer(stream)
+        writer.writerow(["mode_index", "omega2_rad2_per_s2", "frequency_hz", "residual"])
+        for index in range(frequency_array.shape[0]):
+            writer.writerow(
+                [
+                    index,
+                    float(omega2_array[index]),
+                    float(frequency_array[index]),
+                    float(residual_array[index]),
+                ]
+            )
+
+
+def _write_global_structures_csv(
+    path: Path,
+    *,
+    s: Any,
+    harmonics: Any,
+    mode_structures: Any,
+) -> None:
+    radial_grid = np.asarray(s, dtype=float)
+    harmonic_array = np.asarray(harmonics, dtype=float)
+    structures = np.asarray(mode_structures)
+    with path.open("w", newline="", encoding="utf-8") as stream:
+        writer = csv.writer(stream)
+        writer.writerow(
+            [
+                "mode_index",
+                "radial_index",
+                "s",
+                "harmonic_index",
+                "m",
+                "n",
+                "amplitude_real",
+                "amplitude_imag",
+                "amplitude_abs",
+            ]
+        )
+        for mode_index in range(structures.shape[0]):
+            for radial_index in range(radial_grid.shape[0]):
+                for harmonic_index in range(harmonic_array.shape[0]):
+                    value = structures[mode_index, radial_index, harmonic_index]
+                    writer.writerow(
+                        [
+                            mode_index,
+                            radial_index,
+                            float(radial_grid[radial_index]),
+                            harmonic_index,
+                            int(harmonic_array[harmonic_index, 0]),
+                            int(harmonic_array[harmonic_index, 1]),
+                            float(np.real(value)),
+                            float(np.imag(value)),
+                            float(np.abs(value)),
+                        ]
+                    )
+
+
+def _mode_family_dict_from_harmonics(harmonics: Any, *, family: ModeFamily) -> dict[str, Any]:
+    harmonic_array = np.asarray(harmonics, dtype=float)
+    return {
+        "base_n": family.base_n,
+        "field_periods": family.field_periods,
+        "sidebands": list(family.sidebands),
+        "harmonics": [[int(m), int(n)] for m, n in harmonic_array],
+        "labels": [f"m={int(m)}, n={int(n)}" for m, n in harmonic_array],
+    }
+
+
+def _global_eigenmode_metrics_dict(
+    *,
+    summary: GlobalEigenmodeRunSummary,
+    omega2: Any,
+    frequencies_hz: Any,
+    residuals: Any,
+    mode_structures: Any,
+) -> dict[str, Any]:
+    structures = jnp.asarray(mode_structures)
+    radial_envelope = jnp.sqrt(jnp.sum(jnp.abs(structures) ** 2, axis=-1))
+    harmonic_power = jnp.sum(jnp.abs(structures) ** 2, axis=1)
+    return {
+        "case": summary.case,
+        "status": summary.status,
+        "operator": summary.operator,
+        "omega2_range_rad2_per_s2": [_finite_min(omega2), _finite_max(omega2)],
+        "frequency_range_hz": [_finite_min(frequencies_hz), _finite_max(frequencies_hz)],
+        "residual_max": float(jnp.max(residuals)),
+        "residual_mean": float(jnp.mean(residuals)),
+        "residual_p95": _percentile(residuals, 95.0),
+        "radial_envelope_max_by_mode": [float(value) for value in jnp.max(radial_envelope, axis=1)],
+        "harmonic_power_fraction": np.asarray(
+            harmonic_power / jnp.maximum(jnp.sum(harmonic_power, axis=1, keepdims=True), 1.0e-30)
+        ).tolist(),
+    }
+
+
 def _label_slug(label: str) -> str:
     return (
         label.replace(" ", "")
@@ -1231,6 +1601,13 @@ def _mode_family_dict(family: ModeFamily) -> dict[str, Any]:
         "harmonics": [[int(m), int(n)] for m, n in family.harmonics],
         "labels": list(family.labels()),
     }
+
+
+def _primary_mode_family_harmonic(family: ModeFamily) -> tuple[int, int]:
+    for harmonic in family.harmonics:
+        if int(harmonic[1]) == int(family.base_n):
+            return harmonic
+    return family.harmonics[0]
 
 
 def _continuum_metrics_dict(

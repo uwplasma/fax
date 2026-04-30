@@ -65,10 +65,15 @@ from fax.metric import (
 )
 from fax.modes import stellarator_mode_family
 from fax.optimization import radial_mode_avoidance_objective
-from fax.plotting import plot_basic_alfven_gap_map, plot_continuum_artifacts, plot_convergence_artifacts
+from fax.plotting import (
+    plot_basic_alfven_gap_map,
+    plot_continuum_artifacts,
+    plot_convergence_artifacts,
+    plot_global_eigenmode_artifacts,
+)
 from fax.reference_cases import landreman_paul_qa_lowres
 from fax.units import PROTON_MASS
-from fax.workflows import run_benchmark, run_continuum, run_convergence
+from fax.workflows import run_benchmark, run_continuum, run_convergence, run_global_eigenmodes
 from fax.validation import registered_validation_gates, run_validation_suite
 
 jax.config.update("jax_enable_x64", True)
@@ -1017,6 +1022,24 @@ def generate_continuum_artifact_dashboard(output_dir: Path) -> list[Path]:
         )
 
 
+def generate_global_eigenmode_artifact_dashboard(output_dir: Path) -> list[Path]:
+    """Generate a dashboard from files written by the global eigenmode workflow."""
+    with tempfile.TemporaryDirectory(prefix="fax-global-eigenmode-artifacts-") as tmp:
+        config = FaxConfig(
+            run=RunConfig(case="global_eigenmodes", model="global_eigenmode", output_dir=tmp),
+            equilibrium=EquilibriumConfig(source="analytic"),
+            grid=GridConfig(radial_points=32, m_max=2, n_max=1, field_periods=1),
+        )
+        run_global_eigenmodes(config, progress=False, max_modes=6)
+        return list(
+            plot_global_eigenmode_artifacts(
+                Path(tmp) / "eigenmodes",
+                output_dir=output_dir,
+                stem="global_eigenmode_artifact_dashboard",
+            )
+        )
+
+
 def generate_workflow_diagram(output_dir: Path) -> list[Path]:
     """Generate a newcomer-facing input/operator/output workflow diagram."""
     plt = _setup_matplotlib()
@@ -1656,6 +1679,7 @@ def main(argv: list[str] | None = None) -> int:
         generate_stellgap_ctok_comparison(output_dir),
         generate_external_code_artifact_dashboard(output_dir),
         generate_continuum_artifact_dashboard(output_dir),
+        generate_global_eigenmode_artifact_dashboard(output_dir),
         generate_metric_residual_convergence(output_dir),
         generate_landreman_convergence_dashboard(output_dir),
         generate_vmec_boozer_bridge_convergence(output_dir),

@@ -129,6 +129,13 @@ Current Figures
    Dashboard generated from files written by ``fax continuum``. This checks the
    public artifact path used by users and downstream plotting scripts.
 
+.. figure:: _static/global_eigenmode_artifact_dashboard.svg
+   :alt: Dashboard generated from fax eigenmodes artifacts.
+
+   Dashboard generated from files written by ``fax eigenmodes``. It checks the
+   user-facing global-mode artifact path: reported eigenfrequencies, residuals,
+   radial envelope norms, and harmonic content.
+
 .. figure:: _static/metric_residual_convergence.svg
    :alt: Metric residual and angular-grid convergence checks.
 

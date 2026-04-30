@@ -11,11 +11,13 @@ from fax.gap_models import basic_alfven_gap_map
 from fax.plotting import (
     load_continuum_artifacts,
     load_convergence_artifacts,
+    load_global_eigenmode_artifacts,
     plot_basic_alfven_gap_map,
     plot_continuum_artifacts,
     plot_convergence_artifacts,
+    plot_global_eigenmode_artifacts,
 )
-from fax.workflows import run_continuum, run_convergence
+from fax.workflows import run_continuum, run_convergence, run_global_eigenmodes
 
 
 def _artifact_config(output_dir) -> FaxConfig:
@@ -93,6 +95,30 @@ def test_plot_convergence_artifacts_from_workflow_outputs(tmp_path):
     ET.parse(figure_dir / "convergence_check.svg")
 
 
+def test_plot_global_eigenmode_artifacts_from_workflow_outputs(tmp_path):
+    artifact_root = tmp_path / "artifacts"
+    figure_dir = tmp_path / "figures"
+    config = FaxConfig(
+        run=RunConfig(case="global_plotting", model="global_eigenmode", output_dir=str(artifact_root)),
+        equilibrium=EquilibriumConfig(source="analytic"),
+        grid=GridConfig(radial_points=12, m_max=2, n_max=1, field_periods=1),
+    )
+    run_global_eigenmodes(config, progress=False, max_modes=4)
+    eigenmode_dir = artifact_root / "eigenmodes"
+
+    artifacts = load_global_eigenmode_artifacts(eigenmode_dir)
+    assert artifacts.summary["case"] == "global_plotting"
+    assert "frequency_hz" in artifacts.modes
+    assert "amplitude_abs" in artifacts.structures
+
+    paths = plot_global_eigenmode_artifacts(eigenmode_dir, output_dir=figure_dir, stem="global_check")
+    assert {path.suffix for path in paths} == {".svg", ".png"}
+    for path in paths:
+        assert path.exists()
+        assert path.stat().st_size > 1000
+    ET.parse(figure_dir / "global_check.svg")
+
+
 def test_cli_plot_convergence_json(tmp_path, capsys):
     artifact_root = tmp_path / "artifacts"
     figure_dir = tmp_path / "figures"
@@ -123,6 +149,37 @@ def test_cli_plot_convergence_json(tmp_path, capsys):
     assert len(payload["figures"]) == 2
     assert (figure_dir / "cli_convergence_plot.svg").exists()
     assert (figure_dir / "cli_convergence_plot.png").exists()
+
+
+def test_cli_plot_global_json(tmp_path, capsys):
+    artifact_root = tmp_path / "artifacts"
+    figure_dir = tmp_path / "figures"
+    config = FaxConfig(
+        run=RunConfig(case="global_cli_plotting", model="global_eigenmode", output_dir=str(artifact_root)),
+        equilibrium=EquilibriumConfig(source="analytic"),
+        grid=GridConfig(radial_points=12, m_max=2, n_max=1, field_periods=1),
+    )
+    run_global_eigenmodes(config, progress=False, max_modes=4)
+
+    assert (
+        main(
+            [
+                "plot-global",
+                str(artifact_root / "eigenmodes"),
+                "--output-dir",
+                str(figure_dir),
+                "--stem",
+                "cli_global_plot",
+                "--json",
+            ]
+        )
+        == 0
+    )
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["status"] == "completed"
+    assert len(payload["figures"]) == 2
+    assert (figure_dir / "cli_global_plot.svg").exists()
+    assert (figure_dir / "cli_global_plot.png").exists()
 
 
 def test_basic_gap_map_plot_is_literature_ordered_and_renderable(tmp_path):
