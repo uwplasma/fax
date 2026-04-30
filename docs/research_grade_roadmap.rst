@@ -50,10 +50,11 @@ End-to-end differentiable VMEC/Boozer/FAX optimization
    differentiable fixed-boundary ``vmec_jax`` path, ``booz_xform_jax`` Boozer
    harmonics, and a FAX global Alfvén risk objective, with centered
    finite-difference parity, a descent check, and a VMEC-iteration refinement
-   ladder. Remaining work is to extend this to high-iteration converged
-   VMEC2000 residual solves, Boozer/angular/surface-count ladders,
-   multi-parameter adjoint/pullback checks, and multi-geometry optimization
-   campaigns.
+   ladder. A Boozer/angular gradient-refinement gate now also checks drift
+   between the current coarse and refined Boozer/operator settings. Remaining
+   work is to extend this to high-iteration converged VMEC2000 residual
+   solves, surface-count ladders, multi-parameter adjoint/pullback checks, and
+   multi-geometry optimization campaigns.
 
 Multi-geometry cross-code benchmark suite
    Reactor-design claims require a curated benchmark matrix covering
@@ -100,8 +101,8 @@ First Implementation Steps
    ``examples/research/vmec_boozer_alfven_design_gradient.py``. The first
    VMEC-iteration gradient ladder is now implemented in
    ``examples/research/vmec_boozer_gradient_convergence.py``. The next step is
-   to extend the ladder over Boozer truncation, surfaces, angular quadrature,
-   and additional boundary coefficients.
+   to extend the ladder over surfaces and additional boundary coefficients,
+   then align the path with high-iteration VMEC/discrete-adjoint gradients.
 5. Use the VMEC-equilibria public Boozer subset to select the next
    HSX/Ku-Boozer parity cases, then add matching STELLGAP/AE3D/CAS3D/FAR3D
    artifacts where possible. Extend to W7-X/LHD/NCSX once Boozer artifacts are

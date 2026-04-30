@@ -920,6 +920,23 @@
       ]
     },
     {
+      "id": "landreman_paul_vmec_boundary_boozer_gradient_convergence",
+      "title": "Landreman-Paul QA VMEC-boundary Boozer gradient convergence",
+      "layer": "differentiability",
+      "quantity": "maximum relative Boozer/angular refinement drift",
+      "tolerance": 0.04,
+      "citation": "Landreman & Paul, Phys. Rev. Lett. 128, 035001 (2022); Boozer truncation and angular-grid convergence of the vmec_jax, booz_xform_jax, and FAX gradient",
+      "command": "python -m pytest -m requires_vmec_jax tests/test_validation_registry.py",
+      "tags": [
+        "vmec_jax",
+        "booz_xform_jax",
+        "landreman-paul",
+        "gradient",
+        "convergence",
+        "boozer"
+      ]
+    },
+    {
       "id": "landreman_paul_continuum_finite",
       "title": "Landreman-Paul QA continuum finite-output check",
       "layer": "adapter",

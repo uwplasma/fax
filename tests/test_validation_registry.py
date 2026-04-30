@@ -114,6 +114,7 @@ def test_landreman_paul_validation_gate_passes_or_skips_cleanly():
         "landreman_paul_vmec_jax_solve_convergence",
         "landreman_paul_vmec_boundary_alfven_gradient",
         "landreman_paul_vmec_boundary_gradient_convergence",
+        "landreman_paul_vmec_boundary_boozer_gradient_convergence",
         "landreman_paul_continuum_finite",
         "landreman_paul_radial_sampling_convergence",
     ):

@@ -2266,6 +2266,76 @@ def _gate_landreman_paul_vmec_boundary_gradient_convergence() -> GateResult:
     )
 
 
+def _gate_landreman_paul_vmec_boundary_boozer_gradient_convergence() -> GateResult:
+    gate_id = "landreman_paul_vmec_boundary_boozer_gradient_convergence"
+    tolerance = 4.0e-2
+    case = landreman_paul_qa_lowres()
+    if not case.vmec_input.exists():
+        return GateResult(
+            gate_id=gate_id,
+            status="skipped",
+            metric=float("nan"),
+            tolerance=tolerance,
+            message=f"missing Landreman-Paul VMEC input: {case.vmec_input}",
+        )
+
+    settings = VmecBoozerFaxDesignSettings(
+        input_path=case.vmec_input,
+        parameter_count=1,
+        surfaces=(0.25, 0.40, 0.55, 0.70),
+        mboz=3,
+        nboz=3,
+        theta_points=8,
+        zeta_points=8,
+        vmec_max_iter=4,
+    )
+    try:
+        result = run_vmec_boundary_alfven_gradient_convergence(
+            settings,
+            levels=(
+                (
+                    "vmec4_boozer3_grid8",
+                    {"vmec_max_iter": 4, "mboz": 3, "nboz": 3, "theta_points": 8, "zeta_points": 8},
+                ),
+                (
+                    "vmec4_boozer4_grid10",
+                    {"vmec_max_iter": 4, "mboz": 4, "nboz": 4, "theta_points": 10, "zeta_points": 10},
+                ),
+            ),
+            finite_difference_step=1.0e-4,
+            descent_step=1.0e-3,
+        )
+    except ImportError as exc:
+        return GateResult(
+            gate_id=gate_id,
+            status="skipped",
+            metric=float("nan"),
+            tolerance=tolerance,
+            message=str(exc),
+        )
+
+    reference = result.points[-1]
+    frequency_norm = max(float(np.linalg.norm(np.asarray(reference.frequencies_hz, dtype=float))), 1.0e-30)
+    gradient_norm = max(float(np.linalg.norm(np.asarray(reference.gradient, dtype=float))), 1.0e-30)
+    objective_norm = max(abs(float(reference.objective)), 1.0e-30)
+    metric = max(
+        result.max_relative_gradient_error,
+        result.max_frequency_delta_to_reference_hz / frequency_norm,
+        result.max_gradient_delta_to_reference / gradient_norm,
+        result.max_objective_delta_to_reference / objective_norm,
+    )
+    return _pass_fail(
+        gate_id,
+        metric,
+        tolerance,
+        (
+            "Landreman-Paul QA VMEC-boundary gradient is stable under "
+            "Boozer truncation and angular-grid refinement at fixed VMEC iteration; "
+            f"max relative drift={metric:.3e}"
+        ),
+    )
+
+
 def _coarsen_metric_geometry(metric: MetricGeometry, *, radial_points: int) -> MetricGeometry:
     indices = np.unique(np.rint(np.linspace(0, int(metric.s.shape[0]) - 1, int(radial_points))).astype(int))
     if indices.size < 4:
@@ -2966,6 +3036,20 @@ def registered_validation_gates() -> tuple[ValidationGate, ...]:
             command="python -m pytest -m requires_vmec_jax tests/test_vmec_boozer_design.py tests/test_validation_registry.py",
             tags=("vmec_jax", "booz_xform_jax", "landreman-paul", "gradient", "convergence", "optimization"),
             _runner=_gate_landreman_paul_vmec_boundary_gradient_convergence,
+        ),
+        ValidationGate(
+            gate_id="landreman_paul_vmec_boundary_boozer_gradient_convergence",
+            title="Landreman-Paul QA VMEC-boundary Boozer gradient convergence",
+            layer="differentiability",
+            quantity="maximum relative Boozer/angular refinement drift",
+            tolerance=4.0e-2,
+            citation=(
+                "Landreman & Paul, Phys. Rev. Lett. 128, 035001 (2022); "
+                "Boozer truncation and angular-grid convergence of the vmec_jax, booz_xform_jax, and FAX gradient"
+            ),
+            command="python -m pytest -m requires_vmec_jax tests/test_validation_registry.py",
+            tags=("vmec_jax", "booz_xform_jax", "landreman-paul", "gradient", "convergence", "boozer"),
+            _runner=_gate_landreman_paul_vmec_boundary_boozer_gradient_convergence,
         ),
         ValidationGate(
             gate_id="landreman_paul_continuum_finite",

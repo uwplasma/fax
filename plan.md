@@ -1986,6 +1986,9 @@ gradient parity check to a first refinement ladder:
   VMEC/Boozer/angular resolutions,
 - added ``landreman_paul_vmec_boundary_gradient_convergence`` to the
   validation registry,
+- added ``landreman_paul_vmec_boundary_boozer_gradient_convergence`` as a
+  second gate for Boozer truncation and angular-grid drift at fixed VMEC
+  iteration,
 - added a physics test that compares Landreman-Paul QA VMEC iteration levels
   2 and 4, requiring AD/finite-difference agreement and small objective,
   gradient, and global-frequency drift,
@@ -2005,7 +2008,7 @@ Observed ladder metrics for the public figure:
 - maximum absolute gradient drift to the reference ``1.422e-4``.
 
 Scope: this closes the first VMEC-iteration gradient-convergence lane and
-makes the remaining gradient risk explicit. The next lanes are Boozer
-truncation-only gradient convergence, radial-surface and angular-quadrature
-gradient ladders, multi-parameter boundary coefficients, and alignment with
-the high-iteration VMEC2000/discrete-adjoint path.
+makes the remaining gradient risk explicit. It also starts the
+Boozer/operator-resolution gradient-convergence lane. The next lanes are
+radial-surface gradient ladders, multi-parameter boundary coefficients, and
+alignment with the high-iteration VMEC2000/discrete-adjoint path.
