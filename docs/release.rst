@@ -46,6 +46,13 @@ The publish workflow is ``.github/workflows/publish.yml``. It runs on published
 GitHub releases and uses PyPI trusted publishing via
 ``pypa/gh-action-pypi-publish``.
 
+The PyPI trusted publisher must match the GitHub OIDC claims emitted by the
+release workflow. For the current workflow this means repository
+``uwplasma/fax``, workflow ``.github/workflows/publish.yml``, tag refs, and
+environment ``pypi``. If PyPI reports ``invalid-publisher``, configure the
+PyPI project or pending publisher with those claims, then rerun the
+``Publish`` workflow for the release tag.
+
 When Actions are available:
 
 .. code-block:: bash

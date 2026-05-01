@@ -92,7 +92,7 @@ python -m pip install -e ".[dev]"
 fax --help
 ```
 
-From PyPI, the package name is:
+After PyPI trusted publishing is configured, the package name is:
 
 ```bash
 python -m pip install uwplasma-fax

@@ -2167,3 +2167,16 @@ Local release-gate results:
 - ``python -m twine check dist/*`` passed,
 - installed the built wheel into a temporary target and verified
   ``fax.__version__ == "0.0.2"`` plus ``python -m fax --help``.
+- GitHub ``Docs`` passed, GitHub ``Tests`` passed on Python 3.10, 3.11, 3.12,
+  and 3.13, and the GitHub coverage-badge job passed with optional
+  VMEC/Boozer, STELLGAP/AE3D, and VMEC-equilibria fixtures.
+- Published the GitHub release ``v0.0.2`` at
+  ``https://github.com/uwplasma/fax/releases/tag/v0.0.2`` and attached the
+  built wheel/sdist.
+- PyPI upload failed in the trusted-publishing exchange with
+  ``invalid-publisher``. The emitted claims were repository ``uwplasma/fax``,
+  workflow ``.github/workflows/publish.yml``, ref ``refs/tags/v0.0.2``,
+  environment ``pypi``, and subject ``repo:uwplasma/fax:environment:pypi``.
+  This is an external PyPI project/publisher configuration blocker, not a
+  FAX build or metadata failure. Once the PyPI trusted publisher is configured
+  with those claims, rerun the ``Publish`` workflow on tag ``v0.0.2``.
