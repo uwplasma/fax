@@ -92,6 +92,7 @@ from .vmec_boozer_design import (
     VmecBoozerFaxDesignSettings,
     run_vmec_boundary_alfven_gradient_convergence,
     validate_vmec_boundary_alfven_gradient,
+    validate_vmec_boundary_frequency_jacobian,
 )
 
 jax.config.update("jax_enable_x64", True)
@@ -2511,6 +2512,63 @@ def _gate_landreman_paul_vmec_boundary_six_parameter_gradient() -> GateResult:
     )
 
 
+def _gate_landreman_paul_vmec_boundary_frequency_jacobian() -> GateResult:
+    gate_id = "landreman_paul_vmec_boundary_frequency_jacobian"
+    tolerance = 2.0e-5
+    case = landreman_paul_qa_lowres()
+    if not case.vmec_input.exists():
+        return GateResult(
+            gate_id=gate_id,
+            status="skipped",
+            metric=float("nan"),
+            tolerance=tolerance,
+            message=f"missing Landreman-Paul VMEC input: {case.vmec_input}",
+        )
+
+    settings = VmecBoozerFaxDesignSettings(
+        input_path=case.vmec_input,
+        max_mode=1,
+        parameter_count=6,
+        surfaces=(0.25, 0.40, 0.55, 0.70),
+        mboz=3,
+        nboz=3,
+        theta_points=8,
+        zeta_points=8,
+        vmec_max_iter=4,
+    )
+    try:
+        result = validate_vmec_boundary_frequency_jacobian(
+            settings,
+            finite_difference_step=2.0e-5,
+        )
+    except ImportError as exc:
+        return GateResult(
+            gate_id=gate_id,
+            status="skipped",
+            metric=float("nan"),
+            tolerance=tolerance,
+            message=str(exc),
+        )
+
+    finite = (
+        bool(jnp.all(jnp.isfinite(result.frequency_jacobian)))
+        and bool(jnp.all(jnp.isfinite(result.finite_difference_jacobian)))
+        and bool(jnp.all(jnp.isfinite(result.pullback)))
+    )
+    metric = max(result.relative_jacobian_error, result.relative_pullback_error) if finite else float("inf")
+    return _pass_fail(
+        gate_id,
+        metric,
+        tolerance,
+        (
+            "Landreman-Paul QA six-parameter VMEC boundary frequency Jacobian "
+            "and VJP pullback agree with centered finite differences; "
+            f"jacobian={result.relative_jacobian_error:.3e}, "
+            f"pullback={result.relative_pullback_error:.3e}"
+        ),
+    )
+
+
 def _coarsen_metric_geometry(metric: MetricGeometry, *, radial_points: int) -> MetricGeometry:
     indices = np.unique(np.rint(np.linspace(0, int(metric.s.shape[0]) - 1, int(radial_points))).astype(int))
     if indices.size < 4:
@@ -3267,6 +3325,20 @@ def registered_validation_gates() -> tuple[ValidationGate, ...]:
             command="python -m pytest -m requires_vmec_jax tests/test_vmec_boozer_design.py tests/test_validation_registry.py",
             tags=("vmec_jax", "booz_xform_jax", "landreman-paul", "gradient", "multiparameter", "optimization"),
             _runner=_gate_landreman_paul_vmec_boundary_six_parameter_gradient,
+        ),
+        ValidationGate(
+            gate_id="landreman_paul_vmec_boundary_frequency_jacobian",
+            title="Landreman-Paul QA VMEC-boundary frequency Jacobian",
+            layer="differentiability",
+            quantity="maximum relative frequency-Jacobian and VJP-pullback error",
+            tolerance=2.0e-5,
+            citation=(
+                "Landreman & Paul, Phys. Rev. Lett. 128, 035001 (2022); "
+                "vector-frequency Jacobian and pullback through vmec_jax, booz_xform_jax, and FAX"
+            ),
+            command="python -m pytest -m requires_vmec_jax tests/test_vmec_boozer_design.py tests/test_validation_registry.py",
+            tags=("vmec_jax", "booz_xform_jax", "landreman-paul", "jacobian", "pullback", "optimization"),
+            _runner=_gate_landreman_paul_vmec_boundary_frequency_jacobian,
         ),
         ValidationGate(
             gate_id="landreman_paul_continuum_finite",

@@ -10,6 +10,7 @@ from fax.vmec_boozer_design import (
     prepare_vmec_boozer_fax_design_context,
     run_vmec_boundary_alfven_gradient_convergence,
     validate_vmec_boundary_alfven_gradient,
+    validate_vmec_boundary_frequency_jacobian,
     vmec_boundary_fax_frequencies,
 )
 
@@ -191,4 +192,47 @@ def test_landreman_paul_vmec_boundary_six_parameter_gradient_matches_finite_diff
         np.asarray(result.finite_difference_gradient),
         rtol=2.0e-5,
         atol=1.0e-10,
+    )
+
+
+@pytest.mark.requires_vmec_jax
+@pytest.mark.requires_booz_xform_jax
+def test_landreman_paul_vmec_boundary_frequency_jacobian_and_pullback_match_finite_difference():
+    pytest.importorskip("vmec_jax")
+    pytest.importorskip("booz_xform_jax")
+    input_path = Path("/Users/rogerio/local/vmec_jax/examples/data/input.LandremanPaul2021_QA_lowres")
+    if not input_path.exists():
+        pytest.skip(f"missing local Landreman-Paul VMEC input: {input_path}")
+
+    settings = VmecBoozerFaxDesignSettings(
+        input_path=input_path,
+        max_mode=1,
+        parameter_count=6,
+        surfaces=(0.25, 0.40, 0.55, 0.70),
+        mboz=3,
+        nboz=3,
+        theta_points=8,
+        zeta_points=8,
+        vmec_max_iter=4,
+    )
+    result = validate_vmec_boundary_frequency_jacobian(
+        settings,
+        finite_difference_step=2.0e-5,
+    )
+
+    assert result.parameter_names == ("rc01", "zs01", "rc1-1", "zs1-1", "rc10", "zs10")
+    assert result.frequency_jacobian.shape == (3, 6)
+    assert result.relative_jacobian_error < 2.0e-5
+    assert result.relative_pullback_error < 2.0e-5
+    np.testing.assert_allclose(
+        np.asarray(result.frequency_jacobian),
+        np.asarray(result.finite_difference_jacobian),
+        rtol=2.0e-5,
+        atol=2.0e-3,
+    )
+    np.testing.assert_allclose(
+        np.asarray(result.pullback),
+        np.asarray(result.finite_difference_pullback),
+        rtol=2.0e-5,
+        atol=2.0e-3,
     )

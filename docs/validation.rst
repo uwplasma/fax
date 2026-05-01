@@ -207,6 +207,10 @@ tags, and command. The current gates are:
 * ``landreman_paul_vmec_boundary_six_parameter_gradient``: extends the same
   end-to-end gradient check to six low-order boundary coefficients,
   ``rc01``, ``zs01``, ``rc1-1``, ``zs1-1``, ``rc10``, and ``zs10``.
+* ``landreman_paul_vmec_boundary_frequency_jacobian``: checks the full
+  vector-output Jacobian from the same six boundary coefficients to the first
+  three global Alfvén frequencies, and checks a VJP pullback against the
+  finite-difference Jacobian contraction.
 * ``landreman_paul_continuum_finite``: checks that the Landreman-Paul profile
   and metric continuum branches are finite and have small eigensolve residuals.
 * ``landreman_paul_radial_sampling_convergence``: checks VMEC-backed radial
@@ -296,6 +300,8 @@ ladders have started with the two-coefficient
 to the six-coefficient
 ``landreman_paul_vmec_boundary_six_parameter_gradient`` gate. The next closure
 item is comparing larger coefficient sets against adjoint/pullback gradients.
+The first vector-frequency Jacobian and VJP pullback gate is now implemented
+as ``landreman_paul_vmec_boundary_frequency_jacobian``.
 
 Current Validation Figures
 --------------------------

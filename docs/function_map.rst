@@ -280,6 +280,10 @@ Optimization
    Repeat the VMEC-boundary gradient validation across a resolution ladder and
    report frequency, objective, and gradient drift to the reference level.
 
+``validate_vmec_boundary_frequency_jacobian``
+   Compare the vector-frequency Jacobian and VJP pullback for VMEC boundary
+   coefficients against centered finite differences.
+
 Validation, Figures, and Benchmarks
 -----------------------------------
 

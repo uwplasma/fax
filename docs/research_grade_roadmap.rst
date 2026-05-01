@@ -55,10 +55,12 @@ End-to-end differentiable VMEC/Boozer/FAX optimization
    nested radial-surface gate checks five-to-seven surface drift. A first
    two-boundary-coefficient gate checks ``rc01`` and ``zs01`` jointly, and a
    six-boundary-coefficient gate adds the first broader low-mode shape
-   gradient check. Remaining
+   gradient check. A vector-frequency Jacobian and VJP-pullback gate now
+   checks the same six coefficients against centered finite differences.
+   Remaining
    work is to extend this to high-iteration converged VMEC2000 residual
-   solves, larger multi-parameter adjoint/pullback checks, and
-   multi-geometry optimization campaigns.
+   solves, larger coefficient sets, and multi-geometry optimization
+   campaigns.
 
 Multi-geometry cross-code benchmark suite
    Reactor-design claims require a curated benchmark matrix covering
@@ -105,8 +107,8 @@ First Implementation Steps
    ``examples/research/vmec_boozer_alfven_design_gradient.py``. The first
    VMEC-iteration gradient ladder is now implemented in
    ``examples/research/vmec_boozer_gradient_convergence.py``. The next step is
-   to compare larger coefficient sets against adjoint/pullback gradients, then
-   align the path with high-iteration VMEC/discrete-adjoint gradients.
+   to scale the Jacobian/pullback checks to larger coefficient sets and align
+   the path with high-iteration VMEC/discrete-adjoint gradients.
 5. Use the VMEC-equilibria public Boozer subset to select the next
    HSX/Ku-Boozer parity cases, then add matching STELLGAP/AE3D/CAS3D/FAR3D
    artifacts where possible. Extend to W7-X/LHD/NCSX once Boozer artifacts are

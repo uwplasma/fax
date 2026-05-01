@@ -154,6 +154,23 @@ class VmecBoozerFaxGradientConvergence:
         }
 
 
+@dataclass(frozen=True)
+class VmecBoozerFaxJacobianValidation:
+    """Vector-frequency Jacobian and pullback validation result."""
+
+    parameter_names: tuple[str, ...]
+    parameters: jax.Array
+    frequencies_hz: jax.Array
+    frequency_jacobian: jax.Array
+    finite_difference_jacobian: jax.Array
+    relative_jacobian_error: float
+    cotangent: jax.Array
+    pullback: jax.Array
+    finite_difference_pullback: jax.Array
+    relative_pullback_error: float
+    metadata: tuple[tuple[str, Any], ...]
+
+
 def prepare_vmec_boozer_fax_design_context(
     settings: VmecBoozerFaxDesignSettings,
 ) -> VmecBoozerFaxDesignContext:
@@ -501,6 +518,80 @@ def run_vmec_boundary_alfven_gradient_convergence(
     )
 
 
+def validate_vmec_boundary_frequency_jacobian(
+    settings: VmecBoozerFaxDesignSettings,
+    *,
+    parameters: Any | None = None,
+    cotangent: Any | None = None,
+    finite_difference_step: float = 2.0e-5,
+) -> VmecBoozerFaxJacobianValidation:
+    """Check VMEC-boundary frequency Jacobians and pullbacks.
+
+    This validates a vector-output map, not only the scalar risk objective:
+
+    ``boundary coefficients -> global Alfvén frequencies``.
+
+    The JAX ``jacrev`` Jacobian is compared with a centered finite-difference
+    Jacobian. A separate VJP pullback is checked against the finite-difference
+    Jacobian contracted with a deterministic cotangent vector.
+    """
+    context = prepare_vmec_boozer_fax_design_context(settings)
+    params = (
+        jnp.zeros((len(context.parameter_specs),), dtype=jnp.float64)
+        if parameters is None
+        else jnp.asarray(parameters, dtype=jnp.float64)
+    )
+    if int(params.shape[0]) != len(context.parameter_specs):
+        raise ValueError("parameters length must match selected VMEC boundary parameters")
+
+    def frequencies(x: jax.Array) -> jax.Array:
+        return vmec_boundary_fax_frequencies(x, context)
+
+    values = frequencies(params)
+    jacobian = jax.jacrev(frequencies)(params)
+    finite_difference = _centered_difference_jacobian(frequencies, params, finite_difference_step)
+    relative_jacobian_error = float(
+        jnp.linalg.norm(jacobian - finite_difference)
+        / jnp.maximum(jnp.linalg.norm(finite_difference), 1.0e-30)
+    )
+    if cotangent is None:
+        weights = jnp.asarray([1.0, -0.5, 0.25, -0.125, 0.0625, -0.03125], dtype=jnp.float64)
+        cotangent_array = weights[: int(values.shape[0])]
+    else:
+        cotangent_array = jnp.asarray(cotangent, dtype=jnp.float64)
+    if int(cotangent_array.shape[0]) != int(values.shape[0]):
+        raise ValueError("cotangent length must match the number of returned frequencies")
+
+    _, pullback_fun = jax.vjp(frequencies, params)
+    pullback = pullback_fun(cotangent_array)[0]
+    finite_difference_pullback = finite_difference.T @ cotangent_array
+    relative_pullback_error = float(
+        jnp.linalg.norm(pullback - finite_difference_pullback)
+        / jnp.maximum(jnp.linalg.norm(finite_difference_pullback), 1.0e-30)
+    )
+    metadata = (
+        ("input_path", str(Path(settings.input_path).expanduser().resolve())),
+        ("vmec_max_iter", int(settings.vmec_max_iter)),
+        ("vmec_step_size", float(settings.vmec_step_size)),
+        ("mboz", int(settings.mboz)),
+        ("nboz", int(settings.nboz)),
+        ("surface_s", tuple(float(x) for x in np.asarray(context.surface_s))),
+    )
+    return VmecBoozerFaxJacobianValidation(
+        parameter_names=context.parameter_names,
+        parameters=params,
+        frequencies_hz=values,
+        frequency_jacobian=jacobian,
+        finite_difference_jacobian=finite_difference,
+        relative_jacobian_error=relative_jacobian_error,
+        cotangent=cotangent_array,
+        pullback=pullback,
+        finite_difference_pullback=finite_difference_pullback,
+        relative_pullback_error=relative_pullback_error,
+        metadata=metadata,
+    )
+
+
 def _nearest_surface_indices(s_half: jax.Array, surfaces: tuple[float, ...]) -> jax.Array:
     s_array = np.asarray(s_half, dtype=float)
     indices = [int(np.argmin(np.abs(s_array - float(surface)))) for surface in surfaces]
@@ -516,6 +607,15 @@ def _centered_difference_gradient(objective: Any, params: jax.Array, step: float
         direction = jnp.zeros_like(params).at[index].set(h)
         entries.append((objective(params + direction) - objective(params - direction)) / (2.0 * h))
     return jnp.asarray(entries)
+
+
+def _centered_difference_jacobian(function: Any, params: jax.Array, step: float) -> jax.Array:
+    h = float(step)
+    columns = []
+    for index in range(int(params.shape[0])):
+        direction = jnp.zeros_like(params).at[index].set(h)
+        columns.append((function(params + direction) - function(params - direction)) / (2.0 * h))
+    return jnp.stack(columns, axis=1)
 
 
 def _line_search_descent(

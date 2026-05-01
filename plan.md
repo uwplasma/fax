@@ -1996,6 +1996,10 @@ gradient parity check to a first refinement ladder:
 - added ``landreman_paul_vmec_boundary_six_parameter_gradient`` for the
   low-order coefficient set ``rc01``, ``zs01``, ``rc1-1``, ``zs1-1``,
   ``rc10``, and ``zs10``,
+- added ``validate_vmec_boundary_frequency_jacobian`` and
+  ``landreman_paul_vmec_boundary_frequency_jacobian`` to compare the
+  six-parameter vector-frequency Jacobian and VJP pullback with centered
+  finite differences,
 - added a physics test that compares Landreman-Paul QA VMEC iteration levels
   2 and 4, requiring AD/finite-difference agreement and small objective,
   gradient, and global-frequency drift,
@@ -2017,9 +2021,10 @@ Observed ladder metrics for the public figure:
 Scope: this closes the first VMEC-iteration gradient-convergence lane and
 makes the remaining gradient risk explicit. It also starts the
 Boozer/operator-resolution, radial-surface, and first multi-parameter
-gradient-convergence lanes. The next lane is explicit adjoint/pullback
-comparison for larger coefficient sets and alignment with the high-iteration
-VMEC2000/discrete-adjoint path.
+gradient-convergence lanes. It also starts the explicit Jacobian/pullback
+lane for six boundary coefficients. The next lane is scaling this to larger
+coefficient sets and alignment with the high-iteration VMEC2000/discrete-
+adjoint path.
 
 ### 2026-04-30 CI/CD Status Check
 
