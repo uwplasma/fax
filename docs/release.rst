@@ -11,20 +11,26 @@ For a release, update both:
 * ``pyproject.toml`` project version
 * ``src/fax/__init__.py`` ``__version__``
 
-The v0.0.1 release uses ``0.0.1`` in both locations.
+The v0.0.2 release uses ``0.0.2`` in both locations.
 
 The PyPI distribution name is ``uwplasma-fax``. The import package and CLI are
 still ``fax``.
 
+FAX does not maintain a standalone ``CHANGELOG.md`` or ``MANIFEST.in``. Release
+notes are attached to GitHub Releases, and package inclusion is controlled by
+``pyproject.toml`` plus setuptools defaults.
+
 Local Release Gate
 ------------------
 
-Until GitHub Actions resume, this local gate is mandatory:
+Run this local gate before tagging any release, even when GitHub Actions are
+available:
 
 .. code-block:: bash
 
    python tools/generate_validation_figures.py
-   python tools/qa_figures.py
+   python tools/qa_figures.py --figure-dir docs/_static
+   python tools/qa_figures.py --figure-dir docs/_static/publication_suite
    python -m ruff check .
    python -m mypy src/fax
    python -m coverage run --source=src/fax -m pytest
@@ -44,12 +50,12 @@ When Actions are available:
 
 .. code-block:: bash
 
-   gh release create v0.0.1 --title "FAX v0.0.1" --notes-file .github/release_notes/v0.0.1.md
+   gh release create v0.0.2 --title "FAX v0.0.2" --generate-notes
 
 If Actions are unavailable, create a draft release and publish it once the
 account-level Actions blocker has cleared.
 
-v0.0.1 Readiness Notes
+v0.0.2 Readiness Notes
 ----------------------
 
 The local release candidate should include the current external-code parity
@@ -86,5 +92,7 @@ state before publishing:
   those geometries through the same FAX global operator, including
   coarse/reference truncation and runtime diagnostics.
 
-Do not publish the existing ``v0.0.1`` draft until the tag points at the final
-release commit and the full local release gate above is green.
+Do not publish ``v0.0.2`` until the tag points at the final release commit and
+the full local release gate above is green. The publish workflow runs from the
+published GitHub release and then uploads the built source distribution and
+wheel to PyPI through trusted publishing.

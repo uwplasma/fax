@@ -2120,3 +2120,50 @@ Added a coverage-badge fixture step that shallow-clones
 path resolution on GitHub runners and exercises the multi-geometry
 ``wout``/``boozmn`` FAX adapter gates in CI without adding large third-party
 equilibrium files to the FAX repository.
+
+### 2026-05-01 v0.0.2 Final Release Pass
+
+Started the final v0.0.2 polish/release lane requested for the first public
+follow-up release:
+
+- bumped package metadata and ``fax.__version__`` to ``0.0.2``,
+- removed the standalone ``CHANGELOG.md``, packaging ``MANIFEST.in``, and
+  stale v0.0.1 GitHub release-notes file,
+- kept the ``fax benchmark-manifest`` validation-traceability command and
+  documentation because it is part of the reviewer-facing external-code
+  artifact contract, not a packaging manifest,
+- updated README and release/publication docs to the v0.0.2 validation state,
+  including the 246-test release gate, 95% local optional-artifact gate, and
+  91.1% public CI coverage badge,
+- updated GitHub Actions to current Node-24-backed major versions
+  ``actions/checkout@v5`` and ``actions/setup-python@v6`` so tests, docs, and
+  publish workflows do not inherit Node 20 deprecation warnings.
+
+Release gate to run before tagging:
+
+1. ``python tools/generate_validation_figures.py``
+2. ``python tools/qa_figures.py --figure-dir docs/_static``
+3. ``python tools/qa_figures.py --figure-dir docs/_static/publication_suite``
+4. ``python -m ruff check .``
+5. ``python -m mypy src/fax``
+6. ``python -m coverage run --source=src/fax -m pytest``
+7. ``python -m coverage report --fail-under=95``
+8. ``python -m sphinx -W -b html docs docs/_build/html``
+9. ``python -m build``
+10. ``python -m twine check dist/*``
+11. commit, push, wait for GitHub ``Tests``/``Docs`` green, tag and publish
+    ``v0.0.2``, then verify the publish workflow/PyPI result.
+
+Local release-gate results:
+
+- figure generation completed and figure QA passed for ``docs/_static`` and
+  ``docs/_static/publication_suite``,
+- ``ruff`` and ``mypy`` passed,
+- full coverage run passed with ``246 passed in 512.86s`` and total coverage
+  ``95%`` under ``--fail-under=95``,
+- Sphinx ``-W`` documentation build passed,
+- ``python -m build`` produced ``uwplasma_fax-0.0.2.tar.gz`` and
+  ``uwplasma_fax-0.0.2-py3-none-any.whl``,
+- ``python -m twine check dist/*`` passed,
+- installed the built wheel into a temporary target and verified
+  ``fax.__version__ == "0.0.2"`` plus ``python -m fax --help``.

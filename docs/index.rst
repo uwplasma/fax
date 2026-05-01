@@ -5,7 +5,7 @@ fax
 eigenmode screening, fast-ion diagnostics, continuum gaps, and toroidal/helical
 coupling in stellarators.
 
-The v0.0.1 implementation includes profile and metric continuum operators,
+The v0.0.2 implementation includes profile and metric continuum operators,
 real ``boozmn`` local 3-D Boozer operators, reduced global radial eigenmodes,
 differentiable isolated-mode and cluster objectives, reduced gyro-Landau
 fast-ion closures, STELLGAP CTOK local-continuum/gap parity, and AE3D public

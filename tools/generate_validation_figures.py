@@ -1697,6 +1697,54 @@ def write_figure_manifest(output_dir: Path, paths: list[Path]) -> Path:
             for path in paths
         ],
     }
+    supplemental_figures = [
+        (
+            "vmec_boozer_alfven_design_gradient.svg",
+            "validation",
+            "End-to-end VMEC boundary-coefficient gradient through vmec_jax, booz_xform_jax, and a FAX "
+            "global Alfvén risk objective; not yet a multi-geometry converged optimization campaign.",
+        ),
+        (
+            "vmec_boozer_alfven_design_gradient.png",
+            "validation",
+            "End-to-end VMEC boundary-coefficient gradient through vmec_jax, booz_xform_jax, and a FAX "
+            "global Alfvén risk objective; not yet a multi-geometry converged optimization campaign.",
+        ),
+        (
+            "vmec_boozer_alfven_design_gradient.json",
+            "validation",
+            "Machine-readable metrics for the VMEC boundary-gradient validation figure.",
+        ),
+        (
+            "vmec_boozer_gradient_convergence.svg",
+            "validation",
+            "End-to-end VMEC boundary-gradient convergence ladder through vmec_jax, booz_xform_jax, and "
+            "FAX; not yet a multi-geometry converged optimization campaign.",
+        ),
+        (
+            "vmec_boozer_gradient_convergence.png",
+            "validation",
+            "End-to-end VMEC boundary-gradient convergence ladder through vmec_jax, booz_xform_jax, and "
+            "FAX; not yet a multi-geometry converged optimization campaign.",
+        ),
+        (
+            "vmec_boozer_gradient_convergence.json",
+            "validation",
+            "Machine-readable metrics for the VMEC boundary-gradient convergence ladder.",
+        ),
+    ]
+    indexed_files = {entry["file"] for entry in manifest["figures"]}
+    for filename, status, claim in supplemental_figures:
+        if filename in indexed_files or not (output_dir / filename).exists():
+            continue
+        manifest["figures"].append(
+            {
+                "file": filename,
+                "format": Path(filename).suffix.removeprefix("."),
+                "status": status,
+                "claim": claim,
+            }
+        )
     manifest_path = output_dir / "figure_manifest.json"
     manifest_path.write_text(json.dumps(manifest, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
     return manifest_path

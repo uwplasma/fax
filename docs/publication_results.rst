@@ -1,7 +1,7 @@
 Publication Results
 ===================
 
-This page is the v0.0.1 publication-readiness packet for FAX. It gathers the
+This page is the v0.0.2 publication-readiness packet for FAX. It gathers the
 figures, numerical gates, commands, claim levels, and remaining limitations in
 one place so a paper draft or review handoff can point to a single source of
 truth.
@@ -145,7 +145,7 @@ CAS3D/FAR3D
 Release Gate
 ------------
 
-The local v0.0.1 gate is:
+The local v0.0.2 gate is:
 
 .. code-block:: bash
 
@@ -160,8 +160,9 @@ The local v0.0.1 gate is:
    python -m build
    python -m twine check dist/*
 
-The expected result for this release candidate is 206 passing tests and total
-coverage above 95%.
+The expected result for this release candidate is 246 passing tests, total
+local optional-artifact coverage at or above 95%, and a public CI coverage
+badge currently reporting 91.1% on the GitHub-hosted fixture set.
 
 Remaining Publication Lanes
 ---------------------------

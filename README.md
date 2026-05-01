@@ -17,7 +17,7 @@ fast-ion drive/damping diagnostics, and design sensitivities. It is built to
 sit downstream of `vmec_jax` and `booz_xform_jax`, with TOML-driven workflows,
 publication-style figures, and validation artifacts that are easy to regenerate.
 
-FAX v0.0.1 is not yet a full ideal-MHD/kinetic replacement for AE3D, CAS3D,
+FAX v0.0.2 is not yet a full ideal-MHD/kinetic replacement for AE3D, CAS3D,
 FAR3D, or STELLGAP. It does provide a tested JAX foundation for research:
 profile and metric continuum operators, real `boozmn` local 3-D Boozer
 operators, reduced global radial eigenmodes, differentiable eigenvalue and
@@ -92,7 +92,7 @@ python -m pip install -e ".[dev]"
 fax --help
 ```
 
-After PyPI publishing is available, the package name is:
+From PyPI, the package name is:
 
 ```bash
 python -m pip install uwplasma-fax
@@ -194,7 +194,7 @@ python examples/research/vmec_equilibria_live_boozer.py --root /Users/rogerio/lo
 
 ## Validation And Cross-Code Status
 
-The v0.0.1 gate currently covers:
+The v0.0.2 gate currently covers:
 
 - analytic continuum limits, density scaling, gap ordering, and residual checks,
 - metric/Boozer Hermiticity, generalized-eigen residuals, Jacobian identities,
@@ -215,14 +215,15 @@ The v0.0.1 gate currently covers:
   parsed `lincheck` growth/frequency rows and a run-reported code-frequency
   normalization, a 50/100/200/400-step convergence ladder, and a finite-beta
   parameter scan.
-* Public VMEC-equilibria Boozer artifacts for HSX and Ku-Boozer QHS cases,
+- public VMEC-equilibria Boozer artifacts for HSX and Ku-Boozer QHS cases,
   propagated through FAX's global radial 3-D Boozer operator with
   boundary-condition and radial-stiffness variants.
-* Live `booz_xform_jax` generation from public W7-X/NCSX VMEC-equilibria
+- live `booz_xform_jax` generation from public W7-X/NCSX VMEC-equilibria
   `wout` files into FAX global radial 3-D Boozer diagnostics.
 
-Current headline local metrics are 246 passing tests, 95% coverage,
-STELLGAP CTOK p95 sorted-spectrum relative error about 2.55%, AE3D dense
+Current headline metrics are 246 passing tests, a 95% local optional-artifact
+release gate, and a 91.1% public CI coverage badge. Physics parity metrics
+include STELLGAP CTOK p95 sorted-spectrum relative error about 2.55%, AE3D dense
 spectrum max relative error about 1.6e-6, and AE3D B-weighted mode-shape error
 about 5.2e-8 for the checked public modes; AE3D mode-peak closest-continuum
 placement p95 error is below 3%.
