@@ -53,8 +53,9 @@ End-to-end differentiable VMEC/Boozer/FAX optimization
    ladder. A Boozer/angular gradient-refinement gate now also checks drift
    between the current coarse and refined Boozer/operator settings, and a
    nested radial-surface gate checks five-to-seven surface drift. A first
-   two-boundary-coefficient gate now checks ``rc01`` and ``zs01`` jointly.
-   Remaining
+   two-boundary-coefficient gate checks ``rc01`` and ``zs01`` jointly, and a
+   six-boundary-coefficient gate adds the first broader low-mode shape
+   gradient check. Remaining
    work is to extend this to high-iteration converged VMEC2000 residual
    solves, larger multi-parameter adjoint/pullback checks, and
    multi-geometry optimization campaigns.
@@ -104,8 +105,8 @@ First Implementation Steps
    ``examples/research/vmec_boozer_alfven_design_gradient.py``. The first
    VMEC-iteration gradient ladder is now implemented in
    ``examples/research/vmec_boozer_gradient_convergence.py``. The next step is
-   to scale the coefficient set beyond the first two boundary coefficients,
-   then align the path with high-iteration VMEC/discrete-adjoint gradients.
+   to compare larger coefficient sets against adjoint/pullback gradients, then
+   align the path with high-iteration VMEC/discrete-adjoint gradients.
 5. Use the VMEC-equilibria public Boozer subset to select the next
    HSX/Ku-Boozer parity cases, then add matching STELLGAP/AE3D/CAS3D/FAR3D
    artifacts where possible. Extend to W7-X/LHD/NCSX once Boozer artifacts are

@@ -2455,6 +2455,62 @@ def _gate_landreman_paul_vmec_boundary_multiparameter_gradient() -> GateResult:
     )
 
 
+def _gate_landreman_paul_vmec_boundary_six_parameter_gradient() -> GateResult:
+    gate_id = "landreman_paul_vmec_boundary_six_parameter_gradient"
+    tolerance = 2.0e-5
+    case = landreman_paul_qa_lowres()
+    if not case.vmec_input.exists():
+        return GateResult(
+            gate_id=gate_id,
+            status="skipped",
+            metric=float("nan"),
+            tolerance=tolerance,
+            message=f"missing Landreman-Paul VMEC input: {case.vmec_input}",
+        )
+
+    settings = VmecBoozerFaxDesignSettings(
+        input_path=case.vmec_input,
+        max_mode=1,
+        parameter_count=6,
+        surfaces=(0.25, 0.40, 0.55, 0.70),
+        mboz=3,
+        nboz=3,
+        theta_points=8,
+        zeta_points=8,
+        vmec_max_iter=4,
+    )
+    try:
+        result = validate_vmec_boundary_alfven_gradient(
+            settings,
+            finite_difference_step=2.0e-5,
+            descent_step=1.0e-3,
+        )
+    except ImportError as exc:
+        return GateResult(
+            gate_id=gate_id,
+            status="skipped",
+            metric=float("nan"),
+            tolerance=tolerance,
+            message=str(exc),
+        )
+
+    expected = ("rc01", "zs01", "rc1-1", "zs1-1", "rc10", "zs10")
+    finite = bool(jnp.all(jnp.isfinite(result.gradient))) and bool(jnp.all(jnp.isfinite(result.initial_frequencies_hz)))
+    descent_reduces = float(result.descent_objective) < float(result.objective)
+    names_match = result.parameter_names == expected
+    metric = result.relative_gradient_error if finite and descent_reduces and names_match else float("inf")
+    return _pass_fail(
+        gate_id,
+        metric,
+        tolerance,
+        (
+            "Landreman-Paul QA six-parameter VMEC boundary gradient agrees "
+            "with centered finite differences through vmec_jax -> booz_xform_jax -> FAX; "
+            f"relative error={metric:.3e}"
+        ),
+    )
+
+
 def _coarsen_metric_geometry(metric: MetricGeometry, *, radial_points: int) -> MetricGeometry:
     indices = np.unique(np.rint(np.linspace(0, int(metric.s.shape[0]) - 1, int(radial_points))).astype(int))
     if indices.size < 4:
@@ -3197,6 +3253,20 @@ def registered_validation_gates() -> tuple[ValidationGate, ...]:
             command="python -m pytest -m requires_vmec_jax tests/test_vmec_boozer_design.py tests/test_validation_registry.py",
             tags=("vmec_jax", "booz_xform_jax", "landreman-paul", "gradient", "multiparameter", "optimization"),
             _runner=_gate_landreman_paul_vmec_boundary_multiparameter_gradient,
+        ),
+        ValidationGate(
+            gate_id="landreman_paul_vmec_boundary_six_parameter_gradient",
+            title="Landreman-Paul QA VMEC-boundary six-parameter gradient",
+            layer="differentiability",
+            quantity="relative AD/finite-difference six-parameter gradient error",
+            tolerance=2.0e-5,
+            citation=(
+                "Landreman & Paul, Phys. Rev. Lett. 128, 035001 (2022); "
+                "six-boundary-coefficient gradient through vmec_jax, booz_xform_jax, and FAX"
+            ),
+            command="python -m pytest -m requires_vmec_jax tests/test_vmec_boozer_design.py tests/test_validation_registry.py",
+            tags=("vmec_jax", "booz_xform_jax", "landreman-paul", "gradient", "multiparameter", "optimization"),
+            _runner=_gate_landreman_paul_vmec_boundary_six_parameter_gradient,
         ),
         ValidationGate(
             gate_id="landreman_paul_continuum_finite",

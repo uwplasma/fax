@@ -204,6 +204,9 @@ tags, and command. The current gates are:
 * ``landreman_paul_vmec_boundary_multiparameter_gradient``: differentiates the
   first two selected VMEC boundary coefficients, ``rc01`` and ``zs01``, and
   checks the two-component gradient against centered finite differences.
+* ``landreman_paul_vmec_boundary_six_parameter_gradient``: extends the same
+  end-to-end gradient check to six low-order boundary coefficients,
+  ``rc01``, ``zs01``, ``rc1-1``, ``zs1-1``, ``rc10``, and ``zs10``.
 * ``landreman_paul_continuum_finite``: checks that the Landreman-Paul profile
   and metric continuum branches are finite and have small eigensolve residuals.
 * ``landreman_paul_radial_sampling_convergence``: checks VMEC-backed radial
@@ -289,9 +292,10 @@ Boozer/angular gradient-refinement gate. The
 ``landreman_paul_vmec_boundary_surface_gradient_convergence`` gate adds the
 first radial-surface gradient-refinement check. Multi-parameter gradient
 ladders have started with the two-coefficient
-``landreman_paul_vmec_boundary_multiparameter_gradient`` gate. The next closure
-item is scaling those checks to larger coefficient sets and comparing against
-adjoint/pullback gradients.
+``landreman_paul_vmec_boundary_multiparameter_gradient`` gate and now extend
+to the six-coefficient
+``landreman_paul_vmec_boundary_six_parameter_gradient`` gate. The next closure
+item is comparing larger coefficient sets against adjoint/pullback gradients.
 
 Current Validation Figures
 --------------------------
