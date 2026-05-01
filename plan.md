@@ -2105,3 +2105,18 @@ installation. This does not turn artifact/matrix parity into full native
 STELLGAP/AE3D/CAS3D/FAR3D physics parity, but it makes the existing public
 cross-code gates reproducible in CI and should move CI coverage closer to the
 local ``95.1%`` optional-gate baseline.
+
+### 2026-05-01 CI VMEC-Equilibria Coverage Fixture
+
+The public STELLGAP/AE3D artifact installer passed on GitHub Actions and the
+coverage-badge job completed in ``16m24s``. The badge increased from ``88.5%``
+to ``90.4%``. The remaining CI/local gap is partly because the public
+``landreman/vmec_equilibria`` catalog is available on the workstation but not
+on fresh GitHub runners.
+
+Added a coverage-badge fixture step that shallow-clones
+``https://github.com/landreman/vmec_equilibria`` into
+``$HOME/local/vmec_equilibria``. This matches ``fax.reference_cases`` default
+path resolution on GitHub runners and exercises the multi-geometry
+``wout``/``boozmn`` FAX adapter gates in CI without adding large third-party
+equilibrium files to the FAX repository.

@@ -57,6 +57,10 @@ jobs:
           python -m pip install -e /Users/rogerio/local/booz_xform_jax
       - name: Install public STELLGAP/AE3D validation artifacts
         run: python tools/install_public_cross_code_artifacts.py --root /Users/rogerio/local
+      - name: Install public VMEC-equilibria catalog
+        run: |
+          mkdir -p "$HOME/local"
+          git clone --depth 1 https://github.com/landreman/vmec_equilibria.git "$HOME/local/vmec_equilibria"
       - name: Generate coverage badge
         run: |
           python -m coverage run --source=src/fax -m pytest
