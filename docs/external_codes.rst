@@ -12,6 +12,31 @@ current external-code status is therefore split into three levels:
 * physics parity: FAX's native operator reproduces the external code on matched
   geometry, basis, normalization, boundary conditions, and tolerances.
 
+Public STELLGAP/AE3D Artifacts
+------------------------------
+
+The ORNL STELLGAP and AE3D repositories include public CTOK test packets used
+by FAX's cross-code artifact gates. Local machines and CI runners can install
+those packets into the validation layout with:
+
+.. code-block:: bash
+
+   python tools/install_public_cross_code_artifacts.py --root /Users/rogerio/local
+
+The installer shallow-clones ``ORNL-Fusion/Stellgap`` and ``ORNL-Fusion/AE3D``
+when they are absent, extracts the released ``*_test_problem*.tar.gz`` packets,
+and verifies the files consumed by FAX:
+
+* ``/Users/rogerio/local/Stellgap_test_inputs`` and
+  ``/Users/rogerio/local/Stellgap_test_problem`` for STELLGAP CTOK local
+  continuum and post-processing parity;
+* ``/Users/rogerio/local/AE3D_test_inputs`` and
+  ``/Users/rogerio/local/AE3D_test_problem`` for AE3D sparse-matrix,
+  eigenvalue, eigenmode, dense-solve, and continuum-placement gates.
+
+This keeps large third-party benchmark packets out of the FAX repository while
+making the public artifact parity lane reproducible on fresh runners.
+
 Current FAR3D GPU Run
 ---------------------
 

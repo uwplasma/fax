@@ -2081,3 +2081,27 @@ job, installed at the same absolute paths used by the current integration
 tests. This should make the automatic badge exercise the optional VMEC/Boozer
 coverage lanes while keeping the four-version matrix focused on portable
 package/test behavior.
+
+### 2026-05-01 CI Public Cross-Code Artifact Installation
+
+The VMEC/Boozer coverage fixture tightened the coverage-badge job from
+``83.3%`` to ``88.5%`` on GitHub Actions, and the full Python 3.10-3.13 test
+matrix plus docs workflow remained green. The remaining badge gap relative to
+the local optional-gate suite comes from local-only public ORNL STELLGAP/AE3D
+artifact gates.
+
+Added ``tools/install_public_cross_code_artifacts.py`` so fresh machines and
+CI can shallow-clone the public ORNL repositories and extract their released
+CTOK test packets into the same ``/Users/rogerio/local`` paths used by the
+validation gates:
+
+- ``ORNL-Fusion/Stellgap`` -> ``Stellgap_test_inputs`` and
+  ``Stellgap_test_problem``,
+- ``ORNL-Fusion/AE3D`` -> ``AE3D_test_inputs`` and ``AE3D_test_problem``.
+
+The installer verifies the required public files, rejects unsafe tar paths,
+and is now run in the coverage-badge job after the VMEC/Boozer fixture
+installation. This does not turn artifact/matrix parity into full native
+STELLGAP/AE3D/CAS3D/FAR3D physics parity, but it makes the existing public
+cross-code gates reproducible in CI and should move CI coverage closer to the
+local ``95.1%`` optional-gate baseline.
