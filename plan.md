@@ -2061,3 +2061,23 @@ the test suite now exercises plotting functionality stored in the separate
 ``plots`` extra. Fix: make the unpinned ``test`` extra include ``matplotlib``
 and ``pillow`` so ``.[test]`` remains the complete CI/local test-suite
 contract, while the base runtime dependency set remains lean.
+
+### 2026-05-01 CI Coverage Fixture Tightening
+
+The repaired ``Tests`` and ``Docs`` workflows passed on GitHub Actions after
+``a1b69e0``:
+
+- ``Docs`` built successfully,
+- ``Tests`` passed on Python 3.10, 3.11, 3.12, and 3.13,
+- the coverage-badge job passed and pushed ``77afa41``.
+
+That badge run was still only a portable-CI coverage view: it skipped local
+``vmec_jax`` and ``booz_xform_jax`` physics gates because GitHub runners do
+not have ``/Users/rogerio/local`` checkouts. The coverage badge therefore
+reported ``83.3%`` even though the full local optional-gate suite reports
+``95.1%``. The next CI tightening step adds public shallow clones of
+``uwplasma/vmec_jax`` and ``uwplasma/booz_xform_jax`` to the coverage-badge
+job, installed at the same absolute paths used by the current integration
+tests. This should make the automatic badge exercise the optional VMEC/Boozer
+coverage lanes while keeping the four-version matrix focused on portable
+package/test behavior.
