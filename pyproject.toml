@@ -42,7 +42,7 @@ Issues = "https://github.com/uwplasma/fax/issues"
 fax = "fax.cli:main"
 
 [project.optional-dependencies]
-test = ["coverage", "pytest"]
+test = ["coverage", "pytest", "matplotlib", "pillow"]
 docs = ["sphinx", "furo"]
 plots = ["matplotlib", "pillow"]
 ecosystem = ["diffrax", "equinox", "jaxopt", "lineax", "optimistix", "optax"]

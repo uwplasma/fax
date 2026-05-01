@@ -2043,3 +2043,21 @@ Checked GitHub Actions after the latest pushes:
 Local substitute verification continues to be the release gate while Actions
 are unavailable: full pytest with coverage, ruff, mypy, Sphinx ``-W``, figure
 QA, and targeted optional VMEC/Boozer gates.
+
+### 2026-05-01 CI Test-Extra Tightening
+
+After account-level Actions started runners again, the ``Tests`` workflow for
+``b229de3`` reached pytest and failed on Python 3.10/3.11/3.12/3.13 because
+``matplotlib`` was not installed. The failures were in plotting CLI tests and
+research-example tests that intentionally render publication figures:
+
+- ``tests/test_cli.py::test_cli_plot_commands_have_plain_output_and_error_contracts``,
+- ``tests/test_examples.py`` publication/demo figure runners,
+- ``tests/test_plotting.py`` continuum, convergence, global-mode, and gap-map
+  renderers.
+
+Root cause: the workflow installs ``python -m pip install -e ".[test]"`` while
+the test suite now exercises plotting functionality stored in the separate
+``plots`` extra. Fix: make the unpinned ``test`` extra include ``matplotlib``
+and ``pillow`` so ``.[test]`` remains the complete CI/local test-suite
+contract, while the base runtime dependency set remains lean.
