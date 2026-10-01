@@ -20,7 +20,7 @@ from fax.vmec_boozer_design import (
 def test_landreman_paul_vmec_boundary_boozer_fax_gradient_matches_finite_difference():
     pytest.importorskip("vmec_jax")
     pytest.importorskip("booz_xform_jax")
-    input_path = Path("/Users/rogerio/local/vmec_jax/examples/data/input.LandremanPaul2021_QA_lowres")
+    input_path = Path("../vmec_jax/examples/data/input.LandremanPaul2021_QA_lowres")
     if not input_path.exists():
         pytest.skip(f"missing local Landreman-Paul VMEC input: {input_path}")
 
@@ -59,7 +59,7 @@ def test_landreman_paul_vmec_boundary_boozer_fax_gradient_matches_finite_differe
 def test_vmec_boundary_fax_frequency_map_uses_selected_boundary_parameters():
     pytest.importorskip("vmec_jax")
     pytest.importorskip("booz_xform_jax")
-    input_path = Path("/Users/rogerio/local/vmec_jax/examples/data/input.LandremanPaul2021_QA_lowres")
+    input_path = Path("../vmec_jax/examples/data/input.LandremanPaul2021_QA_lowres")
     if not input_path.exists():
         pytest.skip(f"missing local Landreman-Paul VMEC input: {input_path}")
 
@@ -88,7 +88,7 @@ def test_vmec_boundary_fax_frequency_map_uses_selected_boundary_parameters():
 def test_landreman_paul_vmec_boundary_gradient_convergence_ladder_is_stable():
     pytest.importorskip("vmec_jax")
     pytest.importorskip("booz_xform_jax")
-    input_path = Path("/Users/rogerio/local/vmec_jax/examples/data/input.LandremanPaul2021_QA_lowres")
+    input_path = Path("../vmec_jax/examples/data/input.LandremanPaul2021_QA_lowres")
     if not input_path.exists():
         pytest.skip(f"missing local Landreman-Paul VMEC input: {input_path}")
 
@@ -127,7 +127,7 @@ def test_landreman_paul_vmec_boundary_gradient_convergence_ladder_is_stable():
 def test_landreman_paul_vmec_boundary_two_parameter_gradient_matches_finite_difference():
     pytest.importorskip("vmec_jax")
     pytest.importorskip("booz_xform_jax")
-    input_path = Path("/Users/rogerio/local/vmec_jax/examples/data/input.LandremanPaul2021_QA_lowres")
+    input_path = Path("../vmec_jax/examples/data/input.LandremanPaul2021_QA_lowres")
     if not input_path.exists():
         pytest.skip(f"missing local Landreman-Paul VMEC input: {input_path}")
 
@@ -163,7 +163,7 @@ def test_landreman_paul_vmec_boundary_two_parameter_gradient_matches_finite_diff
 def test_landreman_paul_vmec_boundary_six_parameter_gradient_matches_finite_difference():
     pytest.importorskip("vmec_jax")
     pytest.importorskip("booz_xform_jax")
-    input_path = Path("/Users/rogerio/local/vmec_jax/examples/data/input.LandremanPaul2021_QA_lowres")
+    input_path = Path("../vmec_jax/examples/data/input.LandremanPaul2021_QA_lowres")
     if not input_path.exists():
         pytest.skip(f"missing local Landreman-Paul VMEC input: {input_path}")
 
@@ -200,7 +200,7 @@ def test_landreman_paul_vmec_boundary_six_parameter_gradient_matches_finite_diff
 def test_landreman_paul_vmec_boundary_frequency_jacobian_and_pullback_match_finite_difference():
     pytest.importorskip("vmec_jax")
     pytest.importorskip("booz_xform_jax")
-    input_path = Path("/Users/rogerio/local/vmec_jax/examples/data/input.LandremanPaul2021_QA_lowres")
+    input_path = Path("../vmec_jax/examples/data/input.LandremanPaul2021_QA_lowres")
     if not input_path.exists():
         pytest.skip(f"missing local Landreman-Paul VMEC input: {input_path}")
 

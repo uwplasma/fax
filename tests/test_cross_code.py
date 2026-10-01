@@ -147,8 +147,8 @@ def test_ae3d_continuum_placement_from_arrays_identifies_peak_surface_and_branch
 
 @pytest.mark.requires_booz_xform_jax
 def test_stellgap_ctok_local_continuum_comparison_passes_or_skips():
-    boozmn = Path("/Users/rogerio/local/Stellgap_test_inputs/boozmn_ctok.nc")
-    alfven_post = Path("/Users/rogerio/local/Stellgap_test_problem/alfven_post")
+    boozmn = Path("../Stellgap_test_inputs/boozmn_ctok.nc")
+    alfven_post = Path("../Stellgap_test_problem/alfven_post")
     if not boozmn.exists() or not alfven_post.exists():
         pytest.skip("missing local ORNL STELLGAP CTOK test artifacts")
 
@@ -176,12 +176,12 @@ def test_stellgap_ctok_local_continuum_comparison_passes_or_skips():
 
 
 def test_stellgap_and_ae3d_public_artifact_consistency_passes_or_skips():
-    stellgap_spec = Path("/Users/rogerio/local/Stellgap_test_problem/alfven_spec")
-    stellgap_post = Path("/Users/rogerio/local/Stellgap_test_problem/alfven_post")
-    omega2 = Path("/Users/rogerio/local/AE3D_test_problem/omega2.dat")
-    egn_values = Path("/Users/rogerio/local/AE3D_test_problem/egn_values.dat")
-    a_matrix = Path("/Users/rogerio/local/AE3D_test_problem/a_matrix.dat")
-    b_matrix = Path("/Users/rogerio/local/AE3D_test_problem/b_matrix.dat")
+    stellgap_spec = Path("../Stellgap_test_problem/alfven_spec")
+    stellgap_post = Path("../Stellgap_test_problem/alfven_post")
+    omega2 = Path("../AE3D_test_problem/omega2.dat")
+    egn_values = Path("../AE3D_test_problem/egn_values.dat")
+    a_matrix = Path("../AE3D_test_problem/a_matrix.dat")
+    b_matrix = Path("../AE3D_test_problem/b_matrix.dat")
     if not all(path.exists() for path in (stellgap_spec, stellgap_post, omega2, egn_values, a_matrix, b_matrix)):
         pytest.skip("missing local ORNL STELLGAP/AE3D public answer artifacts")
 
@@ -200,7 +200,7 @@ def test_stellgap_and_ae3d_public_artifact_consistency_passes_or_skips():
 
 
 def test_ae3d_public_matrix_eigenmode_parity_passes_or_skips():
-    root = Path("/Users/rogerio/local/AE3D_test_problem")
+    root = Path("../AE3D_test_problem")
     a_matrix = root / "a_matrix.dat"
     b_matrix = root / "b_matrix.dat"
     egn_mode = root / "egn_mode_asci.dat"
@@ -226,7 +226,7 @@ def test_ae3d_public_matrix_eigenmode_parity_passes_or_skips():
 
 
 def test_ae3d_public_dense_spectrum_parity_passes_or_skips():
-    root = Path("/Users/rogerio/local/AE3D_test_problem")
+    root = Path("../AE3D_test_problem")
     a_matrix = root / "a_matrix.dat"
     b_matrix = root / "b_matrix.dat"
     egn_mode = root / "egn_mode_asci.dat"
@@ -248,7 +248,7 @@ def test_ae3d_public_dense_spectrum_parity_passes_or_skips():
 
 
 def test_ae3d_public_global_mode_shape_parity_passes_or_skips():
-    root = Path("/Users/rogerio/local/AE3D_test_problem")
+    root = Path("../AE3D_test_problem")
     a_matrix = root / "a_matrix.dat"
     b_matrix = root / "b_matrix.dat"
     egn_mode = root / "egn_mode_asci.dat"
@@ -272,9 +272,9 @@ def test_ae3d_public_global_mode_shape_parity_passes_or_skips():
 
 @pytest.mark.requires_booz_xform_jax
 def test_ae3d_public_global_mode_continuum_placement_passes_or_skips():
-    root = Path("/Users/rogerio/local/AE3D_test_problem")
+    root = Path("../AE3D_test_problem")
     egn_mode = root / "egn_mode_asci.dat"
-    boozmn = Path("/Users/rogerio/local/AE3D_test_inputs/boozmn_ctok.nc")
+    boozmn = Path("../AE3D_test_inputs/boozmn_ctok.nc")
     if not egn_mode.exists() or not boozmn.exists():
         pytest.skip("missing local ORNL AE3D public eigenmode or CTOK boozmn artifacts")
 

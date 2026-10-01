@@ -1,6 +1,6 @@
 # First VMEC-backed stellarator reference target for FAX.
-# Paths assume this repository is checked out as /Users/rogerio/local/fax
-# beside /Users/rogerio/local/vmec_jax.
+# Paths assume this repository is checked out as ../fax
+# beside ../vmec_jax.
 
 [run]
 case = "LandremanPaul2021_QA_lowres"

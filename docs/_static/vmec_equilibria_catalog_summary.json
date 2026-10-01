@@ -74,7 +74,7 @@
         "boozmn-available"
       ],
       "vmec_input": null,
-      "wout": "/Users/rogerio/local/vmec_equilibria/HSX/QHS_vac/wout_HSX_QHS_vac.nc"
+      "wout": "../vmec_equilibria/HSX/QHS_vac/wout_HSX_QHS_vac.nc"
     },
     {
       "aspect_ratio": 9.969435875661599,
@@ -147,8 +147,8 @@
         "quasi-helical",
         "filtered"
       ],
-      "vmec_input": "/Users/rogerio/local/vmec_equilibria/HSX/filtered_to_remove_modular_ripple/input.hsxt",
-      "wout": "/Users/rogerio/local/vmec_equilibria/HSX/filtered_to_remove_modular_ripple/wout_hsxt.nc"
+      "vmec_input": "../vmec_equilibria/HSX/filtered_to_remove_modular_ripple/input.hsxt",
+      "wout": "../vmec_equilibria/HSX/filtered_to_remove_modular_ripple/wout_hsxt.nc"
     },
     {
       "aspect_ratio": 11.68201353577267,
@@ -221,8 +221,8 @@
         "quasi-helical",
         "literature"
       ],
-      "vmec_input": "/Users/rogerio/local/vmec_equilibria/NuhrenbergZille_1988_QHS/ns51/input.NuhrenbergZille_1988_QHS",
-      "wout": "/Users/rogerio/local/vmec_equilibria/NuhrenbergZille_1988_QHS/ns51/wout_NuhrenbergZille_1988_QHS.nc"
+      "vmec_input": "../vmec_equilibria/NuhrenbergZille_1988_QHS/ns51/input.NuhrenbergZille_1988_QHS",
+      "wout": "../vmec_equilibria/NuhrenbergZille_1988_QHS/ns51/wout_NuhrenbergZille_1988_QHS.nc"
     },
     {
       "aspect_ratio": 6.698251293157495,
@@ -295,8 +295,8 @@
         "quasi-helical",
         "wistell"
       ],
-      "vmec_input": "/Users/rogerio/local/vmec_equilibria/QHS46/ns201/input.qhs46_ns201",
-      "wout": "/Users/rogerio/local/vmec_equilibria/QHS46/ns201/wout_qhs46_ns201.nc"
+      "vmec_input": "../vmec_equilibria/QHS46/ns201/input.qhs46_ns201",
+      "wout": "../vmec_equilibria/QHS46/ns201/wout_qhs46_ns201.nc"
     },
     {
       "aspect_ratio": 10.750972196011562,
@@ -369,8 +369,8 @@
         "optimized",
         "w7-x"
       ],
-      "vmec_input": "/Users/rogerio/local/vmec_equilibria/W7-X/Standard/input.txt",
-      "wout": "/Users/rogerio/local/vmec_equilibria/W7-X/Standard/wout.nc"
+      "vmec_input": "../vmec_equilibria/W7-X/Standard/input.txt",
+      "wout": "../vmec_equilibria/W7-X/Standard/wout.nc"
     },
     {
       "aspect_ratio": 11.177905836105717,
@@ -443,8 +443,8 @@
         "optimized",
         "w7-x"
       ],
-      "vmec_input": "/Users/rogerio/local/vmec_equilibria/W7-X/HighMirror/input.txt",
-      "wout": "/Users/rogerio/local/vmec_equilibria/W7-X/HighMirror/wout.nc"
+      "vmec_input": "../vmec_equilibria/W7-X/HighMirror/input.txt",
+      "wout": "../vmec_equilibria/W7-X/HighMirror/wout.nc"
     },
     {
       "aspect_ratio": 4.365254725961326,
@@ -517,8 +517,8 @@
         "quasi-axisymmetric",
         "ncsx"
       ],
-      "vmec_input": "/Users/rogerio/local/vmec_equilibria/NCSX/li383_1.4m/input.li383_1.4m",
-      "wout": "/Users/rogerio/local/vmec_equilibria/NCSX/li383_1.4m/wout_li383_1.4m.nc"
+      "vmec_input": "../vmec_equilibria/NCSX/li383_1.4m/input.li383_1.4m",
+      "wout": "../vmec_equilibria/NCSX/li383_1.4m/wout_li383_1.4m.nc"
     },
     {
       "aspect_ratio": 4.546696071545321,
@@ -591,8 +591,8 @@
         "reactor",
         "compact-stellarator"
       ],
-      "vmec_input": "/Users/rogerio/local/vmec_equilibria/ARIES-CS/n3are_R7.75B5.7/input.n3are_R7.75B5.7",
-      "wout": "/Users/rogerio/local/vmec_equilibria/ARIES-CS/n3are_R7.75B5.7/wout_n3are_R7.75B5.7.nc"
+      "vmec_input": "../vmec_equilibria/ARIES-CS/n3are_R7.75B5.7/input.n3are_R7.75B5.7",
+      "wout": "../vmec_equilibria/ARIES-CS/n3are_R7.75B5.7/wout_n3are_R7.75B5.7.nc"
     },
     {
       "aspect_ratio": 5.795501964879454,
@@ -666,7 +666,7 @@
         "experiment"
       ],
       "vmec_input": null,
-      "wout": "/Users/rogerio/local/vmec_equilibria/LHD/090493t2330/wout_LHD_090493t2330.nc"
+      "wout": "../vmec_equilibria/LHD/090493t2330/wout_LHD_090493t2330.nc"
     },
     {
       "aspect_ratio": 7.811011049379658,
@@ -739,8 +739,8 @@
         "heliac",
         "experiment"
       ],
-      "vmec_input": "/Users/rogerio/local/vmec_equilibria/TJ-II/100_44_64_0/input.100_44_64_0.0",
-      "wout": "/Users/rogerio/local/vmec_equilibria/TJ-II/100_44_64_0/wout_100_44_64_0.0.nc"
+      "vmec_input": "../vmec_equilibria/TJ-II/100_44_64_0/input.100_44_64_0.0",
+      "wout": "../vmec_equilibria/TJ-II/100_44_64_0/wout_100_44_64_0.0.nc"
     },
     {
       "aspect_ratio": 2.999999999999999,
@@ -813,8 +813,8 @@
         "axisymmetric",
         "control"
       ],
-      "vmec_input": "/Users/rogerio/local/vmec_equilibria/ITER_model/ns201/input.ITERModel",
-      "wout": "/Users/rogerio/local/vmec_equilibria/ITER_model/ns201/wout_ITERModel.nc"
+      "vmec_input": "../vmec_equilibria/ITER_model/ns201/input.ITERModel",
+      "wout": "../vmec_equilibria/ITER_model/ns201/wout_ITERModel.nc"
     }
   ],
   "csv": "docs/_static/vmec_equilibria_catalog.csv",
@@ -822,6 +822,6 @@
     "docs/_static/vmec_equilibria_catalog.png",
     "docs/_static/vmec_equilibria_catalog.svg"
   ],
-  "root": "/Users/rogerio/local/vmec_equilibria",
+  "root": "../vmec_equilibria",
   "scope": "Multi-geometry VMEC wout profile-continuum catalog from landreman/vmec_equilibria; not a full Boozer/global cross-code parity claim."
 }

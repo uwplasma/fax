@@ -22,7 +22,7 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--input",
         type=Path,
-        default=Path("/Users/rogerio/local/vmec_jax/examples/data/input.LandremanPaul2021_QA_lowres"),
+        default=Path("../vmec_jax/examples/data/input.LandremanPaul2021_QA_lowres"),
         help="VMEC input file for the fixed-boundary design-gradient ladder.",
     )
     parser.add_argument("--output-dir", type=Path, default=Path("outputs/vmec_boozer_gradient_convergence"))

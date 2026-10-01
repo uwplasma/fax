@@ -29,7 +29,7 @@
         0.6479591836734693,
         0.8010204081632653
       ],
-      "wout": "/Users/rogerio/local/vmec_equilibria/W7-X/Standard/wout.nc"
+      "wout": "../vmec_equilibria/W7-X/Standard/wout.nc"
     },
     {
       "case_id": "ncsx_li383",
@@ -60,7 +60,7 @@
         0.65625,
         0.8020833333333333
       ],
-      "wout": "/Users/rogerio/local/vmec_equilibria/NCSX/li383_1.4m/wout_li383_1.4m.nc"
+      "wout": "../vmec_equilibria/NCSX/li383_1.4m/wout_li383_1.4m.nc"
     }
   ]
 }

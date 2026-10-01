@@ -48,7 +48,7 @@ cross-code gates:
 
 .. code-block:: bash
 
-   python tools/install_public_cross_code_artifacts.py --root /Users/rogerio/local
+   python tools/install_public_cross_code_artifacts.py --root ..
 
 Check a kinetic growth-rate parity packet when FAR3D/CAS3D-K references are
 available:

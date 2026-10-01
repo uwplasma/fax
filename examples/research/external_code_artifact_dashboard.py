@@ -25,8 +25,8 @@ from fax.cross_code import (  # noqa: E402
     stellgap_spec_postprocessed_continuum,
 )
 
-DEFAULT_STELLGAP_DIR = Path("/Users/rogerio/local/Stellgap_test_problem")
-DEFAULT_AE3D_DIR = Path("/Users/rogerio/local/AE3D_test_problem")
+DEFAULT_STELLGAP_DIR = Path("../Stellgap_test_problem")
+DEFAULT_AE3D_DIR = Path("../AE3D_test_problem")
 
 
 def build_dashboard(stellgap_dir: Path, ae3d_dir: Path, output_dir: Path) -> dict[str, object]:

@@ -1,9 +1,9 @@
 # fax Planning And Handoff Log
 
-Repository: <https://github.com/uwplasma/fax>  
-Visibility: private  
-Local checkout: `/Users/rogerio/local/fax`  
-Primary local dependencies: `/Users/rogerio/local/vmec_jax`, `/Users/rogerio/local/booz_xform_jax`  
+Repository: <https://github.com/uwplasma/fax>
+Visibility: private
+Local checkout: `../fax`
+Primary local dependencies: `../vmec_jax`, `../booz_xform_jax`
 Initial session date: 2026-04-23 America/Chicago, with online literature survey current to 2026-04-24.
 
 ## Mission
@@ -90,7 +90,7 @@ Implication for `fax`: do not make Boozer mandatory for every model. Start with 
 Sources:
 
 - <https://princetonuniversity.github.io/STELLOPT/BOOZ_XFORM.html>
-- local checkout: `/Users/rogerio/local/booz_xform_jax`
+- local checkout: `../booz_xform_jax`
 
 ### JAX Architecture Sources
 
@@ -957,14 +957,14 @@ Needed docs:
 
 ### 2026-04-23 America/Chicago
 
-- Confirmed local workspace at `/Users/rogerio/local/tests`.
+- Confirmed local workspace at `../tests`.
 - Confirmed authenticated GitHub CLI account with `repo` and `workflow` scopes.
 - Confirmed local dependency checkouts:
-  - `/Users/rogerio/local/vmec_jax`
-  - `/Users/rogerio/local/booz_xform_jax`
+  - `../vmec_jax`
+  - `../booz_xform_jax`
 - Confirmed `uwplasma/fax` did not already exist.
 - Created private GitHub repository `uwplasma/fax`.
-- Cloned it to `/Users/rogerio/local/fax`.
+- Cloned it to `../fax`.
 - Inspected local `vmec_jax` and `booz_xform_jax` packaging, docs, and CLI patterns.
 - Performed initial online survey of FAR3D, STELLGAP, AE3D, CAS3D/CAS3D-K, EUTERPE, Boozer-coordinate tooling, and JAX transform documentation.
 - Added initial package scaffold, docs scaffold, workflows, examples, tests, and this plan.
@@ -1114,12 +1114,12 @@ Needed docs:
   - Added `examples/research/boozmn_global_3d_eigenmodes.py` and generated `boozmn_global_3d_eigenmodes` README/docs figure.
   - Scope note: this closes the global radial operator lane for the current shear-Alfven/Boozer envelope model; STELLGAP/AE3D/CAS3D cross-code benchmarking remains the next validation lane.
 - Added the next cross-code/differentiability/fast-ion milestone:
-  - Cloned public code references into `/Users/rogerio/local`: ORNL `Stellgap`, ORNL `AE3D`, DSfusion `FAR3d`, `PyStellgap`, and `shearalfvenwave`.
-  - Extracted public ORNL STELLGAP and AE3D answer artifacts into `/Users/rogerio/local/Stellgap_test_problem`, `/Users/rogerio/local/Stellgap_test_inputs`, `/Users/rogerio/local/AE3D_test_problem`, and `/Users/rogerio/local/AE3D_test_inputs`.
+  - Cloned public code references into `..`: ORNL `Stellgap`, ORNL `AE3D`, DSfusion `FAR3d`, `PyStellgap`, and `shearalfvenwave`.
+  - Extracted public ORNL STELLGAP and AE3D answer artifacts into `../Stellgap_test_problem`, `../Stellgap_test_inputs`, `../AE3D_test_problem`, and `../AE3D_test_inputs`.
   - Built STELLGAP locally with:
-    - `make PRECOMP=/opt/homebrew/bin/gcc-15 STELLOPT_PATH=/Users/rogerio/local/STELLOPT/ NETCDF_LIB='-L/opt/homebrew/Cellar/netcdf-fortran/4.6.2/lib -lnetcdff -L/opt/homebrew/Cellar/netcdf/4.9.3/lib -lnetcdf'`
-    - Produced `/Users/rogerio/local/Stellgap/xmetric`, `xstgap`, `xstgap_snd_ver6`, and `xstgap_snd_ver7`.
-    - Ran `/Users/rogerio/local/Stellgap/xmetric ctok` in `/Users/rogerio/local/Stellgap_test_inputs`, which regenerated `ae_metric.dat` and `tae_data_boozer`.
+    - `make PRECOMP=/opt/homebrew/bin/gcc-15 STELLOPT_PATH=../STELLOPT/ NETCDF_LIB='-L/opt/homebrew/Cellar/netcdf-fortran/4.6.2/lib -lnetcdff -L/opt/homebrew/Cellar/netcdf/4.9.3/lib -lnetcdf'`
+    - Produced `../Stellgap/xmetric`, `xstgap`, `xstgap_snd_ver6`, and `xstgap_snd_ver7`.
+    - Ran `../Stellgap/xmetric ctok` in `../Stellgap_test_inputs`, which regenerated `ae_metric.dat` and `tae_data_boozer`.
     - `xstgap` starts and prints version/MPI/grid metadata on the CTOK inputs, but exits on this gfortran/OpenMPI stack while opening an invalid `alfven_spec...` path. Do not treat executable STELLGAP parity as closed until this runtime issue is understood.
   - Attempted a local FAR3D build. CMake configured with Homebrew `libomp`, but the Fortran build stopped at the CUDA Fortran `cudafor.mod` dependency in `src/matrix.f90`; a CPU-only build recipe remains open.
   - Confirmed AE3D public build scripts expect Intel `ifort`/`ifx`, which is not available on this machine; the answer artifacts are usable now, while executable parity waits on a portable build path.
@@ -1275,9 +1275,9 @@ Use `LandremanPaul2021_QA_lowres` as the first `vmec_jax`/VMEC-backed stellarato
 
 Local paths identified on 2026-04-24:
 
-- VMEC input: `/Users/rogerio/local/vmec_jax/examples/data/input.LandremanPaul2021_QA_lowres`
-- VMEC `wout`: `/Users/rogerio/local/vmec_jax/examples/data/wout_LandremanPaul2021_QA_lowres.nc`
-- alternate `wout` fixture: `/Users/rogerio/local/simsopt/tests/test_files/wout_LandremanPaul2021_QA_lowres.nc`
+- VMEC input: `../vmec_jax/examples/data/input.LandremanPaul2021_QA_lowres`
+- VMEC `wout`: `../vmec_jax/examples/data/wout_LandremanPaul2021_QA_lowres.nc`
+- alternate `wout` fixture: `../simsopt/tests/test_files/wout_LandremanPaul2021_QA_lowres.nc`
 
 Why this case:
 
@@ -1385,7 +1385,7 @@ parity:
 - Added `run_stellgap_ctok_executable` and the `stellgap-executable` benchmark
   family. The runner copies public CTOK inputs into a temporary directory and
   records return code, output files, stdout/stderr tails, and elapsed time. On
-  the current local gfortran/OpenMPI build, `/Users/rogerio/local/Stellgap/xstgap`
+  the current local gfortran/OpenMPI build, `../Stellgap/xstgap`
   still fails while opening an invalid `alfven_spec...` path, so the benchmark
   records `failed` status and no runtime parity claim is made.
 - Added real-`boozmn` global radial block gates for angular quadrature
@@ -1746,10 +1746,10 @@ resulting held-out growth-rate gate part of the benchmark manifest.
 
 ### 2026-04-30 FAR3D GPU Build/Run Artifact
 
-Closed the first external FAR3D executable-runtime lane on the `office` GPU
+Closed the first external FAR3D executable-runtime lane on the `benchmark` GPU
 host:
 
-- cloned `DSfusion/FAR3d` under `/home/rjorge/local/FAR3d`,
+- cloned `DSfusion/FAR3d` under `../FAR3d`,
 - confirmed the CPU matrix path can build with the existing conda Fortran/MPI
   toolchain when `matrix_cpu.f90` is copied over `src/matrix.f90`,
 - installed a user-space minimal NVIDIA HPC SDK 25.9 payload because the full
@@ -1786,7 +1786,7 @@ against the FAX fast-ion closure.
 Advanced the FAR3D external-code lane from a single executable trace to a
 bounded convergence artifact:
 
-- ran the same public DIII-D `Eq_DIIID_RS` FAR3D GPU case on `office` at
+- ran the same public DIII-D `Eq_DIIID_RS` FAR3D GPU case on `benchmark` at
   `maxstp = 50, 100, 200, 400`,
 - archived compact `farprt0000`, `farin`, `stdout`, `stderr`, runtime, and
   extracted `lincheck` rows under
@@ -1802,7 +1802,7 @@ bounded convergence artifact:
 
 Observed metrics for this DIII-D artifact:
 
-- total ladder runtime on `office`: 15 seconds,
+- total ladder runtime on `benchmark`: 15 seconds,
 - 200-vs-400 maximum relative growth-rate difference: `2.6e-5`,
 - 200-vs-400 maximum relative real-frequency difference: `6.8e-6`,
 - 400-step across-field/harmonic spread: zero at printed FAR3D precision.
@@ -1819,7 +1819,7 @@ Advanced the FAR3D lane from run-length convergence to a first bounded
 parameter scan:
 
 - ran the same public DIII-D ``Eq_DIIID_RS`` FAR3D GPU executable/input on
-  ``office`` at ``bet0_f = 0.000, 0.010, 0.030, 0.060, 0.090`` with
+  ``benchmark`` at ``bet0_f = 0.000, 0.010, 0.030, 0.060, 0.090`` with
   ``maxstp = 200``,
 - archived compact ``farprt0000``, ``farin``, ``stdout``, ``stderr``,
   runtime, and extracted ``lincheck`` rows under
@@ -1837,7 +1837,7 @@ parameter scan:
 
 Observed metrics for this DIII-D artifact:
 
-- total scan runtime on ``office``: 12 seconds,
+- total scan runtime on ``benchmark``: 12 seconds,
 - finite-beta mean-growth values: ``0.0147696554``, ``0.0511065958``,
   ``0.1006467917``, ``0.177477`` in FAR3D code units,
 - finite-beta linear slope: ``2.0007`` code units per ``bet0_f``,
@@ -1855,7 +1855,7 @@ and repeat the workflow on at least one stellarator geometry.
 Started closing the multi-geometry reactor-design lane using the public
 ``landreman/vmec_equilibria`` repository:
 
-- used the existing local clone at ``/Users/rogerio/local/vmec_equilibria``,
+- used the existing local clone at ``../vmec_equilibria``,
 - added ``VmecEquilibriaCase``, ``vmec_equilibria_catalog``,
   ``available_vmec_equilibria_cases``, and ``vmec_equilibria_root`` to
   ``fax.reference_cases``,
@@ -2073,7 +2073,7 @@ The repaired ``Tests`` and ``Docs`` workflows passed on GitHub Actions after
 
 That badge run was still only a portable-CI coverage view: it skipped local
 ``vmec_jax`` and ``booz_xform_jax`` physics gates because GitHub runners do
-not have ``/Users/rogerio/local`` checkouts. The coverage badge therefore
+not have ``..`` checkouts. The coverage badge therefore
 reported ``83.3%`` even though the full local optional-gate suite reports
 ``95.1%``. The next CI tightening step adds public shallow clones of
 ``uwplasma/vmec_jax`` and ``uwplasma/booz_xform_jax`` to the coverage-badge
@@ -2092,7 +2092,7 @@ artifact gates.
 
 Added ``tools/install_public_cross_code_artifacts.py`` so fresh machines and
 CI can shallow-clone the public ORNL repositories and extract their released
-CTOK test packets into the same ``/Users/rogerio/local`` paths used by the
+CTOK test packets into the same ``..`` paths used by the
 validation gates:
 
 - ``ORNL-Fusion/Stellgap`` -> ``Stellgap_test_inputs`` and

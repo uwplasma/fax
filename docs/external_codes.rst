@@ -21,17 +21,17 @@ those packets into the validation layout with:
 
 .. code-block:: bash
 
-   python tools/install_public_cross_code_artifacts.py --root /Users/rogerio/local
+   python tools/install_public_cross_code_artifacts.py --root ..
 
 The installer shallow-clones ``ORNL-Fusion/Stellgap`` and ``ORNL-Fusion/AE3D``
 when they are absent, extracts the released ``*_test_problem*.tar.gz`` packets,
 and verifies the files consumed by FAX:
 
-* ``/Users/rogerio/local/Stellgap_test_inputs`` and
-  ``/Users/rogerio/local/Stellgap_test_problem`` for STELLGAP CTOK local
+* ``../Stellgap_test_inputs`` and
+  ``../Stellgap_test_problem`` for STELLGAP CTOK local
   continuum and post-processing parity;
-* ``/Users/rogerio/local/AE3D_test_inputs`` and
-  ``/Users/rogerio/local/AE3D_test_problem`` for AE3D sparse-matrix,
+* ``../AE3D_test_inputs`` and
+  ``../AE3D_test_problem`` for AE3D sparse-matrix,
   eigenvalue, eigenmode, dense-solve, and continuum-placement gates.
 
 This keeps large third-party benchmark packets out of the FAX repository while
@@ -40,14 +40,14 @@ making the public artifact parity lane reproducible on fresh runners.
 Current FAR3D GPU Run
 ---------------------
 
-On 2026-04-30, FAR3D was built and run on the ``office`` GPU host using the
+On 2026-04-30, FAR3D was built and run on the ``benchmark`` GPU host using the
 public ``DSfusion/FAR3d`` repository at commit ``c76bdfe``. The host has two
 NVIDIA RTX A4000 GPUs. The successful build used a user-space, minimally
 extracted NVIDIA HPC SDK 25.9 CUDA-Fortran toolchain because the full SDK
 installer exceeded the available filesystem space and the system compiler did
 not provide ``cudafor.mod``.
 
-Build recipe used on ``office``:
+Build recipe used on ``benchmark``:
 
 .. code-block:: bash
 
@@ -141,7 +141,7 @@ FAR3D Run-Length Convergence Ladder
 The next FAR3D step was a bounded run-length ladder on the same GPU executable
 and public DIII-D input. Runs with ``maxstp = 50, 100, 200, 400`` were archived
 under ``external_artifacts/far3d/gpu_diiid_nvhpc_convergence``. The full ladder
-ran in 15 seconds total on ``office``.
+ran in 15 seconds total on ``benchmark``.
 
 The key result is that the 200-step output is already close to the 400-step
 reference for this small case:
@@ -172,7 +172,7 @@ the next bounded FAR3D executable run scanned the energetic-particle beta input
 ``bet0_f = 0.000, 0.010, 0.030, 0.060, 0.090`` for the same public DIII-D
 case. The runs were archived under
 ``external_artifacts/far3d/gpu_diiid_nvhpc_beta_scan`` and completed in 12
-seconds total on ``office``.
+seconds total on ``benchmark``.
 
 The finite-beta branch is monotonic in the parsed FAR3D ``lincheck`` mean
 growth estimates:

@@ -25,7 +25,7 @@
   "metadata": [
     [
       "input_path",
-      "/Users/rogerio/local/vmec_jax/examples/data/input.LandremanPaul2021_QA_lowres"
+      "vmec_jax/examples/data/input.LandremanPaul2021_QA_lowres"
     ],
     [
       "vmec_max_iter",

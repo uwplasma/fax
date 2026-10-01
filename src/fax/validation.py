@@ -927,7 +927,7 @@ def _synthetic_global_boozer_geometry() -> BoozerGeometry:
 
 
 def _booz_xform_fixture(name: str) -> Path | None:
-    path = Path("/Users/rogerio/local/booz_xform_jax/tests/test_files") / name
+    path = Path("../booz_xform_jax/tests/test_files") / name
     return path if path.exists() else None
 
 
@@ -974,7 +974,7 @@ def _wout_like_from_netcdf(path: Path) -> SimpleNamespace:
 
 
 def _local_external_file(*parts: str) -> Path | None:
-    path = Path("/Users/rogerio/local").joinpath(*parts)
+    path = Path("..").joinpath(*parts)
     return path if path.exists() else None
 
 
@@ -1584,7 +1584,7 @@ def _gate_stellgap_ctok_local_continuum() -> GateResult:
             status="skipped",
             metric=float("nan"),
             tolerance=tolerance,
-            message="missing local ORNL STELLGAP CTOK test artifacts under /Users/rogerio/local",
+            message="missing local ORNL STELLGAP CTOK test artifacts under ..",
         )
     comparison = stellgap_ctok_local_continuum_error(
         boozmn_path=boozmn,
@@ -1612,7 +1612,7 @@ def _gate_stellgap_ctok_largest_gap_parity() -> GateResult:
             status="skipped",
             metric=float("nan"),
             tolerance=tolerance,
-            message="missing local ORNL STELLGAP CTOK test artifacts under /Users/rogerio/local",
+            message="missing local ORNL STELLGAP CTOK test artifacts under ..",
         )
     parity = stellgap_ctok_gap_parity(
         boozmn_path=boozmn,
@@ -1641,7 +1641,7 @@ def _gate_stellgap_public_postprocess_parity() -> GateResult:
             status="skipped",
             metric=float("nan"),
             tolerance=tolerance,
-            message="missing local ORNL STELLGAP alfven_spec/alfven_post artifacts under /Users/rogerio/local",
+            message="missing local ORNL STELLGAP alfven_spec/alfven_post artifacts under ..",
         )
     comparison = stellgap_postprocess_error(alfven_spec_path=alfven_spec, alfven_post_path=alfven_post)
     return _pass_fail(
@@ -1662,7 +1662,7 @@ def _gate_ae3d_public_eigenvalue_artifact() -> GateResult:
             status="skipped",
             metric=float("nan"),
             tolerance=tolerance,
-            message="missing local ORNL AE3D public eigenvalue answer artifact under /Users/rogerio/local",
+            message="missing local ORNL AE3D public eigenvalue answer artifact under ..",
         )
     summary = ae3d_eigenvalue_residual_summary(egn_values)
     return _pass_fail(
@@ -1687,7 +1687,7 @@ def _gate_ae3d_public_omega2_eigenvalue_parity() -> GateResult:
             status="skipped",
             metric=float("nan"),
             tolerance=tolerance,
-            message="missing local ORNL AE3D omega2/egn_values artifacts under /Users/rogerio/local",
+            message="missing local ORNL AE3D omega2/egn_values artifacts under ..",
         )
     comparison = ae3d_omega2_eigenvalue_error(omega2_path=omega2, egn_values_path=egn_values)
     return _pass_fail(
@@ -1709,7 +1709,7 @@ def _gate_ae3d_public_matrix_symmetry() -> GateResult:
             status="skipped",
             metric=float("nan"),
             tolerance=tolerance,
-            message="missing local ORNL AE3D sparse matrix artifacts under /Users/rogerio/local",
+            message="missing local ORNL AE3D sparse matrix artifacts under ..",
         )
     a_summary = ae3d_matrix_symmetry_summary(a_matrix)
     b_summary = ae3d_matrix_symmetry_summary(b_matrix)
@@ -1737,7 +1737,7 @@ def _gate_ae3d_public_matrix_eigenmode_parity() -> GateResult:
             status="skipped",
             metric=float("nan"),
             tolerance=tolerance,
-            message="missing local ORNL AE3D sparse matrix/eigenmode artifacts under /Users/rogerio/local",
+            message="missing local ORNL AE3D sparse matrix/eigenmode artifacts under ..",
         )
     parity = ae3d_matrix_eigenmode_parity(
         a_matrix_path=a_matrix,
@@ -1771,7 +1771,7 @@ def _gate_ae3d_public_dense_spectrum_parity() -> GateResult:
             status="skipped",
             metric=float("nan"),
             tolerance=tolerance,
-            message="missing local ORNL AE3D sparse matrix/eigenmode artifacts under /Users/rogerio/local",
+            message="missing local ORNL AE3D sparse matrix/eigenmode artifacts under ..",
         )
     parity = ae3d_dense_spectrum_parity(
         a_matrix_path=a_matrix,
@@ -1803,7 +1803,7 @@ def _gate_ae3d_public_global_mode_shape_parity() -> GateResult:
             status="skipped",
             metric=float("nan"),
             tolerance=tolerance,
-            message="missing local ORNL AE3D sparse matrix/eigenmode artifacts under /Users/rogerio/local",
+            message="missing local ORNL AE3D sparse matrix/eigenmode artifacts under ..",
         )
     parity = ae3d_global_mode_parity(
         a_matrix_path=a_matrix,
@@ -1834,7 +1834,7 @@ def _gate_ae3d_public_continuum_placement_parity() -> GateResult:
             status="skipped",
             metric=float("nan"),
             tolerance=tolerance,
-            message="missing local ORNL AE3D eigenmode or CTOK boozmn artifacts under /Users/rogerio/local",
+            message="missing local ORNL AE3D eigenmode or CTOK boozmn artifacts under ..",
         )
     parity = ae3d_continuum_placement_parity(
         egn_mode_path=egn_mode,

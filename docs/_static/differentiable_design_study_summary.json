@@ -1,7 +1,7 @@
 {
   "figure_files": [
-    "/Users/rogerio/local/fax/docs/_static/differentiable_design_study.svg",
-    "/Users/rogerio/local/fax/docs/_static/differentiable_design_study.png"
+    "fax/docs/_static/differentiable_design_study.svg",
+    "fax/docs/_static/differentiable_design_study.png"
   ],
   "final_objective": 0.3233946894468261,
   "frequency_jacobian_hz_per_parameter": [

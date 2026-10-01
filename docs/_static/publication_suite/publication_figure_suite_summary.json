@@ -6,8 +6,8 @@
       "case": "01_gap_taxonomy",
       "eae_q": 2.0003487358326066,
       "figures": [
-        "/Users/rogerio/local/fax/docs/_static/publication_suite/01_gap_taxonomy.svg",
-        "/Users/rogerio/local/fax/docs/_static/publication_suite/01_gap_taxonomy.png"
+        "fax/docs/_static/publication_suite/01_gap_taxonomy.svg",
+        "fax/docs/_static/publication_suite/01_gap_taxonomy.png"
       ],
       "status": "completed",
       "tae_q": 1.501711079943899
@@ -15,8 +15,8 @@
     {
       "case": "02_convergence_validation",
       "figures": [
-        "/Users/rogerio/local/fax/docs/_static/publication_suite/02_convergence_validation.svg",
-        "/Users/rogerio/local/fax/docs/_static/publication_suite/02_convergence_validation.png"
+        "fax/docs/_static/publication_suite/02_convergence_validation.svg",
+        "fax/docs/_static/publication_suite/02_convergence_validation.png"
       ],
       "max_frequency_l2_error": 0.007316585244633778,
       "max_residual_p95": 1.7554120786259272e-14,
@@ -25,8 +25,8 @@
     {
       "case": "03_landreman_paul_wout_continuum",
       "figures": [
-        "/Users/rogerio/local/fax/docs/_static/publication_suite/03_landreman_paul_wout_continuum.svg",
-        "/Users/rogerio/local/fax/docs/_static/publication_suite/03_landreman_paul_wout_continuum.png"
+        "fax/docs/_static/publication_suite/03_landreman_paul_wout_continuum.svg",
+        "fax/docs/_static/publication_suite/03_landreman_paul_wout_continuum.png"
       ],
       "radial_points": 50,
       "status": "completed"
@@ -34,8 +34,8 @@
     {
       "case": "04_boozer_representation",
       "figures": [
-        "/Users/rogerio/local/fax/docs/_static/publication_suite/04_boozer_representation.svg",
-        "/Users/rogerio/local/fax/docs/_static/publication_suite/04_boozer_representation.png"
+        "fax/docs/_static/publication_suite/04_boozer_representation.svg",
+        "fax/docs/_static/publication_suite/04_boozer_representation.png"
       ],
       "nonaxisymmetric_energy": 0.00019814623046597964,
       "orthogonality_error": 1.3227266504323144e-16,
@@ -45,8 +45,8 @@
     {
       "case": "05_boozer_local_3d_continuum",
       "figures": [
-        "/Users/rogerio/local/fax/docs/_static/publication_suite/05_boozer_local_3d_continuum.svg",
-        "/Users/rogerio/local/fax/docs/_static/publication_suite/05_boozer_local_3d_continuum.png"
+        "fax/docs/_static/publication_suite/05_boozer_local_3d_continuum.svg",
+        "fax/docs/_static/publication_suite/05_boozer_local_3d_continuum.png"
       ],
       "status": "completed",
       "surface_count": 5
@@ -54,8 +54,8 @@
     {
       "case": "06_global_radial_eigenmodes",
       "figures": [
-        "/Users/rogerio/local/fax/docs/_static/publication_suite/06_global_radial_eigenmodes.svg",
-        "/Users/rogerio/local/fax/docs/_static/publication_suite/06_global_radial_eigenmodes.png"
+        "fax/docs/_static/publication_suite/06_global_radial_eigenmodes.svg",
+        "fax/docs/_static/publication_suite/06_global_radial_eigenmodes.png"
       ],
       "lowest_frequency_hz": 51662.33611560656,
       "status": "completed"
@@ -64,8 +64,8 @@
       "case": "07_fast_ion_drive_damping",
       "core_net_growth_hz": 22.746050717176615,
       "figures": [
-        "/Users/rogerio/local/fax/docs/_static/publication_suite/07_fast_ion_drive_damping.svg",
-        "/Users/rogerio/local/fax/docs/_static/publication_suite/07_fast_ion_drive_damping.png"
+        "fax/docs/_static/publication_suite/07_fast_ion_drive_damping.svg",
+        "fax/docs/_static/publication_suite/07_fast_ion_drive_damping.png"
       ],
       "status": "completed"
     },
@@ -73,8 +73,8 @@
       "case": "08_differentiable_sensitivity",
       "density_gradient_hz": -62592.49094371879,
       "figures": [
-        "/Users/rogerio/local/fax/docs/_static/publication_suite/08_differentiable_sensitivity.svg",
-        "/Users/rogerio/local/fax/docs/_static/publication_suite/08_differentiable_sensitivity.png"
+        "fax/docs/_static/publication_suite/08_differentiable_sensitivity.svg",
+        "fax/docs/_static/publication_suite/08_differentiable_sensitivity.png"
       ],
       "finite_difference_hz": -62592.530064044695,
       "status": "completed"
@@ -82,8 +82,8 @@
     {
       "case": "09_stellgap_ctok_gap_anchored_global_screen",
       "figures": [
-        "/Users/rogerio/local/fax/docs/_static/publication_suite/09_stellgap_ctok_gap_anchored_global_screen.svg",
-        "/Users/rogerio/local/fax/docs/_static/publication_suite/09_stellgap_ctok_gap_anchored_global_screen.png"
+        "fax/docs/_static/publication_suite/09_stellgap_ctok_gap_anchored_global_screen.svg",
+        "fax/docs/_static/publication_suite/09_stellgap_ctok_gap_anchored_global_screen.png"
       ],
       "lowest_global_frequency_hz": 239349.76343414426,
       "max_residual": 7.866383807893098e-13,
@@ -101,8 +101,8 @@
       "dominant_mode_harmonic_n": 2,
       "dominant_mode_surface": 18,
       "figures": [
-        "/Users/rogerio/local/fax/docs/_static/publication_suite/10_ae3d_matrix_eigenmode_parity.svg",
-        "/Users/rogerio/local/fax/docs/_static/publication_suite/10_ae3d_matrix_eigenmode_parity.png"
+        "fax/docs/_static/publication_suite/10_ae3d_matrix_eigenmode_parity.svg",
+        "fax/docs/_static/publication_suite/10_ae3d_matrix_eigenmode_parity.png"
       ],
       "global_mode_max_frequency_relative_error": 8.167902694136567e-07,
       "global_mode_max_mass_weighted_mode_shape_error": 5.1977999793173524e-08,

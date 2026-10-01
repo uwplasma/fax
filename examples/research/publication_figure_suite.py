@@ -64,11 +64,11 @@ from fax.validation import finite_difference_derivative  # noqa: E402
 from fax.workflows import run_convergence  # noqa: E402
 
 
-DEFAULT_BOOZMN = Path("/Users/rogerio/local/booz_xform_jax/tests/test_files/boozmn_LandremanSenguptaPlunk_section5p3.nc")
-DEFAULT_STELLGAP_BOOZMN = Path("/Users/rogerio/local/Stellgap_test_inputs/boozmn_ctok.nc")
-DEFAULT_STELLGAP_POST = Path("/Users/rogerio/local/Stellgap_test_problem/alfven_post")
-DEFAULT_AE3D_DIR = Path("/Users/rogerio/local/AE3D_test_problem")
-DEFAULT_AE3D_BOOZMN = Path("/Users/rogerio/local/AE3D_test_inputs/boozmn_ctok.nc")
+DEFAULT_BOOZMN = Path("../booz_xform_jax/tests/test_files/boozmn_LandremanSenguptaPlunk_section5p3.nc")
+DEFAULT_STELLGAP_BOOZMN = Path("../Stellgap_test_inputs/boozmn_ctok.nc")
+DEFAULT_STELLGAP_POST = Path("../Stellgap_test_problem/alfven_post")
+DEFAULT_AE3D_DIR = Path("../AE3D_test_problem")
+DEFAULT_AE3D_BOOZMN = Path("../AE3D_test_inputs/boozmn_ctok.nc")
 
 
 CaseRunner = Callable[[Path, tuple[str, ...]], dict[str, object]]

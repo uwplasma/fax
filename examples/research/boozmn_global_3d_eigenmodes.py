@@ -16,7 +16,7 @@ from fax.global_modes import radial_block_problem_from_boozer_geometry, solve_ra
 jax.config.update("jax_enable_x64", True)
 
 
-DEFAULT_BOOZMN = Path("/Users/rogerio/local/booz_xform_jax/tests/test_files/boozmn_LandremanSenguptaPlunk_section5p3.nc")
+DEFAULT_BOOZMN = Path("../booz_xform_jax/tests/test_files/boozmn_LandremanSenguptaPlunk_section5p3.nc")
 
 
 def _write_figure(output_dir: Path, stem: str, geometry, result, mode_count: int) -> list[str]:

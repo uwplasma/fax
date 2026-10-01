@@ -15,7 +15,7 @@ from fax.modes import stellarator_mode_family
 from fax.reference_cases import landreman_paul_qa_lowres
 
 
-BOOZ_XFORM_TEST_FILES = Path("/Users/rogerio/local/booz_xform_jax/tests/test_files")
+BOOZ_XFORM_TEST_FILES = Path("../booz_xform_jax/tests/test_files")
 
 
 def test_cli_example(capsys):

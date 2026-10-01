@@ -23,7 +23,7 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--input",
         type=Path,
-        default=Path("/Users/rogerio/local/vmec_jax/examples/data/input.LandremanPaul2021_QA_lowres"),
+        default=Path("../vmec_jax/examples/data/input.LandremanPaul2021_QA_lowres"),
         help="VMEC input file used for the fixed-boundary design check.",
     )
     parser.add_argument("--output-dir", type=Path, default=Path("outputs/vmec_boozer_alfven_design_gradient"))

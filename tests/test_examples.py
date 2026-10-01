@@ -129,7 +129,7 @@ def test_boozer_harmonic_validation_example_runs():
 
 
 def test_boozmn_3d_continuum_example_runs(tmp_path):
-    fixture = Path("/Users/rogerio/local/booz_xform_jax/tests/test_files/boozmn_LandremanSenguptaPlunk_section5p3.nc")
+    fixture = Path("../booz_xform_jax/tests/test_files/boozmn_LandremanSenguptaPlunk_section5p3.nc")
     if not fixture.exists():
         return
 
@@ -160,7 +160,7 @@ def test_boozmn_3d_continuum_example_runs(tmp_path):
 
 
 def test_boozmn_global_3d_eigenmodes_example_runs(tmp_path):
-    fixture = Path("/Users/rogerio/local/booz_xform_jax/tests/test_files/boozmn_LandremanSenguptaPlunk_section5p3.nc")
+    fixture = Path("../booz_xform_jax/tests/test_files/boozmn_LandremanSenguptaPlunk_section5p3.nc")
     if not fixture.exists():
         return
 
@@ -221,7 +221,7 @@ def test_vmec_boozer_convergence_example_runs(tmp_path):
 
 
 def test_boozmn_differentiable_design_study_example_runs(tmp_path):
-    fixture = Path("/Users/rogerio/local/booz_xform_jax/tests/test_files/boozmn_LandremanSenguptaPlunk_section5p3.nc")
+    fixture = Path("../booz_xform_jax/tests/test_files/boozmn_LandremanSenguptaPlunk_section5p3.nc")
     if not fixture.exists():
         return
 
@@ -256,8 +256,8 @@ def test_boozmn_differentiable_design_study_example_runs(tmp_path):
 
 
 def test_stellgap_ctok_comparison_example_runs(tmp_path):
-    boozmn = Path("/Users/rogerio/local/Stellgap_test_inputs/boozmn_ctok.nc")
-    alfven_post = Path("/Users/rogerio/local/Stellgap_test_problem/alfven_post")
+    boozmn = Path("../Stellgap_test_inputs/boozmn_ctok.nc")
+    alfven_post = Path("../Stellgap_test_problem/alfven_post")
     if not boozmn.exists() or not alfven_post.exists():
         return
 
@@ -284,8 +284,8 @@ def test_stellgap_ctok_comparison_example_runs(tmp_path):
 
 
 def test_external_code_artifact_dashboard_example_runs(tmp_path):
-    stellgap_dir = Path("/Users/rogerio/local/Stellgap_test_problem")
-    ae3d_dir = Path("/Users/rogerio/local/AE3D_test_problem")
+    stellgap_dir = Path("../Stellgap_test_problem")
+    ae3d_dir = Path("../AE3D_test_problem")
     required = [
         stellgap_dir / "alfven_spec",
         stellgap_dir / "alfven_post",
@@ -356,13 +356,13 @@ def test_publication_figure_suite_selected_cases_run(tmp_path):
 
 def test_publication_suite_external_parity_cases_run_if_artifacts_exist(tmp_path):
     stellgap_required = [
-        Path("/Users/rogerio/local/Stellgap_test_inputs/boozmn_ctok.nc"),
-        Path("/Users/rogerio/local/Stellgap_test_problem/alfven_post"),
+        Path("../Stellgap_test_inputs/boozmn_ctok.nc"),
+        Path("../Stellgap_test_problem/alfven_post"),
     ]
     ae3d_required = [
-        Path("/Users/rogerio/local/AE3D_test_problem/a_matrix.dat"),
-        Path("/Users/rogerio/local/AE3D_test_problem/b_matrix.dat"),
-        Path("/Users/rogerio/local/AE3D_test_problem/egn_mode_asci.dat"),
+        Path("../AE3D_test_problem/a_matrix.dat"),
+        Path("../AE3D_test_problem/b_matrix.dat"),
+        Path("../AE3D_test_problem/egn_mode_asci.dat"),
     ]
     if not all(path.exists() for path in (*stellgap_required, *ae3d_required)):
         return

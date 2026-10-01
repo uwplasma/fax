@@ -838,8 +838,8 @@ def stellgap_ctok_gap_parity(
 
 def run_stellgap_ctok_executable(
     *,
-    executable: str | Path = "/Users/rogerio/local/Stellgap/xstgap",
-    input_dir: str | Path = "/Users/rogerio/local/Stellgap_test_inputs",
+    executable: str | Path = "../Stellgap/xstgap",
+    input_dir: str | Path = "../Stellgap_test_inputs",
     radial_points: int = 99,
     fine_radial_points: int = 2048,
     timeout_seconds: float = 1800.0,

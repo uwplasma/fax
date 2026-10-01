@@ -1,10 +1,8 @@
 #!/usr/bin/env python3
 """Install public ORNL STELLGAP/AE3D validation artifacts for FAX tests.
 
-The FAX validation gates intentionally read the public ORNL test packets from
-``/Users/rogerio/local`` because those paths also match the local development
-machines used for cross-code work. This script makes that layout reproducible
-on CI runners without committing large third-party artifacts into the FAX repo.
+External fixtures are installed beside the repository by default.
+Use ``--root`` to select another artifact directory.
 """
 
 from __future__ import annotations
@@ -125,8 +123,8 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "--root",
-        default="/Users/rogerio/local",
-        help="Artifact root expected by FAX validation gates. Default: /Users/rogerio/local",
+        default="..",
+        help="Artifact root expected by FAX validation gates. Default: ..",
     )
     args = parser.parse_args()
     for line in install_public_cross_code_artifacts(Path(args.root)):

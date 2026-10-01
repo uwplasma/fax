@@ -13,7 +13,7 @@
   ],
   "finite_beta_linear_intercept": -0.009033981054421708,
   "finite_beta_linear_slope": 2.000715616496599,
-  "input_dir": "/Users/rogerio/local/fax/external_artifacts/far3d/gpu_diiid_nvhpc_beta_scan",
+  "input_dir": "fax/external_artifacts/far3d/gpu_diiid_nvhpc_beta_scan",
   "scan": [
     {
       "dominant_mode_growth_code_units": 0.827017,

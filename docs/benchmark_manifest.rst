@@ -31,7 +31,7 @@ Current Entries
    native FAX reduced/global operator reproduces AE3D's full operator.
 
 ``far3d_diiid_gpu_lincheck_artifact``
-   FAR3D public DIII-D example built and run on the ``office`` GPU host with
+   FAR3D public DIII-D example built and run on the ``benchmark`` GPU host with
    NVHPC/CUDA Fortran. This supports executable-build, runtime, and
    ``lincheck`` ingestion traceability. It is not a converged FAR3D kinetic
    growth-rate parity result and should not be used as a closure-calibration
