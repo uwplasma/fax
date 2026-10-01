@@ -1,8 +1,8 @@
 {
-  "boozmn": "/Users/rogerio/local/booz_xform_jax/tests/test_files/boozmn_LandremanSenguptaPlunk_section5p3.nc",
+  "boozmn": "booz_xform_jax/tests/test_files/boozmn_LandremanSenguptaPlunk_section5p3.nc",
   "figure_files": [
-    "/Users/rogerio/local/fax/docs/_static/boozmn_differentiable_design_study.svg",
-    "/Users/rogerio/local/fax/docs/_static/boozmn_differentiable_design_study.png"
+    "fax/docs/_static/boozmn_differentiable_design_study.svg",
+    "fax/docs/_static/boozmn_differentiable_design_study.png"
   ],
   "final_objective": 0.31849801915157033,
   "frequency_jacobian_hz_per_parameter": [

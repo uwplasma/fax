@@ -104,7 +104,7 @@ Archived FAR3D GPU Artifact
 
 The repository now includes the first real FAR3D executable-run artifact:
 ``external_artifacts/far3d/gpu_diiid_nvhpc/farprt0000``. It was generated on
-the ``office`` GPU host from ``DSfusion/FAR3d`` commit ``c76bdfe`` using a
+the ``benchmark`` GPU host from ``DSfusion/FAR3d`` commit ``c76bdfe`` using a
 CUDA-Fortran/NVHPC build and the public DIII-D ``Eq_DIIID_RS`` example adapted
 to FAR3D's current ``farin`` namelist format.
 

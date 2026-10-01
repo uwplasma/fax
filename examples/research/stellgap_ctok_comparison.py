@@ -17,8 +17,8 @@ from fax.units import PROTON_MASS
 jax.config.update("jax_enable_x64", True)
 
 
-DEFAULT_BOOZMN = Path("/Users/rogerio/local/Stellgap_test_inputs/boozmn_ctok.nc")
-DEFAULT_ALFVEN_POST = Path("/Users/rogerio/local/Stellgap_test_problem/alfven_post")
+DEFAULT_BOOZMN = Path("../Stellgap_test_inputs/boozmn_ctok.nc")
+DEFAULT_ALFVEN_POST = Path("../Stellgap_test_problem/alfven_post")
 
 
 def _write_figure(output_dir: Path, boozmn: Path, alfven_post: Path) -> list[str]:

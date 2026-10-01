@@ -447,7 +447,7 @@ def _run_ae3d_artifact_family(*, repeats: int, warmups: int) -> BenchmarkFamilyR
 
     from .cross_code import ae3d_dense_spectrum_parity
 
-    root = Path("/Users/rogerio/local/AE3D_test_problem")
+    root = Path("../AE3D_test_problem")
     a_matrix = root / "a_matrix.dat"
     b_matrix = root / "b_matrix.dat"
     egn_mode = root / "egn_mode_asci.dat"
@@ -505,7 +505,7 @@ def _run_ae3d_global_mode_family(*, repeats: int, warmups: int) -> BenchmarkFami
 
     from .cross_code import ae3d_global_mode_parity
 
-    root = Path("/Users/rogerio/local/AE3D_test_problem")
+    root = Path("../AE3D_test_problem")
     a_matrix = root / "a_matrix.dat"
     b_matrix = root / "b_matrix.dat"
     egn_mode = root / "egn_mode_asci.dat"
@@ -566,8 +566,8 @@ def _run_stellgap_ctok_family(*, repeats: int, warmups: int) -> BenchmarkFamilyR
     from .cross_code import stellgap_ctok_local_continuum_error
     from .units import PROTON_MASS
 
-    boozmn = Path("/Users/rogerio/local/Stellgap_test_inputs/boozmn_ctok.nc")
-    alfven_post = Path("/Users/rogerio/local/Stellgap_test_problem/alfven_post")
+    boozmn = Path("../Stellgap_test_inputs/boozmn_ctok.nc")
+    alfven_post = Path("../Stellgap_test_problem/alfven_post")
     if not boozmn.exists() or not alfven_post.exists():
         return _family_result(
             family="stellgap-ctok",

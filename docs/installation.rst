@@ -40,5 +40,5 @@ tests are needed:
 
 .. code-block:: bash
 
-   python -m pip install -e /Users/rogerio/local/vmec_jax
-   python -m pip install -e /Users/rogerio/local/booz_xform_jax
+   python -m pip install -e ../vmec_jax
+   python -m pip install -e ../booz_xform_jax

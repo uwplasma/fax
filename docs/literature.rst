@@ -88,9 +88,9 @@ Local External-Code Artifacts
 -----------------------------
 
 The following public repositories and answer artifacts have been cloned under
-``/Users/rogerio/local`` for reproducible comparison work:
+``..`` for reproducible comparison work:
 
-* ``/Users/rogerio/local/Stellgap`` from
+* ``../Stellgap`` from
   https://github.com/ORNL-Fusion/Stellgap. The repository describes STELLGAP
   as a shear-Alfvén gap/continuum code for 3-D configurations, including
   stellarators, RFPs, and 3-D tokamaks. Its public CTOK test problem now drives
@@ -102,7 +102,7 @@ The following public repositories and answer artifacts have been cloned under
   the public CTOK problem as ``xstgap 99 2048`` in about 47 s and produces a
   nonempty ``alfven_spec``; FAX records this through the
   ``stellgap-executable`` benchmark family.
-* ``/Users/rogerio/local/AE3D`` from
+* ``../AE3D`` from
   https://github.com/ORNL-Fusion/AE3D. The OSTI software record states that
   AE3D solves reduced-MHD shear-Alfvén eigenmodes and eigenfrequencies in 2-D
   and 3-D magnetic confinement devices. The public ``egn_values.dat`` answer
@@ -111,17 +111,17 @@ The following public repositories and answer artifacts have been cloned under
   eigenvalue-convention, residual, matrix-symmetry, and matrix/eigenmode
   parity gates. Full FAX-reduced-operator vs AE3D-operator physics parity
   remains open.
-* ``/Users/rogerio/local/FAR3d`` from https://github.com/DSfusion/FAR3d. The
+* ``../FAR3d`` from https://github.com/DSfusion/FAR3d. The
   FAR3D review describes a reduced-MHD/gyro-fluid code for AE/EPM stability,
   energetic-particle moment closures, acoustic coupling, and nonlinear studies.
   A local build attempt reached compilation but stopped at the CUDA Fortran
   ``cudafor.mod`` dependency in ``matrix.f90``; a CPU-only build path should be
   resolved before using FAR3D for automated parity gates.
-* ``/Users/rogerio/local/shearalfvenwave`` from
+* ``../shearalfvenwave`` from
   https://github.com/arknyazev/shearalfvenwave. This helper repository
   advertises tools for interacting with STELLGAP, AE3D, and FAR3D and is a
   candidate source of input/output conversion conventions.
-* ``/Users/rogerio/local/PyStellgap`` from
+* ``../PyStellgap`` from
   https://github.com/ejpaul/PyStellgap. This is a useful Python-side reference
   for STELLGAP plotting and data handling conventions.
 

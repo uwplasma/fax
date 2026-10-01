@@ -92,15 +92,15 @@ def default_benchmark_manifest() -> tuple[BenchmarkManifestEntry, ...]:
             artifacts=(
                 BenchmarkArtifact(
                     role="boozmn geometry",
-                    path="/Users/rogerio/local/Stellgap_test_inputs/boozmn_ctok.nc",
+                    path="../Stellgap_test_inputs/boozmn_ctok.nc",
                 ),
                 BenchmarkArtifact(
                     role="STELLGAP alfven_post reference",
-                    path="/Users/rogerio/local/Stellgap_test_problem/alfven_post",
+                    path="../Stellgap_test_problem/alfven_post",
                 ),
                 BenchmarkArtifact(
                     role="STELLGAP alfven_spec raw output",
-                    path="/Users/rogerio/local/Stellgap_test_problem/alfven_spec",
+                    path="../Stellgap_test_problem/alfven_spec",
                     required=False,
                 ),
             ),
@@ -127,12 +127,12 @@ def default_benchmark_manifest() -> tuple[BenchmarkManifestEntry, ...]:
             claim_level="artifact/matrix/mode-shape parity, not native FAX operator parity",
             status="active",
             artifacts=(
-                BenchmarkArtifact(role="AE3D stiffness matrix", path="/Users/rogerio/local/AE3D_test_problem/a_matrix.dat"),
-                BenchmarkArtifact(role="AE3D mass matrix", path="/Users/rogerio/local/AE3D_test_problem/b_matrix.dat"),
-                BenchmarkArtifact(role="AE3D eigenmode table", path="/Users/rogerio/local/AE3D_test_problem/egn_mode_asci.dat"),
-                BenchmarkArtifact(role="AE3D eigenvalue table", path="/Users/rogerio/local/AE3D_test_problem/egn_values.dat"),
-                BenchmarkArtifact(role="AE3D raw omega2 table", path="/Users/rogerio/local/AE3D_test_problem/omega2.dat"),
-                BenchmarkArtifact(role="CTOK Boozer geometry for continuum placement", path="/Users/rogerio/local/AE3D_test_inputs/boozmn_ctok.nc"),
+                BenchmarkArtifact(role="AE3D stiffness matrix", path="../AE3D_test_problem/a_matrix.dat"),
+                BenchmarkArtifact(role="AE3D mass matrix", path="../AE3D_test_problem/b_matrix.dat"),
+                BenchmarkArtifact(role="AE3D eigenmode table", path="../AE3D_test_problem/egn_mode_asci.dat"),
+                BenchmarkArtifact(role="AE3D eigenvalue table", path="../AE3D_test_problem/egn_values.dat"),
+                BenchmarkArtifact(role="AE3D raw omega2 table", path="../AE3D_test_problem/omega2.dat"),
+                BenchmarkArtifact(role="CTOK Boozer geometry for continuum placement", path="../AE3D_test_inputs/boozmn_ctok.nc"),
             ),
             expected_metrics={
                 "max_frequency_relative_error": 2.0e-6,

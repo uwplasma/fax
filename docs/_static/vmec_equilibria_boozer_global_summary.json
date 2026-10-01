@@ -1,7 +1,7 @@
 {
   "cases": [
     {
-      "boozmn": "/Users/rogerio/local/vmec_equilibria/HSX/QHS_vac/boozmn_HSX_QHS_vac.nc",
+      "boozmn": "../vmec_equilibria/HSX/QHS_vac/boozmn_HSX_QHS_vac.nc",
       "case_id": "hsx_qhs_vac",
       "description": "HSX quasi-helically symmetric vacuum equilibrium.",
       "dominant_boozer_modes": [
@@ -113,7 +113,7 @@
       "surface_count_used": 24
     },
     {
-      "boozmn": "/Users/rogerio/local/vmec_equilibria/HSX/Mirror_flip14/boozmn_MIRFL14_11p.nc",
+      "boozmn": "../vmec_equilibria/HSX/Mirror_flip14/boozmn_MIRFL14_11p.nc",
       "case_id": "hsx_mirror_flip14",
       "description": "HSX mirror configuration with public Boozer harmonics.",
       "dominant_boozer_modes": [
@@ -225,7 +225,7 @@
       "surface_count_used": 24
     },
     {
-      "boozmn": "/Users/rogerio/local/vmec_equilibria/KuBoozer_2011_NuclFusion_QHS/n4qh.b4.a79a/boozmn_n4qh.b4.a79a.nc",
+      "boozmn": "../vmec_equilibria/KuBoozer_2011_NuclFusion_QHS/n4qh.b4.a79a/boozmn_n4qh.b4.a79a.nc",
       "case_id": "ku_boozer_n4qh_b4_a79a",
       "description": "Ku-Boozer 2011 Nuclear Fusion quasi-helical stellarator with public Boozer harmonics.",
       "dominant_boozer_modes": [

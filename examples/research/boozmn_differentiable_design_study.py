@@ -29,7 +29,7 @@ from fax.optimization import (  # noqa: E402
 from fax.units import PROTON_MASS  # noqa: E402
 
 
-DEFAULT_BOOZMN = Path("/Users/rogerio/local/booz_xform_jax/tests/test_files/boozmn_LandremanSenguptaPlunk_section5p3.nc")
+DEFAULT_BOOZMN = Path("../booz_xform_jax/tests/test_files/boozmn_LandremanSenguptaPlunk_section5p3.nc")
 
 
 def _save(fig, output_dir: Path, stem: str, formats: tuple[str, ...]) -> list[str]:

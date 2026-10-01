@@ -2,7 +2,7 @@
   "cases": [
     {
       "case_id": "far3d_diiid_gpu_nvhpc_20step_psi_m1_n1",
-      "citation": "FAR3D DIII-D public example GPU run; DSfusion/FAR3d commit c76bdfe; run on office RTX A4000 with NVIDIA HPC SDK 25.9; code-unit conversion factor 599.81341 kHz from FAR3D output.",
+      "citation": "FAR3D DIII-D public example GPU run; DSfusion/FAR3d commit c76bdfe; run on benchmark RTX A4000 with NVIDIA HPC SDK 25.9; code-unit conversion factor 599.81341 kHz from FAR3D output.",
       "damping_rate_hz": null,
       "distribution_parameters": {},
       "frequency_hz": 219284.58493508003,
@@ -18,7 +18,7 @@
     },
     {
       "case_id": "far3d_diiid_gpu_nvhpc_20step_phi_m1_n1",
-      "citation": "FAR3D DIII-D public example GPU run; DSfusion/FAR3d commit c76bdfe; run on office RTX A4000 with NVIDIA HPC SDK 25.9; code-unit conversion factor 599.81341 kHz from FAR3D output.",
+      "citation": "FAR3D DIII-D public example GPU run; DSfusion/FAR3d commit c76bdfe; run on benchmark RTX A4000 with NVIDIA HPC SDK 25.9; code-unit conversion factor 599.81341 kHz from FAR3D output.",
       "damping_rate_hz": null,
       "distribution_parameters": {},
       "frequency_hz": 32266.422558881,
@@ -34,7 +34,7 @@
     },
     {
       "case_id": "far3d_diiid_gpu_nvhpc_20step_pr_m1_n1",
-      "citation": "FAR3D DIII-D public example GPU run; DSfusion/FAR3d commit c76bdfe; run on office RTX A4000 with NVIDIA HPC SDK 25.9; code-unit conversion factor 599.81341 kHz from FAR3D output.",
+      "citation": "FAR3D DIII-D public example GPU run; DSfusion/FAR3d commit c76bdfe; run on benchmark RTX A4000 with NVIDIA HPC SDK 25.9; code-unit conversion factor 599.81341 kHz from FAR3D output.",
       "damping_rate_hz": null,
       "distribution_parameters": {},
       "frequency_hz": 275411.52496242005,
@@ -50,7 +50,7 @@
     },
     {
       "case_id": "far3d_diiid_gpu_nvhpc_20step_nfast_m1_n1",
-      "citation": "FAR3D DIII-D public example GPU run; DSfusion/FAR3d commit c76bdfe; run on office RTX A4000 with NVIDIA HPC SDK 25.9; code-unit conversion factor 599.81341 kHz from FAR3D output.",
+      "citation": "FAR3D DIII-D public example GPU run; DSfusion/FAR3d commit c76bdfe; run on benchmark RTX A4000 with NVIDIA HPC SDK 25.9; code-unit conversion factor 599.81341 kHz from FAR3D output.",
       "damping_rate_hz": null,
       "distribution_parameters": {},
       "frequency_hz": 284528.68879442004,
@@ -66,7 +66,7 @@
     },
     {
       "case_id": "far3d_diiid_gpu_nvhpc_20step_vfast_m1_n1",
-      "citation": "FAR3D DIII-D public example GPU run; DSfusion/FAR3d commit c76bdfe; run on office RTX A4000 with NVIDIA HPC SDK 25.9; code-unit conversion factor 599.81341 kHz from FAR3D output.",
+      "citation": "FAR3D DIII-D public example GPU run; DSfusion/FAR3d commit c76bdfe; run on benchmark RTX A4000 with NVIDIA HPC SDK 25.9; code-unit conversion factor 599.81341 kHz from FAR3D output.",
       "damping_rate_hz": null,
       "distribution_parameters": {},
       "frequency_hz": 230520.88954461002,
@@ -82,7 +82,7 @@
     },
     {
       "case_id": "far3d_diiid_gpu_nvhpc_20step_vthfast_m1_n1",
-      "citation": "FAR3D DIII-D public example GPU run; DSfusion/FAR3d commit c76bdfe; run on office RTX A4000 with NVIDIA HPC SDK 25.9; code-unit conversion factor 599.81341 kHz from FAR3D output.",
+      "citation": "FAR3D DIII-D public example GPU run; DSfusion/FAR3d commit c76bdfe; run on benchmark RTX A4000 with NVIDIA HPC SDK 25.9; code-unit conversion factor 599.81341 kHz from FAR3D output.",
       "damping_rate_hz": null,
       "distribution_parameters": {},
       "frequency_hz": 1144.7258985827,
@@ -98,7 +98,7 @@
     },
     {
       "case_id": "far3d_diiid_gpu_nvhpc_20step_psi_m2_n1",
-      "citation": "FAR3D DIII-D public example GPU run; DSfusion/FAR3d commit c76bdfe; run on office RTX A4000 with NVIDIA HPC SDK 25.9; code-unit conversion factor 599.81341 kHz from FAR3D output.",
+      "citation": "FAR3D DIII-D public example GPU run; DSfusion/FAR3d commit c76bdfe; run on benchmark RTX A4000 with NVIDIA HPC SDK 25.9; code-unit conversion factor 599.81341 kHz from FAR3D output.",
       "damping_rate_hz": null,
       "distribution_parameters": {},
       "frequency_hz": 31852.371361958,
@@ -114,7 +114,7 @@
     },
     {
       "case_id": "far3d_diiid_gpu_nvhpc_20step_phi_m2_n1",
-      "citation": "FAR3D DIII-D public example GPU run; DSfusion/FAR3d commit c76bdfe; run on office RTX A4000 with NVIDIA HPC SDK 25.9; code-unit conversion factor 599.81341 kHz from FAR3D output.",
+      "citation": "FAR3D DIII-D public example GPU run; DSfusion/FAR3d commit c76bdfe; run on benchmark RTX A4000 with NVIDIA HPC SDK 25.9; code-unit conversion factor 599.81341 kHz from FAR3D output.",
       "damping_rate_hz": null,
       "distribution_parameters": {},
       "frequency_hz": 9339.334719064,
@@ -130,7 +130,7 @@
     },
     {
       "case_id": "far3d_diiid_gpu_nvhpc_20step_pr_m2_n1",
-      "citation": "FAR3D DIII-D public example GPU run; DSfusion/FAR3d commit c76bdfe; run on office RTX A4000 with NVIDIA HPC SDK 25.9; code-unit conversion factor 599.81341 kHz from FAR3D output.",
+      "citation": "FAR3D DIII-D public example GPU run; DSfusion/FAR3d commit c76bdfe; run on benchmark RTX A4000 with NVIDIA HPC SDK 25.9; code-unit conversion factor 599.81341 kHz from FAR3D output.",
       "damping_rate_hz": null,
       "distribution_parameters": {},
       "frequency_hz": 34764.28552348501,
@@ -146,7 +146,7 @@
     },
     {
       "case_id": "far3d_diiid_gpu_nvhpc_20step_nfast_m2_n1",
-      "citation": "FAR3D DIII-D public example GPU run; DSfusion/FAR3d commit c76bdfe; run on office RTX A4000 with NVIDIA HPC SDK 25.9; code-unit conversion factor 599.81341 kHz from FAR3D output.",
+      "citation": "FAR3D DIII-D public example GPU run; DSfusion/FAR3d commit c76bdfe; run on benchmark RTX A4000 with NVIDIA HPC SDK 25.9; code-unit conversion factor 599.81341 kHz from FAR3D output.",
       "damping_rate_hz": null,
       "distribution_parameters": {},
       "frequency_hz": 151340.12110391998,
@@ -162,7 +162,7 @@
     },
     {
       "case_id": "far3d_diiid_gpu_nvhpc_20step_vfast_m2_n1",
-      "citation": "FAR3D DIII-D public example GPU run; DSfusion/FAR3d commit c76bdfe; run on office RTX A4000 with NVIDIA HPC SDK 25.9; code-unit conversion factor 599.81341 kHz from FAR3D output.",
+      "citation": "FAR3D DIII-D public example GPU run; DSfusion/FAR3d commit c76bdfe; run on benchmark RTX A4000 with NVIDIA HPC SDK 25.9; code-unit conversion factor 599.81341 kHz from FAR3D output.",
       "damping_rate_hz": null,
       "distribution_parameters": {},
       "frequency_hz": 31579.636204431,
@@ -178,7 +178,7 @@
     },
     {
       "case_id": "far3d_diiid_gpu_nvhpc_20step_vthfast_m2_n1",
-      "citation": "FAR3D DIII-D public example GPU run; DSfusion/FAR3d commit c76bdfe; run on office RTX A4000 with NVIDIA HPC SDK 25.9; code-unit conversion factor 599.81341 kHz from FAR3D output.",
+      "citation": "FAR3D DIII-D public example GPU run; DSfusion/FAR3d commit c76bdfe; run on benchmark RTX A4000 with NVIDIA HPC SDK 25.9; code-unit conversion factor 599.81341 kHz from FAR3D output.",
       "damping_rate_hz": null,
       "distribution_parameters": {},
       "frequency_hz": 406.31540337423,
@@ -194,7 +194,7 @@
     },
     {
       "case_id": "far3d_diiid_gpu_nvhpc_20step_psi_m3_n1",
-      "citation": "FAR3D DIII-D public example GPU run; DSfusion/FAR3d commit c76bdfe; run on office RTX A4000 with NVIDIA HPC SDK 25.9; code-unit conversion factor 599.81341 kHz from FAR3D output.",
+      "citation": "FAR3D DIII-D public example GPU run; DSfusion/FAR3d commit c76bdfe; run on benchmark RTX A4000 with NVIDIA HPC SDK 25.9; code-unit conversion factor 599.81341 kHz from FAR3D output.",
       "damping_rate_hz": null,
       "distribution_parameters": {},
       "frequency_hz": 50199.04407765101,
@@ -210,7 +210,7 @@
     },
     {
       "case_id": "far3d_diiid_gpu_nvhpc_20step_phi_m3_n1",
-      "citation": "FAR3D DIII-D public example GPU run; DSfusion/FAR3d commit c76bdfe; run on office RTX A4000 with NVIDIA HPC SDK 25.9; code-unit conversion factor 599.81341 kHz from FAR3D output.",
+      "citation": "FAR3D DIII-D public example GPU run; DSfusion/FAR3d commit c76bdfe; run on benchmark RTX A4000 with NVIDIA HPC SDK 25.9; code-unit conversion factor 599.81341 kHz from FAR3D output.",
       "damping_rate_hz": null,
       "distribution_parameters": {},
       "frequency_hz": 5123.966036266,
@@ -226,7 +226,7 @@
     },
     {
       "case_id": "far3d_diiid_gpu_nvhpc_20step_pr_m3_n1",
-      "citation": "FAR3D DIII-D public example GPU run; DSfusion/FAR3d commit c76bdfe; run on office RTX A4000 with NVIDIA HPC SDK 25.9; code-unit conversion factor 599.81341 kHz from FAR3D output.",
+      "citation": "FAR3D DIII-D public example GPU run; DSfusion/FAR3d commit c76bdfe; run on benchmark RTX A4000 with NVIDIA HPC SDK 25.9; code-unit conversion factor 599.81341 kHz from FAR3D output.",
       "damping_rate_hz": null,
       "distribution_parameters": {},
       "frequency_hz": 22618.183933667,
@@ -242,7 +242,7 @@
     },
     {
       "case_id": "far3d_diiid_gpu_nvhpc_20step_nfast_m3_n1",
-      "citation": "FAR3D DIII-D public example GPU run; DSfusion/FAR3d commit c76bdfe; run on office RTX A4000 with NVIDIA HPC SDK 25.9; code-unit conversion factor 599.81341 kHz from FAR3D output.",
+      "citation": "FAR3D DIII-D public example GPU run; DSfusion/FAR3d commit c76bdfe; run on benchmark RTX A4000 with NVIDIA HPC SDK 25.9; code-unit conversion factor 599.81341 kHz from FAR3D output.",
       "damping_rate_hz": null,
       "distribution_parameters": {},
       "frequency_hz": 46073.167555625005,
@@ -258,7 +258,7 @@
     },
     {
       "case_id": "far3d_diiid_gpu_nvhpc_20step_vfast_m3_n1",
-      "citation": "FAR3D DIII-D public example GPU run; DSfusion/FAR3d commit c76bdfe; run on office RTX A4000 with NVIDIA HPC SDK 25.9; code-unit conversion factor 599.81341 kHz from FAR3D output.",
+      "citation": "FAR3D DIII-D public example GPU run; DSfusion/FAR3d commit c76bdfe; run on benchmark RTX A4000 with NVIDIA HPC SDK 25.9; code-unit conversion factor 599.81341 kHz from FAR3D output.",
       "damping_rate_hz": null,
       "distribution_parameters": {},
       "frequency_hz": 64052.27461367001,
@@ -274,7 +274,7 @@
     },
     {
       "case_id": "far3d_diiid_gpu_nvhpc_20step_vthfast_m3_n1",
-      "citation": "FAR3D DIII-D public example GPU run; DSfusion/FAR3d commit c76bdfe; run on office RTX A4000 with NVIDIA HPC SDK 25.9; code-unit conversion factor 599.81341 kHz from FAR3D output.",
+      "citation": "FAR3D DIII-D public example GPU run; DSfusion/FAR3d commit c76bdfe; run on benchmark RTX A4000 with NVIDIA HPC SDK 25.9; code-unit conversion factor 599.81341 kHz from FAR3D output.",
       "damping_rate_hz": null,
       "distribution_parameters": {},
       "frequency_hz": 1311.3480657466002,
@@ -290,7 +290,7 @@
     },
     {
       "case_id": "far3d_diiid_gpu_nvhpc_20step_psi_m4_n1",
-      "citation": "FAR3D DIII-D public example GPU run; DSfusion/FAR3d commit c76bdfe; run on office RTX A4000 with NVIDIA HPC SDK 25.9; code-unit conversion factor 599.81341 kHz from FAR3D output.",
+      "citation": "FAR3D DIII-D public example GPU run; DSfusion/FAR3d commit c76bdfe; run on benchmark RTX A4000 with NVIDIA HPC SDK 25.9; code-unit conversion factor 599.81341 kHz from FAR3D output.",
       "damping_rate_hz": null,
       "distribution_parameters": {},
       "frequency_hz": 38755.74386033,
@@ -306,7 +306,7 @@
     },
     {
       "case_id": "far3d_diiid_gpu_nvhpc_20step_phi_m4_n1",
-      "citation": "FAR3D DIII-D public example GPU run; DSfusion/FAR3d commit c76bdfe; run on office RTX A4000 with NVIDIA HPC SDK 25.9; code-unit conversion factor 599.81341 kHz from FAR3D output.",
+      "citation": "FAR3D DIII-D public example GPU run; DSfusion/FAR3d commit c76bdfe; run on benchmark RTX A4000 with NVIDIA HPC SDK 25.9; code-unit conversion factor 599.81341 kHz from FAR3D output.",
       "damping_rate_hz": null,
       "distribution_parameters": {},
       "frequency_hz": 16043.629146657,
@@ -322,7 +322,7 @@
     },
     {
       "case_id": "far3d_diiid_gpu_nvhpc_20step_pr_m4_n1",
-      "citation": "FAR3D DIII-D public example GPU run; DSfusion/FAR3d commit c76bdfe; run on office RTX A4000 with NVIDIA HPC SDK 25.9; code-unit conversion factor 599.81341 kHz from FAR3D output.",
+      "citation": "FAR3D DIII-D public example GPU run; DSfusion/FAR3d commit c76bdfe; run on benchmark RTX A4000 with NVIDIA HPC SDK 25.9; code-unit conversion factor 599.81341 kHz from FAR3D output.",
       "damping_rate_hz": null,
       "distribution_parameters": {},
       "frequency_hz": 12419.376579414,
@@ -338,7 +338,7 @@
     },
     {
       "case_id": "far3d_diiid_gpu_nvhpc_20step_nfast_m4_n1",
-      "citation": "FAR3D DIII-D public example GPU run; DSfusion/FAR3d commit c76bdfe; run on office RTX A4000 with NVIDIA HPC SDK 25.9; code-unit conversion factor 599.81341 kHz from FAR3D output.",
+      "citation": "FAR3D DIII-D public example GPU run; DSfusion/FAR3d commit c76bdfe; run on benchmark RTX A4000 with NVIDIA HPC SDK 25.9; code-unit conversion factor 599.81341 kHz from FAR3D output.",
       "damping_rate_hz": null,
       "distribution_parameters": {},
       "frequency_hz": 36077.457021998,
@@ -354,7 +354,7 @@
     },
     {
       "case_id": "far3d_diiid_gpu_nvhpc_20step_vfast_m4_n1",
-      "citation": "FAR3D DIII-D public example GPU run; DSfusion/FAR3d commit c76bdfe; run on office RTX A4000 with NVIDIA HPC SDK 25.9; code-unit conversion factor 599.81341 kHz from FAR3D output.",
+      "citation": "FAR3D DIII-D public example GPU run; DSfusion/FAR3d commit c76bdfe; run on benchmark RTX A4000 with NVIDIA HPC SDK 25.9; code-unit conversion factor 599.81341 kHz from FAR3D output.",
       "damping_rate_hz": null,
       "distribution_parameters": {},
       "frequency_hz": 46113.71494214101,
@@ -370,7 +370,7 @@
     },
     {
       "case_id": "far3d_diiid_gpu_nvhpc_20step_vthfast_m4_n1",
-      "citation": "FAR3D DIII-D public example GPU run; DSfusion/FAR3d commit c76bdfe; run on office RTX A4000 with NVIDIA HPC SDK 25.9; code-unit conversion factor 599.81341 kHz from FAR3D output.",
+      "citation": "FAR3D DIII-D public example GPU run; DSfusion/FAR3d commit c76bdfe; run on benchmark RTX A4000 with NVIDIA HPC SDK 25.9; code-unit conversion factor 599.81341 kHz from FAR3D output.",
       "damping_rate_hz": null,
       "distribution_parameters": {},
       "frequency_hz": 2196.2467913855003,
@@ -385,6 +385,6 @@
       "toroidal_mode": 1
     }
   ],
-  "citation": "FAR3D DIII-D public example GPU run; DSfusion/FAR3d commit c76bdfe; run on office RTX A4000 with NVIDIA HPC SDK 25.9; code-unit conversion factor 599.81341 kHz from FAR3D output.",
+  "citation": "FAR3D DIII-D public example GPU run; DSfusion/FAR3d commit c76bdfe; run on benchmark RTX A4000 with NVIDIA HPC SDK 25.9; code-unit conversion factor 599.81341 kHz from FAR3D output.",
   "dataset_id": "far3d_diiid_gpu_nvhpc_20step"
 }

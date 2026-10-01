@@ -48,7 +48,7 @@ from fax.reference_cases import landreman_paul_qa_lowres
 from fax.units import MU0
 
 
-BOOZ_XFORM_TEST_FILES = Path("/Users/rogerio/local/booz_xform_jax/tests/test_files")
+BOOZ_XFORM_TEST_FILES = Path("../booz_xform_jax/tests/test_files")
 
 
 def _wout_like_from_netcdf(path: Path):

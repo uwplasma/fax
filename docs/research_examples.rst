@@ -202,13 +202,13 @@ Clone the public equilibrium repository once:
 
 .. code-block:: bash
 
-   git clone https://github.com/landreman/vmec_equilibria /Users/rogerio/local/vmec_equilibria
+   git clone https://github.com/landreman/vmec_equilibria ../vmec_equilibria
 
 Then run:
 
 .. code-block:: bash
 
-   python examples/research/vmec_equilibria_catalog.py --root /Users/rogerio/local/vmec_equilibria
+   python examples/research/vmec_equilibria_catalog.py --root ../vmec_equilibria
 
 This reads selected VMEC ``wout*.nc`` files from the external clone and builds
 a broad profile-continuum catalog spanning HSX, W7-X, NCSX, ARIES-CS, LHD,
@@ -230,7 +230,7 @@ Run:
 
 .. code-block:: bash
 
-   python examples/research/vmec_equilibria_boozer_global.py --root /Users/rogerio/local/vmec_equilibria
+   python examples/research/vmec_equilibria_boozer_global.py --root ../vmec_equilibria
 
 This reads public ``boozmn`` artifacts in the same external clone, currently
 HSX QHS, HSX mirror, and a Ku-Boozer quasi-helical case, then assembles FAX's
@@ -254,7 +254,7 @@ Run:
 
 .. code-block:: bash
 
-   python examples/research/vmec_equilibria_live_boozer.py --root /Users/rogerio/local/vmec_equilibria --jit
+   python examples/research/vmec_equilibria_live_boozer.py --root ../vmec_equilibria --jit
 
 This uses ``booz_xform_jax`` to generate Boozer geometry from public W7-X and
 NCSX VMEC ``wout`` files, then assembles the FAX global radial 3-D Boozer
@@ -355,7 +355,7 @@ STELLGAP CTOK Cross-Code Comparison
 -----------------------------------
 
 Run after cloning/extracting the public ORNL STELLGAP test artifacts under
-``/Users/rogerio/local``:
+``..``:
 
 .. code-block:: bash
 
@@ -372,7 +372,7 @@ External-Code Artifact Dashboard
 --------------------------------
 
 Run after extracting the public ORNL STELLGAP and AE3D answer artifacts under
-``/Users/rogerio/local``:
+``..``:
 
 .. code-block:: bash
 
@@ -466,7 +466,7 @@ Generate selected figures with repeated ``--case`` flags, for example:
    python examples/research/publication_figure_suite.py --case 09 --case 10 --format pdf
 
 The STELLGAP and AE3D cases require the public ORNL artifacts under
-``/Users/rogerio/local``. The suite labels those cases as skipped in the JSON
+``..``. The suite labels those cases as skipped in the JSON
 summary if the local artifacts are unavailable.
 
 .. figure:: _static/publication_suite/09_stellgap_ctok_gap_anchored_global_screen.svg

@@ -18,7 +18,7 @@ from fax.boozer import (
 )
 
 
-DEFAULT_BOOZMN = Path("/Users/rogerio/local/booz_xform_jax/tests/test_files/boozmn_LandremanSenguptaPlunk_section5p3.nc")
+DEFAULT_BOOZMN = Path("../booz_xform_jax/tests/test_files/boozmn_LandremanSenguptaPlunk_section5p3.nc")
 
 
 def _write_figure(output_dir: Path, stem: str, geometry, grid, frequencies_hz: np.ndarray) -> list[str]:

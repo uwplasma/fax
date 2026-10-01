@@ -104,8 +104,8 @@ Python 3.10 uses the `tomli` fallback, while Python 3.11+ uses `tomllib`.
 For local VMEC/Boozer coupling tests:
 
 ```bash
-python -m pip install -e /Users/rogerio/local/vmec_jax
-python -m pip install -e /Users/rogerio/local/booz_xform_jax
+python -m pip install -e ../vmec_jax
+python -m pip install -e ../booz_xform_jax
 ```
 
 ## Quick Use
@@ -184,10 +184,10 @@ FAX can also read the public
 checkout as an external geometry matrix:
 
 ```bash
-git clone https://github.com/landreman/vmec_equilibria /Users/rogerio/local/vmec_equilibria
-python examples/research/vmec_equilibria_catalog.py --root /Users/rogerio/local/vmec_equilibria
-python examples/research/vmec_equilibria_boozer_global.py --root /Users/rogerio/local/vmec_equilibria
-python examples/research/vmec_equilibria_live_boozer.py --root /Users/rogerio/local/vmec_equilibria --jit
+git clone https://github.com/landreman/vmec_equilibria ../vmec_equilibria
+python examples/research/vmec_equilibria_catalog.py --root ../vmec_equilibria
+python examples/research/vmec_equilibria_boozer_global.py --root ../vmec_equilibria
+python examples/research/vmec_equilibria_live_boozer.py --root ../vmec_equilibria --jit
 ```
 
 ![VMEC-equilibria catalog](docs/_static/vmec_equilibria_catalog.png)
