@@ -42,6 +42,7 @@ Issues = "https://github.com/uwplasma/fax/issues"
 fax = "fax.cli:main"
 
 [project.optional-dependencies]
+booz = ["booz_xform_jax>=0.4.3"]
 test = ["coverage", "pytest", "matplotlib", "pillow"]
 docs = ["sphinx", "furo"]
 plots = ["matplotlib", "pillow"]

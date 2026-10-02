@@ -101,6 +101,8 @@ python -m pip install uwplasma-fax
 The import package and CLI are both `fax`. Python 3.10 and newer are supported;
 Python 3.10 uses the `tomli` fallback, while Python 3.11+ uses `tomllib`.
 
+For the optional Boozer adapter, use `pip install -e ".[booz]"` in a clone.
+
 For local VMEC/Boozer coupling tests:
 
 ```bash
