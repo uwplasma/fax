@@ -35,10 +35,9 @@ standard library.
 Local Couplings
 ---------------
 
-During development, install neighboring projects in editable mode when coupling
-tests are needed:
+The VMEC/Boozer coupling (Python 3.11+) installs ``vmex``, which brings
+``booz_xform_jax``:
 
 .. code-block:: bash
 
-   python -m pip install -e /Users/rogerio/local/vmec_jax
-   python -m pip install -e /Users/rogerio/local/booz_xform_jax
+   python -m pip install "uwplasma-fax[vmex]"

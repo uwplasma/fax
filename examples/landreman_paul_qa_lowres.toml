@@ -1,6 +1,6 @@
 # First VMEC-backed stellarator reference target for FAX.
-# Paths assume this repository is checked out as /Users/rogerio/local/fax
-# beside /Users/rogerio/local/vmec_jax.
+# Run from the repository root. The converged wout comes from a simsopt
+# checkout beside this repository.
 
 [run]
 case = "LandremanPaul2021_QA_lowres"
@@ -9,8 +9,8 @@ output_dir = "outputs/landreman_paul_qa_lowres"
 
 [equilibrium]
 source = "wout"
-vmec_input = "../vmec_jax/examples/data/input.LandremanPaul2021_QA_lowres"
-wout = "../vmec_jax/examples/data/wout_LandremanPaul2021_QA_lowres.nc"
+vmec_input = "examples/data/input.LandremanPaul2021_QA_lowres"
+wout = "../simsopt/tests/test_files/wout_LandremanPaul2021_QA_lowres.nc"
 use_boozer = false
 
 [grid]

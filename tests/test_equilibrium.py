@@ -52,7 +52,7 @@ def test_rejects_inconsistent_profile_shapes():
         analytic_cylinder(radial_points=8).with_mass_density(jnp.ones(7))
 
 
-@pytest.mark.requires_vmec_jax
+@pytest.mark.requires_vmex
 def test_landreman_paul_wout_adapter_smoke():
     case = landreman_paul_qa_lowres()
     if not case.is_available():

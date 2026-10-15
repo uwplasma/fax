@@ -22,7 +22,7 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--input",
         type=Path,
-        default=Path("/Users/rogerio/local/vmec_jax/examples/data/input.LandremanPaul2021_QA_lowres"),
+        default=Path(__file__).resolve().parents[1] / "data" / "input.LandremanPaul2021_QA_lowres",
         help="VMEC input file for the fixed-boundary design-gradient ladder.",
     )
     parser.add_argument("--output-dir", type=Path, default=Path("outputs/vmec_boozer_gradient_convergence"))
@@ -32,7 +32,7 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--skip-boozer-refinement",
         action="store_true",
-        help="Only compare VMEC iteration levels; omit the final Boozer/angular refinement level.",
+        help="Only compare VMEX force tolerances; omit the final Boozer/angular refinement level.",
     )
     return parser.parse_args()
 
@@ -47,18 +47,17 @@ def main() -> None:
         nboz=3,
         theta_points=8,
         zeta_points=8,
-        vmec_max_iter=2,
     )
     levels: tuple[tuple[str, dict[str, int]], ...] = (
-        ("vmec_iter2", {"vmec_max_iter": 2}),
-        ("vmec_iter4", {"vmec_max_iter": 4}),
+        ("ftol1e-10", {"vmec_ftol": 1.0e-10}),
+        ("ftol1e-12", {"vmec_ftol": 1.0e-12}),
     )
     if not args.skip_boozer_refinement:
         levels = (
             *levels,
             (
-                "vmec_iter4_boozer4_grid10",
-                {"vmec_max_iter": 4, "mboz": 4, "nboz": 4, "theta_points": 10, "zeta_points": 10},
+                "ftol1e-12_boozer4_grid10",
+                {"vmec_ftol": 1.0e-12, "mboz": 4, "nboz": 4, "theta_points": 10, "zeta_points": 10},
             ),
         )
 
@@ -70,7 +69,7 @@ def main() -> None:
     for label, overrides in levels:
         merged = {**base_settings.__dict__, **overrides}
         print(
-            f"  - {label}: vmec_max_iter={merged['vmec_max_iter']}, "
+            f"  - {label}: vmec_ftol={merged['vmec_ftol']:.0e}, "
             f"mboz={merged['mboz']}, nboz={merged['nboz']}, "
             f"grid={merged['theta_points']}x{merged['zeta_points']}"
         )

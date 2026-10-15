@@ -292,7 +292,7 @@ def test_parallel_wavenumber_shape_and_large_aspect_values():
     np.testing.assert_allclose(np.asarray(k_parallel[:, 1]), 0.0, atol=1.0e-12)
 
 
-@pytest.mark.requires_vmec_jax
+@pytest.mark.requires_vmex
 def test_landreman_paul_metric_adapter_smoke():
     case = landreman_paul_qa_lowres()
     if not case.is_available():

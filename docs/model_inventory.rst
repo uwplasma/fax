@@ -75,7 +75,7 @@ Metric geometry
 Boozer geometry
    ``fax.boozer.BoozerGeometry`` is the common contract for file-backed
    ``boozmn`` files, live ``booz_xform_jax`` transforms, and in-memory
-   ``vmec_jax`` handoff objects. Its current gates check harmonic parity,
+   ``vmex`` handoff objects. Its current gates check harmonic parity,
    straight-field-line phase, the Boozer-Jacobian identity, asymmetric
    harmonics, and Landreman-Paul bridge convergence.
 
@@ -192,7 +192,7 @@ Pipeline objectives
    ``boozer_pipeline_isolated_mode_avoidance_objective``, and
    ``boozer_pipeline_cluster_mean_avoidance_objective`` accept a callable
    Boozer-geometry builder. This is the intended API boundary for future
-   differentiable ``vmec_jax -> booz_xform_jax -> FAX`` design loops.
+   differentiable ``vmex -> booz_xform_jax -> FAX`` design loops.
 
 Cross-Code Comparisons
 ----------------------

@@ -176,7 +176,7 @@ def registered_research_grade_milestones() -> tuple[ResearchGradeMilestone, ...]
             ),
             target_state=(
                 "Actual VMEC boundary/profile variables differentiate through a "
-                "controlled vmec_jax solve, booz_xform_jax transform, FAX operator, "
+                "controlled vmex solve, booz_xform_jax transform, FAX operator, "
                 "eigenvalue objective, and finite-difference/adjoint verification."
             ),
             blocking_items=(
@@ -198,7 +198,7 @@ def registered_research_grade_milestones() -> tuple[ResearchGradeMilestone, ...]
             ),
             next_steps=(
                 "Choose a small set of VMEC boundary coefficients for the first design vector",
-                "Wrap a converged vmec_jax/booz_xform_jax/FAX builder with stable shapes",
+                "Wrap a converged vmex/booz_xform_jax/FAX builder with stable shapes",
                 "Compare JAX gradients against finite differences for isolated and cluster objectives",
             ),
         ),

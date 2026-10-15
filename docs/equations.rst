@@ -252,14 +252,14 @@ frequencies inside a user-selected exclusion window:
 
 Here ``p = [log density scale, iota shift, log field scale]`` in the initial
 profile fixture. This tests the end-to-end differentiable pattern that will be
-connected to VMEC/vmec_jax design variables.
+connected to VMEC/vmex design variables.
 
 Boozer Path
 -----------
 
 ``fax.boozer`` can read ``boozmn`` files, call local ``booz_xform_jax`` from a
 VMEC ``wout`` file, or accept an in-memory VMEC ``wout``-like object produced by
-``vmec_jax``. All three paths populate the same ``BoozerGeometry`` contract when
+``vmex``. All three paths populate the same ``BoozerGeometry`` contract when
 the required harmonics are available. The implemented diagnostic computes
 normalized non-axisymmetric Boozer ``|B|`` spectral energy and dominant modes.
 It also validates the scalar harmonic representation

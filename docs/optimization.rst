@@ -33,7 +33,7 @@ design objective. It maps
 ``[log_density_scale, iota_shift, log_field_scale]`` to a smooth penalty on
 the lowest radial eigenmode frequencies entering a dangerous frequency window.
 This is a reduced profile fixture, but it is fully differentiable and gives the
-testbed for VMEC/vmec_jax shape and profile variables.
+testbed for VMEC/vmex shape and profile variables.
 
 New differentiable study tools
 ------------------------------
@@ -79,12 +79,12 @@ The next executable layer is built around publication-style design studies:
 
 ``boozer_pipeline_isolated_mode_avoidance_objective``
    Applies the same isolated-mode objective to a callable Boozer-geometry
-   builder, which is the API boundary for differentiable ``vmec_jax`` and
+   builder, which is the API boundary for differentiable ``vmex`` and
    ``booz_xform_jax`` pipelines.
 
 ``boozer_pipeline_cluster_mean_avoidance_objective``
    Applies the crossing-safe cluster objective to the same callable geometry
-   builder API, enabling future ``vmec_jax -> booz_xform_jax -> FAX`` design
+   builder API, enabling future ``vmex -> booz_xform_jax -> FAX`` design
    studies to optimize mode families without invalid single-mode gradients.
 
 ``fax.vmec_boozer_design``
@@ -103,8 +103,8 @@ The next executable layer is built around publication-style design studies:
    ``validate_vmec_boundary_alfven_gradient`` checks the JAX gradient of this
    scalar risk objective against centered finite differences and then performs
    one line-searched boundary-shape descent step. The current default uses
-   ``vmec_jax.solve_fixed_boundary_from_boundary`` with
-   ``differentiable=True``; production studies should run VMEC iteration,
+   ``vmex.core.implicit.solve_implicit``, a converged fixed-boundary solve
+   differentiated with the implicit-function theorem; production studies should run VMEC resolution,
    Boozer truncation, radial-surface, angular-quadrature, and gradient
    convergence ladders before claiming a final design result.
 

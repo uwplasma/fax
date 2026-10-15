@@ -46,14 +46,12 @@ jobs:
       - name: Install package
         run: |
           python -m pip install --upgrade pip
-          python -m pip install -e ".[test]"
-      - name: Install optional VMEC/Boozer coverage fixtures
+          python -m pip install -e ".[test,vmex]"
+      - name: Install optional Boozer coverage fixtures
         run: |
           sudo mkdir -p /Users/rogerio/local
           sudo chown "$USER" /Users/rogerio/local
-          git clone --depth 1 https://github.com/uwplasma/vmec_jax.git /Users/rogerio/local/vmec_jax
           git clone --depth 1 https://github.com/uwplasma/booz_xform_jax.git /Users/rogerio/local/booz_xform_jax
-          python -m pip install -e /Users/rogerio/local/vmec_jax
           python -m pip install -e /Users/rogerio/local/booz_xform_jax
       - name: Install public STELLGAP/AE3D validation artifacts
         run: python tools/install_public_cross_code_artifacts.py --root /Users/rogerio/local

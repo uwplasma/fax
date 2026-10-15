@@ -12,7 +12,7 @@ class ReferenceCase:
     """Metadata and local paths for a reference case.
 
     Paths may point outside the ``fax`` repository because early validation uses
-    neighboring checkouts such as ``vmec_jax`` and ``simsopt``.
+    neighboring checkouts such as ``vmex`` and ``simsopt``.
     """
 
     case_id: str
@@ -252,21 +252,20 @@ def landreman_paul_qa_lowres(*, root: str | Path | None = None) -> ReferenceCase
     The case is the low-resolution version of the Landreman-Paul precise
     quasi-axisymmetric configuration. It is useful as the first stellarator
     geometry target because it is literature anchored, small enough for local
-    tests, and already used in the neighboring ``vmec_jax`` and
+    tests, and already used in the neighboring ``vmex`` and
     ``booz_xform_jax`` workflows.
     """
     base = Path(root).expanduser() if root is not None else local_root()
     vmec_input = Path(
         os.environ.get(
             "FAX_LP_QA_VMEC_INPUT",
-            str(base / "vmec_jax" / "examples" / "data" / "input.LandremanPaul2021_QA_lowres"),
+            str(base / "vmex" / "examples" / "data" / "input.LandremanPaul2021_QA_lowres"),
         )
     ).expanduser()
 
     wout_env = os.environ.get("FAX_LP_QA_WOUT")
     wout_candidates = [
         Path(wout_env).expanduser() if wout_env else None,
-        base / "vmec_jax" / "examples" / "data" / "wout_LandremanPaul2021_QA_lowres.nc",
         base / "simsopt" / "tests" / "test_files" / "wout_LandremanPaul2021_QA_lowres.nc",
     ]
     wout = next((path for path in wout_candidates if path is not None and path.exists()), wout_candidates[1])

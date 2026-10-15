@@ -24,8 +24,9 @@ Configuration Examples
    Small analytic case sized for radial/angular/Fourier convergence sweeps.
 
 ``examples/landreman_paul_qa_lowres.toml``
-   VMEC-backed Landreman-Paul QA low-resolution target. This requires the
-   neighboring ``vmec_jax`` checkout data path documented in the README.
+   VMEC-backed Landreman-Paul QA low-resolution target. The VMEC input ships
+   in ``examples/data``; the converged ``wout`` comes from a neighboring
+   ``simsopt`` checkout.
 
 ``examples/global_eigenmodes.toml``
    Small TOML-driven global radial eigenmode case. Use it to test
@@ -121,7 +122,7 @@ Run:
    python examples/research/vmec_boozer_alfven_design_gradient.py --output-dir outputs/vmec_boozer_alfven_design_gradient
 
 This starts from the Landreman-Paul QA VMEC input, selects low-order boundary
-Fourier coefficients, runs the differentiable fixed-boundary ``vmec_jax`` path,
+Fourier coefficients, runs the differentiable fixed-boundary ``vmex`` path,
 transforms the resulting state with ``booz_xform_jax``, and evaluates a FAX
 global radial Alfvén risk objective. The generated plot compares JAX and
 centered-finite-difference gradients and shows the effect of one line-searched
@@ -189,7 +190,7 @@ Run:
 
    python examples/research/vmec_boozer_convergence.py --output-dir outputs/vmec_boozer_convergence
 
-This runs the local Landreman-Paul QA ``vmec_jax`` input through the in-memory
+This runs the local Landreman-Paul QA ``vmex`` input through the in-memory
 ``booz_xform_jax`` bridge and checks two production-readiness metrics:
 Boozer harmonic truncation and local 3-D operator angular quadrature
 convergence. It writes a compact figure and prints JSON metrics; it is not a

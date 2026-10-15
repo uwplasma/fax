@@ -29,7 +29,7 @@ class RunConfig:
 class EquilibriumConfig:
     """Equilibrium and coordinate-source controls."""
 
-    source: str = "vmec_jax"
+    source: str = "vmex"
     vmec_input: str | None = None
     wout: str | None = None
     use_boozer: bool = False
@@ -103,8 +103,8 @@ class FaxConfig:
             raise ConfigError(
                 "run.model must be one of: continuum, global_eigenmode, fast_ion_stability"
             )
-        if self.equilibrium.source not in {"vmec_jax", "wout", "analytic"}:
-            raise ConfigError("equilibrium.source must be one of: vmec_jax, wout, analytic")
+        if self.equilibrium.source not in {"vmex", "wout", "analytic"}:
+            raise ConfigError("equilibrium.source must be one of: vmex, wout, analytic")
         if self.grid.radial_points < 4:
             raise ConfigError("grid.radial_points must be at least 4")
         if self.grid.m_max < 0 or self.grid.n_max < 0:

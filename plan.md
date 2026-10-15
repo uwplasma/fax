@@ -3,7 +3,7 @@
 Repository: <https://github.com/uwplasma/fax>  
 Visibility: private  
 Local checkout: `/Users/rogerio/local/fax`  
-Primary local dependencies: `/Users/rogerio/local/vmec_jax`, `/Users/rogerio/local/booz_xform_jax`  
+Primary local dependencies: `/Users/rogerio/local/vmex`, `/Users/rogerio/local/booz_xform_jax`  
 Initial session date: 2026-04-23 America/Chicago, with online literature survey current to 2026-04-24.
 
 ## Mission
@@ -12,7 +12,7 @@ Build `fax`: a research-grade, end-to-end differentiable JAX code for Alfvén ei
 
 `fax` is not meant to replace full gyrokinetic or hybrid-MHD production codes immediately. Its first role is to be the differentiable, design-facing layer that can:
 
-- map VMEC/`vmec_jax` equilibria to Alfvén-continuum and global-mode metrics,
+- map VMEC/`vmex` equilibria to Alfvén-continuum and global-mode metrics,
 - expose gradients with respect to equilibrium/design parameters,
 - identify gaps, avoided crossings, mode families, and sensitivity to density/iota/geometry,
 - estimate fast-ion drive/damping with reduced but controlled closures,
@@ -25,7 +25,7 @@ Build `fax`: a research-grade, end-to-end differentiable JAX code for Alfvén ei
 3. Honest capability reporting: CLI and docs must distinguish implemented features from planned features.
 4. Static shapes and batchability: expensive paths should support `jax.jit`, `jax.vmap`, and eventually distributed scans without Python loops in hot kernels.
 5. Reproducible research artifacts: each validation figure should have an input file, command, tolerance, source citation, and expected output metric.
-6. Coupled but modular: `vmec_jax` and `booz_xform_jax` are first-class adapters, but core operators should also support analytic and precomputed reference geometries.
+6. Coupled but modular: `vmex` and `booz_xform_jax` are first-class adapters, but core operators should also support analytic and precomputed reference geometries.
 
 ## Initial Literature And Code Survey
 
@@ -214,7 +214,7 @@ The code should eventually support these workflows:
 1. `fax continuum case.toml`: compute continuum branches, mode-family coupling, gaps, branch labels, and gap metrics.
 2. `fax eigenmodes case.toml`: compute global reduced-MHD or ideal-MHD eigenmodes, eigenfunctions, residuals, harmonic content, and localization metrics.
 3. `fax fast-ion case.toml`: estimate perturbative drive/damping or reduced fast-ion-fluid stability metrics for validated mode families.
-4. `fax optimize case.toml`: expose differentiable objectives for `vmec_jax`/shape/profile optimization.
+4. `fax optimize case.toml`: expose differentiable objectives for `vmex`/shape/profile optimization.
 5. `fax validate case.toml`: run a registered validation case and compare with analytic, literature, or cross-code references.
 6. `fax benchmark case.toml`: separate compile time, warm runtime, memory, and scaling metrics.
 7. Python API workflows: call pure functions from optimization loops, notebooks, scripts, or other UWPlasma tools.
@@ -226,7 +226,7 @@ The CLI should remain TOML-driven, but every CLI mode should call a documented P
 Required input classes:
 
 - `run`: case name, model, output directory, random seeds for stochastic/UQ demos, and provenance settings.
-- `equilibrium`: one of `vmec_jax` object, VMEC input, VMEC `wout`, analytic equilibrium, or a stored geometry artifact.
+- `equilibrium`: one of `vmex` object, VMEC input, VMEC `wout`, analytic equilibrium, or a stored geometry artifact.
 - `coordinates`: VMEC coordinates by default; `booz_xform_jax` object or `boozmn` file for Boozer-dependent models.
 - `profiles`: mass density, electron/ion temperature, pressure, current/iota controls, impurity/effective mass assumptions, and uncertainty models.
 - `mode_family`: base toroidal/poloidal labels, field-period coupling family, parity/symmetry choices, and truncation.
@@ -562,8 +562,8 @@ Build demonstrations as scripts with saved outputs and docs pages:
 
 1. `examples/continuum_cylinder`: analytic continuum and derivative with respect to density.
 2. `examples/tokamak_tae_gap`: TAE gap scaling and convergence.
-3. `examples/stellarator_gap_vmec_jax`: VMEC/`vmec_jax` to continuum map.
-4. `examples/booz_xform_pipeline`: `vmec_jax` to `booz_xform_jax` to Boozer-harmonic continuum.
+3. `examples/stellarator_gap_vmex`: VMEC/`vmex` to continuum map.
+4. `examples/booz_xform_pipeline`: `vmex` to `booz_xform_jax` to Boozer-harmonic continuum.
 5. `examples/eigenmode_dense_vs_matrix_free`: dense reference versus production solver.
 6. `examples/gradient_gap_sensitivity`: JAX gradient versus finite difference over density/iota/shape.
 7. `examples/uq_profile_uncertainty`: batched UQ for density and fast-ion profile uncertainty.
@@ -614,7 +614,7 @@ Design metrics:
 
 Candidate design variables:
 
-- VMEC boundary Fourier coefficients through `vmec_jax`,
+- VMEC boundary Fourier coefficients through `vmex`,
 - current/iota and pressure-profile parameters,
 - density and temperature profiles,
 - fast-ion source/distribution parameters,
@@ -662,7 +662,7 @@ Minimum paper package:
 - STELLGAP/AE3D or equivalent cross-code comparisons,
 - gradient correctness section with finite-difference and adjoint tests,
 - performance/scaling section with CPU/GPU results,
-- design demonstration with `vmec_jax` gradients,
+- design demonstration with `vmex` gradients,
 - limitations and model validity boundaries,
 - archived release tag and documentation snapshot.
 
@@ -683,7 +683,7 @@ Reviewer-proof standard:
 : TOML parsing, typed dataclasses, validation, default handling.
 
 `fax.equilibrium`
-: adapters for `vmec_jax`, VMEC `wout`, and analytic equilibria. Must return JAX pytrees with static shapes.
+: adapters for `vmex`, VMEC `wout`, and analytic equilibria. Must return JAX pytrees with static shapes.
 
 `fax.boozer`
 : optional adapter to `booz_xform_jax` and `boozmn` files. Must expose Boozer harmonics and coordinate maps without contaminating non-Boozer workflows.
@@ -823,8 +823,8 @@ Status: complete in initial commit.
 ### M1: Geometry And Equilibrium Adapter
 
 - Implement analytic equilibrium fixtures.
-- Implement `wout` reader adapter or reuse `vmec_jax` public API if available.
-- Implement direct `vmec_jax` adapter for differentiable equilibria.
+- Implement `wout` reader adapter or reuse `vmex` public API if available.
+- Implement direct `vmex` adapter for differentiable equilibria.
 - Add shape/JIT tests and finite-difference checks.
 - Add docs for coordinate conventions.
 
@@ -871,7 +871,7 @@ Status: complete in initial commit.
 
 ### M8: Design Integration
 
-- Expose objectives for optimization over `vmec_jax` equilibrium/design parameters.
+- Expose objectives for optimization over `vmex` equilibrium/design parameters.
 - Add batched scans and gradient examples.
 - Add reactor-relevant examples for quasi-axisymmetric, quasi-helical, and quasi-isodynamic configurations.
 
@@ -939,7 +939,7 @@ Needed docs:
 - differentiability and adjoints,
 - performance guide,
 - examples gallery,
-- coupling guide for `vmec_jax` and `booz_xform_jax`.
+- coupling guide for `vmex` and `booz_xform_jax`.
 
 ## Open Technical Decisions
 
@@ -960,12 +960,12 @@ Needed docs:
 - Confirmed local workspace at `/Users/rogerio/local/tests`.
 - Confirmed authenticated GitHub CLI account with `repo` and `workflow` scopes.
 - Confirmed local dependency checkouts:
-  - `/Users/rogerio/local/vmec_jax`
+  - `/Users/rogerio/local/vmex`
   - `/Users/rogerio/local/booz_xform_jax`
 - Confirmed `uwplasma/fax` did not already exist.
 - Created private GitHub repository `uwplasma/fax`.
 - Cloned it to `/Users/rogerio/local/fax`.
-- Inspected local `vmec_jax` and `booz_xform_jax` packaging, docs, and CLI patterns.
+- Inspected local `vmex` and `booz_xform_jax` packaging, docs, and CLI patterns.
 - Performed initial online survey of FAR3D, STELLGAP, AE3D, CAS3D/CAS3D-K, EUTERPE, Boozer-coordinate tooling, and JAX transform documentation.
 - Added initial package scaffold, docs scaffold, workflows, examples, tests, and this plan.
 - Verified editable install with `python -m pip install -e ".[test,docs]"`.
@@ -987,7 +987,7 @@ Needed docs:
 - Confirmed GitHub Actions will not be available until next month; local checks are the required gate until then.
 - Promoted `LandremanPaul2021_QA_lowres` to the first VMEC-backed stellarator reference target.
 - Added `src/fax/reference_cases.py` with a local-path discovery helper for `LandremanPaul2021_QA_lowres`.
-- Added `examples/landreman_paul_qa_lowres.toml` pointing at the neighboring `vmec_jax` input and `wout`.
+- Added `examples/landreman_paul_qa_lowres.toml` pointing at the neighboring `vmex` input and `wout`.
 - Verified the reference helper resolves the local VMEC input and `wout` on this machine.
 - Re-verified after the reference-case update with `python -m ruff check .`, `python -m pytest` (9 passed), `sphinx-build -W -b html docs docs/_build/html`, `fax examples/landreman_paul_qa_lowres.toml --dry-run`, and `python -m build`.
 - Added the first executable physics foundation: `EquilibriumGeometry`, analytic cylinder/tokamak fixtures, a minimal VMEC `wout` profile adapter, local large-aspect-ratio Alfvén-continuum formulas, validation metrics, and a lightweight local benchmark helper.
@@ -1135,7 +1135,7 @@ Needed docs:
   - Replaced the old mass-proportional radial coupling default in the real-Boozer global path with a metric-derived radial stiffness matrix `<|J||grad s|^2|B|^2 phi_i^* phi_j/mu0>`, while keeping the previous mass-scaled path available for analytic tests.
   - Added Neumann radial boundary support and an exact constant-coefficient Neumann spectrum gate alongside the existing Dirichlet gate.
   - Added eigenfunction-weighted fast-ion drive/damping diagnostics that project reduced resonance drive onto global `(surface, harmonic)` eigenfunctions.
-  - Added `boozer_global_mode_avoidance_objective` and `boozer_pipeline_mode_avoidance_objective` for differentiable Boozer/FAX design screens. The pipeline objective accepts a differentiable Boozer-geometry builder, which is the API boundary for future `vmec_jax`/`booz_xform_jax` end-to-end optimization.
+  - Added `boozer_global_mode_avoidance_objective` and `boozer_pipeline_mode_avoidance_objective` for differentiable Boozer/FAX design screens. The pipeline objective accepts a differentiable Boozer-geometry builder, which is the API boundary for future `vmex`/`booz_xform_jax` end-to-end optimization.
   - Updated README, docs, changelog, release notes, validation registry, and tests to distinguish true STELLGAP local-continuum parity from AE3D artifact smoke tests and still-open full global parity.
   - Verified locally with `python -m ruff check .`, `python -m mypy src/fax`, direct `run_validation_suite(include_skipped=True)` (36 passed, 0 skipped, 0 failed), `python -m pytest -q` (114 passed), `python -m coverage run --source=src/fax -m pytest -q` (114 passed, 90.2% coverage badge), `python tools/generate_validation_figures.py`, `python tools/qa_figures.py`, `sphinx-build -W -b html docs docs/_build/html`, `python -m build`, and `python -m twine check dist/*`.
   - Re-verified after the artifact-convention gates with direct `run_validation_suite(include_skipped=True)` (39 passed, 0 skipped, 0 failed), `python -m pytest -q` (116 passed), coverage run (116 passed, 90.4% coverage badge), figure generation/QA, Sphinx with warnings as errors, build, and twine check.
@@ -1165,30 +1165,30 @@ Needed docs:
     - Extended `fax.optimization` with real-Boozer global-mode frequency maps, Jacobians, linearized uncertainty, inverse design, eigenfunction-projected fast-ion screens, and a combined frequency-window/fast-ion risk objective.
     - Added `examples/research/boozmn_differentiable_design_study.py`, which reads a real `boozmn` file, differentiates through local Boozer matrices, metric-derived radial stiffness, global generalized eigenfrequencies, and fast-ion growth projected on radial/harmonic eigenfunctions.
     - Generated `docs/_static/boozmn_differentiable_design_study.{svg,png}` and summary JSON. On the local Landreman-Sengupta-Plunk `boozmn` fixture, the example moves the first two modes below a 200-300 kHz risk window and reduces the peak reduced fast-ion growth screen from about `+8.87 Hz` to negative.
-    - This closes the first real-geometry differentiable-design lane for the current Boozer operator. It is still a reduced-parameter design screen; true shape-gradient publication claims require wiring those parameters to `vmec_jax` boundary/profile variables and validating optimized geometries against external-code/literature targets.
+    - This closes the first real-geometry differentiable-design lane for the current Boozer operator. It is still a reduced-parameter design screen; true shape-gradient publication claims require wiring those parameters to `vmex` boundary/profile variables and validating optimized geometries against external-code/literature targets.
   - 2026-04-28 in-memory VMEC/Boozer bridge milestone:
     - Added FAX `run_booz_xform_jax_from_wout_data` and `run_booz_xform_jax_geometry_from_wout_data` so a live VMEC `wout`-like object can populate the same `BoozerSpectrum`/`BoozerGeometry` contracts as the file-backed adapter.
     - Added a registered physics gate `booz_xform_jax_in_memory_geometry_adapter`, comparing an in-memory asymmetric VMEC object through `booz_xform_jax` against the asymmetric BOOZ_XFORM `boozmn` reference across field, embedding, Boozer-shift, and Jacobian harmonic families.
     - Strengthened neighboring `booz_xform_jax` with `read_wout_data(...).run_jax(...)` parity tests against file-backed `read_wout(...).run_jax(...)` for stellarator-symmetric and asymmetric fixtures, including Jacobian harmonics.
     - Regenerated the validation gate summary figures and manifest so docs/README artifacts include the new in-memory bridge gate.
-    - This closes the no-intermediate-file handoff layer needed for `vmec_jax -> booz_xform_jax -> FAX` applications. The next hard step is differentiating through an actual `vmec_jax` solve/transform builder, not only through downstream FAX objectives.
-  - 2026-04-28 live Landreman-Paul VMEC-JAX bridge milestone:
-    - Added `run_vmec_jax_fixed_boundary_boozer_geometry`, a public integration helper that runs a short `vmec_jax` fixed-boundary solve, converts the live VMEC state to an in-memory `wout`, passes it through `booz_xform_jax`, and returns the normal FAX `BoozerGeometry` contract.
-    - Added the registered validation gate `landreman_paul_vmec_jax_boozer_in_memory`, using the local Landreman-Paul QA low-resolution VMEC input with one VMEC iteration as a fast object-handoff smoke test. The gate checks the Boozer Jacobian identity at the percent level and verifies finite non-negative local 3-D Boozer continuum branches.
+    - This closes the no-intermediate-file handoff layer needed for `vmex -> booz_xform_jax -> FAX` applications. The next hard step is differentiating through an actual `vmex` solve/transform builder, not only through downstream FAX objectives.
+  - 2026-04-28 live Landreman-Paul VMEX bridge milestone:
+    - Added `run_vmex_fixed_boundary_boozer_geometry`, a public integration helper that runs a short `vmex` fixed-boundary solve, converts the live VMEC state to an in-memory `wout`, passes it through `booz_xform_jax`, and returns the normal FAX `BoozerGeometry` contract.
+    - Added the registered validation gate `landreman_paul_vmex_boozer_in_memory`, using the local Landreman-Paul QA low-resolution VMEC input with one VMEC iteration as a fast object-handoff smoke test. The gate checks the Boozer Jacobian identity at the percent level and verifies finite non-negative local 3-D Boozer continuum branches.
     - Added a matching physics test in `tests/test_boozer.py` and documented the gate in the README, validation docs, and differentiability notes.
     - Reworked the validation-gate summary figure layout after visual QA showed label overlap with the larger registry; regenerated the figure manifest and coverage badge.
     - Verified locally with the targeted bridge gate (`metric=2.1307e-3 < 1.0e-2`), `python -m pytest -q` (164 passed), coverage (`95.6%` FAX source coverage, fail-under 95 passed), `python -m ruff check .`, `python -m mypy src/fax`, `python tools/generate_validation_figures.py`, `python tools/qa_figures.py`, `python -m sphinx -W --keep-going -b html docs docs/_build/html`, `python -m build`, `python -m twine check dist/*`, and `git diff --check`.
     - Scope note: this proves the end-to-end object bridge is live. It is not yet a converged VMEC/Boozer/continuum publication validation and must be followed by VMEC convergence, Boozer truncation, angular/radial convergence, and cross-code/literature comparisons.
   - 2026-04-29 live VMEC/Boozer convergence milestone:
-    - Added `run_vmec_jax_fixed_boundary_wout_data` so FAX can reuse one live `vmec_jax` state across multiple downstream Boozer transforms.
-    - Added `run_vmec_jax_boozer_truncation_convergence`, `VmecJaxBoozerConvergenceResult`, and `boozer_geometry_field_relative_error` to check sampled `|B|`, local 3-D continuum frequencies, and Boozer-Jacobian identity under Boozer truncation changes.
-    - Added registered gate `landreman_paul_vmec_jax_boozer_truncation_convergence`, comparing `(mboz,nboz)=(4,4)` against `(5,5)` on the same one-iteration Landreman-Paul QA VMEC state. Current local metric: `6.3707e-3 < 1.0e-2`.
+    - Added `run_vmex_fixed_boundary_wout_data` so FAX can reuse one live `vmex` state across multiple downstream Boozer transforms.
+    - Added `run_vmex_boozer_truncation_convergence`, `VmecJaxBoozerConvergenceResult`, and `boozer_geometry_field_relative_error` to check sampled `|B|`, local 3-D continuum frequencies, and Boozer-Jacobian identity under Boozer truncation changes.
+    - Added registered gate `landreman_paul_vmex_boozer_truncation_convergence`, comparing `(mboz,nboz)=(4,4)` against `(5,5)` on the same one-iteration Landreman-Paul QA VMEC state. Current local metric: `6.3707e-3 < 1.0e-2`.
     - Added the dedicated `vmec_boozer_bridge_convergence` README/docs figure to make the live bridge convergence evidence visible.
     - Verified locally with `python -m pytest -q` (166 passed), coverage (`95.6%` FAX source coverage, fail-under 95 passed), `python -m ruff check .`, `python -m mypy src/fax`, `python tools/generate_validation_figures.py`, `python tools/qa_figures.py`, `python -m sphinx -W --keep-going -b html docs docs/_build/html`, `python -m build`, `python -m twine check dist/*`, and `git diff --check`.
     - Scope note: this starts the live-bridge convergence ladder. Next required steps are converged VMEC residual/iteration studies, Boozer angular and surface-resolution sweeps, and external-code/literature continuum comparisons on the same geometry family.
   - 2026-04-29 live Boozer operator angular convergence milestone:
     - Added `BoozerOperatorAngularConvergenceResult` and `boozer_3d_operator_angular_convergence` to measure local 3-D Boozer operator angular-grid convergence through frequency errors and Hermitian matrix errors.
-    - Added registered gate `landreman_paul_vmec_jax_boozer_operator_angular_convergence`, holding the one-iteration Landreman-Paul live bridge geometry fixed and comparing `12x12`, `16x16`, and `20x20` quadrature against a `32x32` reference grid. Current local metric: `1.7882e-3 < 5.0e-3`.
+    - Added registered gate `landreman_paul_vmex_boozer_operator_angular_convergence`, holding the one-iteration Landreman-Paul live bridge geometry fixed and comparing `12x12`, `16x16`, and `20x20` quadrature against a `32x32` reference grid. Current local metric: `1.7882e-3 < 5.0e-3`.
     - Added `examples/research/vmec_boozer_convergence.py` so users can reproduce the live bridge truncation and operator-angular convergence metrics and generate a compact figure.
     - Added the dedicated `vmec_boozer_operator_angular_convergence` README/docs figure.
     - Verified locally with `python -m pytest -q` (169 passed), coverage (`95.6%` FAX source coverage, fail-under 95 passed), `python -m ruff check .`, `python -m mypy src/fax`, `python tools/generate_validation_figures.py`, `python tools/qa_figures.py`, `python -m sphinx -W --keep-going -b html docs docs/_build/html`, `python -m build`, `python -m twine check dist/*`, and `git diff --check`.
@@ -1204,13 +1204,13 @@ Needed docs:
     - Updated README/development/validation docs and CLI tests to cover the per-gate progress contract.
     - Verified locally with targeted CLI/progress tests, `python -m coverage erase && python -m coverage run --source=fax -m pytest -q && python -m coverage report --skip-empty -m --fail-under=95` (171 passed, 95.5% FAX source coverage), `python -m ruff check .`, `python -m mypy src/fax`, `python -m sphinx -W --keep-going -b html docs docs/_build/html`, and `git diff --check`.
   - 2026-04-29 VMEC solve-convergence ladder milestone:
-    - Added `VmecJaxBoozerSolveConvergenceResult` and `run_vmec_jax_boozer_solve_convergence`, which run a native-grid `vmec_jax` iteration ladder, carry VMEC force residuals into the result object, transform each iterate through `booz_xform_jax`, and compare Boozer `|B|` plus FAX local 3-D continuum frequencies against a converged reference `wout`.
-    - Added registered gate `landreman_paul_vmec_jax_solve_convergence`. Current local metric: `2.3407e-2 < 4.0e-2`, with VMEC residual ratio `6.474e-3` and FAX frequency-error ratio `2.365e-1` from requested iterations `(1, 6, 12, 24)`.
+    - Added `VmecJaxBoozerSolveConvergenceResult` and `run_vmex_boozer_solve_convergence`, which run a native-grid `vmex` iteration ladder, carry VMEC force residuals into the result object, transform each iterate through `booz_xform_jax`, and compare Boozer `|B|` plus FAX local 3-D continuum frequencies against a converged reference `wout`.
+    - Added registered gate `landreman_paul_vmex_solve_convergence`. Current local metric: `2.3407e-2 < 4.0e-2`, with VMEC residual ratio `6.474e-3` and FAX frequency-error ratio `2.365e-1` from requested iterations `(1, 6, 12, 24)`.
     - Added the runtime-comparison plan for matched FAX/STELLGAP/AE3D/CAS3D/FAR3D benchmark families. Speed claims must be coupled to passing physics metrics.
-    - Added the `vmec_jax_solve_convergence` README/docs figure to show residual reduction, Boozer/FAX reference errors, and local runtime per ladder point.
+    - Added the `vmex_solve_convergence` README/docs figure to show residual reduction, Boozer/FAX reference errors, and local runtime per ladder point.
     - Verified locally with direct gate execution, `python tools/generate_validation_figures.py`, `python tools/qa_figures.py`, targeted Landreman-Paul registry test, `python -m coverage erase && python -m coverage run --source=fax -m pytest -q && python -m coverage report --skip-empty -m --fail-under=95` (171 passed, 95.5% FAX source coverage), `python -m ruff check .`, `python -m mypy src/fax`, `python -m sphinx -W --keep-going -b html docs docs/_build/html`, `python -m build`, `python -m twine check dist/*`, and `git diff --check`.
   - 2026-04-29 benchmark-family and neighboring-branch numerics milestone:
-    - Inspected current local `vmec_jax` `main` and active branches including `origin/gpu_optimization`, `origin/codex/qh-fixed-resolution-jax-main`, and `origin/codex/discrete-adjoint-2506`. Performance/numerics practices to carry into FAX: separate cold and warm runtime, avoid host/device synchronization in quiet scans, keep CPU debug callbacks away from CUDA paths, use small-problem tridiagonal accelerators only behind shape/backend gates, and use chunked Jacobian/adjoint construction before dense autodiff paths become large.
+    - Inspected current local `vmex` `main` and active branches including `origin/gpu_optimization`, `origin/codex/qh-fixed-resolution-jax-main`, and `origin/codex/discrete-adjoint-2506`. Performance/numerics practices to carry into FAX: separate cold and warm runtime, avoid host/device synchronization in quiet scans, keep CPU debug callbacks away from CUDA paths, use small-problem tridiagonal accelerators only behind shape/backend gates, and use chunked Jacobian/adjoint construction before dense autodiff paths become large.
     - Inspected current local `booz_xform_jax` `main` and `origin/fax/jax-geometry-jacobian-outputs`. Useful practices: maintain in-memory VMEC-to-Boozer parity, expose Jacobian/harmonic outputs directly, precompute angular trig tables, and prefer vectorized double-spectral Fourier integrals to repeated Python/dispatch loops.
     - Extended `fax benchmark` with named benchmark families: `analytic-local`, `global-block`, `stellgap-ctok`, `ae3d-artifact`, and `vmec-boozer`. The public continuum workflow remains the baseline, and each added family records cold runtime, warm runtime, process memory, JAX backend metadata, and a physics/parity metric with tolerance.
     - Added the `benchmark_family_packet` README/docs figure and JSON summary so runtime plots are tied to physics gates instead of standalone wall-clock anecdotes.
@@ -1237,7 +1237,7 @@ Needed docs:
     - Added registered gate `global_3d_block_custom_jvp_eigenvalue`.
   - 2026-04-29 isolated Boozer design-gradient milestone:
     - Added `boozer_global_isolated_mode_omega2`, `boozer_global_isolated_mode_frequency_hz`, and `boozer_global_isolated_mode_avoidance_objective` so real-Boozer global design studies can track one isolated mode through the custom-JVP eigenvalue path.
-    - Added `boozer_pipeline_isolated_mode_avoidance_objective` for callable Boozer-geometry builders, preserving the API needed for future differentiable `vmec_jax -> booz_xform_jax -> FAX` shape/profile objectives.
+    - Added `boozer_pipeline_isolated_mode_avoidance_objective` for callable Boozer-geometry builders, preserving the API needed for future differentiable `vmex -> booz_xform_jax -> FAX` shape/profile objectives.
     - Added tests comparing isolated-mode values against the dense frequency vector and gradients against centered finite differences, plus a pipeline-builder differentiation test.
     - Added registered gate `boozer_global_custom_jvp_design_gradient` for reviewer-facing custom-JVP/finite-difference agreement on Boozer design variables.
   - 2026-04-29 degenerate-cluster sensitivity milestone:
@@ -1271,12 +1271,12 @@ Do not weaken tests to accommodate the missing CI. Instead, keep local validatio
 
 ### First VMEC-Backed Stellarator Reference Target
 
-Use `LandremanPaul2021_QA_lowres` as the first `vmec_jax`/VMEC-backed stellarator target.
+Use `LandremanPaul2021_QA_lowres` as the first `vmex`/VMEC-backed stellarator target.
 
 Local paths identified on 2026-04-24:
 
-- VMEC input: `/Users/rogerio/local/vmec_jax/examples/data/input.LandremanPaul2021_QA_lowres`
-- VMEC `wout`: `/Users/rogerio/local/vmec_jax/examples/data/wout_LandremanPaul2021_QA_lowres.nc`
+- VMEC input: `/Users/rogerio/local/vmex/examples/data/input.LandremanPaul2021_QA_lowres`
+- VMEC `wout`: `/Users/rogerio/local/vmex/examples/data/wout_LandremanPaul2021_QA_lowres.nc`
 - alternate `wout` fixture: `/Users/rogerio/local/simsopt/tests/test_files/wout_LandremanPaul2021_QA_lowres.nc`
 
 Why this case:
@@ -1284,7 +1284,7 @@ Why this case:
 - It is a low-resolution version of the Landreman-Paul precise quasi-axisymmetric configuration, so it is small enough for local testing.
 - It is literature anchored by Landreman & Paul, "Magnetic fields with precise quasisymmetry for plasma confinement", PRL 128, 035001 (2022), arXiv:2108.03711.
 - It is a two-field-period quasi-axisymmetric stellarator, so it is directly relevant to early continuum/gap and toroidal-coupling tests.
-- Neighboring `vmec_jax` and `booz_xform_jax` workflows already use the same case, which reduces adapter risk.
+- Neighboring `vmex` and `booz_xform_jax` workflows already use the same case, which reduces adapter risk.
 
 Immediate uses:
 
@@ -1309,7 +1309,7 @@ and differentiable design studies that can produce new FAX-native results:
 2. Extend the new real-`boozmn` angular, radial-surface, boundary-condition, and radial-stiffness convergence gates to larger radial grids, Boozer harmonic truncation sweeps, and multiple geometries.
 3. Add additional radial boundary-condition variants beyond Dirichlet/Neumann and validate them on analytic and cross-code targets.
 4. Calibrate the reduced gyro-Landau fast-ion drive/damping closure against FAR3D/CAS3D-K comparable outputs, with sign, resonance, growth-rate, and eigenfunction-overlap gates.
-5. Wire `boozer_pipeline_mode_avoidance_objective` to a real differentiable `vmec_jax`/`booz_xform_jax` builder and add finite-difference/adjoint consistency plots for VMEC-to-stability gradients.
+5. Wire `boozer_pipeline_mode_avoidance_objective` to a real differentiable `vmex`/`booz_xform_jax` builder and add finite-difference/adjoint consistency plots for VMEC-to-stability gradients.
 6. Use the differentiable-design study API on real VMEC/Boozer geometries to produce novel design maps: sensitivity-ranked boundary/profile variables, UQ-aware AE risk bands, inverse-designed resonance avoidance, and alpha/beam resonance robustness scans.
 7. Publish the staged `v0.0.1` GitHub release when GitHub Actions are available so the PyPI trusted-publishing workflow can complete.
 8. Extend benchmark packets with matrix-free JAX linear-operator families and GPU memory telemetry once those kernels are introduced.
@@ -1454,7 +1454,7 @@ Remaining open lanes after this milestone:
 3. Calibration of the reduced gyro-Landau closure against actual FAR3D/CAS3D-K
    energetic-particle growth/damping results.
 4. Full end-to-end differentiable VMEC boundary/design-variable objectives
-   through vmec_jax, booz_xform_jax, and FAX with finite-difference/adjoint
+   through vmex, booz_xform_jax, and FAX with finite-difference/adjoint
    consistency checks at the VMEC input-variable level.
 5. Final release hygiene: regenerate validation figures, run full local
    release gate, align the `v0.0.1` tag with the final commit, publish the
@@ -1574,7 +1574,7 @@ Immediate next steps:
 #### RG-4 End-To-End Differentiable VMEC/Boozer/FAX Optimization
 
 Goal: Actual VMEC boundary/profile variables differentiate through a
-controlled `vmec_jax` solve, `booz_xform_jax` transform, FAX operator,
+controlled `vmex` solve, `booz_xform_jax` transform, FAX operator,
 eigenvalue or growth-rate objective, and reviewer-grade finite-difference or
 adjoint checks.
 
@@ -1597,7 +1597,7 @@ Immediate next steps:
 
 1. Select a small, stable VMEC boundary coefficient vector for the first design
    study.
-2. Wrap a fixed-shape `vmec_jax -> booz_xform_jax -> FAX` builder that returns
+2. Wrap a fixed-shape `vmex -> booz_xform_jax -> FAX` builder that returns
    a differentiable objective and all residual/convergence metadata.
 3. Add finite-difference checks for one isolated mode and one cluster-mean
    objective.
@@ -1915,7 +1915,7 @@ to these geometries yet.
 Started the generated-Boozer convergence lane for VMEC-equilibria cases that
 do not ship public ``boozmn`` files:
 
-- confirmed local ``booz_xform_jax`` and ``vmec_jax`` are importable,
+- confirmed local ``booz_xform_jax`` and ``vmex`` are importable,
 - ran ``booz_xform_jax`` directly on public W7-X standard and NCSX li383
   VMEC ``wout`` files,
 - added ``examples/research/vmec_equilibria_live_boozer.py`` to compare
@@ -1943,7 +1943,7 @@ VMEC boundary-coefficient objective:
 - added ``fax.vmec_boozer_design`` with reusable
   ``VmecBoozerFaxDesignSettings`` and ``VmecBoozerFaxDesignContext`` objects,
 - implemented the in-memory chain
-  ``VMEC boundary coefficients -> vmec_jax differentiable fixed-boundary state
+  ``VMEC boundary coefficients -> vmex differentiable fixed-boundary state
   -> booz_xform_jax Boozer harmonics/Jacobian -> FAX global radial Alfvén
   objective``,
 - added ``validate_vmec_boundary_alfven_gradient`` to compare JAX gradients
@@ -1968,7 +1968,7 @@ differentiable fixed-boundary VMEC steps:
   ``5.5e-6`` in absolute units for the intentionally tiny default step.
 
 Scope: this is the first maintained VMEC-design-variable gradient path through
-FAX. It uses ``vmec_jax.solve_fixed_boundary_from_boundary`` with
+FAX. It uses ``vmex.solve_fixed_boundary_from_boundary`` with
 ``differentiable=True``. The next reviewer-grade step is a convergence ladder
 over VMEC iteration count, boundary parameter set, Boozer truncation, radial
 surfaces, angular quadrature, and risk-window definitions, followed by
@@ -1982,7 +1982,7 @@ gradient parity check to a first refinement ladder:
 - added ``VmecBoozerFaxGradientConvergencePoint`` and
   ``VmecBoozerFaxGradientConvergence`` result objects,
 - added ``run_vmec_boundary_alfven_gradient_convergence`` to repeat the
-  ``vmec_jax -> booz_xform_jax -> FAX`` gradient validation over a sequence of
+  ``vmex -> booz_xform_jax -> FAX`` gradient validation over a sequence of
   VMEC/Boozer/angular resolutions,
 - added ``landreman_paul_vmec_boundary_gradient_convergence`` to the
   validation registry,
@@ -2072,11 +2072,11 @@ The repaired ``Tests`` and ``Docs`` workflows passed on GitHub Actions after
 - the coverage-badge job passed and pushed ``77afa41``.
 
 That badge run was still only a portable-CI coverage view: it skipped local
-``vmec_jax`` and ``booz_xform_jax`` physics gates because GitHub runners do
+``vmex`` and ``booz_xform_jax`` physics gates because GitHub runners do
 not have ``/Users/rogerio/local`` checkouts. The coverage badge therefore
 reported ``83.3%`` even though the full local optional-gate suite reports
 ``95.1%``. The next CI tightening step adds public shallow clones of
-``uwplasma/vmec_jax`` and ``uwplasma/booz_xform_jax`` to the coverage-badge
+``uwplasma/vmex`` and ``uwplasma/booz_xform_jax`` to the coverage-badge
 job, installed at the same absolute paths used by the current integration
 tests. This should make the automatic badge exercise the optional VMEC/Boozer
 coverage lanes while keeping the four-version matrix focused on portable
@@ -2180,3 +2180,28 @@ Local release-gate results:
   This is an external PyPI project/publisher configuration blocker, not a
   FAX build or metadata failure. Once the PyPI trusted publisher is configured
   with those claims, rerun the ``Publish`` workflow on tag ``v0.0.2``.
+
+### 2026-10-15 Port from vmex to VMEX
+
+``vmex`` is retired; its successor is ``vmex`` (PyPI ``vmex``, 0.11.10).
+FAX now declares it as the optional ``vmex`` extra (Python 3.11+, brings
+``booz_xform_jax>=0.4.3``) and CI installs it from PyPI instead of cloning.
+
+- ``fax.vmec_boozer_design`` solves the equilibrium with
+  ``vmex.core.implicit.solve_implicit`` (converged to ``vmec_ftol``, implicit
+  adjoint) and builds the Boozer inputs with
+  ``vmex.core.boozer_tables.boozer_input_tables``.  Settings
+  ``vmec_step_size``/``vmec_jacobian_penalty``/``vmec_project`` are gone;
+  ``vmec_ns``/``vmec_ftol``/``vmec_max_iter`` set the converged solve.  The
+  gradient ladder now steps ``vmec_ftol`` (1e-10 -> 1e-12) instead of
+  truncated iteration counts.
+- ``run_vmex_*`` (formerly ``run_vmex_*``) use ``vmex.solve_multigrid``
+  with ``raise_on_max_iterations=False`` for the iteration ladder and
+  ``vmex.wout_from_result`` for the in-memory ``wout``.
+- Gate and figure ids keep their ``vmex`` spelling so existing
+  references stay valid; titles, citations, commands and tags say ``vmex``.
+- Centered differences of converged re-solves match the implicit adjoint to
+  <= 5e-5 for m = 0 or n = 0 boundary modes and to 0.3-1.2% for m = 1,
+  n != 0 (the m = 1 angle gauge); vmex's frozen-path differences match to
+  5e-7 for all six.  Gate tolerances follow (1e-4 and 1e-2).
+- Not regenerated: the VMEC figures and JSON artifacts in ``docs/_static``.

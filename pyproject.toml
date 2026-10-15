@@ -47,6 +47,7 @@ docs = ["sphinx", "furo"]
 plots = ["matplotlib", "pillow"]
 ecosystem = ["diffrax", "equinox", "jaxopt", "lineax", "optimistix", "optax"]
 dev = ["build", "coverage", "pytest", "ruff", "mypy", "sphinx", "furo", "matplotlib", "pillow", "twine"]
+vmex = ["vmex>=0.11.10; python_version >= '3.11'"]
 
 [tool.setuptools.packages.find]
 where = ["src"]
@@ -56,7 +57,7 @@ testpaths = ["tests"]
 markers = [
   "slow: long-running physics or convergence test",
   "regression: reference-data regression test",
-  "requires_vmec_jax: requires a local vmec_jax checkout or installation",
+  "requires_vmex: requires the optional vmex package (pip install 'uwplasma-fax[vmex]')",
   "requires_booz_xform_jax: requires a local booz_xform_jax checkout or installation",
 ]
 

@@ -655,7 +655,7 @@ field_periods = 1
     assert "repeats must be at least 1" in capsys.readouterr().err
 
 
-@pytest.mark.requires_vmec_jax
+@pytest.mark.requires_vmex
 def test_cli_continuum_wout_landreman_qa_resamples_geometry(tmp_path, capsys):
     case = landreman_paul_qa_lowres()
     if case.wout is None or not case.wout.exists():

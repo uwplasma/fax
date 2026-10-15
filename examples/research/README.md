@@ -87,7 +87,7 @@ python examples/research/vmec_boozer_alfven_design_gradient.py --output-dir outp
 ```
 
 This is the first full in-memory differentiability showcase from actual VMEC
-boundary Fourier coefficients through `vmec_jax`, `booz_xform_jax`, and a FAX
+boundary Fourier coefficients through `vmex`, `booz_xform_jax`, and a FAX
 global Alfvén risk objective. It compares the JAX gradient with centered finite
 differences, then takes one line-searched boundary-shape step that lowers the
 smooth mode-in-window risk. Increase `--vmec-max-iter`, Boozer truncation, and
@@ -144,7 +144,7 @@ operator path, still awaiting STELLGAP/AE3D cross-code validation.
 python examples/research/vmec_boozer_convergence.py --output-dir outputs/vmec_boozer_convergence
 ```
 
-This runs the local Landreman-Paul QA ``vmec_jax`` input through the in-memory
+This runs the local Landreman-Paul QA ``vmex`` input through the in-memory
 ``booz_xform_jax`` bridge, then checks two convergence layers: Boozer harmonic
 truncation and angular quadrature for the local 3-D Boozer operator. It is a
 production-readiness smoke check for the live bridge, not a converged VMEC

@@ -1,11 +1,16 @@
-"""End-to-end VMEC-JAX -> Boozer -> FAX design objectives.
+"""End-to-end VMEX -> Boozer -> FAX design objectives.
 
-This module is optional: it requires both ``vmec_jax`` and
-``booz_xform_jax``.  The functions here keep the full differentiable path in
+This module is optional: it requires ``vmex`` (which brings
+``booz_xform_jax``).  The functions here keep the full differentiable path in
 memory:
 
-``VMEC boundary coefficients -> vmec_jax state -> booz_xform_jax harmonics ->
-FAX global Alfvén objective``.
+``VMEC boundary coefficients -> vmex implicit equilibrium -> booz_xform_jax
+harmonics -> FAX global Alfvén objective``.
+
+The equilibrium is converged to ``vmec_ftol`` and differentiated with the
+implicit-function theorem (:func:`vmex.core.implicit.solve_implicit`), so
+gradients are those of the converged equilibrium, not of a truncated solver
+trajectory.
 """
 
 from __future__ import annotations
@@ -21,10 +26,17 @@ import numpy as np
 from .boozer import BoozerGeometry
 from .global_modes import radial_block_problem_from_boozer_geometry, solve_radial_block_eigenmodes
 
+_BOUNDARY_FIELDS = {"rc": "rbc", "rs": "rbs", "zc": "zbc", "zs": "zbs"}
+
 
 @dataclass(frozen=True)
 class VmecBoozerFaxDesignSettings:
-    """Settings for a differentiable VMEC-boundary Alfvén design objective."""
+    """Settings for a differentiable VMEC-boundary Alfvén design objective.
+
+    ``vmec_ns``, ``vmec_ftol`` and ``vmec_max_iter`` set the radial grid,
+    force-residual tolerance and iteration budget of the converged VMEX
+    fixed-boundary solve.
+    """
 
     input_path: str | Path
     max_mode: int = 1
@@ -43,10 +55,9 @@ class VmecBoozerFaxDesignSettings:
     zeta_points: int = 8
     radial_stiffness_scale: float = 1.0e-4
     boundary_condition: str = "dirichlet"
-    vmec_max_iter: int = 2
-    vmec_step_size: float = 1.0e-3
-    vmec_jacobian_penalty: float = 100.0
-    vmec_project: bool = True
+    vmec_ns: int = 16
+    vmec_ftol: float = 1.0e-12
+    vmec_max_iter: int = 5000
 
 
 @dataclass(frozen=True)
@@ -54,16 +65,14 @@ class VmecBoozerFaxDesignContext:
     """Prepared objects for repeated VMEC-boundary design evaluations."""
 
     settings: VmecBoozerFaxDesignSettings
-    static: Any
-    indata: Any
-    boundary: Any
-    parameter_specs: tuple[Any, ...]
+    config: Any
+    params: Any
+    parameter_slots: tuple[tuple[str, int, int], ...]
     parameter_names: tuple[str, ...]
-    signgs: int
-    flux: Any
-    pressure: jax.Array
     booz_constants: Any
     booz_grids: Any
+    booz_xm: np.ndarray
+    booz_xn: np.ndarray
     surface_indices: jax.Array
     surface_s: jax.Array
 
@@ -92,7 +101,7 @@ class VmecBoozerFaxGradientConvergencePoint:
 
     label: str
     parameter_names: tuple[str, ...]
-    vmec_max_iter: int
+    vmec_ftol: float
     mboz: int
     nboz: int
     theta_points: int
@@ -113,7 +122,7 @@ class VmecBoozerFaxGradientConvergencePoint:
         return {
             "label": self.label,
             "parameter_names": list(self.parameter_names),
-            "vmec_max_iter": self.vmec_max_iter,
+            "vmec_ftol": self.vmec_ftol,
             "mboz": self.mboz,
             "nboz": self.nboz,
             "theta_points": self.theta_points,
@@ -174,115 +183,113 @@ class VmecBoozerFaxJacobianValidation:
 def prepare_vmec_boozer_fax_design_context(
     settings: VmecBoozerFaxDesignSettings,
 ) -> VmecBoozerFaxDesignContext:
-    """Prepare static VMEC/Boozer objects for boundary-design studies.
+    """Prepare static VMEX/Boozer objects for boundary-design studies.
 
     The returned context is reusable for objective, gradient, UQ, and inverse
-    design calls.  The VMEC solve used by :func:`vmec_boundary_fax_frequencies`
-    is ``vmec_jax.solve_fixed_boundary_from_boundary`` with
-    ``differentiable=True`` so that JAX can validate gradients directly against
-    centered finite differences.
+    design calls.  Boundary parameters are ``RBC/RBS/ZBC/ZBS(n, m)`` entries
+    named ``rc{m}{n}`` etc. with ``m <= max_mode`` and ``|n| <= max_mode``,
+    in VMEC mode order.  The equilibrium used by
+    :func:`vmec_boundary_fax_frequencies` is
+    :func:`vmex.core.implicit.solve_implicit`, so JAX gradients can be checked
+    directly against centered finite differences of converged solves.
     """
     try:
-        import vmec_jax as vj
-        from vmec_jax.booz_input import booz_xform_inputs_from_state
         from booz_xform_jax.jax_api import prepare_booz_xform_constants
+        from vmex import VmecInput
+        from vmex.core import implicit
+        from vmex.core.boozer_tables import boozer_input_tables
     except ImportError as exc:  # pragma: no cover - optional dependency
         raise ImportError(
-            "prepare_vmec_boozer_fax_design_context requires vmec_jax and "
-            "booz_xform_jax to be importable."
+            "prepare_vmec_boozer_fax_design_context requires vmex (pip install 'uwplasma-fax[vmex]')"
         ) from exc
 
     path = Path(settings.input_path).expanduser().resolve()
-    cfg, indata = vj.load_config(str(path))
-    static = vj.build_static(cfg)
-    boundary = vj.boundary_from_indata(indata, static.modes)
-    specs = tuple(
-        vj.boundary_param_specs(
-            boundary,
-            static.modes,
-            max_mode=int(settings.max_mode),
-            min_coeff=0.0,
-            include=settings.include,
-            fix=settings.fix,
-        )[: int(settings.parameter_count)]
+    inp = VmecInput.from_file(str(path))
+    config = implicit.make_config(
+        inp,
+        ns=int(settings.vmec_ns),
+        ftol=float(settings.vmec_ftol),
+        max_iterations=int(settings.vmec_max_iter),
     )
-    if not specs:
+    params = implicit.params_from_input(inp)
+    ntor, mpol = int(inp.ntor), int(inp.mpol)
+    slots, names = [], []
+    for m in range(min(int(settings.max_mode), mpol - 1) + 1):
+        for n in range(-min(int(settings.max_mode), ntor), min(int(settings.max_mode), ntor) + 1):
+            if m == 0 and n < 0:
+                continue
+            for kind in settings.include:
+                name = f"{kind}{m}{n}"
+                if name in settings.fix or (m == 0 and n == 0 and kind in ("rs", "zs")):
+                    continue
+                slots.append((_BOUNDARY_FIELDS[kind], n + ntor, m))
+                names.append(name)
+    count = int(settings.parameter_count)
+    if count < 1 or not slots:
         raise ValueError("no VMEC boundary parameters were selected")
 
-    state0 = vj.initial_guess_from_boundary(
-        static,
-        boundary,
-        indata,
-        vmec_project=bool(settings.vmec_project),
-    )
-    signgs = int(vj.signgs_from_sqrtg(np.asarray(vj.eval_geom(state0, static).sqrtg), axis_index=1))
-    flux = vj.flux_profiles_from_indata(indata, static.s, signgs=signgs)
-    pressure = jnp.zeros_like(jnp.asarray(static.s))
+    s_full = np.asarray(implicit.runtime_from_params(params, config).setup.s_full)
+    s_half = 0.5 * (s_full[:-1] + s_full[1:])
+    surface_indices = _nearest_surface_indices(jnp.asarray(s_half), settings.surfaces)
 
-    inputs0 = booz_xform_inputs_from_state(
-        state=state0,
-        static=static,
-        indata=indata,
-        signgs=signgs,
-        flux=flux,
-    )
+    # The wout-convention mode tables are static: read them from an abstract trace.
+    modes: dict[str, np.ndarray] = {}
+    row = int(surface_indices[0]) + 1
+
+    def probe(p: Any) -> jax.Array:
+        state = implicit.solve_implicit(p, config)
+        tables = boozer_input_tables(state, implicit.runtime_from_params(p, config), row)
+        modes.update(xm=np.asarray(tables["xm"]), xn=np.asarray(tables["xn"]))
+        return tables["bmnc"]
+
+    jax.eval_shape(probe, params)
     constants, grids = prepare_booz_xform_constants(
-        nfp=int(inputs0.nfp),
+        nfp=int(inp.nfp),
         mboz=int(settings.mboz),
         nboz=int(settings.nboz),
-        asym=bool(static.cfg.lasym),
-        xm=inputs0.xm,
-        xn=inputs0.xn,
-        xm_nyq=inputs0.xm_nyq,
-        xn_nyq=inputs0.xn_nyq,
+        asym=bool(inp.lasym),
+        xm=modes["xm"],
+        xn=modes["xn"],
+        xm_nyq=modes["xm"],
+        xn_nyq=modes["xn"],
     )
-    s_full = jnp.asarray(static.s)
-    s_half = 0.5 * (s_full[:-1] + s_full[1:])
-    surface_indices = _nearest_surface_indices(s_half, settings.surfaces)
-
     return VmecBoozerFaxDesignContext(
         settings=settings,
-        static=static,
-        indata=indata,
-        boundary=boundary,
-        parameter_specs=specs,
-        parameter_names=tuple(vj.boundary_param_names(specs)),
-        signgs=signgs,
-        flux=flux,
-        pressure=pressure,
+        config=config,
+        params=params,
+        parameter_slots=tuple(slots[:count]),
+        parameter_names=tuple(names[:count]),
         booz_constants=constants,
         booz_grids=grids,
+        booz_xm=modes["xm"],
+        booz_xn=modes["xn"],
         surface_indices=surface_indices,
-        surface_s=jnp.take(s_half, surface_indices),
+        surface_s=jnp.take(jnp.asarray(s_half), surface_indices),
     )
 
 
-def vmec_state_to_boozer_geometry(state: Any, context: VmecBoozerFaxDesignContext) -> BoozerGeometry:
-    """Transform a VMEC-JAX state to a FAX Boozer geometry in memory."""
-    try:
-        from vmec_jax.booz_input import booz_xform_inputs_from_state
-        from booz_xform_jax.jax_api import booz_xform_from_inputs
-    except ImportError as exc:  # pragma: no cover - optional dependency
-        raise ImportError("vmec_state_to_boozer_geometry requires vmec_jax and booz_xform_jax") from exc
+def vmec_state_to_boozer_geometry(state: Any, runtime: Any, context: VmecBoozerFaxDesignContext) -> BoozerGeometry:
+    """Transform a VMEX spectral state to a FAX Boozer geometry in memory."""
+    from booz_xform_jax.jax_api import booz_xform_jax_impl
+    from vmex.core.boozer_tables import boozer_input_tables
 
-    inputs = booz_xform_inputs_from_state(
-        state=state,
-        static=context.static,
-        indata=context.indata,
-        signgs=context.signgs,
-        flux=context.flux,
-    )
-    output = booz_xform_from_inputs(
-        inputs=inputs,
+    tables = [boozer_input_tables(state, runtime, int(i) + 1) for i in np.asarray(context.surface_indices)]
+    names: tuple[str, ...] = ("rmnc", "zmns", "lmns", "bmnc", "bsubumnc", "bsubvmnc", "iota")
+    if context.config.inp.lasym:
+        names += ("rmns", "zmnc", "lmnc", "bmns", "bsubumns", "bsubvmns")
+    xm, xn = jnp.asarray(context.booz_xm), jnp.asarray(context.booz_xn)
+    output = booz_xform_jax_impl(
+        **{name: jnp.stack([table[name] for table in tables]) for name in names},
+        xm=xm,
+        xn=xn,
+        xm_nyq=xm,
+        xn_nyq=xn,
         constants=context.booz_constants,
         grids=context.booz_grids,
-        surface_indices=context.surface_indices,
-        jit=False,
     )
     zeros = jnp.zeros_like(jnp.asarray(output["bmnc_b"]))
-    gmnc = output["gmnc_b"] if "gmnc_b" in output else output.get("gmn_b", zeros)
     return BoozerGeometry(
-        source="vmec_jax_booz_xform_jax_design",
+        source="vmex_booz_xform_jax_design",
         s=context.surface_s,
         xm=jnp.asarray(output["ixm_b"]),
         xn=jnp.asarray(output["ixn_b"]),
@@ -294,12 +301,12 @@ def vmec_state_to_boozer_geometry(state: Any, context: VmecBoozerFaxDesignContex
         zmnc=jnp.asarray(output.get("zmnc_b", zeros)),
         pmns=jnp.asarray(output.get("pmns_b", zeros)),
         pmnc=jnp.asarray(output.get("pmnc_b", zeros)),
-        gmnc=jnp.asarray(gmnc),
+        gmnc=jnp.asarray(output.get("gmnc_b", zeros)),
         gmns=jnp.asarray(output.get("gmns_b", zeros)),
         iota=jnp.asarray(output["iota_b"]),
         boozer_i=jnp.asarray(output["buco_b"]),
         boozer_g=jnp.asarray(output["bvco_b"]),
-        field_periods=int(inputs.nfp),
+        field_periods=int(context.config.inp.nfp),
         metadata=(
             ("input_path", str(Path(context.settings.input_path).expanduser().resolve())),
             ("mboz", int(context.settings.mboz)),
@@ -313,32 +320,20 @@ def vmec_boundary_fax_frequencies(
     parameters: Any,
     context: VmecBoozerFaxDesignContext,
 ) -> jax.Array:
-    """Return global Alfvén frequencies for VMEC boundary perturbations."""
-    try:
-        import vmec_jax as vj
-    except ImportError as exc:  # pragma: no cover - optional dependency
-        raise ImportError("vmec_boundary_fax_frequencies requires vmec_jax") from exc
+    """Return global Alfvén frequencies for VMEC boundary perturbations.
+
+    ``parameters`` are additive offsets to the selected boundary coefficients.
+    """
+    from vmex.core import implicit
 
     settings = context.settings
-    params = jnp.asarray(parameters)
-    boundary = vj.apply_boundary_params(context.boundary, context.parameter_specs, params)
-    state = vj.solve_fixed_boundary_from_boundary(
-        boundary=boundary,
-        static=context.static,
-        indata=context.indata,
-        flux=context.flux,
-        pressure=context.pressure,
-        signgs=context.signgs,
-        max_iter=int(settings.vmec_max_iter),
-        step_size=float(settings.vmec_step_size),
-        jacobian_penalty=float(settings.vmec_jacobian_penalty),
-        jit_grad=False,
-        differentiable=True,
-        stop_grad_in_update=False,
-        verbose=False,
-        vmec_project=bool(settings.vmec_project),
-    )
-    geometry = vmec_state_to_boozer_geometry(state, context)
+    offsets = jnp.asarray(parameters)
+    params = context.params
+    for index, (field, row, m) in enumerate(context.parameter_slots):
+        params = replace(params, **{field: getattr(params, field).at[row, m].add(offsets[index])})
+    state = implicit.solve_implicit(params, context.config)
+    runtime = implicit.runtime_from_params(params, context.config)
+    geometry = vmec_state_to_boozer_geometry(state, runtime, context)
     problem = radial_block_problem_from_boozer_geometry(
         geometry,
         jnp.asarray(settings.harmonics, dtype=float),
@@ -378,18 +373,17 @@ def validate_vmec_boundary_alfven_gradient(
     """Check AD gradients against finite differences and take one descent step."""
     context = prepare_vmec_boozer_fax_design_context(settings)
     params = (
-        jnp.zeros((len(context.parameter_specs),), dtype=jnp.float64)
+        jnp.zeros((len(context.parameter_slots),), dtype=jnp.float64)
         if parameters is None
         else jnp.asarray(parameters, dtype=jnp.float64)
     )
-    if int(params.shape[0]) != len(context.parameter_specs):
+    if int(params.shape[0]) != len(context.parameter_slots):
         raise ValueError("parameters length must match selected VMEC boundary parameters")
 
-    def objective(x: jax.Array) -> jax.Array:
-        return vmec_boundary_alfven_risk_objective(x, context)
-
-    frequencies = vmec_boundary_fax_frequencies(params, context)
-    value, gradient = jax.value_and_grad(objective)(params)
+    objective = jax.jit(lambda x: vmec_boundary_alfven_risk_objective(x, context))
+    frequency_map = jax.jit(lambda x: vmec_boundary_fax_frequencies(x, context))
+    frequencies = frequency_map(params)
+    value, gradient = jax.jit(jax.value_and_grad(objective))(params)
     finite_difference = _centered_difference_gradient(objective, params, finite_difference_step)
     relative_error = float(
         jnp.linalg.norm(gradient - finite_difference)
@@ -402,11 +396,11 @@ def validate_vmec_boundary_alfven_gradient(
         float(descent_step),
         int(line_search_halvings),
     )
-    descent_frequencies = vmec_boundary_fax_frequencies(descent_params, context)
+    descent_frequencies = frequency_map(descent_params)
     metadata = (
         ("input_path", str(Path(settings.input_path).expanduser().resolve())),
-        ("vmec_max_iter", int(settings.vmec_max_iter)),
-        ("vmec_step_size", float(settings.vmec_step_size)),
+        ("vmec_ns", int(settings.vmec_ns)),
+        ("vmec_ftol", float(settings.vmec_ftol)),
         ("mboz", int(settings.mboz)),
         ("nboz", int(settings.nboz)),
         ("surface_s", tuple(float(x) for x in np.asarray(context.surface_s))),
@@ -446,16 +440,16 @@ def run_vmec_boundary_alfven_gradient_convergence(
     requested_levels: Sequence[tuple[str, Mapping[str, Any]]] = (
         (
             (
-                "vmec2_boozer3_grid8",
-                {"vmec_max_iter": 2, "mboz": 3, "nboz": 3, "theta_points": 8, "zeta_points": 8},
+                "ftol1e-10_boozer3_grid8",
+                {"vmec_ftol": 1.0e-10, "mboz": 3, "nboz": 3, "theta_points": 8, "zeta_points": 8},
             ),
             (
-                "vmec4_boozer3_grid8",
-                {"vmec_max_iter": 4, "mboz": 3, "nboz": 3, "theta_points": 8, "zeta_points": 8},
+                "ftol1e-12_boozer3_grid8",
+                {"vmec_ftol": 1.0e-12, "mboz": 3, "nboz": 3, "theta_points": 8, "zeta_points": 8},
             ),
             (
-                "vmec4_boozer4_grid10",
-                {"vmec_max_iter": 4, "mboz": 4, "nboz": 4, "theta_points": 10, "zeta_points": 10},
+                "ftol1e-12_boozer4_grid10",
+                {"vmec_ftol": 1.0e-12, "mboz": 4, "nboz": 4, "theta_points": 10, "zeta_points": 10},
             ),
         )
         if levels is None
@@ -488,7 +482,7 @@ def run_vmec_boundary_alfven_gradient_convergence(
             VmecBoozerFaxGradientConvergencePoint(
                 label=label,
                 parameter_names=result.parameter_names,
-                vmec_max_iter=int(settings.vmec_max_iter),
+                vmec_ftol=float(settings.vmec_ftol),
                 mboz=int(settings.mboz),
                 nboz=int(settings.nboz),
                 theta_points=int(settings.theta_points),
@@ -537,18 +531,17 @@ def validate_vmec_boundary_frequency_jacobian(
     """
     context = prepare_vmec_boozer_fax_design_context(settings)
     params = (
-        jnp.zeros((len(context.parameter_specs),), dtype=jnp.float64)
+        jnp.zeros((len(context.parameter_slots),), dtype=jnp.float64)
         if parameters is None
         else jnp.asarray(parameters, dtype=jnp.float64)
     )
-    if int(params.shape[0]) != len(context.parameter_specs):
+    if int(params.shape[0]) != len(context.parameter_slots):
         raise ValueError("parameters length must match selected VMEC boundary parameters")
 
-    def frequencies(x: jax.Array) -> jax.Array:
-        return vmec_boundary_fax_frequencies(x, context)
+    frequencies = jax.jit(lambda x: vmec_boundary_fax_frequencies(x, context))
 
     values = frequencies(params)
-    jacobian = jax.jacrev(frequencies)(params)
+    jacobian = jax.jit(jax.jacrev(frequencies))(params)
     finite_difference = _centered_difference_jacobian(frequencies, params, finite_difference_step)
     relative_jacobian_error = float(
         jnp.linalg.norm(jacobian - finite_difference)
@@ -571,8 +564,8 @@ def validate_vmec_boundary_frequency_jacobian(
     )
     metadata = (
         ("input_path", str(Path(settings.input_path).expanduser().resolve())),
-        ("vmec_max_iter", int(settings.vmec_max_iter)),
-        ("vmec_step_size", float(settings.vmec_step_size)),
+        ("vmec_ns", int(settings.vmec_ns)),
+        ("vmec_ftol", float(settings.vmec_ftol)),
         ("mboz", int(settings.mboz)),
         ("nboz", int(settings.nboz)),
         ("surface_s", tuple(float(x) for x in np.asarray(context.surface_s))),

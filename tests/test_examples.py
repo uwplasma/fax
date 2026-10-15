@@ -194,16 +194,14 @@ def test_boozmn_global_3d_eigenmodes_example_runs(tmp_path):
 def test_vmec_boozer_convergence_example_runs(tmp_path):
     import pytest
 
-    pytest.importorskip("vmec_jax")
+    pytest.importorskip("vmex")
     pytest.importorskip("booz_xform_jax")
-    vmec_input = REPO_ROOT.parent / "vmec_jax" / "examples" / "data" / "input.LandremanPaul2021_QA_lowres"
-    if not vmec_input.exists():
-        return
-
     result = subprocess.run(
         [
             sys.executable,
             "examples/research/vmec_boozer_convergence.py",
+            "--vmec-input",
+            str(REPO_ROOT / "examples" / "data" / "input.LandremanPaul2021_QA_lowres"),
             "--output-dir",
             str(tmp_path),
             "--format",

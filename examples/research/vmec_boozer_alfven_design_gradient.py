@@ -18,12 +18,12 @@ def _parse_surfaces(text: str) -> tuple[float, ...]:
 
 def _parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="Run a differentiable vmec_jax -> booz_xform_jax -> FAX Alfvén design-gradient check."
+        description="Run a differentiable vmex -> booz_xform_jax -> FAX Alfvén design-gradient check."
     )
     parser.add_argument(
         "--input",
         type=Path,
-        default=Path("/Users/rogerio/local/vmec_jax/examples/data/input.LandremanPaul2021_QA_lowres"),
+        default=Path(__file__).resolve().parents[1] / "data" / "input.LandremanPaul2021_QA_lowres",
         help="VMEC input file used for the fixed-boundary design check.",
     )
     parser.add_argument("--output-dir", type=Path, default=Path("outputs/vmec_boozer_alfven_design_gradient"))
@@ -32,7 +32,7 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument("--surfaces", type=str, default="0.25,0.40,0.55,0.70")
     parser.add_argument("--mboz", type=int, default=3)
     parser.add_argument("--nboz", type=int, default=3)
-    parser.add_argument("--vmec-max-iter", type=int, default=4)
+    parser.add_argument("--vmec-ns", type=int, default=16)
     parser.add_argument("--fd-step", type=float, default=1.0e-4)
     parser.add_argument("--descent-step", type=float, default=1.0e-3)
     return parser.parse_args()
@@ -47,7 +47,7 @@ def main() -> None:
         surfaces=_parse_surfaces(args.surfaces),
         mboz=int(args.mboz),
         nboz=int(args.nboz),
-        vmec_max_iter=int(args.vmec_max_iter),
+        vmec_ns=int(args.vmec_ns),
     )
 
     print("FAX VMEC-boundary Alfvén design-gradient check")
@@ -55,7 +55,7 @@ def main() -> None:
     print(f"input:          {Path(settings.input_path).expanduser().resolve()}")
     print(f"boundary DOFs:  max_mode={settings.max_mode}, count={settings.parameter_count}")
     print(f"Boozer grid:    mboz={settings.mboz}, nboz={settings.nboz}, surfaces={settings.surfaces}")
-    print(f"VMEC solver:    differentiable fixed-boundary steps={settings.vmec_max_iter}")
+    print(f"VMEC solver:    converged VMEX implicit solve, ns={settings.vmec_ns}, ftol={settings.vmec_ftol:.1e}")
     print("running AD gradient, centered finite differences, and one descent line search ...")
 
     result = validate_vmec_boundary_alfven_gradient(

@@ -58,7 +58,7 @@ BENCHMARK_FAMILY_DESCRIPTIONS: dict[str, str] = {
     "ae3d-global-mode": "public AE3D global matrix frequency and mode-shape parity gate",
     "stellgap-ctok": "public STELLGAP CTOK local Boozer continuum parity gate",
     "stellgap-executable": "bounded local STELLGAP CTOK executable attempt with runtime/status capture",
-    "vmec-boozer": "live vmec_jax solve through booz_xform_jax and FAX local 3-D continuum gate",
+    "vmec-boozer": "live vmex solve through booz_xform_jax and FAX local 3-D continuum gate",
 }
 
 
@@ -671,7 +671,7 @@ def _run_stellgap_executable_family(*, repeats: int, warmups: int) -> BenchmarkF
 def _run_vmec_boozer_family(*, repeats: int, warmups: int) -> BenchmarkFamilyResult:
     from pathlib import Path
 
-    from .boozer import run_vmec_jax_boozer_solve_convergence
+    from .boozer import run_vmex_boozer_solve_convergence
     from .reference_cases import landreman_paul_qa_lowres
 
     case = landreman_paul_qa_lowres()
@@ -688,11 +688,11 @@ def _run_vmec_boozer_family(*, repeats: int, warmups: int) -> BenchmarkFamilyRes
             tolerance=8.0e-2,
             cold_seconds=None,
             warm_result=None,
-            details={"reason": "missing Landreman-Paul vmec_jax input or converged wout"},
+            details={"reason": "missing Landreman-Paul vmex input or converged wout"},
         )
 
     def kernel():
-        return run_vmec_jax_boozer_solve_convergence(
+        return run_vmex_boozer_solve_convergence(
             input_path=input_path,
             reference_wout_path=reference_wout,
             max_iters=(1, 6, 12),

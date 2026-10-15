@@ -14,7 +14,7 @@
 FAX is a differentiable JAX research code for Alfvén continua, Alfvén
 eigenmode screening, gap physics, Boozer-coordinate stellarator operators,
 fast-ion drive/damping diagnostics, and design sensitivities. It is built to
-sit downstream of `vmec_jax` and `booz_xform_jax`, with TOML-driven workflows,
+sit downstream of `vmex` and `booz_xform_jax`, with TOML-driven workflows,
 publication-style figures, and validation artifacts that are easy to regenerate.
 
 FAX v0.0.2 is not yet a full ideal-MHD/kinetic replacement for AE3D, CAS3D,
@@ -24,7 +24,7 @@ operators, reduced global radial eigenmodes, differentiable eigenvalue and
 cluster objectives, reduced gyro-Landau fast-ion closures, STELLGAP CTOK local
 continuum/gap parity, AE3D public matrix/eigenmode parity, and an archived
 FAR3D GPU build/run `lincheck` ingestion artifact. It also has a maintained
-in-memory VMEC boundary-coefficient gradient path through `vmec_jax`,
+in-memory VMEC boundary-coefficient gradient path through `vmex`,
 `booz_xform_jax`, and a FAX global Alfvén risk objective.
 
 ![FAX workflow](docs/_static/workflow_io_diagram.png)
@@ -104,7 +104,7 @@ Python 3.10 uses the `tomli` fallback, while Python 3.11+ uses `tomllib`.
 For local VMEC/Boozer coupling tests:
 
 ```bash
-python -m pip install -e /Users/rogerio/local/vmec_jax
+python -m pip install -e ".[vmex]"  # Python 3.11+
 python -m pip install -e /Users/rogerio/local/booz_xform_jax
 ```
 
@@ -202,7 +202,7 @@ The v0.0.2 gate currently covers:
 - isolated-eigenvalue custom-JVP gradients, cluster-mean gradients for mode
   crossings, finite-difference sensitivity checks, and linearized UQ examples,
 - Landreman-Paul QA VMEC boundary-coefficient gradients through
-  `vmec_jax -> booz_xform_jax -> FAX`, checked against centered finite
+  `vmex -> booz_xform_jax -> FAX`, checked against centered finite
   differences, a one-step Alfvén-risk descent, and a VMEC/Boozer refinement
   ladder,
 - reduced fast-ion resonance signs, eigenfunction weighting, and calibrated
@@ -270,7 +270,7 @@ only batch eigenvalue production:
 - Machine-readable TOML, JSON, CSV, Markdown, and figure artifacts from the CLI.
 - Cross-code artifact gates that are part of the test suite, not just notebooks.
 - Publication figure generation and QA as first-class workflows.
-- Direct builder and VMEC-boundary APIs for `vmec_jax -> booz_xform_jax -> FAX`
+- Direct builder and VMEC-boundary APIs for `vmex -> booz_xform_jax -> FAX`
   optimization studies.
 
 The remaining paper-grade lanes are native global FAX-vs-AE3D/STELLGAP

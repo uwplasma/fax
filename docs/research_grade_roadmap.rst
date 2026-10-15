@@ -43,11 +43,11 @@ Fully calibrated fast-ion drive/damping
 
 End-to-end differentiable VMEC/Boozer/FAX optimization
    Actual VMEC boundary/profile variables must differentiate through a
-   controlled ``vmec_jax`` solve, ``booz_xform_jax`` transform, FAX operator,
+   controlled ``vmex`` solve, ``booz_xform_jax`` transform, FAX operator,
    eigenvalue objective, and finite-difference/adjoint verification. Current
    status: in progress. The first maintained VMEC-boundary gradient gate now
    differentiates Landreman-Paul QA boundary coefficients through the
-   differentiable fixed-boundary ``vmec_jax`` path, ``booz_xform_jax`` Boozer
+   differentiable fixed-boundary ``vmex`` path, ``booz_xform_jax`` Boozer
    harmonics, and a FAX global Alfvén risk objective, with centered
    finite-difference parity, a descent check, and a VMEC-iteration refinement
    ladder. A Boozer/angular gradient-refinement gate now also checks drift

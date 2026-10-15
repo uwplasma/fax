@@ -943,7 +943,7 @@ def boozer_pipeline_mode_avoidance_objective(
 
     ``geometry_builder(parameters)`` must return a JAX-pytree
     :class:`~fax.boozer.BoozerGeometry`. In production this callable can wrap a
-    differentiable ``vmec_jax``/``booz_xform_jax`` path. In tests it can be a
+    differentiable ``vmex``/``booz_xform_jax`` path. In tests it can be a
     small analytic geometry builder. ``mass_density`` and
     ``radial_stiffness_scale`` may be arrays/scalars or callables with
     signature ``(parameters, geometry)``.

@@ -250,8 +250,8 @@ class BoozerGeometryGrid:
 
 
 @dataclass(frozen=True)
-class VmecJaxBoozerConvergenceResult:
-    """Truncation-convergence diagnostics for the live VMEC-JAX/Boozer bridge."""
+class VmexBoozerConvergenceResult:
+    """Truncation-convergence diagnostics for the live VMEX/Boozer bridge."""
 
     coarse_geometry: BoozerGeometry
     reference_geometry: BoozerGeometry
@@ -273,7 +273,7 @@ class VmecJaxBoozerConvergenceResult:
 
 
 @dataclass(frozen=True)
-class VmecJaxBoozerSolveConvergenceResult:
+class VmexBoozerSolveConvergenceResult:
     """VMEC-iteration convergence diagnostics propagated through Boozer/FAX."""
 
     reference_geometry: BoozerGeometry
@@ -454,7 +454,7 @@ def run_booz_xform_jax_from_wout_data(
     """Run ``booz_xform_jax`` from an in-memory VMEC ``wout`` object.
 
     This is the preferred no-intermediate-file path for composed
-    ``vmec_jax -> booz_xform_jax -> FAX`` workflows. The supplied object must
+    ``vmex -> booz_xform_jax -> FAX`` workflows. The supplied object must
     expose the VMEC ``wout`` attributes consumed by
     :meth:`booz_xform_jax.Booz_xform.read_wout_data`.
     """
@@ -520,7 +520,7 @@ def run_booz_xform_jax_geometry_from_wout_data(
 ) -> BoozerGeometry:
     """Run ``booz_xform_jax`` from an in-memory VMEC ``wout`` object.
 
-    This avoids writing a VMEC ``wout`` file between ``vmec_jax`` and FAX. It
+    This avoids writing a VMEC ``wout`` file between ``vmex`` and FAX. It
     returns the same :class:`BoozerGeometry` contract as
     :func:`run_booz_xform_jax_geometry_from_wout`, including asymmetric
     harmonics and Boozer-Jacobian spectra.
@@ -543,75 +543,52 @@ def run_booz_xform_jax_geometry_from_wout_data(
     return _geometry_from_booz_xform_output(transform, output, s, metadata)
 
 
-def run_vmec_jax_fixed_boundary_wout_data(
+def run_vmex_fixed_boundary_wout_data(
     input_path: str | Path,
     *,
-    max_iter: int = 1,
-    theta_points: int | None = 12,
-    zeta_points: int | None = 4,
-    use_initial_guess: bool = False,
-    vmec_project: bool = False,
-    fast_bcovar: bool = True,
-    include_fsq: bool = False,
-    solver_kwargs: dict[str, Any] | None = None,
+    max_iter: int | None = 1,
+    ns: int | None = None,
 ) -> Any:
-    """Run a short ``vmec_jax`` fixed-boundary solve and return ``wout`` data.
+    """Run a ``vmex`` fixed-boundary solve and return in-memory ``wout`` data.
 
-    The defaults are intentionally small so the function can serve as an
-    integration-check path in local validation. Production studies should
-    raise the VMEC iteration count and grid resolution, then run convergence
-    gates before using the result for physics claims.
+    ``max_iter`` caps a single-grid solve at ``ns`` radial surfaces (default:
+    the last ``NS_ARRAY`` stage) and returns the iterate even when it has not
+    reached ``FTOL``; the default single iteration serves as an
+    integration-check path.  ``max_iter=None`` and ``ns=None`` run the input's
+    full ``NS_ARRAY``/``FTOL_ARRAY``/``NITER_ARRAY`` multigrid ladder to
+    convergence, as VMEC does.  Production studies should use converged
+    solves and run convergence gates before making physics claims.
     """
     try:
-        import vmec_jax as vj
-        from vmec_jax.driver import run_fixed_boundary, wout_from_fixed_boundary_run
-        from vmec_jax.vmec_tomnsp import vmec_angle_grid
+        import vmex
     except ImportError as exc:  # pragma: no cover - environment dependent
-        raise ImportError("vmec_jax is required for run_vmec_jax_fixed_boundary_wout_data") from exc
+        raise ImportError("vmex is required for run_vmex_fixed_boundary_wout_data") from exc
 
-    vmec_input = Path(input_path).expanduser().resolve()
-    cfg, _ = vj.load_input(str(vmec_input))
-    if (theta_points is None) != (zeta_points is None):
-        raise ValueError("theta_points and zeta_points must both be provided or both be None")
-    run_options: dict[str, Any] = {
-        "max_iter": int(max_iter),
-        "use_initial_guess": bool(use_initial_guess),
-        "vmec_project": bool(vmec_project),
-        "verbose": False,
-        "jit_forces": False,
-        "use_scan": False,
-        "multigrid": False,
-    }
-    if theta_points is not None and zeta_points is not None:
-        run_options["grid"] = vmec_angle_grid(
-            ntheta=int(theta_points),
-            nzeta=int(zeta_points),
-            nfp=int(cfg.nfp),
-            lasym=bool(cfg.lasym),
+    inp = vmex.VmecInput.from_file(str(Path(input_path).expanduser().resolve()))
+    if max_iter is None and ns is None:
+        result = vmex.solve_multigrid(inp)
+    else:
+        result = vmex.solve_multigrid(
+            inp,
+            [int(inp.ns_array[-1] if ns is None else ns)],
+            [float(inp.ftol_array[-1])],
+            [int(inp.niter_array[-1] if max_iter is None else max_iter)],
+            raise_on_max_iterations=max_iter is None,
         )
-    if solver_kwargs:
-        run_options.update(solver_kwargs)
-
-    run = run_fixed_boundary(vmec_input, **run_options)
-    return wout_from_fixed_boundary_run(run, include_fsq=bool(include_fsq), fast_bcovar=bool(fast_bcovar))
+    return vmex.wout_from_result(inp, result)
 
 
-def run_vmec_jax_fixed_boundary_boozer_geometry(
+def run_vmex_fixed_boundary_boozer_geometry(
     input_path: str | Path,
     *,
     mboz: int = 4,
     nboz: int = 4,
     surfaces: tuple[float, ...] = (0.25, 0.5),
-    max_iter: int = 1,
-    theta_points: int = 12,
-    zeta_points: int = 4,
-    use_initial_guess: bool = False,
-    vmec_project: bool = False,
-    fast_bcovar: bool = True,
+    max_iter: int | None = 1,
+    ns: int | None = None,
     jit: bool = False,
-    solver_kwargs: dict[str, Any] | None = None,
 ) -> BoozerGeometry:
-    """Run a short ``vmec_jax -> booz_xform_jax -> FAX`` in-memory pipeline.
+    """Run a short ``vmex -> booz_xform_jax -> FAX`` in-memory pipeline.
 
     The defaults are intentionally small so the function can serve as an
     integration-check path in local validation.  Production studies should
@@ -621,19 +598,10 @@ def run_vmec_jax_fixed_boundary_boozer_geometry(
     import importlib.util
 
     if importlib.util.find_spec("booz_xform_jax") is None:  # pragma: no cover - environment dependent
-        raise ImportError("booz_xform_jax is required for run_vmec_jax_fixed_boundary_boozer_geometry")
+        raise ImportError("booz_xform_jax is required for run_vmex_fixed_boundary_boozer_geometry")
 
     vmec_input = Path(input_path).expanduser().resolve()
-    wout = run_vmec_jax_fixed_boundary_wout_data(
-        vmec_input,
-        max_iter=max_iter,
-        theta_points=theta_points,
-        zeta_points=zeta_points,
-        use_initial_guess=use_initial_guess,
-        vmec_project=vmec_project,
-        fast_bcovar=fast_bcovar,
-        solver_kwargs=solver_kwargs,
-    )
+    wout = run_vmex_fixed_boundary_wout_data(vmec_input, max_iter=max_iter, ns=ns)
     geometry = run_booz_xform_jax_geometry_from_wout_data(
         wout,
         mboz=mboz,
@@ -643,18 +611,14 @@ def run_vmec_jax_fixed_boundary_boozer_geometry(
     )
     metadata = (
         ("vmec_input", str(vmec_input)),
-        ("vmec_max_iter", int(max_iter)),
-        ("vmec_theta_points", int(theta_points)),
-        ("vmec_zeta_points", int(zeta_points)),
-        ("vmec_use_initial_guess", bool(use_initial_guess)),
-        ("vmec_project", bool(vmec_project)),
-        ("vmec_fast_bcovar", bool(fast_bcovar)),
+        ("vmec_max_iter", max_iter),
+        ("vmec_ns", ns),
         *geometry.metadata,
     )
-    return replace(geometry, source="vmec_jax_booz_xform_jax", metadata=metadata)
+    return replace(geometry, source="vmex_booz_xform_jax", metadata=metadata)
 
 
-def run_vmec_jax_boozer_truncation_convergence(
+def run_vmex_boozer_truncation_convergence(
     input_path: str | Path,
     *,
     coarse_mboz: int = 4,
@@ -662,22 +626,17 @@ def run_vmec_jax_boozer_truncation_convergence(
     reference_mboz: int = 5,
     reference_nboz: int = 5,
     surfaces: tuple[float, ...] = (0.25, 0.5),
-    max_iter: int = 1,
-    theta_points: int = 12,
-    zeta_points: int = 4,
+    max_iter: int | None = 1,
+    ns: int | None = None,
     field_theta_points: int = 24,
     field_zeta_points: int = 16,
     frequency_theta_points: int = 16,
     frequency_zeta_points: int = 16,
     harmonics: Any = ((1.0, 0.0), (2.0, 1.0)),
     mass_density: float = 3.4e-8,
-    use_initial_guess: bool = False,
-    vmec_project: bool = False,
-    fast_bcovar: bool = True,
     jit: bool = False,
-    solver_kwargs: dict[str, Any] | None = None,
-) -> VmecJaxBoozerConvergenceResult:
-    """Compare two Boozer truncations from one live ``vmec_jax`` solve.
+) -> VmexBoozerConvergenceResult:
+    """Compare two Boozer truncations from one live ``vmex`` solve.
 
     This diagnostic isolates Boozer-transform and FAX surface-operator
     truncation behavior by reusing one in-memory VMEC ``wout`` object for both
@@ -686,19 +645,10 @@ def run_vmec_jax_boozer_truncation_convergence(
     import importlib.util
 
     if importlib.util.find_spec("booz_xform_jax") is None:  # pragma: no cover - environment dependent
-        raise ImportError("booz_xform_jax is required for run_vmec_jax_boozer_truncation_convergence")
+        raise ImportError("booz_xform_jax is required for run_vmex_boozer_truncation_convergence")
 
     vmec_input = Path(input_path).expanduser().resolve()
-    wout = run_vmec_jax_fixed_boundary_wout_data(
-        vmec_input,
-        max_iter=max_iter,
-        theta_points=theta_points,
-        zeta_points=zeta_points,
-        use_initial_guess=use_initial_guess,
-        vmec_project=vmec_project,
-        fast_bcovar=fast_bcovar,
-        solver_kwargs=solver_kwargs,
-    )
+    wout = run_vmex_fixed_boundary_wout_data(vmec_input, max_iter=max_iter, ns=ns)
     coarse = run_booz_xform_jax_geometry_from_wout_data(
         wout,
         mboz=coarse_mboz,
@@ -730,16 +680,17 @@ def run_vmec_jax_boozer_truncation_convergence(
     )
     metadata = (
         ("vmec_input", str(vmec_input)),
-        ("vmec_max_iter", int(max_iter)),
+        ("vmec_max_iter", max_iter),
+        ("vmec_ns", ns),
         ("coarse_mboz", int(coarse_mboz)),
         ("coarse_nboz", int(coarse_nboz)),
         ("reference_mboz", int(reference_mboz)),
         ("reference_nboz", int(reference_nboz)),
         ("surfaces", tuple(float(surface) for surface in surfaces)),
     )
-    return VmecJaxBoozerConvergenceResult(
-        coarse_geometry=replace(coarse, source="vmec_jax_booz_xform_jax", metadata=(*metadata, *coarse.metadata)),
-        reference_geometry=replace(reference, source="vmec_jax_booz_xform_jax", metadata=(*metadata, *reference.metadata)),
+    return VmexBoozerConvergenceResult(
+        coarse_geometry=replace(coarse, source="vmex_booz_xform_jax", metadata=(*metadata, *coarse.metadata)),
+        reference_geometry=replace(reference, source="vmex_booz_xform_jax", metadata=(*metadata, *reference.metadata)),
         field_relative_error=boozer_geometry_field_relative_error(
             coarse,
             reference,
@@ -766,7 +717,7 @@ def run_vmec_jax_boozer_truncation_convergence(
     )
 
 
-def run_vmec_jax_boozer_solve_convergence(
+def run_vmex_boozer_solve_convergence(
     input_path: str | Path,
     reference_wout_path: str | Path,
     *,
@@ -774,47 +725,32 @@ def run_vmec_jax_boozer_solve_convergence(
     mboz: int = 5,
     nboz: int = 5,
     surfaces: tuple[float, ...] = (0.25, 0.5),
-    theta_points: int | None = None,
-    zeta_points: int | None = None,
+    ns: int | None = None,
     field_theta_points: int = 24,
     field_zeta_points: int = 16,
     frequency_theta_points: int = 16,
     frequency_zeta_points: int = 16,
     harmonics: Any = ((1.0, 0.0), (2.0, 1.0), (3.0, 2.0)),
     mass_density: float = 3.4e-8,
-    use_initial_guess: bool = False,
-    vmec_project: bool = True,
-    fast_bcovar: bool = True,
     jit: bool = False,
-    solver_kwargs: dict[str, Any] | None = None,
-) -> VmecJaxBoozerSolveConvergenceResult:
+) -> VmexBoozerSolveConvergenceResult:
     """Run a VMEC-iteration convergence ladder through Boozer/FAX.
 
-    The default path intentionally uses ``vmec_jax``'s native fixed-boundary
-    grid and scan-based JAX iteration rather than the tiny adapter-check grid used
-    by :func:`run_vmec_jax_fixed_boundary_boozer_geometry`.  This makes the
-    diagnostic a real solve-convergence check: each VMEC iterate is transformed
+    Each ladder entry is a single-grid ``vmex`` solve at ``ns`` surfaces
+    (default: the last ``NS_ARRAY`` stage) stopped after that many iterations.
+    This makes the diagnostic a real solve-convergence check: each VMEC iterate is transformed
     through ``booz_xform_jax``, projected into the FAX local 3-D Boozer
     continuum operator, and compared against a converged reference ``wout``.
     """
     import importlib.util
 
     if importlib.util.find_spec("booz_xform_jax") is None:  # pragma: no cover - environment dependent
-        raise ImportError("booz_xform_jax is required for run_vmec_jax_boozer_solve_convergence")
+        raise ImportError("booz_xform_jax is required for run_vmex_boozer_solve_convergence")
     if not max_iters:
         raise ValueError("max_iters must contain at least one VMEC iteration count")
 
     vmec_input = Path(input_path).expanduser().resolve()
     reference_wout = Path(reference_wout_path).expanduser().resolve()
-    default_solver_kwargs: dict[str, Any] = {
-        "jit_forces": "auto",
-        "use_scan": True,
-        "performance_mode": True,
-        "multigrid": None,
-    }
-    if solver_kwargs:
-        default_solver_kwargs.update(solver_kwargs)
-
     reference_geometry = run_booz_xform_jax_geometry_from_wout(
         reference_wout,
         mboz=mboz,
@@ -839,17 +775,7 @@ def run_vmec_jax_boozer_solve_convergence(
     jacobian_errors: list[float] = []
     for max_iter in tuple(int(value) for value in max_iters):
         start = time.perf_counter()
-        wout = run_vmec_jax_fixed_boundary_wout_data(
-            vmec_input,
-            max_iter=max_iter,
-            theta_points=theta_points,
-            zeta_points=zeta_points,
-            use_initial_guess=use_initial_guess,
-            vmec_project=vmec_project,
-            fast_bcovar=fast_bcovar,
-            include_fsq=True,
-            solver_kwargs=default_solver_kwargs,
-        )
+        wout = run_vmex_fixed_boundary_wout_data(vmec_input, max_iter=max_iter, ns=ns)
         geometry = run_booz_xform_jax_geometry_from_wout_data(
             wout,
             mboz=mboz,
@@ -896,7 +822,7 @@ def run_vmec_jax_boozer_solve_convergence(
             ("surfaces", tuple(float(surface) for surface in surfaces)),
             *geometry.metadata,
         )
-        geometries.append(replace(geometry, source="vmec_jax_booz_xform_jax", metadata=metadata))
+        geometries.append(replace(geometry, source="vmex_booz_xform_jax", metadata=metadata))
 
     result_metadata = (
         ("vmec_input", str(vmec_input)),
@@ -904,11 +830,9 @@ def run_vmec_jax_boozer_solve_convergence(
         ("mboz", int(mboz)),
         ("nboz", int(nboz)),
         ("surfaces", tuple(float(surface) for surface in surfaces)),
-        ("theta_points", None if theta_points is None else int(theta_points)),
-        ("zeta_points", None if zeta_points is None else int(zeta_points)),
-        ("solver_kwargs", tuple(sorted((str(key), str(value)) for key, value in default_solver_kwargs.items()))),
+        ("vmec_ns", ns),
     )
-    return VmecJaxBoozerSolveConvergenceResult(
+    return VmexBoozerSolveConvergenceResult(
         reference_geometry=replace(reference_geometry, source="reference_wout_booz_xform_jax"),
         geometries=tuple(geometries),
         max_iters=tuple(int(value) for value in max_iters),

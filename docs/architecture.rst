@@ -5,7 +5,7 @@ The code is organized around pure, typed, JAX-transformable functions.
 The main layers are:
 
 Equilibrium adapters
-   Convert ``vmec_jax`` results, VMEC ``wout`` files, or analytic equilibria
+   Convert ``vmex`` results, VMEC ``wout`` files, or analytic equilibria
    into geometry pytrees with stable shapes.
 
 Coordinate adapters
