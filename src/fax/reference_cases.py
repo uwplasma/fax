@@ -5,6 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 import os
 from pathlib import Path
+from typing import Any
 
 
 @dataclass(frozen=True)
@@ -86,9 +87,22 @@ class VmecEquilibriaCase:
         return boozmn is not None and boozmn.exists()
 
 
-def local_root() -> Path:
-    """Return the local workspace root used for external reference cases."""
-    return Path(os.environ.get("FAX_LOCAL_ROOT", Path.home() / "local")).expanduser()
+EXTERNAL_ROOT = Path(os.environ.get("FAX_EXTERNAL_ROOT", Path.home() / "local")).expanduser()
+"""Root of external artifacts (vmec_equilibria, booz_xform_jax, STELLGAP/AE3D packets); ``$FAX_EXTERNAL_ROOT``."""
+
+
+def portable_paths(value: Any) -> Any:
+    """Strip the working directory and ``EXTERNAL_ROOT`` prefixes from every path, also inside messages."""
+    if isinstance(value, dict):
+        return {key: portable_paths(item) for key, item in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [portable_paths(item) for item in value]
+    if isinstance(value, (str, Path)):
+        text = str(value)
+        for base in (Path.cwd(), EXTERNAL_ROOT):
+            text = text.replace(f"{base}/", "")
+        return text
+    return value
 
 
 def vmec_equilibria_root(*, root: str | Path | None = None) -> Path:
@@ -98,7 +112,7 @@ def vmec_equilibria_root(*, root: str | Path | None = None) -> Path:
     return Path(
         os.environ.get(
             "FAX_VMEC_EQUILIBRIA_ROOT",
-            str(local_root() / "vmec_equilibria"),
+            str(EXTERNAL_ROOT / "vmec_equilibria"),
         )
     ).expanduser()
 
@@ -255,7 +269,7 @@ def landreman_paul_qa_lowres(*, root: str | Path | None = None) -> ReferenceCase
     tests, and already used in the neighboring ``vmex`` and
     ``booz_xform_jax`` workflows.
     """
-    base = Path(root).expanduser() if root is not None else local_root()
+    base = Path(root).expanduser() if root is not None else EXTERNAL_ROOT
     vmec_input = Path(
         os.environ.get(
             "FAX_LP_QA_VMEC_INPUT",

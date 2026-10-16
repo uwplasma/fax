@@ -10,6 +10,7 @@ import jax
 import jax.numpy as jnp
 import numpy as np
 
+from fax.reference_cases import EXTERNAL_ROOT
 from fax.boozer import boozer_3d_continuum_frequencies_hz, read_boozmn_geometry
 from fax.cross_code import read_stellgap_alfven_post, stellgap_ctok_local_continuum_error
 from fax.units import PROTON_MASS
@@ -17,8 +18,8 @@ from fax.units import PROTON_MASS
 jax.config.update("jax_enable_x64", True)
 
 
-DEFAULT_BOOZMN = Path("/Users/rogerio/local/Stellgap_test_inputs/boozmn_ctok.nc")
-DEFAULT_ALFVEN_POST = Path("/Users/rogerio/local/Stellgap_test_problem/alfven_post")
+DEFAULT_BOOZMN = EXTERNAL_ROOT / "Stellgap_test_inputs/boozmn_ctok.nc"
+DEFAULT_ALFVEN_POST = EXTERNAL_ROOT / "Stellgap_test_problem/alfven_post"
 
 
 def _write_figure(output_dir: Path, boozmn: Path, alfven_post: Path) -> list[str]:

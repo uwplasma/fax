@@ -10,13 +10,14 @@ import jax
 import jax.numpy as jnp
 import numpy as np
 
+from fax.reference_cases import EXTERNAL_ROOT
 from fax.boozer import read_boozmn_geometry
 from fax.global_modes import radial_block_problem_from_boozer_geometry, solve_radial_block_eigenmodes
 
 jax.config.update("jax_enable_x64", True)
 
 
-DEFAULT_BOOZMN = Path("/Users/rogerio/local/booz_xform_jax/tests/test_files/boozmn_LandremanSenguptaPlunk_section5p3.nc")
+DEFAULT_BOOZMN = EXTERNAL_ROOT / "booz_xform_jax/tests/test_files/boozmn_LandremanSenguptaPlunk_section5p3.nc"
 
 
 def _write_figure(output_dir: Path, stem: str, geometry, result, mode_count: int) -> list[str]:

@@ -13,7 +13,7 @@ import numpy as np
 from fax.continuum import continuum_branch_matrix
 from fax.equilibrium import from_vmec_wout
 from fax.modes import stellarator_mode_family
-from fax.reference_cases import VmecEquilibriaCase, vmec_equilibria_catalog, vmec_equilibria_root
+from fax.reference_cases import portable_paths, VmecEquilibriaCase, vmec_equilibria_catalog, vmec_equilibria_root
 
 
 def _select_cases(case_ids: tuple[str, ...], root: Path) -> tuple[VmecEquilibriaCase, ...]:
@@ -107,7 +107,7 @@ def build_catalog_figure(root: Path, output_dir: Path, *, case_ids: tuple[str, .
         writer = csv.DictWriter(stream, fieldnames=fieldnames)
         writer.writeheader()
         for record in records:
-            writer.writerow({name: record[name] for name in fieldnames})
+            writer.writerow(portable_paths({name: record[name] for name in fieldnames}))
 
     fig, axes = plt.subplots(2, 2, figsize=(13.0, 8.2), constrained_layout=True)
     colors = plt.cm.tab20(np.linspace(0.0, 1.0, len(records)))
@@ -169,7 +169,7 @@ def build_catalog_figure(root: Path, output_dir: Path, *, case_ids: tuple[str, .
         ),
     }
     (output_dir / "vmec_equilibria_catalog_summary.json").write_text(
-        json.dumps(summary, indent=2, sort_keys=True),
+        json.dumps(portable_paths(summary), indent=2, sort_keys=True),
         encoding="utf-8",
     )
     return summary
@@ -182,7 +182,7 @@ def main() -> int:
     parser.add_argument("--case", action="append", default=[], help="Case ID to include; may be repeated.")
     args = parser.parse_args()
     summary = build_catalog_figure(Path(args.root), Path(args.output_dir), case_ids=tuple(args.case))
-    print(json.dumps(summary, indent=2, sort_keys=True))
+    print(json.dumps(portable_paths(summary), indent=2, sort_keys=True))
     return 0
 
 

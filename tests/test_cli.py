@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import json
-from pathlib import Path
 import runpy
 import sys
 
@@ -12,10 +11,10 @@ from fax.boozer import read_boozmn_geometry
 from fax.cli import main
 from fax.global_modes import radial_block_problem_from_boozer_geometry, solve_radial_block_eigenmodes
 from fax.modes import stellarator_mode_family
-from fax.reference_cases import landreman_paul_qa_lowres
+from fax.reference_cases import EXTERNAL_ROOT, landreman_paul_qa_lowres
 
 
-BOOZ_XFORM_TEST_FILES = Path("/Users/rogerio/local/booz_xform_jax/tests/test_files")
+BOOZ_XFORM_TEST_FILES = EXTERNAL_ROOT / "booz_xform_jax/tests/test_files"
 
 
 def test_cli_example(capsys):

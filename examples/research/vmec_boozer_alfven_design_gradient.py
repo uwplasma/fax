@@ -9,6 +9,7 @@ from pathlib import Path
 
 import numpy as np
 
+from fax.reference_cases import portable_paths
 from fax.vmec_boozer_design import VmecBoozerFaxDesignSettings, validate_vmec_boundary_alfven_gradient
 
 
@@ -78,7 +79,7 @@ def main() -> None:
         "metadata": list(result.metadata),
     }
     summary_path = args.output_dir / "vmec_boozer_alfven_design_gradient.json"
-    summary_path.write_text(json.dumps(summary, indent=2) + "\n")
+    summary_path.write_text(json.dumps(portable_paths(summary), indent=2) + "\n")
 
     figure_path = args.output_dir / "vmec_boozer_alfven_design_gradient.png"
     figure_svg_path = args.output_dir / "vmec_boozer_alfven_design_gradient.svg"

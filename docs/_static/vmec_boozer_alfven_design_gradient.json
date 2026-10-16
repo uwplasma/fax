@@ -2,38 +2,38 @@
   "parameter_names": [
     "rc01"
   ],
-  "objective": 0.4988799747975617,
-  "descent_objective": 0.4988744913773062,
-  "relative_gradient_error": 3.3573451826392693e-09,
+  "objective": 0.48066005101521103,
+  "descent_objective": 0.48051888568567636,
+  "relative_gradient_error": 4.88608392095216e-05,
   "gradient": [
-    0.005473064664195727
+    -0.14110750261153693
   ],
   "finite_difference_gradient": [
-    0.005473064682570694
+    -0.14110060831740157
   ],
   "initial_frequencies_hz": [
-    204579.17427740621,
-    222337.98999024022,
-    264829.06550786016
+    132481.5917767761,
+    144127.28815614365,
+    316475.29595221084
   ],
   "descent_frequencies_hz": [
-    204441.38308098924,
-    222200.66286512007,
-    264910.2197286261
+    132280.6886582246,
+    143949.54512248418,
+    316564.00272670126
   ],
   "descent_step_norm": 0.001,
   "metadata": [
     [
       "input_path",
-      "/Users/rogerio/local/vmex/examples/data/input.LandremanPaul2021_QA_lowres"
+      "examples/data/input.LandremanPaul2021_QA_lowres"
     ],
     [
-      "vmec_max_iter",
-      4
+      "vmec_ns",
+      16
     ],
     [
-      "vmec_step_size",
-      0.001
+      "vmec_ftol",
+      1e-12
     ],
     [
       "mboz",
@@ -46,10 +46,10 @@
     [
       "surface_s",
       [
-        0.2551020408163265,
-        0.3979591836734694,
-        0.5408163265306122,
-        0.7040816326530612
+        0.23333333333333334,
+        0.3666666666666667,
+        0.5666666666666667,
+        0.7
       ]
     ],
     [

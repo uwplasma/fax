@@ -721,7 +721,7 @@ def run_vmex_boozer_solve_convergence(
     input_path: str | Path,
     reference_wout_path: str | Path,
     *,
-    max_iters: tuple[int, ...] = (1, 6, 12, 24),
+    max_iters: tuple[int, ...] = (100, 200, 400, 800),
     mboz: int = 5,
     nboz: int = 5,
     surfaces: tuple[float, ...] = (0.25, 0.5),

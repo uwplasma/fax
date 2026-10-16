@@ -23,6 +23,7 @@ from scipy import linalg, sparse
 from scipy.optimize import linear_sum_assignment
 
 from .boozer import boozer_3d_continuum_frequencies_hz, read_boozmn_geometry
+from .reference_cases import EXTERNAL_ROOT
 
 
 @dataclass(frozen=True)
@@ -838,8 +839,8 @@ def stellgap_ctok_gap_parity(
 
 def run_stellgap_ctok_executable(
     *,
-    executable: str | Path = "/Users/rogerio/local/Stellgap/xstgap",
-    input_dir: str | Path = "/Users/rogerio/local/Stellgap_test_inputs",
+    executable: str | Path = EXTERNAL_ROOT / "Stellgap/xstgap",
+    input_dir: str | Path = EXTERNAL_ROOT / "Stellgap_test_inputs",
     radial_points: int = 99,
     fine_radial_points: int = 2048,
     timeout_seconds: float = 1800.0,

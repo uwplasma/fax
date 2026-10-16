@@ -57,7 +57,7 @@
     "docs/_static/far3d_gpu_convergence_ladder.png",
     "docs/_static/far3d_gpu_convergence_ladder.svg"
   ],
-  "input_dir": "/Users/rogerio/local/fax/external_artifacts/far3d/gpu_diiid_nvhpc_convergence",
+  "input_dir": "external_artifacts/far3d/gpu_diiid_nvhpc_convergence",
   "scope": "FAR3D GPU run-length convergence artifact; still not multi-geometry kinetic parity",
   "steps": [
     50,

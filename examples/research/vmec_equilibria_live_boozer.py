@@ -26,7 +26,7 @@ from fax.boozer import (
     run_booz_xform_jax_geometry_from_wout,
 )
 from fax.global_modes import radial_block_problem_from_boozer_geometry, solve_radial_block_eigenmodes
-from fax.reference_cases import vmec_equilibria_catalog, vmec_equilibria_root
+from fax.reference_cases import portable_paths, vmec_equilibria_catalog, vmec_equilibria_root
 
 jax.config.update("jax_enable_x64", True)
 
@@ -172,7 +172,7 @@ def _write_outputs(output_dir: Path, packets: list[dict[str, Any]]) -> list[str]
     plt.close(fig)
 
     json_path = output_dir / "vmec_equilibria_live_boozer_summary.json"
-    json_path.write_text(json.dumps({"cases": packets}, indent=2, sort_keys=True) + "\n")
+    json_path.write_text(json.dumps(portable_paths({"cases": packets}), indent=2, sort_keys=True) + "\n")
     csv_path = output_dir / "vmec_equilibria_live_boozer.csv"
     with csv_path.open("w", newline="") as stream:
         writer = csv.DictWriter(
@@ -191,7 +191,7 @@ def _write_outputs(output_dir: Path, packets: list[dict[str, Any]]) -> list[str]
         )
         writer.writeheader()
         for packet in packets:
-            writer.writerow({key: packet[key] for key in writer.fieldnames or ()})
+            writer.writerow(portable_paths({key: packet[key] for key in writer.fieldnames or ()}))
     return [*paths, str(json_path), str(csv_path)]
 
 
@@ -225,7 +225,7 @@ def main(argv: list[str] | None = None) -> int:
         "artifact_files": artifact_files,
         "scope": "generated-Boozer convergence gate for public VMEC wout files; not external-code parity",
     }
-    print(json.dumps(payload, indent=2, sort_keys=True))
+    print(json.dumps(portable_paths(payload), indent=2, sort_keys=True))
     return 0
 
 

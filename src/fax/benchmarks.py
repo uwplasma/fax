@@ -12,6 +12,7 @@ from typing import Any, Callable
 import jax
 import jax.numpy as jnp
 import numpy as np
+from .reference_cases import EXTERNAL_ROOT
 
 
 @dataclass(frozen=True)
@@ -443,11 +444,10 @@ def _run_global_matrix_free_family(*, repeats: int, warmups: int) -> BenchmarkFa
 
 
 def _run_ae3d_artifact_family(*, repeats: int, warmups: int) -> BenchmarkFamilyResult:
-    from pathlib import Path
 
     from .cross_code import ae3d_dense_spectrum_parity
 
-    root = Path("/Users/rogerio/local/AE3D_test_problem")
+    root = EXTERNAL_ROOT / "AE3D_test_problem"
     a_matrix = root / "a_matrix.dat"
     b_matrix = root / "b_matrix.dat"
     egn_mode = root / "egn_mode_asci.dat"
@@ -501,11 +501,10 @@ def _run_ae3d_artifact_family(*, repeats: int, warmups: int) -> BenchmarkFamilyR
 
 
 def _run_ae3d_global_mode_family(*, repeats: int, warmups: int) -> BenchmarkFamilyResult:
-    from pathlib import Path
 
     from .cross_code import ae3d_global_mode_parity
 
-    root = Path("/Users/rogerio/local/AE3D_test_problem")
+    root = EXTERNAL_ROOT / "AE3D_test_problem"
     a_matrix = root / "a_matrix.dat"
     b_matrix = root / "b_matrix.dat"
     egn_mode = root / "egn_mode_asci.dat"
@@ -561,13 +560,12 @@ def _run_ae3d_global_mode_family(*, repeats: int, warmups: int) -> BenchmarkFami
 
 
 def _run_stellgap_ctok_family(*, repeats: int, warmups: int) -> BenchmarkFamilyResult:
-    from pathlib import Path
 
     from .cross_code import stellgap_ctok_local_continuum_error
     from .units import PROTON_MASS
 
-    boozmn = Path("/Users/rogerio/local/Stellgap_test_inputs/boozmn_ctok.nc")
-    alfven_post = Path("/Users/rogerio/local/Stellgap_test_problem/alfven_post")
+    boozmn = EXTERNAL_ROOT / "Stellgap_test_inputs/boozmn_ctok.nc"
+    alfven_post = EXTERNAL_ROOT / "Stellgap_test_problem/alfven_post"
     if not boozmn.exists() or not alfven_post.exists():
         return _family_result(
             family="stellgap-ctok",

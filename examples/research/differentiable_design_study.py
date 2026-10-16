@@ -16,6 +16,7 @@ import numpy as np
 
 jax.config.update("jax_enable_x64", True)
 
+from fax.reference_cases import portable_paths  # noqa: E402
 from fax.equilibrium import analytic_circular_tokamak  # noqa: E402
 from fax.fast_ions import FastIonPopulation  # noqa: E402
 from fax.optimization import (  # noqa: E402
@@ -215,7 +216,7 @@ def run_design_study(output_dir: Path, formats: tuple[str, ...], *, steps: int =
         "optimized_parameters": np.asarray(optimization.parameters).tolist(),
     }
     (output_dir / "differentiable_design_study_summary.json").write_text(
-        json.dumps(payload, indent=2, sort_keys=True),
+        json.dumps(portable_paths(payload), indent=2, sort_keys=True),
         encoding="utf-8",
     )
     return payload
@@ -231,7 +232,7 @@ def main(argv: list[str] | None = None) -> int:
     output_dir = Path(args.output_dir).expanduser().resolve()
     formats = tuple(args.format) if args.format else ("svg", "png")
     payload = run_design_study(output_dir, formats, steps=args.steps)
-    print(json.dumps(payload, indent=2, sort_keys=True))
+    print(json.dumps(portable_paths(payload), indent=2, sort_keys=True))
     return 0
 
 

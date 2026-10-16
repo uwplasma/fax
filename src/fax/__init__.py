@@ -182,6 +182,8 @@ from .reference_cases import (
     available_vmec_equilibria_cases,
     landreman_paul_qa_lowres,
     vmec_equilibria_catalog,
+    EXTERNAL_ROOT,
+    portable_paths,
     vmec_equilibria_root,
 )
 from .runner import RunSummary, run
@@ -311,6 +313,8 @@ __all__ = [
     "available_vmec_equilibria_boozmn_cases",
     "available_vmec_equilibria_cases",
     "vmec_equilibria_catalog",
+    "EXTERNAL_ROOT",
+    "portable_paths",
     "vmec_equilibria_root",
     "load_far3d_lincheck_dataset",
     "load_continuum_artifacts",

@@ -15,6 +15,7 @@ import re
 import matplotlib.pyplot as plt
 import numpy as np
 
+from fax.reference_cases import portable_paths
 from fax.far3d import read_far3d_lincheck
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -102,7 +103,7 @@ def build_figure(input_path: Path, output_dir: Path) -> dict[str, object]:
         "scope": "FAR3D executable/build and ingestion artifact; not calibrated kinetic parity",
     }
     (output_dir / "far3d_gpu_lincheck_artifact_summary.json").write_text(
-        json.dumps(metrics, indent=2, sort_keys=True),
+        json.dumps(portable_paths(metrics), indent=2, sort_keys=True),
         encoding="utf-8",
     )
     return metrics
@@ -114,7 +115,7 @@ def main() -> int:
     parser.add_argument("--output-dir", default="outputs/far3d_gpu_lincheck_artifact", help="Output directory.")
     args = parser.parse_args()
     metrics = build_figure(Path(args.input), Path(args.output_dir))
-    print(json.dumps(metrics, indent=2, sort_keys=True))
+    print(json.dumps(portable_paths(metrics), indent=2, sort_keys=True))
     return 0
 
 

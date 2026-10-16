@@ -44,11 +44,11 @@ from fax.boozer import (
     straight_field_line_phase_error,
 )
 from fax.global_modes import radial_block_problem_from_boozer_geometry, solve_radial_block_eigenmodes
-from fax.reference_cases import landreman_paul_qa_lowres
+from fax.reference_cases import EXTERNAL_ROOT, landreman_paul_qa_lowres
 from fax.units import MU0
 
 
-BOOZ_XFORM_TEST_FILES = Path("/Users/rogerio/local/booz_xform_jax/tests/test_files")
+BOOZ_XFORM_TEST_FILES = EXTERNAL_ROOT / "booz_xform_jax/tests/test_files"
 
 
 def _wout_like_from_netcdf(path: Path):

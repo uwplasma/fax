@@ -9,6 +9,7 @@ from pathlib import Path
 
 import numpy as np
 
+from fax.reference_cases import portable_paths
 from fax.vmec_boozer_design import (
     VmecBoozerFaxDesignSettings,
     run_vmec_boundary_alfven_gradient_convergence,
@@ -84,7 +85,7 @@ def main() -> None:
 
     args.output_dir.mkdir(parents=True, exist_ok=True)
     summary_path = args.output_dir / "vmec_boozer_gradient_convergence.json"
-    summary_path.write_text(json.dumps(result.as_dict(), indent=2) + "\n", encoding="utf-8")
+    summary_path.write_text(json.dumps(portable_paths(result.as_dict()), indent=2) + "\n", encoding="utf-8")
     figure_path = args.output_dir / "vmec_boozer_gradient_convergence.png"
     figure_svg_path = args.output_dir / "vmec_boozer_gradient_convergence.svg"
     _plot_convergence(result, figure_path, figure_svg_path)
