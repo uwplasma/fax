@@ -58,17 +58,17 @@ from fax.global_modes import (  # noqa: E402
 )
 from fax.metric import diagonal_continuum_frequencies_hz, metric_from_vmec_wout  # noqa: E402
 from fax.plotting import plot_convergence_artifacts  # noqa: E402
-from fax.reference_cases import landreman_paul_qa_lowres  # noqa: E402
+from fax.reference_cases import portable_paths, EXTERNAL_ROOT, landreman_paul_qa_lowres  # noqa: E402
 from fax.units import PROTON_MASS  # noqa: E402
 from fax.validation import finite_difference_derivative  # noqa: E402
 from fax.workflows import run_convergence  # noqa: E402
 
 
-DEFAULT_BOOZMN = Path("/Users/rogerio/local/booz_xform_jax/tests/test_files/boozmn_LandremanSenguptaPlunk_section5p3.nc")
-DEFAULT_STELLGAP_BOOZMN = Path("/Users/rogerio/local/Stellgap_test_inputs/boozmn_ctok.nc")
-DEFAULT_STELLGAP_POST = Path("/Users/rogerio/local/Stellgap_test_problem/alfven_post")
-DEFAULT_AE3D_DIR = Path("/Users/rogerio/local/AE3D_test_problem")
-DEFAULT_AE3D_BOOZMN = Path("/Users/rogerio/local/AE3D_test_inputs/boozmn_ctok.nc")
+DEFAULT_BOOZMN = EXTERNAL_ROOT / "booz_xform_jax/tests/test_files/boozmn_LandremanSenguptaPlunk_section5p3.nc"
+DEFAULT_STELLGAP_BOOZMN = EXTERNAL_ROOT / "Stellgap_test_inputs/boozmn_ctok.nc"
+DEFAULT_STELLGAP_POST = EXTERNAL_ROOT / "Stellgap_test_problem/alfven_post"
+DEFAULT_AE3D_DIR = EXTERNAL_ROOT / "AE3D_test_problem"
+DEFAULT_AE3D_BOOZMN = EXTERNAL_ROOT / "AE3D_test_inputs/boozmn_ctok.nc"
 
 
 CaseRunner = Callable[[Path, tuple[str, ...]], dict[str, object]]
@@ -588,8 +588,8 @@ def main(argv: list[str] | None = None) -> int:
         "results": results,
     }
     output_dir.mkdir(parents=True, exist_ok=True)
-    (output_dir / "publication_figure_suite_summary.json").write_text(json.dumps(payload, indent=2, sort_keys=True), encoding="utf-8")
-    print(json.dumps(payload, indent=2, sort_keys=True))
+    (output_dir / "publication_figure_suite_summary.json").write_text(json.dumps(portable_paths(payload), indent=2, sort_keys=True), encoding="utf-8")
+    print(json.dumps(portable_paths(payload), indent=2, sort_keys=True))
     return 0
 
 

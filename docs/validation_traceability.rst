@@ -116,7 +116,7 @@ Cluster/subspace formulas
 
 Pipeline gradients
    Used for callable geometry builders that represent future
-   ``vmec_jax -> booz_xform_jax -> FAX`` differentiable loops.
+   ``vmex -> booz_xform_jax -> FAX`` differentiable loops.
 
 Cross-Code Gates
 ----------------

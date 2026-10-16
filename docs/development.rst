@@ -48,7 +48,7 @@ cross-code gates:
 
 .. code-block:: bash
 
-   python tools/install_public_cross_code_artifacts.py --root /Users/rogerio/local
+   python tools/install_public_cross_code_artifacts.py --root ~/local
 
 Check a kinetic growth-rate parity packet when FAR3D/CAS3D-K references are
 available:
@@ -84,7 +84,7 @@ Benchmark packets
 
 ``fax benchmark`` always includes the public continuum workflow as a baseline.
 Named families add timed kernels with reviewer-facing physics gates. This
-follows the performance patterns observed in the neighboring ``vmec_jax`` and
+follows the performance patterns observed in the neighboring ``vmex`` and
 ``booz_xform_jax`` branches: report cold and warm timings separately, block on
 JAX work before stopping timers, avoid speed claims without a passing physics
 metric, and keep external-code parity artifacts optional but reproducible.

@@ -24,8 +24,9 @@ Configuration Examples
    Small analytic case sized for radial/angular/Fourier convergence sweeps.
 
 ``examples/landreman_paul_qa_lowres.toml``
-   VMEC-backed Landreman-Paul QA low-resolution target. This requires the
-   neighboring ``vmec_jax`` checkout data path documented in the README.
+   VMEC-backed Landreman-Paul QA low-resolution target. The VMEC input ships
+   in ``examples/data``; the converged ``wout`` comes from a neighboring
+   ``simsopt`` checkout.
 
 ``examples/global_eigenmodes.toml``
    Small TOML-driven global radial eigenmode case. Use it to test
@@ -121,7 +122,7 @@ Run:
    python examples/research/vmec_boozer_alfven_design_gradient.py --output-dir outputs/vmec_boozer_alfven_design_gradient
 
 This starts from the Landreman-Paul QA VMEC input, selects low-order boundary
-Fourier coefficients, runs the differentiable fixed-boundary ``vmec_jax`` path,
+Fourier coefficients, runs the differentiable fixed-boundary ``vmex`` path,
 transforms the resulting state with ``booz_xform_jax``, and evaluates a FAX
 global radial Alfvén risk objective. The generated plot compares JAX and
 centered-finite-difference gradients and shows the effect of one line-searched
@@ -189,7 +190,7 @@ Run:
 
    python examples/research/vmec_boozer_convergence.py --output-dir outputs/vmec_boozer_convergence
 
-This runs the local Landreman-Paul QA ``vmec_jax`` input through the in-memory
+This runs the local Landreman-Paul QA ``vmex`` input through the in-memory
 ``booz_xform_jax`` bridge and checks two production-readiness metrics:
 Boozer harmonic truncation and local 3-D operator angular quadrature
 convergence. It writes a compact figure and prints JSON metrics; it is not a
@@ -202,13 +203,13 @@ Clone the public equilibrium repository once:
 
 .. code-block:: bash
 
-   git clone https://github.com/landreman/vmec_equilibria /Users/rogerio/local/vmec_equilibria
+   git clone https://github.com/landreman/vmec_equilibria ~/local/vmec_equilibria
 
 Then run:
 
 .. code-block:: bash
 
-   python examples/research/vmec_equilibria_catalog.py --root /Users/rogerio/local/vmec_equilibria
+   python examples/research/vmec_equilibria_catalog.py --root ~/local/vmec_equilibria
 
 This reads selected VMEC ``wout*.nc`` files from the external clone and builds
 a broad profile-continuum catalog spanning HSX, W7-X, NCSX, ARIES-CS, LHD,
@@ -230,7 +231,7 @@ Run:
 
 .. code-block:: bash
 
-   python examples/research/vmec_equilibria_boozer_global.py --root /Users/rogerio/local/vmec_equilibria
+   python examples/research/vmec_equilibria_boozer_global.py --root ~/local/vmec_equilibria
 
 This reads public ``boozmn`` artifacts in the same external clone, currently
 HSX QHS, HSX mirror, and a Ku-Boozer quasi-helical case, then assembles FAX's
@@ -254,7 +255,7 @@ Run:
 
 .. code-block:: bash
 
-   python examples/research/vmec_equilibria_live_boozer.py --root /Users/rogerio/local/vmec_equilibria --jit
+   python examples/research/vmec_equilibria_live_boozer.py --root ~/local/vmec_equilibria --jit
 
 This uses ``booz_xform_jax`` to generate Boozer geometry from public W7-X and
 NCSX VMEC ``wout`` files, then assembles the FAX global radial 3-D Boozer
@@ -355,7 +356,7 @@ STELLGAP CTOK Cross-Code Comparison
 -----------------------------------
 
 Run after cloning/extracting the public ORNL STELLGAP test artifacts under
-``/Users/rogerio/local``:
+``~/local``:
 
 .. code-block:: bash
 
@@ -372,7 +373,7 @@ External-Code Artifact Dashboard
 --------------------------------
 
 Run after extracting the public ORNL STELLGAP and AE3D answer artifacts under
-``/Users/rogerio/local``:
+``~/local``:
 
 .. code-block:: bash
 
@@ -466,7 +467,7 @@ Generate selected figures with repeated ``--case`` flags, for example:
    python examples/research/publication_figure_suite.py --case 09 --case 10 --format pdf
 
 The STELLGAP and AE3D cases require the public ORNL artifacts under
-``/Users/rogerio/local``. The suite labels those cases as skipped in the JSON
+``~/local``. The suite labels those cases as skipped in the JSON
 summary if the local artifacts are unavailable.
 
 .. figure:: _static/publication_suite/09_stellgap_ctok_gap_anchored_global_screen.svg

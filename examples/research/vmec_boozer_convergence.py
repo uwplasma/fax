@@ -11,7 +11,7 @@ import numpy as np
 
 from fax.boozer import (
     boozer_3d_operator_angular_convergence,
-    run_vmec_jax_boozer_truncation_convergence,
+    run_vmex_boozer_truncation_convergence,
 )
 from fax.reference_cases import landreman_paul_qa_lowres
 
@@ -38,7 +38,7 @@ def _setup_matplotlib():
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Run live VMEC-JAX/Boozer convergence smoke checks.")
+    parser = argparse.ArgumentParser(description="Run live VMEX/Boozer convergence smoke checks.")
     parser.add_argument("--vmec-input", default=None, help="VMEC input path. Defaults to the local Landreman-Paul QA case.")
     parser.add_argument("--output-dir", default="outputs/vmec_boozer_convergence", help="Directory for figure artifacts.")
     parser.add_argument("--format", default="png", choices=("png", "svg"), help="Figure format.")
@@ -50,7 +50,7 @@ def main() -> int:
     output_dir.mkdir(parents=True, exist_ok=True)
 
     with redirect_stdout(sys.stderr):
-        truncation = run_vmec_jax_boozer_truncation_convergence(
+        truncation = run_vmex_boozer_truncation_convergence(
             vmec_input,
             coarse_mboz=4,
             coarse_nboz=4,
@@ -58,8 +58,6 @@ def main() -> int:
             reference_nboz=5,
             surfaces=(0.25, 0.5),
             max_iter=1,
-            theta_points=12,
-            zeta_points=4,
             jit=False,
         )
         angular = boozer_3d_operator_angular_convergence(
@@ -99,7 +97,7 @@ def main() -> int:
     ax.set_ylim(1.0e-16, 1.0e-2)
     ax.legend(fontsize=8)
 
-    fig.suptitle("Live VMEC-JAX/Boozer convergence smoke checks", fontsize=12, weight="bold")
+    fig.suptitle("Live VMEX/Boozer convergence smoke checks", fontsize=12, weight="bold")
     figure_path = output_dir / f"vmec_boozer_convergence.{args.format}"
     fig.savefig(figure_path, facecolor="white")
     plt.close(fig)

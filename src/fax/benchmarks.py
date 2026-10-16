@@ -12,6 +12,7 @@ from typing import Any, Callable
 import jax
 import jax.numpy as jnp
 import numpy as np
+from .reference_cases import EXTERNAL_ROOT
 
 
 @dataclass(frozen=True)
@@ -58,7 +59,7 @@ BENCHMARK_FAMILY_DESCRIPTIONS: dict[str, str] = {
     "ae3d-global-mode": "public AE3D global matrix frequency and mode-shape parity gate",
     "stellgap-ctok": "public STELLGAP CTOK local Boozer continuum parity gate",
     "stellgap-executable": "bounded local STELLGAP CTOK executable attempt with runtime/status capture",
-    "vmec-boozer": "live vmec_jax solve through booz_xform_jax and FAX local 3-D continuum gate",
+    "vmec-boozer": "live vmex solve through booz_xform_jax and FAX local 3-D continuum gate",
 }
 
 
@@ -443,11 +444,10 @@ def _run_global_matrix_free_family(*, repeats: int, warmups: int) -> BenchmarkFa
 
 
 def _run_ae3d_artifact_family(*, repeats: int, warmups: int) -> BenchmarkFamilyResult:
-    from pathlib import Path
 
     from .cross_code import ae3d_dense_spectrum_parity
 
-    root = Path("/Users/rogerio/local/AE3D_test_problem")
+    root = EXTERNAL_ROOT / "AE3D_test_problem"
     a_matrix = root / "a_matrix.dat"
     b_matrix = root / "b_matrix.dat"
     egn_mode = root / "egn_mode_asci.dat"
@@ -501,11 +501,10 @@ def _run_ae3d_artifact_family(*, repeats: int, warmups: int) -> BenchmarkFamilyR
 
 
 def _run_ae3d_global_mode_family(*, repeats: int, warmups: int) -> BenchmarkFamilyResult:
-    from pathlib import Path
 
     from .cross_code import ae3d_global_mode_parity
 
-    root = Path("/Users/rogerio/local/AE3D_test_problem")
+    root = EXTERNAL_ROOT / "AE3D_test_problem"
     a_matrix = root / "a_matrix.dat"
     b_matrix = root / "b_matrix.dat"
     egn_mode = root / "egn_mode_asci.dat"
@@ -561,13 +560,12 @@ def _run_ae3d_global_mode_family(*, repeats: int, warmups: int) -> BenchmarkFami
 
 
 def _run_stellgap_ctok_family(*, repeats: int, warmups: int) -> BenchmarkFamilyResult:
-    from pathlib import Path
 
     from .cross_code import stellgap_ctok_local_continuum_error
     from .units import PROTON_MASS
 
-    boozmn = Path("/Users/rogerio/local/Stellgap_test_inputs/boozmn_ctok.nc")
-    alfven_post = Path("/Users/rogerio/local/Stellgap_test_problem/alfven_post")
+    boozmn = EXTERNAL_ROOT / "Stellgap_test_inputs/boozmn_ctok.nc"
+    alfven_post = EXTERNAL_ROOT / "Stellgap_test_problem/alfven_post"
     if not boozmn.exists() or not alfven_post.exists():
         return _family_result(
             family="stellgap-ctok",
@@ -671,7 +669,7 @@ def _run_stellgap_executable_family(*, repeats: int, warmups: int) -> BenchmarkF
 def _run_vmec_boozer_family(*, repeats: int, warmups: int) -> BenchmarkFamilyResult:
     from pathlib import Path
 
-    from .boozer import run_vmec_jax_boozer_solve_convergence
+    from .boozer import run_vmex_boozer_solve_convergence
     from .reference_cases import landreman_paul_qa_lowres
 
     case = landreman_paul_qa_lowres()
@@ -688,11 +686,11 @@ def _run_vmec_boozer_family(*, repeats: int, warmups: int) -> BenchmarkFamilyRes
             tolerance=8.0e-2,
             cold_seconds=None,
             warm_result=None,
-            details={"reason": "missing Landreman-Paul vmec_jax input or converged wout"},
+            details={"reason": "missing Landreman-Paul vmex input or converged wout"},
         )
 
     def kernel():
-        return run_vmec_jax_boozer_solve_convergence(
+        return run_vmex_boozer_solve_convergence(
             input_path=input_path,
             reference_wout_path=reference_wout,
             max_iters=(1, 6, 12),

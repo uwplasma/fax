@@ -26,7 +26,7 @@ n_max = 4
     assert config.run.case == "unit"
     assert config.run.model == "continuum"
     assert config.grid.radial_points == 16
-    assert config.equilibrium.source == "vmec_jax"
+    assert config.equilibrium.source == "vmex"
 
 
 def test_rejects_unknown_section():
@@ -60,7 +60,7 @@ def test_rejects_invalid_grid():
 def test_config_rejects_unphysical_or_unknown_user_inputs(mapping, message):
     if message == "run":
         config = FaxConfig.from_mapping(mapping)
-        assert config.equilibrium.source == "vmec_jax"
+        assert config.equilibrium.source == "vmex"
         return
 
     with pytest.raises(ConfigError, match=message):

@@ -29,9 +29,9 @@ from .boozer import (
     read_boozmn_geometry,
     run_booz_xform_jax_geometry_from_wout,
     run_booz_xform_jax_geometry_from_wout_data,
-    run_vmec_jax_boozer_solve_convergence,
-    run_vmec_jax_boozer_truncation_convergence,
-    run_vmec_jax_fixed_boundary_boozer_geometry,
+    run_vmex_boozer_solve_convergence,
+    run_vmex_boozer_truncation_convergence,
+    run_vmex_fixed_boundary_boozer_geometry,
     straight_field_line_phase_error,
 )
 from .continuum import continuum_branch_matrix, local_continuum_frequency_hz
@@ -74,6 +74,7 @@ from .global_modes import (
     solve_radial_block_eigenmodes,
     solve_radial_eigenmodes,
 )
+from .reference_cases import EXTERNAL_ROOT
 from .metric import (
     MetricGeometry,
     diagonal_continuum_frequencies_hz,
@@ -927,7 +928,7 @@ def _synthetic_global_boozer_geometry() -> BoozerGeometry:
 
 
 def _booz_xform_fixture(name: str) -> Path | None:
-    path = Path("/Users/rogerio/local/booz_xform_jax/tests/test_files") / name
+    path = EXTERNAL_ROOT / "booz_xform_jax/tests/test_files" / name
     return path if path.exists() else None
 
 
@@ -974,7 +975,7 @@ def _wout_like_from_netcdf(path: Path) -> SimpleNamespace:
 
 
 def _local_external_file(*parts: str) -> Path | None:
-    path = Path("/Users/rogerio/local").joinpath(*parts)
+    path = EXTERNAL_ROOT.joinpath(*parts)
     return path if path.exists() else None
 
 
@@ -1584,7 +1585,7 @@ def _gate_stellgap_ctok_local_continuum() -> GateResult:
             status="skipped",
             metric=float("nan"),
             tolerance=tolerance,
-            message="missing local ORNL STELLGAP CTOK test artifacts under /Users/rogerio/local",
+            message=f"missing local ORNL STELLGAP CTOK test artifacts under {EXTERNAL_ROOT}",
         )
     comparison = stellgap_ctok_local_continuum_error(
         boozmn_path=boozmn,
@@ -1612,7 +1613,7 @@ def _gate_stellgap_ctok_largest_gap_parity() -> GateResult:
             status="skipped",
             metric=float("nan"),
             tolerance=tolerance,
-            message="missing local ORNL STELLGAP CTOK test artifacts under /Users/rogerio/local",
+            message=f"missing local ORNL STELLGAP CTOK test artifacts under {EXTERNAL_ROOT}",
         )
     parity = stellgap_ctok_gap_parity(
         boozmn_path=boozmn,
@@ -1641,7 +1642,7 @@ def _gate_stellgap_public_postprocess_parity() -> GateResult:
             status="skipped",
             metric=float("nan"),
             tolerance=tolerance,
-            message="missing local ORNL STELLGAP alfven_spec/alfven_post artifacts under /Users/rogerio/local",
+            message=f"missing local ORNL STELLGAP alfven_spec/alfven_post artifacts under {EXTERNAL_ROOT}",
         )
     comparison = stellgap_postprocess_error(alfven_spec_path=alfven_spec, alfven_post_path=alfven_post)
     return _pass_fail(
@@ -1662,7 +1663,7 @@ def _gate_ae3d_public_eigenvalue_artifact() -> GateResult:
             status="skipped",
             metric=float("nan"),
             tolerance=tolerance,
-            message="missing local ORNL AE3D public eigenvalue answer artifact under /Users/rogerio/local",
+            message=f"missing local ORNL AE3D public eigenvalue answer artifact under {EXTERNAL_ROOT}",
         )
     summary = ae3d_eigenvalue_residual_summary(egn_values)
     return _pass_fail(
@@ -1687,7 +1688,7 @@ def _gate_ae3d_public_omega2_eigenvalue_parity() -> GateResult:
             status="skipped",
             metric=float("nan"),
             tolerance=tolerance,
-            message="missing local ORNL AE3D omega2/egn_values artifacts under /Users/rogerio/local",
+            message=f"missing local ORNL AE3D omega2/egn_values artifacts under {EXTERNAL_ROOT}",
         )
     comparison = ae3d_omega2_eigenvalue_error(omega2_path=omega2, egn_values_path=egn_values)
     return _pass_fail(
@@ -1709,7 +1710,7 @@ def _gate_ae3d_public_matrix_symmetry() -> GateResult:
             status="skipped",
             metric=float("nan"),
             tolerance=tolerance,
-            message="missing local ORNL AE3D sparse matrix artifacts under /Users/rogerio/local",
+            message=f"missing local ORNL AE3D sparse matrix artifacts under {EXTERNAL_ROOT}",
         )
     a_summary = ae3d_matrix_symmetry_summary(a_matrix)
     b_summary = ae3d_matrix_symmetry_summary(b_matrix)
@@ -1737,7 +1738,7 @@ def _gate_ae3d_public_matrix_eigenmode_parity() -> GateResult:
             status="skipped",
             metric=float("nan"),
             tolerance=tolerance,
-            message="missing local ORNL AE3D sparse matrix/eigenmode artifacts under /Users/rogerio/local",
+            message=f"missing local ORNL AE3D sparse matrix/eigenmode artifacts under {EXTERNAL_ROOT}",
         )
     parity = ae3d_matrix_eigenmode_parity(
         a_matrix_path=a_matrix,
@@ -1771,7 +1772,7 @@ def _gate_ae3d_public_dense_spectrum_parity() -> GateResult:
             status="skipped",
             metric=float("nan"),
             tolerance=tolerance,
-            message="missing local ORNL AE3D sparse matrix/eigenmode artifacts under /Users/rogerio/local",
+            message=f"missing local ORNL AE3D sparse matrix/eigenmode artifacts under {EXTERNAL_ROOT}",
         )
     parity = ae3d_dense_spectrum_parity(
         a_matrix_path=a_matrix,
@@ -1803,7 +1804,7 @@ def _gate_ae3d_public_global_mode_shape_parity() -> GateResult:
             status="skipped",
             metric=float("nan"),
             tolerance=tolerance,
-            message="missing local ORNL AE3D sparse matrix/eigenmode artifacts under /Users/rogerio/local",
+            message=f"missing local ORNL AE3D sparse matrix/eigenmode artifacts under {EXTERNAL_ROOT}",
         )
     parity = ae3d_global_mode_parity(
         a_matrix_path=a_matrix,
@@ -1834,7 +1835,7 @@ def _gate_ae3d_public_continuum_placement_parity() -> GateResult:
             status="skipped",
             metric=float("nan"),
             tolerance=tolerance,
-            message="missing local ORNL AE3D eigenmode or CTOK boozmn artifacts under /Users/rogerio/local",
+            message=f"missing local ORNL AE3D eigenmode or CTOK boozmn artifacts under {EXTERNAL_ROOT}",
         )
     parity = ae3d_continuum_placement_parity(
         egn_mode_path=egn_mode,
@@ -1958,8 +1959,8 @@ def _gate_landreman_paul_radial_sampling_convergence() -> GateResult:
     )
 
 
-def _gate_landreman_paul_vmec_jax_boozer_in_memory() -> GateResult:
-    gate_id = "landreman_paul_vmec_jax_boozer_in_memory"
+def _gate_landreman_paul_vmex_boozer_in_memory() -> GateResult:
+    gate_id = "landreman_paul_vmex_boozer_in_memory"
     tolerance = 1.0e-2
     case = landreman_paul_qa_lowres()
     if not case.vmec_input.exists():
@@ -1972,14 +1973,12 @@ def _gate_landreman_paul_vmec_jax_boozer_in_memory() -> GateResult:
         )
 
     try:
-        geometry = run_vmec_jax_fixed_boundary_boozer_geometry(
+        geometry = run_vmex_fixed_boundary_boozer_geometry(
             case.vmec_input,
             mboz=4,
             nboz=4,
             surfaces=(0.25, 0.5),
             max_iter=1,
-            theta_points=12,
-            zeta_points=4,
             jit=False,
         )
     except ImportError as exc:
@@ -2007,12 +2006,12 @@ def _gate_landreman_paul_vmec_jax_boozer_in_memory() -> GateResult:
         gate_id,
         metric,
         tolerance,
-        "one-iteration VMEC-JAX to Boozer/FAX in-memory smoke path gives a finite local 3-D continuum",
+        "one-iteration VMEX to Boozer/FAX in-memory smoke path gives a finite local 3-D continuum",
     )
 
 
-def _gate_landreman_paul_vmec_jax_boozer_truncation_convergence() -> GateResult:
-    gate_id = "landreman_paul_vmec_jax_boozer_truncation_convergence"
+def _gate_landreman_paul_vmex_boozer_truncation_convergence() -> GateResult:
+    gate_id = "landreman_paul_vmex_boozer_truncation_convergence"
     tolerance = 1.0e-2
     case = landreman_paul_qa_lowres()
     if not case.vmec_input.exists():
@@ -2025,7 +2024,7 @@ def _gate_landreman_paul_vmec_jax_boozer_truncation_convergence() -> GateResult:
         )
 
     try:
-        result = run_vmec_jax_boozer_truncation_convergence(
+        result = run_vmex_boozer_truncation_convergence(
             case.vmec_input,
             coarse_mboz=4,
             coarse_nboz=4,
@@ -2033,8 +2032,6 @@ def _gate_landreman_paul_vmec_jax_boozer_truncation_convergence() -> GateResult:
             reference_nboz=5,
             surfaces=(0.25, 0.5),
             max_iter=1,
-            theta_points=12,
-            zeta_points=4,
             jit=False,
         )
     except ImportError as exc:
@@ -2051,14 +2048,14 @@ def _gate_landreman_paul_vmec_jax_boozer_truncation_convergence() -> GateResult:
         result.max_metric,
         tolerance,
         (
-            "one-iteration Landreman-Paul VMEC-JAX bridge is stable between "
+            "one-iteration Landreman-Paul VMEX bridge is stable between "
             "(mboz,nboz)=(4,4) and (5,5) Boozer truncations"
         ),
     )
 
 
-def _gate_landreman_paul_vmec_jax_boozer_operator_angular_convergence() -> GateResult:
-    gate_id = "landreman_paul_vmec_jax_boozer_operator_angular_convergence"
+def _gate_landreman_paul_vmex_boozer_operator_angular_convergence() -> GateResult:
+    gate_id = "landreman_paul_vmex_boozer_operator_angular_convergence"
     tolerance = 5.0e-3
     case = landreman_paul_qa_lowres()
     if not case.vmec_input.exists():
@@ -2071,14 +2068,12 @@ def _gate_landreman_paul_vmec_jax_boozer_operator_angular_convergence() -> GateR
         )
 
     try:
-        geometry = run_vmec_jax_fixed_boundary_boozer_geometry(
+        geometry = run_vmex_fixed_boundary_boozer_geometry(
             case.vmec_input,
             mboz=5,
             nboz=5,
             surfaces=(0.25, 0.5),
             max_iter=1,
-            theta_points=12,
-            zeta_points=4,
             jit=False,
         )
     except ImportError as exc:
@@ -2101,12 +2096,12 @@ def _gate_landreman_paul_vmec_jax_boozer_operator_angular_convergence() -> GateR
         gate_id,
         result.max_metric,
         tolerance,
-        "live Landreman-Paul VMEC-JAX Boozer local 3-D operator is stable under angular quadrature refinement",
+        "live Landreman-Paul VMEX Boozer local 3-D operator is stable under angular quadrature refinement",
     )
 
 
-def _gate_landreman_paul_vmec_jax_solve_convergence() -> GateResult:
-    gate_id = "landreman_paul_vmec_jax_solve_convergence"
+def _gate_landreman_paul_vmex_solve_convergence() -> GateResult:
+    gate_id = "landreman_paul_vmex_solve_convergence"
     tolerance = 4.0e-2
     case = landreman_paul_qa_lowres()
     if case.wout is None or not case.vmec_input.exists() or not case.wout.exists():
@@ -2119,15 +2114,13 @@ def _gate_landreman_paul_vmec_jax_solve_convergence() -> GateResult:
         )
 
     try:
-        result = run_vmec_jax_boozer_solve_convergence(
+        result = run_vmex_boozer_solve_convergence(
             case.vmec_input,
             case.wout,
-            max_iters=(1, 6, 12, 24),
+            max_iters=(100, 200, 400, 800),
             mboz=5,
             nboz=5,
             surfaces=(0.25, 0.5),
-            theta_points=None,
-            zeta_points=None,
             jit=False,
         )
     except ImportError as exc:
@@ -2148,16 +2141,25 @@ def _gate_landreman_paul_vmec_jax_solve_convergence() -> GateResult:
         metric,
         tolerance,
         (
-            "Landreman-Paul VMEC-JAX residual ladder propagates to converging Boozer/FAX "
+            "Landreman-Paul VMEX residual ladder propagates to converging Boozer/FAX "
             f"field and continuum errors; residual ratio={result.residual_reduction_ratio:.3e}, "
             f"frequency-error ratio={result.frequency_error_reduction_ratio:.3e}"
         ),
     )
 
 
+# Converged re-solves move the poloidal-angle gauge that VMEC's m = 1 constraint
+# leaves free, while the implicit adjoint holds it fixed (vmex.core.implicit,
+# "Gradient checking solver-sensitive metrics").  Centered differences of
+# re-solves therefore match the adjoint to <= 5e-5 for boundary modes with
+# m = 0 or n = 0, and to 0.3-1.2% for m = 1, n != 0 (rc1-1, zs1-1).
+RESOLVE_GRADIENT_TOLERANCE = 1.0e-4
+M1_GAUGE_GRADIENT_TOLERANCE = 1.0e-2
+
+
 def _gate_landreman_paul_vmec_boundary_alfven_gradient() -> GateResult:
     gate_id = "landreman_paul_vmec_boundary_alfven_gradient"
-    tolerance = 5.0e-5
+    tolerance = RESOLVE_GRADIENT_TOLERANCE
     case = landreman_paul_qa_lowres()
     if not case.vmec_input.exists():
         return GateResult(
@@ -2176,7 +2178,6 @@ def _gate_landreman_paul_vmec_boundary_alfven_gradient() -> GateResult:
         nboz=3,
         theta_points=8,
         zeta_points=8,
-        vmec_max_iter=4,
     )
     try:
         result = validate_vmec_boundary_alfven_gradient(
@@ -2202,7 +2203,7 @@ def _gate_landreman_paul_vmec_boundary_alfven_gradient() -> GateResult:
         tolerance,
         (
             "Landreman-Paul QA VMEC boundary gradient agrees with centered finite differences "
-            "through vmec_jax -> booz_xform_jax -> FAX; "
+            "through vmex -> booz_xform_jax -> FAX; "
             f"objective {float(result.objective):.3e} -> {float(result.descent_objective):.3e}"
         ),
     )
@@ -2210,7 +2211,7 @@ def _gate_landreman_paul_vmec_boundary_alfven_gradient() -> GateResult:
 
 def _gate_landreman_paul_vmec_boundary_gradient_convergence() -> GateResult:
     gate_id = "landreman_paul_vmec_boundary_gradient_convergence"
-    tolerance = 2.0e-5
+    tolerance = RESOLVE_GRADIENT_TOLERANCE
     case = landreman_paul_qa_lowres()
     if not case.vmec_input.exists():
         return GateResult(
@@ -2229,14 +2230,13 @@ def _gate_landreman_paul_vmec_boundary_gradient_convergence() -> GateResult:
         nboz=3,
         theta_points=8,
         zeta_points=8,
-        vmec_max_iter=2,
     )
     try:
         result = run_vmec_boundary_alfven_gradient_convergence(
             settings,
             levels=(
-                ("vmec_iter2", {"vmec_max_iter": 2}),
-                ("vmec_iter4", {"vmec_max_iter": 4}),
+                ("ftol1e-10", {"vmec_ftol": 1.0e-10}),
+                ("ftol1e-12", {"vmec_ftol": 1.0e-12}),
             ),
             finite_difference_step=1.0e-4,
             descent_step=1.0e-3,
@@ -2261,7 +2261,7 @@ def _gate_landreman_paul_vmec_boundary_gradient_convergence() -> GateResult:
         tolerance,
         (
             "Landreman-Paul QA VMEC-boundary Alfvén gradient remains stable "
-            f"from 2 to 4 differentiable VMEC steps; frequency drift="
+            f"from VMEX force tolerance 1e-10 to 1e-12; frequency drift="
             f"{result.max_frequency_delta_to_reference_hz:.3e} Hz"
         ),
     )
@@ -2288,19 +2288,18 @@ def _gate_landreman_paul_vmec_boundary_boozer_gradient_convergence() -> GateResu
         nboz=3,
         theta_points=8,
         zeta_points=8,
-        vmec_max_iter=4,
     )
     try:
         result = run_vmec_boundary_alfven_gradient_convergence(
             settings,
             levels=(
                 (
-                    "vmec4_boozer3_grid8",
-                    {"vmec_max_iter": 4, "mboz": 3, "nboz": 3, "theta_points": 8, "zeta_points": 8},
+                    "boozer3_grid8",
+                    {"mboz": 3, "nboz": 3, "theta_points": 8, "zeta_points": 8},
                 ),
                 (
-                    "vmec4_boozer4_grid10",
-                    {"vmec_max_iter": 4, "mboz": 4, "nboz": 4, "theta_points": 10, "zeta_points": 10},
+                    "boozer4_grid10",
+                    {"mboz": 4, "nboz": 4, "theta_points": 10, "zeta_points": 10},
                 ),
             ),
             finite_difference_step=1.0e-4,
@@ -2331,7 +2330,7 @@ def _gate_landreman_paul_vmec_boundary_boozer_gradient_convergence() -> GateResu
         tolerance,
         (
             "Landreman-Paul QA VMEC-boundary gradient is stable under "
-            "Boozer truncation and angular-grid refinement at fixed VMEC iteration; "
+            "Boozer truncation and angular-grid refinement at fixed VMEX resolution; "
             f"max relative drift={metric:.3e}"
         ),
     )
@@ -2358,7 +2357,6 @@ def _gate_landreman_paul_vmec_boundary_surface_gradient_convergence() -> GateRes
         nboz=3,
         theta_points=8,
         zeta_points=8,
-        vmec_max_iter=4,
     )
     try:
         result = run_vmec_boundary_alfven_gradient_convergence(
@@ -2403,7 +2401,7 @@ def _gate_landreman_paul_vmec_boundary_surface_gradient_convergence() -> GateRes
 
 def _gate_landreman_paul_vmec_boundary_multiparameter_gradient() -> GateResult:
     gate_id = "landreman_paul_vmec_boundary_multiparameter_gradient"
-    tolerance = 5.0e-5
+    tolerance = RESOLVE_GRADIENT_TOLERANCE
     case = landreman_paul_qa_lowres()
     if not case.vmec_input.exists():
         return GateResult(
@@ -2422,7 +2420,6 @@ def _gate_landreman_paul_vmec_boundary_multiparameter_gradient() -> GateResult:
         nboz=3,
         theta_points=8,
         zeta_points=8,
-        vmec_max_iter=4,
     )
     try:
         result = validate_vmec_boundary_alfven_gradient(
@@ -2450,7 +2447,7 @@ def _gate_landreman_paul_vmec_boundary_multiparameter_gradient() -> GateResult:
         tolerance,
         (
             "Landreman-Paul QA two-parameter VMEC boundary gradient agrees "
-            "with centered finite differences through vmec_jax -> booz_xform_jax -> FAX; "
+            "with centered finite differences through vmex -> booz_xform_jax -> FAX; "
             f"parameters={result.parameter_names}"
         ),
     )
@@ -2458,7 +2455,7 @@ def _gate_landreman_paul_vmec_boundary_multiparameter_gradient() -> GateResult:
 
 def _gate_landreman_paul_vmec_boundary_six_parameter_gradient() -> GateResult:
     gate_id = "landreman_paul_vmec_boundary_six_parameter_gradient"
-    tolerance = 2.0e-5
+    tolerance = M1_GAUGE_GRADIENT_TOLERANCE
     case = landreman_paul_qa_lowres()
     if not case.vmec_input.exists():
         return GateResult(
@@ -2478,7 +2475,6 @@ def _gate_landreman_paul_vmec_boundary_six_parameter_gradient() -> GateResult:
         nboz=3,
         theta_points=8,
         zeta_points=8,
-        vmec_max_iter=4,
     )
     try:
         result = validate_vmec_boundary_alfven_gradient(
@@ -2506,7 +2502,8 @@ def _gate_landreman_paul_vmec_boundary_six_parameter_gradient() -> GateResult:
         tolerance,
         (
             "Landreman-Paul QA six-parameter VMEC boundary gradient agrees "
-            "with centered finite differences through vmec_jax -> booz_xform_jax -> FAX; "
+            "with centered finite differences through vmex -> booz_xform_jax -> FAX "
+            "up to the m=1 angle gauge of the rc1-1/zs1-1 entries; "
             f"relative error={metric:.3e}"
         ),
     )
@@ -2514,7 +2511,7 @@ def _gate_landreman_paul_vmec_boundary_six_parameter_gradient() -> GateResult:
 
 def _gate_landreman_paul_vmec_boundary_frequency_jacobian() -> GateResult:
     gate_id = "landreman_paul_vmec_boundary_frequency_jacobian"
-    tolerance = 2.0e-5
+    tolerance = M1_GAUGE_GRADIENT_TOLERANCE
     case = landreman_paul_qa_lowres()
     if not case.vmec_input.exists():
         return GateResult(
@@ -2534,7 +2531,6 @@ def _gate_landreman_paul_vmec_boundary_frequency_jacobian() -> GateResult:
         nboz=3,
         theta_points=8,
         zeta_points=8,
-        vmec_max_iter=4,
     )
     try:
         result = validate_vmec_boundary_frequency_jacobian(
@@ -2562,7 +2558,8 @@ def _gate_landreman_paul_vmec_boundary_frequency_jacobian() -> GateResult:
         tolerance,
         (
             "Landreman-Paul QA six-parameter VMEC boundary frequency Jacobian "
-            "and VJP pullback agree with centered finite differences; "
+            "and VJP pullback agree with centered finite differences "
+            "up to the m=1 angle gauge of the rc1-1/zs1-1 columns; "
             f"jacobian={result.relative_jacobian_error:.3e}, "
             f"pullback={result.relative_pullback_error:.3e}"
         ),
@@ -2984,7 +2981,7 @@ def registered_validation_gates() -> tuple[ValidationGate, ...]:
             tolerance=5.0e-9,
             citation="In-memory VMEC wout objects should produce the same Boozer harmonics as file-backed BOOZ_XFORM/booz_xform_jax references",
             command="python -m pytest -m requires_booz_xform_jax tests/test_boozer.py tests/test_validation_registry.py",
-            tags=("boozer", "jacobian", "boozmn", "booz_xform_jax", "vmec_jax", "in-memory"),
+            tags=("boozer", "jacobian", "boozmn", "booz_xform_jax", "vmex", "in-memory"),
             _runner=_gate_booz_xform_jax_in_memory_geometry_adapter,
         ),
         ValidationGate(
@@ -3181,41 +3178,41 @@ def registered_validation_gates() -> tuple[ValidationGate, ...]:
             quantity="finite/positive metric-field check",
             tolerance=0.0,
             citation="Landreman & Paul, Phys. Rev. Lett. 128, 035001 (2022), arXiv:2108.03711",
-            command="python -m pytest -m requires_vmec_jax tests/test_metric.py tests/test_validation_registry.py",
+            command="python -m pytest -m requires_vmex tests/test_metric.py tests/test_validation_registry.py",
             tags=("vmec", "landreman-paul", "adapter"),
             _runner=_gate_landreman_paul_adapter_smoke,
         ),
         ValidationGate(
-            gate_id="landreman_paul_vmec_jax_boozer_in_memory",
-            title="Landreman-Paul QA vmec_jax-to-Boozer bridge",
+            gate_id="landreman_paul_vmex_boozer_in_memory",
+            title="Landreman-Paul QA vmex-to-Boozer bridge",
             layer="adapter",
             quantity="relative Boozer Jacobian identity error",
             tolerance=1.0e-2,
             citation=(
                 "Landreman & Paul, Phys. Rev. Lett. 128, 035001 (2022); "
-                "one-iteration vmec_jax/booz_xform_jax/FAX in-memory integration gate"
+                "one-iteration vmex/booz_xform_jax/FAX in-memory integration gate"
             ),
-            command="python -m pytest -m requires_vmec_jax tests/test_boozer.py tests/test_validation_registry.py",
-            tags=("vmec_jax", "booz_xform_jax", "landreman-paul", "adapter", "boozer", "in-memory"),
-            _runner=_gate_landreman_paul_vmec_jax_boozer_in_memory,
+            command="python -m pytest -m requires_vmex tests/test_boozer.py tests/test_validation_registry.py",
+            tags=("vmex", "booz_xform_jax", "landreman-paul", "adapter", "boozer", "in-memory"),
+            _runner=_gate_landreman_paul_vmex_boozer_in_memory,
         ),
         ValidationGate(
-            gate_id="landreman_paul_vmec_jax_boozer_truncation_convergence",
-            title="Landreman-Paul QA vmec_jax Boozer truncation convergence",
+            gate_id="landreman_paul_vmex_boozer_truncation_convergence",
+            title="Landreman-Paul QA vmex Boozer truncation convergence",
             layer="convergence",
             quantity="maximum field/frequency/Jacobian truncation error",
             tolerance=1.0e-2,
             citation=(
                 "Landreman & Paul, Phys. Rev. Lett. 128, 035001 (2022); "
-                "Boozer truncation convergence gate on the live vmec_jax/booz_xform_jax/FAX bridge"
+                "Boozer truncation convergence gate on the live vmex/booz_xform_jax/FAX bridge"
             ),
-            command="python -m pytest -m requires_vmec_jax tests/test_boozer.py tests/test_validation_registry.py",
-            tags=("vmec_jax", "booz_xform_jax", "landreman-paul", "convergence", "boozer", "in-memory"),
-            _runner=_gate_landreman_paul_vmec_jax_boozer_truncation_convergence,
+            command="python -m pytest -m requires_vmex tests/test_boozer.py tests/test_validation_registry.py",
+            tags=("vmex", "booz_xform_jax", "landreman-paul", "convergence", "boozer", "in-memory"),
+            _runner=_gate_landreman_paul_vmex_boozer_truncation_convergence,
         ),
         ValidationGate(
-            gate_id="landreman_paul_vmec_jax_boozer_operator_angular_convergence",
-            title="Landreman-Paul QA vmec_jax Boozer operator angular convergence",
+            gate_id="landreman_paul_vmex_boozer_operator_angular_convergence",
+            title="Landreman-Paul QA vmex Boozer operator angular convergence",
             layer="convergence",
             quantity="relative local 3-D frequency error and Hermitian error",
             tolerance=5.0e-3,
@@ -3223,37 +3220,37 @@ def registered_validation_gates() -> tuple[ValidationGate, ...]:
                 "Landreman & Paul, Phys. Rev. Lett. 128, 035001 (2022); "
                 "Boozer local-operator angular quadrature convergence gate on the live bridge"
             ),
-            command="python -m pytest -m requires_vmec_jax tests/test_boozer.py tests/test_validation_registry.py",
-            tags=("vmec_jax", "booz_xform_jax", "landreman-paul", "convergence", "boozer", "operator"),
-            _runner=_gate_landreman_paul_vmec_jax_boozer_operator_angular_convergence,
+            command="python -m pytest -m requires_vmex tests/test_boozer.py tests/test_validation_registry.py",
+            tags=("vmex", "booz_xform_jax", "landreman-paul", "convergence", "boozer", "operator"),
+            _runner=_gate_landreman_paul_vmex_boozer_operator_angular_convergence,
         ),
         ValidationGate(
-            gate_id="landreman_paul_vmec_jax_solve_convergence",
-            title="Landreman-Paul QA vmec_jax solve convergence ladder",
+            gate_id="landreman_paul_vmex_solve_convergence",
+            title="Landreman-Paul QA vmex solve convergence ladder",
             layer="convergence",
             quantity="final VMEC residual ratio and Boozer/FAX reference error",
             tolerance=4.0e-2,
             citation=(
                 "Landreman & Paul, Phys. Rev. Lett. 128, 035001 (2022); "
-                "VMEC-JAX residual convergence propagated through booz_xform_jax and FAX local 3-D continuum"
+                "VMEX residual convergence propagated through booz_xform_jax and FAX local 3-D continuum"
             ),
-            command="python -m pytest -m requires_vmec_jax tests/test_validation_registry.py",
-            tags=("vmec_jax", "booz_xform_jax", "landreman-paul", "convergence", "boozer", "solve"),
-            _runner=_gate_landreman_paul_vmec_jax_solve_convergence,
+            command="python -m pytest -m requires_vmex tests/test_validation_registry.py",
+            tags=("vmex", "booz_xform_jax", "landreman-paul", "convergence", "boozer", "solve"),
+            _runner=_gate_landreman_paul_vmex_solve_convergence,
         ),
         ValidationGate(
             gate_id="landreman_paul_vmec_boundary_alfven_gradient",
             title="Landreman-Paul QA VMEC-boundary Alfvén gradient",
             layer="differentiability",
             quantity="relative AD/finite-difference objective-gradient error",
-            tolerance=5.0e-5,
+            tolerance=RESOLVE_GRADIENT_TOLERANCE,
             citation=(
                 "Landreman & Paul, Phys. Rev. Lett. 128, 035001 (2022); "
-                "end-to-end vmec_jax differentiable fixed-boundary solve, "
+                "end-to-end vmex differentiable fixed-boundary solve, "
                 "booz_xform_jax Boozer harmonics, and FAX global Alfvén objective"
             ),
-            command="python -m pytest -m requires_vmec_jax tests/test_vmec_boozer_design.py tests/test_validation_registry.py",
-            tags=("vmec_jax", "booz_xform_jax", "landreman-paul", "gradient", "optimization", "boozer"),
+            command="python -m pytest -m requires_vmex tests/test_vmec_boozer_design.py tests/test_validation_registry.py",
+            tags=("vmex", "booz_xform_jax", "landreman-paul", "gradient", "optimization", "boozer"),
             _runner=_gate_landreman_paul_vmec_boundary_alfven_gradient,
         ),
         ValidationGate(
@@ -3261,13 +3258,13 @@ def registered_validation_gates() -> tuple[ValidationGate, ...]:
             title="Landreman-Paul QA VMEC-boundary gradient convergence",
             layer="differentiability",
             quantity="maximum gradient parity and refinement drift",
-            tolerance=2.0e-5,
+            tolerance=RESOLVE_GRADIENT_TOLERANCE,
             citation=(
                 "Landreman & Paul, Phys. Rev. Lett. 128, 035001 (2022); "
-                "VMEC iteration convergence of the end-to-end vmec_jax, booz_xform_jax, and FAX gradient"
+                "VMEX force-tolerance convergence of the end-to-end vmex, booz_xform_jax, and FAX gradient"
             ),
-            command="python -m pytest -m requires_vmec_jax tests/test_vmec_boozer_design.py tests/test_validation_registry.py",
-            tags=("vmec_jax", "booz_xform_jax", "landreman-paul", "gradient", "convergence", "optimization"),
+            command="python -m pytest -m requires_vmex tests/test_vmec_boozer_design.py tests/test_validation_registry.py",
+            tags=("vmex", "booz_xform_jax", "landreman-paul", "gradient", "convergence", "optimization"),
             _runner=_gate_landreman_paul_vmec_boundary_gradient_convergence,
         ),
         ValidationGate(
@@ -3278,10 +3275,10 @@ def registered_validation_gates() -> tuple[ValidationGate, ...]:
             tolerance=4.0e-2,
             citation=(
                 "Landreman & Paul, Phys. Rev. Lett. 128, 035001 (2022); "
-                "Boozer truncation and angular-grid convergence of the vmec_jax, booz_xform_jax, and FAX gradient"
+                "Boozer truncation and angular-grid convergence of the vmex, booz_xform_jax, and FAX gradient"
             ),
-            command="python -m pytest -m requires_vmec_jax tests/test_validation_registry.py",
-            tags=("vmec_jax", "booz_xform_jax", "landreman-paul", "gradient", "convergence", "boozer"),
+            command="python -m pytest -m requires_vmex tests/test_validation_registry.py",
+            tags=("vmex", "booz_xform_jax", "landreman-paul", "gradient", "convergence", "boozer"),
             _runner=_gate_landreman_paul_vmec_boundary_boozer_gradient_convergence,
         ),
         ValidationGate(
@@ -3292,10 +3289,10 @@ def registered_validation_gates() -> tuple[ValidationGate, ...]:
             tolerance=4.0e-2,
             citation=(
                 "Landreman & Paul, Phys. Rev. Lett. 128, 035001 (2022); "
-                "radial-surface convergence of the end-to-end vmec_jax, booz_xform_jax, and FAX gradient"
+                "radial-surface convergence of the end-to-end vmex, booz_xform_jax, and FAX gradient"
             ),
-            command="python -m pytest -m requires_vmec_jax tests/test_validation_registry.py",
-            tags=("vmec_jax", "booz_xform_jax", "landreman-paul", "gradient", "convergence", "radial"),
+            command="python -m pytest -m requires_vmex tests/test_validation_registry.py",
+            tags=("vmex", "booz_xform_jax", "landreman-paul", "gradient", "convergence", "radial"),
             _runner=_gate_landreman_paul_vmec_boundary_surface_gradient_convergence,
         ),
         ValidationGate(
@@ -3303,13 +3300,13 @@ def registered_validation_gates() -> tuple[ValidationGate, ...]:
             title="Landreman-Paul QA VMEC-boundary multiparameter gradient",
             layer="differentiability",
             quantity="relative AD/finite-difference two-parameter gradient error",
-            tolerance=5.0e-5,
+            tolerance=RESOLVE_GRADIENT_TOLERANCE,
             citation=(
                 "Landreman & Paul, Phys. Rev. Lett. 128, 035001 (2022); "
-                "two-boundary-coefficient gradient through vmec_jax, booz_xform_jax, and FAX"
+                "two-boundary-coefficient gradient through vmex, booz_xform_jax, and FAX"
             ),
-            command="python -m pytest -m requires_vmec_jax tests/test_vmec_boozer_design.py tests/test_validation_registry.py",
-            tags=("vmec_jax", "booz_xform_jax", "landreman-paul", "gradient", "multiparameter", "optimization"),
+            command="python -m pytest -m requires_vmex tests/test_vmec_boozer_design.py tests/test_validation_registry.py",
+            tags=("vmex", "booz_xform_jax", "landreman-paul", "gradient", "multiparameter", "optimization"),
             _runner=_gate_landreman_paul_vmec_boundary_multiparameter_gradient,
         ),
         ValidationGate(
@@ -3317,13 +3314,13 @@ def registered_validation_gates() -> tuple[ValidationGate, ...]:
             title="Landreman-Paul QA VMEC-boundary six-parameter gradient",
             layer="differentiability",
             quantity="relative AD/finite-difference six-parameter gradient error",
-            tolerance=2.0e-5,
+            tolerance=M1_GAUGE_GRADIENT_TOLERANCE,
             citation=(
                 "Landreman & Paul, Phys. Rev. Lett. 128, 035001 (2022); "
-                "six-boundary-coefficient gradient through vmec_jax, booz_xform_jax, and FAX"
+                "six-boundary-coefficient gradient through vmex, booz_xform_jax, and FAX"
             ),
-            command="python -m pytest -m requires_vmec_jax tests/test_vmec_boozer_design.py tests/test_validation_registry.py",
-            tags=("vmec_jax", "booz_xform_jax", "landreman-paul", "gradient", "multiparameter", "optimization"),
+            command="python -m pytest -m requires_vmex tests/test_vmec_boozer_design.py tests/test_validation_registry.py",
+            tags=("vmex", "booz_xform_jax", "landreman-paul", "gradient", "multiparameter", "optimization"),
             _runner=_gate_landreman_paul_vmec_boundary_six_parameter_gradient,
         ),
         ValidationGate(
@@ -3331,13 +3328,13 @@ def registered_validation_gates() -> tuple[ValidationGate, ...]:
             title="Landreman-Paul QA VMEC-boundary frequency Jacobian",
             layer="differentiability",
             quantity="maximum relative frequency-Jacobian and VJP-pullback error",
-            tolerance=2.0e-5,
+            tolerance=M1_GAUGE_GRADIENT_TOLERANCE,
             citation=(
                 "Landreman & Paul, Phys. Rev. Lett. 128, 035001 (2022); "
-                "vector-frequency Jacobian and pullback through vmec_jax, booz_xform_jax, and FAX"
+                "vector-frequency Jacobian and pullback through vmex, booz_xform_jax, and FAX"
             ),
-            command="python -m pytest -m requires_vmec_jax tests/test_vmec_boozer_design.py tests/test_validation_registry.py",
-            tags=("vmec_jax", "booz_xform_jax", "landreman-paul", "jacobian", "pullback", "optimization"),
+            command="python -m pytest -m requires_vmex tests/test_vmec_boozer_design.py tests/test_validation_registry.py",
+            tags=("vmex", "booz_xform_jax", "landreman-paul", "jacobian", "pullback", "optimization"),
             _runner=_gate_landreman_paul_vmec_boundary_frequency_jacobian,
         ),
         ValidationGate(
@@ -3347,7 +3344,7 @@ def registered_validation_gates() -> tuple[ValidationGate, ...]:
             quantity="p95 generalized-eigen residual",
             tolerance=1.0e-4,
             citation="Landreman & Paul, Phys. Rev. Lett. 128, 035001 (2022), arXiv:2108.03711",
-            command="python -m pytest -m requires_vmec_jax tests/test_validation_registry.py",
+            command="python -m pytest -m requires_vmex tests/test_validation_registry.py",
             tags=("vmec", "landreman-paul", "adapter", "continuum"),
             _runner=_gate_landreman_paul_continuum_finite,
         ),
@@ -3358,7 +3355,7 @@ def registered_validation_gates() -> tuple[ValidationGate, ...]:
             quantity="relative branch error under radial sampling refinement",
             tolerance=8.0e-2,
             citation="Landreman & Paul, Phys. Rev. Lett. 128, 035001 (2022), arXiv:2108.03711; adapter sampling convergence check",
-            command="python -m pytest -m requires_vmec_jax tests/test_validation_registry.py",
+            command="python -m pytest -m requires_vmex tests/test_validation_registry.py",
             tags=("vmec", "landreman-paul", "adapter", "convergence"),
             _runner=_gate_landreman_paul_radial_sampling_convergence,
         ),

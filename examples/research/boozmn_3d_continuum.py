@@ -9,6 +9,7 @@ from pathlib import Path
 import jax.numpy as jnp
 import numpy as np
 
+from fax.reference_cases import EXTERNAL_ROOT
 from fax.boozer import (
     boozer_3d_continuum_frequencies_hz,
     boozer_embedding_jacobian_shape_error,
@@ -18,7 +19,7 @@ from fax.boozer import (
 )
 
 
-DEFAULT_BOOZMN = Path("/Users/rogerio/local/booz_xform_jax/tests/test_files/boozmn_LandremanSenguptaPlunk_section5p3.nc")
+DEFAULT_BOOZMN = EXTERNAL_ROOT / "booz_xform_jax/tests/test_files/boozmn_LandremanSenguptaPlunk_section5p3.nc"
 
 
 def _write_figure(output_dir: Path, stem: str, geometry, grid, frequencies_hz: np.ndarray) -> list[str]:

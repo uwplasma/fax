@@ -12,6 +12,7 @@ import numpy as np
 
 jax.config.update("jax_enable_x64", True)
 
+from fax.reference_cases import portable_paths, EXTERNAL_ROOT  # noqa: E402
 from fax.cross_code import (  # noqa: E402
     ae3d_dense_spectrum_parity,
     ae3d_eigenvalue_residual_summary,
@@ -25,8 +26,8 @@ from fax.cross_code import (  # noqa: E402
     stellgap_spec_postprocessed_continuum,
 )
 
-DEFAULT_STELLGAP_DIR = Path("/Users/rogerio/local/Stellgap_test_problem")
-DEFAULT_AE3D_DIR = Path("/Users/rogerio/local/AE3D_test_problem")
+DEFAULT_STELLGAP_DIR = EXTERNAL_ROOT / "Stellgap_test_problem"
+DEFAULT_AE3D_DIR = EXTERNAL_ROOT / "AE3D_test_problem"
 
 
 def build_dashboard(stellgap_dir: Path, ae3d_dir: Path, output_dir: Path) -> dict[str, object]:
@@ -161,7 +162,7 @@ def build_dashboard(stellgap_dir: Path, ae3d_dir: Path, output_dir: Path) -> dic
         },
         "figures": paths,
     }
-    (output_dir / "external_code_artifact_metrics.json").write_text(json.dumps(metrics, indent=2, sort_keys=True), encoding="utf-8")
+    (output_dir / "external_code_artifact_metrics.json").write_text(json.dumps(portable_paths(metrics), indent=2, sort_keys=True), encoding="utf-8")
     return metrics
 
 
@@ -172,7 +173,7 @@ def main() -> int:
     parser.add_argument("--output-dir", default="outputs/external_code_artifacts", help="Output directory.")
     args = parser.parse_args()
     metrics = build_dashboard(Path(args.stellgap_dir), Path(args.ae3d_dir), Path(args.output_dir))
-    print(json.dumps(metrics, indent=2, sort_keys=True))
+    print(json.dumps(portable_paths(metrics), indent=2, sort_keys=True))
     return 0
 
 

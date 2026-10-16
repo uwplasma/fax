@@ -32,8 +32,8 @@ from fax.boozer import (
     read_boozmn_geometry,
     reconstruct_boozer_field,
     run_booz_xform_jax_geometry_from_wout_data,
-    run_vmec_jax_boozer_solve_convergence,
-    run_vmec_jax_fixed_boundary_wout_data,
+    run_vmex_boozer_solve_convergence,
+    run_vmex_fixed_boundary_wout_data,
     straight_field_line_phase_error,
 )
 from fax.config import EquilibriumConfig, FaxConfig, GridConfig, RunConfig
@@ -72,7 +72,7 @@ from fax.plotting import (
     plot_convergence_artifacts,
     plot_global_eigenmode_artifacts,
 )
-from fax.reference_cases import landreman_paul_qa_lowres
+from fax.reference_cases import portable_paths, EXTERNAL_ROOT, landreman_paul_qa_lowres
 from fax.units import PROTON_MASS
 from fax.workflows import run_benchmark, run_continuum, run_convergence, run_global_eigenmodes
 from fax.validation import registered_validation_gates, run_validation_suite
@@ -652,7 +652,7 @@ def generate_boozer_jacobian_identity(output_dir: Path) -> list[Path]:
 def generate_boozmn_3d_geometry_operator(output_dir: Path) -> list[Path]:
     """Generate a real-boozmn geometry and local 3-D continuum figure."""
     plt = _setup_matplotlib()
-    path = Path("/Users/rogerio/local/booz_xform_jax/tests/test_files/boozmn_LandremanSenguptaPlunk_section5p3.nc")
+    path = EXTERNAL_ROOT / "booz_xform_jax/tests/test_files/boozmn_LandremanSenguptaPlunk_section5p3.nc"
     if not path.exists():
         raise FileNotFoundError(f"booz_xform_jax boozmn fixture not found: {path}")
 
@@ -739,7 +739,7 @@ def generate_boozmn_3d_geometry_operator(output_dir: Path) -> list[Path]:
 def generate_boozmn_global_3d_eigenmodes(output_dir: Path) -> list[Path]:
     """Generate a real-boozmn global radial 3-D eigenmode figure."""
     plt = _setup_matplotlib()
-    path = Path("/Users/rogerio/local/booz_xform_jax/tests/test_files/boozmn_LandremanSenguptaPlunk_section5p3.nc")
+    path = EXTERNAL_ROOT / "booz_xform_jax/tests/test_files/boozmn_LandremanSenguptaPlunk_section5p3.nc"
     if not path.exists():
         raise FileNotFoundError(f"booz_xform_jax boozmn fixture not found: {path}")
 
@@ -814,8 +814,8 @@ def generate_boozmn_global_3d_eigenmodes(output_dir: Path) -> list[Path]:
 
 def generate_stellgap_ctok_comparison(output_dir: Path) -> list[Path]:
     """Generate the STELLGAP CTOK comparison dashboard when local artifacts exist."""
-    boozmn = Path("/Users/rogerio/local/Stellgap_test_inputs/boozmn_ctok.nc")
-    alfven_post = Path("/Users/rogerio/local/Stellgap_test_problem/alfven_post")
+    boozmn = EXTERNAL_ROOT / "Stellgap_test_inputs/boozmn_ctok.nc"
+    alfven_post = EXTERNAL_ROOT / "Stellgap_test_problem/alfven_post"
     if not boozmn.exists() or not alfven_post.exists():
         return []
     plt = _setup_matplotlib()
@@ -869,8 +869,8 @@ def generate_stellgap_ctok_comparison(output_dir: Path) -> list[Path]:
 
 def generate_external_code_artifact_dashboard(output_dir: Path) -> list[Path]:
     """Generate artifact-level STELLGAP/AE3D parity diagnostics."""
-    stellgap_dir = Path("/Users/rogerio/local/Stellgap_test_problem")
-    ae3d_dir = Path("/Users/rogerio/local/AE3D_test_problem")
+    stellgap_dir = EXTERNAL_ROOT / "Stellgap_test_problem"
+    ae3d_dir = EXTERNAL_ROOT / "AE3D_test_problem"
     alfven_spec = stellgap_dir / "alfven_spec"
     alfven_post = stellgap_dir / "alfven_post"
     omega2_path = ae3d_dir / "omega2.dat"
@@ -1015,7 +1015,7 @@ def generate_external_code_artifact_dashboard(output_dir: Path) -> list[Path]:
         },
     }
     (output_dir / "external_code_artifact_metrics.json").write_text(
-        json.dumps(metrics, indent=2, sort_keys=True) + "\n",
+        json.dumps(portable_paths(metrics), indent=2, sort_keys=True) + "\n",
         encoding="utf-8",
     )
     return paths
@@ -1068,7 +1068,7 @@ def generate_global_eigenmode_artifact_dashboard(output_dir: Path) -> list[Path]
 
 def generate_boozmn_global_eigenmode_artifact_dashboard(output_dir: Path) -> list[Path]:
     """Generate a dashboard from the TOML/CLI real-boozmn global workflow path."""
-    path = Path("/Users/rogerio/local/booz_xform_jax/tests/test_files/boozmn_LandremanSenguptaPlunk_section5p3.nc")
+    path = EXTERNAL_ROOT / "booz_xform_jax/tests/test_files/boozmn_LandremanSenguptaPlunk_section5p3.nc"
     if not path.exists():
         raise FileNotFoundError(f"booz_xform_jax boozmn fixture not found: {path}")
 
@@ -1095,7 +1095,7 @@ def generate_workflow_diagram(output_dir: Path) -> list[Path]:
     ax.axis("off")
 
     boxes = [
-        ("Inputs", "TOML case\nVMEC wout / vmec_jax\nprofiles\nmode family", 0.04, 0.55, "#e8f1fb"),
+        ("Inputs", "TOML case\nVMEC wout / vmex\nprofiles\nmode family", 0.04, 0.55, "#e8f1fb"),
         ("Adapters", "EquilibriumGeometry\nMetricGeometry\nBoozer spectra", 0.28, 0.55, "#e9f7ef"),
         ("Operators", "continuum branches\nK(s), M(s)\nradial modes", 0.52, 0.55, "#fff4df"),
         ("Outputs", "frequencies\nmode labels\ngaps, sensitivities\nfigures, metrics", 0.76, 0.55, "#f4ecfb"),
@@ -1289,17 +1289,15 @@ def generate_landreman_convergence_dashboard(output_dir: Path) -> list[Path]:
 
 
 def generate_vmec_boozer_bridge_convergence(output_dir: Path) -> list[Path]:
-    """Generate convergence evidence for the live VMEC-JAX/Boozer bridge."""
+    """Generate convergence evidence for the live VMEX/Boozer bridge."""
     plt = _setup_matplotlib()
     case = landreman_paul_qa_lowres()
     if not case.vmec_input.exists():
         raise FileNotFoundError(f"Landreman-Paul QA VMEC input not found: {case.vmec_input}")
 
-    wout = run_vmec_jax_fixed_boundary_wout_data(
+    wout = run_vmex_fixed_boundary_wout_data(
         case.vmec_input,
         max_iter=1,
-        theta_points=12,
-        zeta_points=4,
     )
     truncations = [(2, 2), (3, 3), (4, 4), (5, 5)]
     geometries = [
@@ -1400,28 +1398,26 @@ def generate_vmec_boozer_bridge_convergence(output_dir: Path) -> list[Path]:
     ax.set_ylim(bottom=0.0)
     ax.legend(fontsize=7, ncol=2)
 
-    fig.suptitle("Live Landreman-Paul VMEC-JAX to Boozer bridge convergence smoke test", fontsize=12, weight="bold")
+    fig.suptitle("Live Landreman-Paul VMEX to Boozer bridge convergence smoke test", fontsize=12, weight="bold")
     paths = _save_figure(fig, output_dir, "vmec_boozer_bridge_convergence")
     plt.close(fig)
     return paths
 
 
-def generate_vmec_jax_solve_convergence(output_dir: Path) -> list[Path]:
+def generate_vmex_solve_convergence(output_dir: Path) -> list[Path]:
     """Generate VMEC residual convergence propagated through Boozer/FAX."""
     plt = _setup_matplotlib()
     case = landreman_paul_qa_lowres()
     if not case.vmec_input.exists() or not case.wout.exists():
         raise FileNotFoundError(f"Landreman-Paul QA VMEC input/reference wout not found: {case.missing_paths()}")
 
-    result = run_vmec_jax_boozer_solve_convergence(
+    result = run_vmex_boozer_solve_convergence(
         case.vmec_input,
         case.wout,
-        max_iters=(1, 6, 12, 24),
+        max_iters=(100, 200, 400, 800),
         mboz=5,
         nboz=5,
         surfaces=(0.25, 0.5),
-        theta_points=None,
-        zeta_points=None,
         jit=False,
     )
     max_iters = np.asarray(result.max_iters)
@@ -1477,25 +1473,23 @@ def generate_vmec_jax_solve_convergence(output_dir: Path) -> list[Path]:
         bbox={"facecolor": "white", "edgecolor": "#bbbbbb", "boxstyle": "round,pad=0.25"},
     )
 
-    fig.suptitle("Landreman-Paul VMEC-JAX solve convergence through Boozer/FAX", fontsize=12, weight="bold")
-    paths = _save_figure(fig, output_dir, "vmec_jax_solve_convergence")
+    fig.suptitle("Landreman-Paul VMEX solve convergence through Boozer/FAX", fontsize=12, weight="bold")
+    paths = _save_figure(fig, output_dir, "vmex_solve_convergence")
     plt.close(fig)
     return paths
 
 
 def generate_vmec_boozer_operator_angular_convergence(output_dir: Path) -> list[Path]:
-    """Generate angular-convergence evidence for the live VMEC-JAX/Boozer operator."""
+    """Generate angular-convergence evidence for the live VMEX/Boozer operator."""
     plt = _setup_matplotlib()
     case = landreman_paul_qa_lowres()
     if not case.vmec_input.exists():
         raise FileNotFoundError(f"Landreman-Paul QA VMEC input not found: {case.vmec_input}")
 
     geometry = run_booz_xform_jax_geometry_from_wout_data(
-        run_vmec_jax_fixed_boundary_wout_data(
+        run_vmex_fixed_boundary_wout_data(
             case.vmec_input,
             max_iter=1,
-            theta_points=12,
-            zeta_points=4,
         ),
         mboz=5,
         nboz=5,
@@ -1614,7 +1608,7 @@ def generate_benchmark_family_packet(output_dir: Path) -> list[Path]:
         "families": summary.family_results,
         "note": "Temporary run directories are intentionally omitted from this docs summary.",
     }
-    summary_path.write_text(json.dumps(summary_payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    summary_path.write_text(json.dumps(portable_paths(summary_payload), indent=2, sort_keys=True) + "\n", encoding="utf-8")
 
     fig, axes = plt.subplots(1, 3, figsize=(12.0, 3.2), constrained_layout=True)
     x = np.arange(len(labels))
@@ -1701,13 +1695,13 @@ def write_figure_manifest(output_dir: Path, paths: list[Path]) -> Path:
         (
             "vmec_boozer_alfven_design_gradient.svg",
             "validation",
-            "End-to-end VMEC boundary-coefficient gradient through vmec_jax, booz_xform_jax, and a FAX "
+            "End-to-end VMEC boundary-coefficient gradient through vmex, booz_xform_jax, and a FAX "
             "global Alfvén risk objective; not yet a multi-geometry converged optimization campaign.",
         ),
         (
             "vmec_boozer_alfven_design_gradient.png",
             "validation",
-            "End-to-end VMEC boundary-coefficient gradient through vmec_jax, booz_xform_jax, and a FAX "
+            "End-to-end VMEC boundary-coefficient gradient through vmex, booz_xform_jax, and a FAX "
             "global Alfvén risk objective; not yet a multi-geometry converged optimization campaign.",
         ),
         (
@@ -1718,13 +1712,13 @@ def write_figure_manifest(output_dir: Path, paths: list[Path]) -> Path:
         (
             "vmec_boozer_gradient_convergence.svg",
             "validation",
-            "End-to-end VMEC boundary-gradient convergence ladder through vmec_jax, booz_xform_jax, and "
+            "End-to-end VMEC boundary-gradient convergence ladder through vmex, booz_xform_jax, and "
             "FAX; not yet a multi-geometry converged optimization campaign.",
         ),
         (
             "vmec_boozer_gradient_convergence.png",
             "validation",
-            "End-to-end VMEC boundary-gradient convergence ladder through vmec_jax, booz_xform_jax, and "
+            "End-to-end VMEC boundary-gradient convergence ladder through vmex, booz_xform_jax, and "
             "FAX; not yet a multi-geometry converged optimization campaign.",
         ),
         (
@@ -1746,7 +1740,7 @@ def write_figure_manifest(output_dir: Path, paths: list[Path]) -> Path:
             }
         )
     manifest_path = output_dir / "figure_manifest.json"
-    manifest_path.write_text(json.dumps(manifest, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+    manifest_path.write_text(json.dumps(portable_paths(manifest), indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
     return manifest_path
 
 
@@ -1780,7 +1774,7 @@ def main(argv: list[str] | None = None) -> int:
         generate_metric_residual_convergence(output_dir),
         generate_landreman_convergence_dashboard(output_dir),
         generate_vmec_boozer_bridge_convergence(output_dir),
-        generate_vmec_jax_solve_convergence(output_dir),
+        generate_vmex_solve_convergence(output_dir),
         generate_vmec_boozer_operator_angular_convergence(output_dir),
         generate_benchmark_family_packet(output_dir),
         generate_validation_gate_summary(output_dir),

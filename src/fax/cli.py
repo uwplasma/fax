@@ -41,8 +41,8 @@ model = "continuum"
 output_dir = "outputs"
 
 [equilibrium]
-source = "vmec_jax"
-vmec_input = "../vmec_jax/input.nfp4_QH_warm_start_000_000000"
+source = "vmex"
+vmec_input = "../vmex/vmex/resources/input.nfp4_QH_warm_start"
 use_boozer = false
 
 [grid]

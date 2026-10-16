@@ -15,23 +15,27 @@ current external-code status is therefore split into three levels:
 Public STELLGAP/AE3D Artifacts
 ------------------------------
 
+External checkouts and test packets live under one root, ``$FAX_EXTERNAL_ROOT``
+(default ``~/local``). Code, tests, tools and examples read it through
+``fax.EXTERNAL_ROOT``; generated summaries record paths relative to it.
+
 The ORNL STELLGAP and AE3D repositories include public CTOK test packets used
 by FAX's cross-code artifact gates. Local machines and CI runners can install
 those packets into the validation layout with:
 
 .. code-block:: bash
 
-   python tools/install_public_cross_code_artifacts.py --root /Users/rogerio/local
+   python tools/install_public_cross_code_artifacts.py --root ~/local
 
 The installer shallow-clones ``ORNL-Fusion/Stellgap`` and ``ORNL-Fusion/AE3D``
 when they are absent, extracts the released ``*_test_problem*.tar.gz`` packets,
 and verifies the files consumed by FAX:
 
-* ``/Users/rogerio/local/Stellgap_test_inputs`` and
-  ``/Users/rogerio/local/Stellgap_test_problem`` for STELLGAP CTOK local
+* ``~/local/Stellgap_test_inputs`` and
+  ``~/local/Stellgap_test_problem`` for STELLGAP CTOK local
   continuum and post-processing parity;
-* ``/Users/rogerio/local/AE3D_test_inputs`` and
-  ``/Users/rogerio/local/AE3D_test_problem`` for AE3D sparse-matrix,
+* ``~/local/AE3D_test_inputs`` and
+  ``~/local/AE3D_test_problem`` for AE3D sparse-matrix,
   eigenvalue, eigenmode, dense-solve, and continuum-placement gates.
 
 This keeps large third-party benchmark packets out of the FAX repository while

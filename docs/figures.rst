@@ -185,22 +185,22 @@ Current Figures
    and residual smoke checks.
 
 .. figure:: _static/vmec_boozer_bridge_convergence.svg
-   :alt: Live VMEC-JAX to Boozer bridge truncation convergence dashboard.
+   :alt: Live VMEX to Boozer bridge truncation convergence dashboard.
 
-   Live Landreman-Paul ``vmec_jax`` to ``booz_xform_jax`` bridge convergence
+   Live Landreman-Paul ``vmex`` to ``booz_xform_jax`` bridge convergence
    dashboard. It holds one VMEC state fixed and compares Boozer truncations
    through sampled ``|B|``, local 3-D continuum frequencies, and the
    Boozer-Jacobian identity.
 
-.. figure:: _static/vmec_jax_solve_convergence.svg
-   :alt: VMEC-JAX solve convergence propagated through Boozer/FAX.
+.. figure:: _static/vmex_solve_convergence.svg
+   :alt: VMEX solve convergence propagated through Boozer/FAX.
 
-   Live Landreman-Paul ``vmec_jax`` solve-convergence ladder. VMEC force
+   Live Landreman-Paul ``vmex`` solve-convergence ladder. VMEC force
    residuals, Boozer field/Jacobian errors, FAX continuum frequency errors,
    and local runtimes are tracked against the converged reference ``wout``.
 
 .. figure:: _static/vmec_boozer_operator_angular_convergence.svg
-   :alt: Live VMEC-JAX Boozer local-operator angular convergence dashboard.
+   :alt: Live VMEX Boozer local-operator angular convergence dashboard.
 
    Live Landreman-Paul Boozer local-operator angular convergence dashboard.
    It holds the Boozer geometry fixed and refines only the angular quadrature
@@ -236,7 +236,7 @@ Current Figures
    :alt: VMEC boundary to Boozer to FAX design-gradient dashboard.
 
    VMEC-boundary design-gradient gate. FAX differentiates a Landreman-Paul QA
-   boundary Fourier coefficient through ``vmec_jax``, ``booz_xform_jax``, and a
+   boundary Fourier coefficient through ``vmex``, ``booz_xform_jax``, and a
    FAX global Alfvén risk objective, then checks the gradient with centered
    finite differences.
 

@@ -11,7 +11,7 @@ from fax.boozer import (
     BoozerGeometry,
     BoozerSpectrum,
     BoozerOperatorAngularConvergenceResult,
-    VmecJaxBoozerConvergenceResult,
+    VmexBoozerConvergenceResult,
     boozer_3d_continuum_frequencies_hz,
     boozer_3d_continuum_matrices,
     boozer_3d_operator_angular_convergence,
@@ -39,16 +39,16 @@ from fax.boozer import (
     run_booz_xform_jax_from_wout_data,
     run_booz_xform_jax_geometry_from_wout,
     run_booz_xform_jax_geometry_from_wout_data,
-    run_vmec_jax_boozer_truncation_convergence,
-    run_vmec_jax_fixed_boundary_boozer_geometry,
+    run_vmex_boozer_truncation_convergence,
+    run_vmex_fixed_boundary_boozer_geometry,
     straight_field_line_phase_error,
 )
 from fax.global_modes import radial_block_problem_from_boozer_geometry, solve_radial_block_eigenmodes
-from fax.reference_cases import landreman_paul_qa_lowres
+from fax.reference_cases import EXTERNAL_ROOT, landreman_paul_qa_lowres
 from fax.units import MU0
 
 
-BOOZ_XFORM_TEST_FILES = Path("/Users/rogerio/local/booz_xform_jax/tests/test_files")
+BOOZ_XFORM_TEST_FILES = EXTERNAL_ROOT / "booz_xform_jax/tests/test_files"
 
 
 def _wout_like_from_netcdf(path: Path):
@@ -733,23 +733,21 @@ def test_run_booz_xform_jax_geometry_from_wout_data_matches_file_adapter():
     assert float(boozer_geometry_jacobian_identity_error(object_geometry, theta_points=32, zeta_points=8)) < 2.0e-5
 
 
-@pytest.mark.requires_vmec_jax
+@pytest.mark.requires_vmex
 @pytest.mark.requires_booz_xform_jax
-def test_landreman_paul_vmec_jax_to_boozer_in_memory_smoke():
-    pytest.importorskip("vmec_jax")
+def test_landreman_paul_vmex_to_boozer_in_memory_smoke():
+    pytest.importorskip("vmex")
     pytest.importorskip("booz_xform_jax")
     case = landreman_paul_qa_lowres()
     if not case.vmec_input.exists():
         pytest.skip(f"missing local Landreman-Paul VMEC input: {case.vmec_input}")
 
-    geometry = run_vmec_jax_fixed_boundary_boozer_geometry(
+    geometry = run_vmex_fixed_boundary_boozer_geometry(
         case.vmec_input,
         mboz=4,
         nboz=4,
         surfaces=(0.25, 0.5),
         max_iter=1,
-        theta_points=12,
-        zeta_points=4,
         jit=False,
     )
     harmonics = np.asarray([[1.0, 0.0], [2.0, 1.0]])
@@ -761,7 +759,7 @@ def test_landreman_paul_vmec_jax_to_boozer_in_memory_smoke():
         zeta_points=8,
     )
 
-    assert geometry.source == "vmec_jax_booz_xform_jax"
+    assert geometry.source == "vmex_booz_xform_jax"
     assert geometry.field_periods == 2
     assert geometry.bmnc.shape[0] == 2
     assert np.all(np.isfinite(np.asarray(geometry.bmnc)))
@@ -771,28 +769,26 @@ def test_landreman_paul_vmec_jax_to_boozer_in_memory_smoke():
     assert float(boozer_geometry_jacobian_identity_error(geometry, theta_points=12, zeta_points=8)) < 1.0e-2
 
 
-@pytest.mark.requires_vmec_jax
+@pytest.mark.requires_vmex
 @pytest.mark.requires_booz_xform_jax
-def test_landreman_paul_vmec_jax_boozer_truncation_convergence_smoke():
-    pytest.importorskip("vmec_jax")
+def test_landreman_paul_vmex_boozer_truncation_convergence_smoke():
+    pytest.importorskip("vmex")
     pytest.importorskip("booz_xform_jax")
     case = landreman_paul_qa_lowres()
     if not case.vmec_input.exists():
         pytest.skip(f"missing local Landreman-Paul VMEC input: {case.vmec_input}")
 
-    result = run_vmec_jax_boozer_truncation_convergence(
+    result = run_vmex_boozer_truncation_convergence(
         case.vmec_input,
         coarse_mboz=4,
         coarse_nboz=4,
         reference_mboz=5,
         reference_nboz=5,
         max_iter=1,
-        theta_points=12,
-        zeta_points=4,
         jit=False,
     )
 
-    assert isinstance(result, VmecJaxBoozerConvergenceResult)
+    assert isinstance(result, VmexBoozerConvergenceResult)
     assert result.coarse_geometry.bmnc.shape[0] == result.reference_geometry.bmnc.shape[0] == 2
     assert result.field_relative_error.shape == (2,)
     assert np.all(np.asarray(result.field_relative_error) >= 0.0)
@@ -800,23 +796,21 @@ def test_landreman_paul_vmec_jax_boozer_truncation_convergence_smoke():
     assert result.max_metric < 1.0e-2
 
 
-@pytest.mark.requires_vmec_jax
+@pytest.mark.requires_vmex
 @pytest.mark.requires_booz_xform_jax
-def test_landreman_paul_vmec_jax_boozer_operator_angular_convergence_smoke():
-    pytest.importorskip("vmec_jax")
+def test_landreman_paul_vmex_boozer_operator_angular_convergence_smoke():
+    pytest.importorskip("vmex")
     pytest.importorskip("booz_xform_jax")
     case = landreman_paul_qa_lowres()
     if not case.vmec_input.exists():
         pytest.skip(f"missing local Landreman-Paul VMEC input: {case.vmec_input}")
 
-    geometry = run_vmec_jax_fixed_boundary_boozer_geometry(
+    geometry = run_vmex_fixed_boundary_boozer_geometry(
         case.vmec_input,
         mboz=5,
         nboz=5,
         surfaces=(0.25, 0.5),
         max_iter=1,
-        theta_points=12,
-        zeta_points=4,
         jit=False,
     )
     result = boozer_3d_operator_angular_convergence(

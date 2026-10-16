@@ -9,6 +9,7 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import numpy as np
 
+from fax.reference_cases import portable_paths
 from fax.far3d import Far3dLincheckScanPoint, far3d_lincheck_parameter_scan, read_far3d_lincheck
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -130,7 +131,7 @@ def build_figure(input_dir: Path, output_dir: Path) -> dict[str, object]:
         ),
     }
     (output_dir / "far3d_gpu_beta_scan_summary.json").write_text(
-        json.dumps(metrics, indent=2, sort_keys=True),
+        json.dumps(portable_paths(metrics), indent=2, sort_keys=True),
         encoding="utf-8",
     )
     return metrics
@@ -142,7 +143,7 @@ def main() -> int:
     parser.add_argument("--output-dir", default="outputs/far3d_gpu_beta_scan", help="Output directory.")
     args = parser.parse_args()
     metrics = build_figure(Path(args.input_dir), Path(args.output_dir))
-    print(json.dumps(metrics, indent=2, sort_keys=True))
+    print(json.dumps(portable_paths(metrics), indent=2, sort_keys=True))
     return 0
 
 

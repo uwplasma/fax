@@ -36,8 +36,8 @@ Configuration and CLI
 
 ``fax.vmec_boozer_design``
    Optional end-to-end design helpers for actual VMEC boundary Fourier
-   coefficients. These functions require local ``vmec_jax`` and
-   ``booz_xform_jax`` installations and keep the boundary-to-Boozer-to-FAX
+   coefficients. These functions require the optional ``vmex`` extra (which
+   brings ``booz_xform_jax``) and keep the boundary-to-Boozer-to-FAX
    gradient path in memory.
 
 Equilibrium Helpers
@@ -125,8 +125,8 @@ Boozer Geometry
 ``run_booz_xform_jax_geometry_from_wout_data``
    Run local ``booz_xform_jax`` from an in-memory VMEC ``wout`` object.
 
-``run_vmec_jax_fixed_boundary_boozer_geometry``
-   Smoke-test bridge from VMEC input to live ``vmec_jax`` solve to Boozer
+``run_vmex_fixed_boundary_boozer_geometry``
+   Smoke-test bridge from VMEC input to live ``vmex`` solve to Boozer
    geometry.
 
 ``boozer_geometry_jacobian_identity_error``
@@ -270,7 +270,7 @@ Optimization
 
 ``vmec_boundary_fax_frequencies``
    Map selected VMEC boundary coefficient perturbations to FAX global Alfvén
-   eigenfrequencies through ``vmec_jax`` and ``booz_xform_jax``.
+   eigenfrequencies through ``vmex`` and ``booz_xform_jax``.
 
 ``validate_vmec_boundary_alfven_gradient``
    Compare the JAX gradient of the VMEC-boundary Alfvén risk objective against

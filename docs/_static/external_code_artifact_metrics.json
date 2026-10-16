@@ -12,21 +12,21 @@
   "ae3d_dense_spectrum": {
     "count": 16,
     "matrix_dimension": 1287,
-    "max_eigenvalue_relative_error": 1.633579871643743e-06,
-    "max_frequency_relative_error": 8.167902694136567e-07,
-    "p95_eigenvalue_relative_error": 7.888903789051451e-07,
-    "p95_frequency_relative_error": 3.944452487748285e-07,
+    "max_eigenvalue_relative_error": 1.633579870545089e-06,
+    "max_frequency_relative_error": 8.167902687510027e-07,
+    "p95_eigenvalue_relative_error": 7.88890377360786e-07,
+    "p95_frequency_relative_error": 3.9444524793753525e-07,
     "real_eigenvalue_count": 1283
   },
   "ae3d_global_mode": {
     "count": 8,
     "matrix_dimension": 1287,
-    "max_euclidean_mode_shape_error": 6.577275157848561e-08,
-    "max_frequency_relative_error": 8.167902694136567e-07,
-    "max_mass_weighted_mode_shape_error": 5.1977999793173524e-08,
-    "p95_euclidean_mode_shape_error": 5.6183660446240666e-08,
-    "p95_frequency_relative_error": 5.952165064359755e-07,
-    "p95_mass_weighted_mode_shape_error": 4.4665556925282945e-08,
+    "max_euclidean_mode_shape_error": 6.577275257768633e-08,
+    "max_frequency_relative_error": 8.167902687510027e-07,
+    "max_mass_weighted_mode_shape_error": 5.1978001125441153e-08,
+    "p95_euclidean_mode_shape_error": 5.618366097914771e-08,
+    "p95_frequency_relative_error": 5.952165076804907e-07,
+    "p95_mass_weighted_mode_shape_error": 4.4665557635825684e-08,
     "real_eigenvalue_count": 1283
   },
   "ae3d_omega2_eigenvalue": {

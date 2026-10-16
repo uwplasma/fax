@@ -28,7 +28,7 @@ from fax.boozer import (
     slice_boozer_geometry_surfaces,
 )
 from fax.global_modes import radial_block_problem_from_boozer_geometry, solve_radial_block_eigenmodes
-from fax.reference_cases import available_vmec_equilibria_boozmn_cases, vmec_equilibria_root
+from fax.reference_cases import portable_paths, available_vmec_equilibria_boozmn_cases, vmec_equilibria_root
 
 jax.config.update("jax_enable_x64", True)
 
@@ -201,7 +201,7 @@ def _write_outputs(output_dir: Path, packets: list[dict[str, Any]]) -> list[str]
     plt.close(fig)
 
     json_path = output_dir / "vmec_equilibria_boozer_global_summary.json"
-    json_path.write_text(json.dumps({"cases": packets}, indent=2, sort_keys=True) + "\n")
+    json_path.write_text(json.dumps(portable_paths({"cases": packets}), indent=2, sort_keys=True) + "\n")
 
     csv_path = output_dir / "vmec_equilibria_boozer_global.csv"
     with csv_path.open("w", newline="") as stream:
@@ -270,7 +270,7 @@ def main(argv: list[str] | None = None) -> int:
         "artifact_files": artifact_files,
         "scope": "public boozmn artifact gate for FAX global radial 3-D operator; not an external-code ideal-MHD parity claim",
     }
-    print(json.dumps(payload, indent=2, sort_keys=True))
+    print(json.dumps(portable_paths(payload), indent=2, sort_keys=True))
     return 0
 
 

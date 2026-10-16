@@ -113,7 +113,7 @@ tags, and command. The current gates are:
   compares all field, embedding, shift, and Jacobian harmonics against the
   BOOZ_XFORM ``boozmn`` reference.
 * ``booz_xform_jax_in_memory_geometry_adapter``: exercises the no-file
-  ``vmec_jax`` handoff path by passing an in-memory VMEC ``wout``-like object
+  ``vmex`` handoff path by passing an in-memory VMEC ``wout``-like object
   through ``booz_xform_jax`` and comparing the resulting FAX geometry against
   the same asymmetric ``boozmn`` reference.
 * ``boozmn_embedding_jacobian_shape``: compares the physical embedding
@@ -169,34 +169,35 @@ tags, and command. The current gates are:
   physics gate, still short of full native FAX-vs-AE3D operator parity.
 * ``landreman_paul_adapter_smoke``: checks the Landreman-Paul QA VMEC ``wout``
   profile and metric adapters when local data are available.
-* ``landreman_paul_vmec_jax_boozer_in_memory``: runs a one-iteration
-  ``vmec_jax`` fixed-boundary solve on the Landreman-Paul QA input, passes the
+* ``landreman_paul_vmex_boozer_in_memory``: runs a one-iteration
+  ``vmex`` fixed-boundary solve on the Landreman-Paul QA input, passes the
   live ``wout`` object through ``booz_xform_jax`` without writing an
   intermediate file, and checks the resulting FAX Boozer geometry for a small
   Jacobian-identity error and finite local 3-D continuum branches. This is an
   integration smoke gate, not a converged VMEC physics benchmark.
-* ``landreman_paul_vmec_jax_boozer_truncation_convergence``: reuses one live
-  ``vmec_jax`` ``wout`` object, compares ``(mboz,nboz)=(4,4)`` against
+* ``landreman_paul_vmex_boozer_truncation_convergence``: reuses one live
+  ``vmex`` ``wout`` object, compares ``(mboz,nboz)=(4,4)`` against
   ``(5,5)``, and gates sampled ``|B|`` error, local 3-D continuum frequency
   error, and Boozer-Jacobian identity error.
-* ``landreman_paul_vmec_jax_boozer_operator_angular_convergence``: holds the
+* ``landreman_paul_vmex_boozer_operator_angular_convergence``: holds the
   live Landreman-Paul Boozer geometry fixed and compares local 3-D operator
   frequencies from ``12x12``, ``16x16``, and ``20x20`` angular quadrature
   against a ``32x32`` reference grid while also checking matrix Hermiticity.
-* ``landreman_paul_vmec_jax_solve_convergence``: runs a native-grid
-  ``vmec_jax`` iteration ladder on the Landreman-Paul QA input, transforms
+* ``landreman_paul_vmex_solve_convergence``: runs a native-grid
+  ``vmex`` iteration ladder on the Landreman-Paul QA input, transforms
   each iterate through ``booz_xform_jax``, and compares Boozer ``|B|`` plus FAX
   local continuum frequencies against the converged reference ``wout``.
 * ``landreman_paul_vmec_boundary_alfven_gradient``: differentiates an actual
   VMEC boundary Fourier coefficient through the in-memory
-  ``vmec_jax -> booz_xform_jax -> FAX`` chain, checks the smooth global-mode
+  ``vmex -> booz_xform_jax -> FAX`` chain, checks the smooth global-mode
   risk-objective gradient against centered finite differences, and verifies
   that one line-searched shape step lowers the risk metric.
 * ``landreman_paul_vmec_boundary_gradient_convergence``: repeats that
-  end-to-end gradient check over a VMEC-iteration ladder and gates gradient,
+  end-to-end gradient check over a VMEX force-tolerance ladder (``ftol``
+  1e-10 and 1e-12) and gates gradient,
   objective, and global-frequency drift against the refined entry.
 * ``landreman_paul_vmec_boundary_boozer_gradient_convergence``: repeats the
-  same gradient gate at fixed VMEC iteration while refining Boozer truncation
+  same gradient gate at fixed VMEX resolution while refining Boozer truncation
   and angular quadrature, then gates relative drift to the refined entry.
 * ``landreman_paul_vmec_boundary_surface_gradient_convergence``: repeats the
   same gradient gate on nested radial-surface sets and gates relative drift to
@@ -261,9 +262,10 @@ First Local Stellarator Target
 
 The first VMEC-backed stellarator target is
 ``LandremanPaul2021_QA_lowres``. It is a low-resolution version of the precise
-quasi-axisymmetric Landreman-Paul configuration and is already available in the
-neighboring ``vmec_jax`` checkout as a VMEC input and ``wout`` file. The bundled
-``examples/landreman_paul_qa_lowres.toml`` file points to those local paths.
+quasi-axisymmetric Landreman-Paul configuration. Its VMEC input ships in
+``examples/data`` (also in a ``vmex`` checkout) and its ``wout`` file in a
+``simsopt`` checkout. The bundled ``examples/landreman_paul_qa_lowres.toml``
+file points to those paths.
 
 This case should be used first for adapter checks, continuum-map
 development, Boozer-pipeline checks, and early performance measurements. It is
@@ -271,16 +273,16 @@ not a validation by itself until the relevant continuum/eigenmode metrics are
 compared with analytic limits or literature/cross-code references.
 
 The first live-equilibrium path is the
-``landreman_paul_vmec_jax_boozer_in_memory`` gate. It intentionally uses one
-low-resolution ``vmec_jax`` iteration so it can run in local development and
-exercise the end-to-end object handoff. Converged ``vmec_jax`` solves, Boozer
+``landreman_paul_vmex_boozer_in_memory`` gate. It intentionally uses one
+low-resolution ``vmex`` iteration so it can run in local development and
+exercise the end-to-end object handoff. Converged ``vmex`` solves, Boozer
 truncation sweeps, and external-code continuum comparisons remain required
 before this path can support publication-level stellarator claims.
-The companion ``landreman_paul_vmec_jax_boozer_truncation_convergence`` gate
+The companion ``landreman_paul_vmex_boozer_truncation_convergence`` gate
 starts that convergence ladder by holding the same VMEC state fixed and
 checking that the FAX Boozer geometry and local continuum are stable between
 nearby Boozer harmonic truncations.
-The ``landreman_paul_vmec_jax_boozer_operator_angular_convergence`` gate then
+The ``landreman_paul_vmex_boozer_operator_angular_convergence`` gate then
 holds the Boozer geometry fixed and checks angular quadrature convergence of
 the local 3-D operator itself.
 The ``landreman_paul_vmec_boundary_alfven_gradient`` gate is the first
@@ -430,23 +432,23 @@ operator.
    cross-code or literature comparison.
 
 .. figure:: _static/vmec_boozer_bridge_convergence.svg
-   :alt: Live VMEC-JAX to Boozer bridge truncation convergence dashboard.
+   :alt: Live VMEX to Boozer bridge truncation convergence dashboard.
 
-   Live Landreman-Paul ``vmec_jax`` to ``booz_xform_jax`` convergence check.
+   Live Landreman-Paul ``vmex`` to ``booz_xform_jax`` convergence check.
    The same one-iteration VMEC state is transformed at multiple Boozer
    truncations; the gate checks sampled ``|B|`` reconstruction, local 3-D
    continuum frequencies, and the Boozer-Jacobian identity.
 
-.. figure:: _static/vmec_jax_solve_convergence.svg
-   :alt: VMEC-JAX solve convergence propagated through Boozer and FAX.
+.. figure:: _static/vmex_solve_convergence.svg
+   :alt: VMEX solve convergence propagated through Boozer and FAX.
 
-   Landreman-Paul ``vmec_jax`` residual convergence propagated through
+   Landreman-Paul ``vmex`` residual convergence propagated through
    ``booz_xform_jax`` and the FAX local 3-D Boozer continuum operator. The gate
    checks residual reduction and decreasing reference errors before treating
    the live equilibrium as a usable physics input.
 
 .. figure:: _static/vmec_boozer_operator_angular_convergence.svg
-   :alt: Live VMEC-JAX Boozer local-operator angular convergence dashboard.
+   :alt: Live VMEX Boozer local-operator angular convergence dashboard.
 
    Live Landreman-Paul Boozer local-operator angular convergence check.
    The Boozer geometry is fixed while angular quadrature is refined, checking
@@ -456,6 +458,6 @@ operator.
    :alt: VMEC boundary to Boozer to FAX gradient convergence ladder.
 
    VMEC-boundary design-gradient convergence ladder. Each level repeats the
-   AD/finite-difference gradient check through ``vmec_jax``,
+   AD/finite-difference gradient check through ``vmex``,
    ``booz_xform_jax``, and the FAX global Alfvén objective, then compares
    frequency, objective, and gradient drift with the reference level.

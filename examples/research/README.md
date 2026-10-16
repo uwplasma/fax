@@ -51,7 +51,7 @@ The examples intentionally use the analytic and Landreman-Paul low-resolution
 paths that are already covered by local tests and validation gates. They are
 research workflow templates, not final 3-D stellarator eigenmode validations.
 
-Scripts that take `--boozmn` or read `/Users/rogerio/local` use optional local
+Scripts that take `--boozmn` or read `~/local` use optional local
 STELLGAP/AE3D/BOOZ_XFORM artifacts. When those files are absent, use the
 analytic examples first and treat the external-code examples as parity checks
 to run after the artifacts are installed.
@@ -87,7 +87,7 @@ python examples/research/vmec_boozer_alfven_design_gradient.py --output-dir outp
 ```
 
 This is the first full in-memory differentiability showcase from actual VMEC
-boundary Fourier coefficients through `vmec_jax`, `booz_xform_jax`, and a FAX
+boundary Fourier coefficients through `vmex`, `booz_xform_jax`, and a FAX
 global Alfvén risk objective. It compares the JAX gradient with centered finite
 differences, then takes one line-searched boundary-shape step that lowers the
 smooth mode-in-window risk. Increase `--vmec-max-iter`, Boozer truncation, and
@@ -144,7 +144,7 @@ operator path, still awaiting STELLGAP/AE3D cross-code validation.
 python examples/research/vmec_boozer_convergence.py --output-dir outputs/vmec_boozer_convergence
 ```
 
-This runs the local Landreman-Paul QA ``vmec_jax`` input through the in-memory
+This runs the local Landreman-Paul QA ``vmex`` input through the in-memory
 ``booz_xform_jax`` bridge, then checks two convergence layers: Boozer harmonic
 truncation and angular quadrature for the local 3-D Boozer operator. It is a
 production-readiness smoke check for the live bridge, not a converged VMEC
@@ -153,7 +153,7 @@ physics benchmark.
 ## VMEC-Equilibria Multi-Geometry Catalog
 
 ```bash
-python examples/research/vmec_equilibria_catalog.py --root /Users/rogerio/local/vmec_equilibria
+python examples/research/vmec_equilibria_catalog.py --root ~/local/vmec_equilibria
 ```
 
 This reads selected `wout*.nc` files from the external
@@ -165,7 +165,7 @@ profile-level VMEC-`wout` catalog, not full Boozer/global cross-code parity.
 ## VMEC-Equilibria Boozer Global Operator
 
 ```bash
-python examples/research/vmec_equilibria_boozer_global.py --root /Users/rogerio/local/vmec_equilibria
+python examples/research/vmec_equilibria_boozer_global.py --root ~/local/vmec_equilibria
 ```
 
 This reads public `boozmn` artifacts from the external VMEC-equilibria clone
@@ -177,7 +177,7 @@ public-artifact global-operator gate, not yet AE3D/CAS3D/STELLGAP parity.
 ## VMEC-Equilibria Live Boozer Generation
 
 ```bash
-python examples/research/vmec_equilibria_live_boozer.py --root /Users/rogerio/local/vmec_equilibria --jit
+python examples/research/vmec_equilibria_live_boozer.py --root ~/local/vmec_equilibria --jit
 ```
 
 This runs `booz_xform_jax` directly on public W7-X and NCSX VMEC `wout` files,
@@ -193,7 +193,7 @@ python examples/research/stellgap_ctok_comparison.py
 ```
 
 This reads the public ORNL STELLGAP CTOK `boozmn_ctok.nc` and `alfven_post`
-artifacts when they are available under `/Users/rogerio/local`, computes FAX
+artifacts when they are available under `~/local`, computes FAX
 local 3-D Boozer continuum branches for the same harmonic family, and writes a
 comparison figure plus JSON metrics. This is the first quantitative external
 code parity gate in FAX; it is local-continuum parity, not a global AE3D/CAS3D
@@ -206,7 +206,7 @@ python examples/research/external_code_artifact_dashboard.py
 ```
 
 This reads the public ORNL STELLGAP and AE3D answer artifacts under
-`/Users/rogerio/local`, reproduces STELLGAP and AE3D post-processing/eigenvalue
+`~/local`, reproduces STELLGAP and AE3D post-processing/eigenvalue
 conventions, checks AE3D sparse matrix symmetry, independently re-solves the
 public AE3D generalized matrix spectrum and global mode shapes, and writes a
 figure plus JSON metrics.

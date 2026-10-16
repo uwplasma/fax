@@ -16,6 +16,7 @@ import numpy as np
 
 jax.config.update("jax_enable_x64", True)
 
+from fax.reference_cases import portable_paths, EXTERNAL_ROOT  # noqa: E402
 from fax.boozer import read_boozmn_geometry  # noqa: E402
 from fax.fast_ions import FastIonPopulation  # noqa: E402
 from fax.optimization import (  # noqa: E402
@@ -29,7 +30,7 @@ from fax.optimization import (  # noqa: E402
 from fax.units import PROTON_MASS  # noqa: E402
 
 
-DEFAULT_BOOZMN = Path("/Users/rogerio/local/booz_xform_jax/tests/test_files/boozmn_LandremanSenguptaPlunk_section5p3.nc")
+DEFAULT_BOOZMN = EXTERNAL_ROOT / "booz_xform_jax/tests/test_files/boozmn_LandremanSenguptaPlunk_section5p3.nc"
 
 
 def _save(fig, output_dir: Path, stem: str, formats: tuple[str, ...]) -> list[str]:
@@ -207,7 +208,7 @@ def run_design_study(
         "optimized_parameters": np.asarray(optimization.parameters).tolist(),
     }
     (output_dir / "boozmn_differentiable_design_study_summary.json").write_text(
-        json.dumps(payload, indent=2, sort_keys=True),
+        json.dumps(portable_paths(payload), indent=2, sort_keys=True),
         encoding="utf-8",
     )
     return payload
@@ -236,7 +237,7 @@ def main(argv: list[str] | None = None) -> int:
         theta_points=args.theta_points,
         zeta_points=args.zeta_points,
     )
-    print(json.dumps(payload, indent=2, sort_keys=True))
+    print(json.dumps(portable_paths(payload), indent=2, sort_keys=True))
     return 0
 
 

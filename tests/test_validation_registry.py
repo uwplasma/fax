@@ -104,14 +104,14 @@ def test_cross_code_validation_gates_pass_or_skip_cleanly():
         assert result.message
 
 
-@pytest.mark.requires_vmec_jax
+@pytest.mark.requires_vmex
 def test_landreman_paul_validation_gate_passes_or_skips_cleanly():
     for gate_id in (
         "landreman_paul_adapter_smoke",
-        "landreman_paul_vmec_jax_boozer_in_memory",
-        "landreman_paul_vmec_jax_boozer_truncation_convergence",
-        "landreman_paul_vmec_jax_boozer_operator_angular_convergence",
-        "landreman_paul_vmec_jax_solve_convergence",
+        "landreman_paul_vmex_boozer_in_memory",
+        "landreman_paul_vmex_boozer_truncation_convergence",
+        "landreman_paul_vmex_boozer_operator_angular_convergence",
+        "landreman_paul_vmex_solve_convergence",
         "landreman_paul_vmec_boundary_alfven_gradient",
         "landreman_paul_vmec_boundary_gradient_convergence",
         "landreman_paul_vmec_boundary_boozer_gradient_convergence",

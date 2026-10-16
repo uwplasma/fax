@@ -14,22 +14,22 @@ radial generalized eigenproblem with respect to density, rotational-transform,
 and magnetic-field profile parameters.
 ``boozer_pipeline_mode_avoidance_objective`` extends this pattern to a
 callable Boozer-geometry builder, which is the intended API boundary for
-``vmec_jax``/``booz_xform_jax`` pipelines. The file-backed and in-memory
+``vmex``/``booz_xform_jax`` pipelines. The file-backed and in-memory
 ``run_booz_xform_jax_geometry_from_wout*`` adapters now share the same
 ``BoozerGeometry`` contract and are validated against asymmetric Boozer
-harmonics. ``run_vmec_jax_fixed_boundary_boozer_geometry`` adds the first live
-``vmec_jax`` fixed-boundary object handoff into the same path and is covered by
+harmonics. ``run_vmex_fixed_boundary_boozer_geometry`` adds the first live
+``vmex`` fixed-boundary object handoff into the same path and is covered by
 a Landreman-Paul QA integration smoke gate. The companion
-``run_vmec_jax_boozer_truncation_convergence`` diagnostic reuses one VMEC state
+``run_vmex_boozer_truncation_convergence`` diagnostic reuses one VMEC state
 to compare nearby Boozer truncations before downstream operators are used for
-gradient claims. ``run_vmec_jax_boozer_solve_convergence`` adds the next
+gradient claims. ``run_vmex_boozer_solve_convergence`` adds the next
 pre-gradient gate by requiring VMEC residual reduction to propagate through
 Boozer geometry and FAX continuum errors against a converged reference
 ``wout``. ``boozer_3d_operator_angular_convergence`` then checks the local 3-D
 operator's angular quadrature on that fixed geometry. The dense
 objective test still differentiates through a synthetic builder; the next
 full-equilibrium gradient gate should replace that builder with a stable
-differentiable ``vmec_jax`` solve and ``booz_xform_jax`` transform artifact.
+differentiable ``vmex`` solve and ``booz_xform_jax`` transform artifact.
 
 Generalized eigenvalue path
 ---------------------------
@@ -147,10 +147,10 @@ pass through Boozer surface matrices, metric-derived radial stiffness,
 generalized eigenfrequencies, and eigenfunction-weighted fast-ion drive. This
 still treats mass density, rotational-transform offset, radial stiffness, and
 fast-ion density as reduced design coordinates; the next adapter step is to
-map those coordinates to actual ``vmec_jax`` boundary/profile variables and
+map those coordinates to actual ``vmex`` boundary/profile variables and
 ``booz_xform_jax`` transform outputs.
 
-The live Landreman-Paul ``vmec_jax`` bridge is intentionally an adapter and
+The live Landreman-Paul ``vmex`` bridge is intentionally an adapter and
 convergence check today: it verifies object compatibility and finite downstream
 operators, and the solve-convergence ladder tracks how VMEC residual reduction
 propagates into Boozer geometry and FAX continuum errors. Differentiable
