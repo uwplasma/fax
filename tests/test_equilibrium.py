@@ -63,7 +63,7 @@ def test_landreman_paul_wout_adapter_smoke():
     assert geometry.name == case.case_id
     assert geometry.field_periods == 2
     assert geometry.s.ndim == 1
-    assert geometry.s.size == 50
+    assert geometry.s.size == _wout_ns(case.wout)
     assert geometry.iota.shape == geometry.s.shape
     assert geometry.magnetic_field.shape == geometry.s.shape
     assert float(jnp.min(geometry.magnetic_field)) > 0.0
@@ -71,3 +71,11 @@ def test_landreman_paul_wout_adapter_smoke():
     assert float(geometry.minor_radius) > 0.0
     assert dict(geometry.metadata)["mpol"] == 8
     assert dict(geometry.metadata)["ntor"] == 8
+
+
+def _wout_ns(path):
+    """Radial surface count of a VMEC wout, so the smoke test follows the local file."""
+    import netCDF4
+
+    with netCDF4.Dataset(path) as dataset:
+        return int(dataset.variables["ns"][...])

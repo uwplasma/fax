@@ -485,7 +485,7 @@ def test_boozer_3d_continuum_constant_field_matches_profile_limit():
     expected_frequency = 2.7 / np.sqrt(MU0 * mass_density) * np.abs(k_parallel) / (2.0 * np.pi)
 
     np.testing.assert_allclose(np.asarray(frequencies[0]), np.sort(expected_frequency), rtol=1.0e-5)
-    np.testing.assert_allclose(np.asarray(matrices.mass[0]), np.eye(3) * mass_density * 5.5 / 2.7, rtol=3.0e-6, atol=1.0e-12)
+    np.testing.assert_allclose(np.asarray(matrices.mass[0]), np.eye(3) * mass_density * 5.5 / 2.7**3, rtol=3.0e-6, atol=1.0e-12)
     stiffness = np.asarray(matrices.stiffness[0])
     off_diagonal = stiffness - np.diag(np.diag(stiffness))
     assert np.max(np.abs(off_diagonal)) / np.max(np.abs(np.diag(stiffness))) < 3.0e-9

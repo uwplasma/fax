@@ -86,8 +86,20 @@ which is used as a reviewer-facing eigenvalue and residual gate.
 The global 3-D Boozer layer generalizes this scalar problem to a radial block
 operator. On each surface, the unknown is the Boozer harmonic vector
 ``u_r = [u_{r1}, ..., u_{rH}]``. The local matrices are supplied by the 3-D
-Boozer continuum operator and the radial envelope term is assembled as a
-Hermitian finite-difference energy:
+Boozer continuum operator, which uses the STELLGAP weighting (Spong, Sanchez,
+Weller 2003) with ``B.grad = (B^2/(G + iota I)) (d_zeta + iota d_theta)``:
+
+.. math::
+
+   K^{3D}_{ij} =
+   \left< \frac{|\sqrt{g}|\,|\nabla s|^2}{\mu_0}
+   k_{\parallel i} k_{\parallel j} \phi_i^* \phi_j \right>,
+   \qquad
+   M^{3D}_{ij} =
+   \left< \frac{|\sqrt{g}|\,|\nabla s|^2 \rho}{|B|^2}
+   \phi_i^* \phi_j \right>.
+
+The radial envelope term is assembled as a Hermitian finite-difference energy:
 
 .. math::
 

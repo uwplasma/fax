@@ -226,7 +226,7 @@ The v0.0.2 gate currently covers:
 
 Current headline metrics are 246 passing tests, a 95% local optional-artifact
 release gate, and a 91.1% public CI coverage badge. Physics parity metrics
-include STELLGAP CTOK p95 sorted-spectrum relative error about 2.55%, AE3D dense
+include STELLGAP CTOK p95 sorted-spectrum relative error about 1.17%, AE3D dense
 spectrum max relative error about 1.6e-6, and AE3D B-weighted mode-shape error
 about 5.2e-8 for the checked public modes; AE3D mode-peak closest-continuum
 placement p95 error is below 3%.
