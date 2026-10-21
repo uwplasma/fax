@@ -1,0 +1,446 @@
+{
+  "status": "native_QA_comparison_not_passed",
+  "date": "2026-10-20",
+  "reference": {
+    "doi": "10.5281/zenodo.21299908",
+    "source_sha256": "17983671ea72b829066b139d20d90127e696a5e378ed1c326b2e8f3584fecc36",
+    "equilibrium_sha256": "6a32726c66b57dc5d68e31bbf53f6f5833f1e7fb124404dadfe76873beb2b6d5",
+    "member": "Knyazev_JPP2026/simulations_fig4_fig5/QA/all_inputs/ae3d_saw_scaled/QA_35harmonics_scale0_001.npy",
+    "interpretation": "physical signed Phi harmonic coefficients in volts; sin(m theta-n zeta+omega t)",
+    "mass_density_kg_m3": 1.88e-06,
+    "density_profile": "flat",
+    "archive_eigenvalue_sqrt_times_1000": 30308.607688245924,
+    "archived_transport_omega_rad_s": 30308.607688245924,
+    "paper_frequency_label_hz": 30300.0
+  },
+  "acceptance": {
+    "frequency_relative_error": 0.01,
+    "retained_profile_relative_l2": 0.1,
+    "residual": 1e-08
+  },
+  "frequency_source": "https://github.com/ORNL-Fusion/AE3D/blob/master/ae_solve_version31.f",
+  "frequency_convention": "AE3D scales inertia by (1000*2*pi)^2; sqrt(eigenvalue) is kHz",
+  "boundary_policy": "Phi=0 at first and last half-mesh nodes; axis/LCFS not yet matched",
+  "radial_coordinate": "Fortran boozmn half mesh: (jlist-1.5)/(ns_b-1)",
+  "runs": [
+    {
+      "status": "completed",
+      "cases": [
+        {
+          "radial_points": 8,
+          "angular_points": 64,
+          "harmonics": 35,
+          "angular_basis": "cosine",
+          "matrix_dimension": 210,
+          "boundary_s": [
+            0.01,
+            0.99
+          ],
+          "selected_index": 32,
+          "selection": "largest overlap with the retained signed physical Phi profiles",
+          "frequency_hz": 27010.360720083627,
+          "frequency_relative_error": 0.10882212083405596,
+          "retained_profile_overlap": 0.7024666973499583,
+          "retained_profile_relative_l2": 0.7117166143306212,
+          "native_potential_norm_fraction_outside_reference": 0.0,
+          "residual": 2.8597919579038434e-14,
+          "max_spectrum_residual": 1.8355808353416294e-13,
+          "gain_real": 0.003183439454358691,
+          "gain_imag": 0.0,
+          "nearest_frequency_mode": {
+            "index": 37,
+            "frequency_hz": 30022.47497368773,
+            "retained_profile_overlap": 0.06072355885274452
+          },
+          "projected_reference_rayleigh_frequency_hz": 29789.254152901944,
+          "assembly_cold_seconds": 1.0498071830006666,
+          "assembly_warm_seconds": 0.5120440309983678,
+          "solve_seconds": 0.8317752929997368,
+          "retained_data_gates_passed": false,
+          "claim": "Retained-harmonic comparison; full AE3D basis/boundary parity not certified",
+          "case": "8_64_cosine_35"
+        },
+        {
+          "radial_points": 12,
+          "angular_points": 64,
+          "harmonics": 35,
+          "angular_basis": "cosine",
+          "matrix_dimension": 350,
+          "boundary_s": [
+            0.01,
+            0.99
+          ],
+          "selected_index": 60,
+          "selection": "largest overlap with the retained signed physical Phi profiles",
+          "frequency_hz": 26867.89682630881,
+          "frequency_relative_error": 0.11352256419457585,
+          "retained_profile_overlap": 0.8408029906135056,
+          "retained_profile_relative_l2": 0.5413412333966305,
+          "native_potential_norm_fraction_outside_reference": 0.0,
+          "residual": 1.2831550175928936e-14,
+          "max_spectrum_residual": 3.004876736650824e-13,
+          "gain_real": -0.003340393202026351,
+          "gain_imag": 0.0,
+          "nearest_frequency_mode": {
+            "index": 66,
+            "frequency_hz": 30425.6850856568,
+            "retained_profile_overlap": 0.03938249320388453
+          },
+          "projected_reference_rayleigh_frequency_hz": 29473.107759284467,
+          "assembly_cold_seconds": 1.0297657119990618,
+          "assembly_warm_seconds": 0.6105918270004622,
+          "solve_seconds": 0.8009796959995583,
+          "retained_data_gates_passed": false,
+          "claim": "Retained-harmonic comparison; full AE3D basis/boundary parity not certified",
+          "change_from_previous_case": {
+            "case": "8_64_cosine_35",
+            "frequency_relative_change": 0.00527441655634342,
+            "retained_profile_overlap": 0.6725960155790418,
+            "retained_profile_relative_l2": 0.740009864682355
+          },
+          "case": "12_64_cosine_35"
+        },
+        {
+          "radial_points": 16,
+          "angular_points": 64,
+          "harmonics": 35,
+          "angular_basis": "cosine",
+          "matrix_dimension": 490,
+          "boundary_s": [
+            0.01,
+            0.99
+          ],
+          "selected_index": 87,
+          "selection": "largest overlap with the retained signed physical Phi profiles",
+          "frequency_hz": 27927.162827267584,
+          "frequency_relative_error": 0.07857321871970702,
+          "retained_profile_overlap": 0.728636219911929,
+          "retained_profile_relative_l2": 0.6849009118350297,
+          "native_potential_norm_fraction_outside_reference": 0.0,
+          "residual": 3.3190527308787625e-14,
+          "max_spectrum_residual": 3.8326453236376806e-13,
+          "gain_real": -0.0032372385871254363,
+          "gain_imag": 0.0,
+          "nearest_frequency_mode": {
+            "index": 92,
+            "frequency_hz": 30341.983795108976,
+            "retained_profile_overlap": 0.20491926347750056
+          },
+          "projected_reference_rayleigh_frequency_hz": 29418.786681022935,
+          "assembly_cold_seconds": 1.0712348130000464,
+          "assembly_warm_seconds": 0.6643644499999937,
+          "solve_seconds": 0.8090087750006205,
+          "retained_data_gates_passed": false,
+          "claim": "Retained-harmonic comparison; full AE3D basis/boundary parity not certified",
+          "change_from_previous_case": {
+            "case": "12_64_cosine_35",
+            "frequency_relative_change": 0.03942496905532078,
+            "retained_profile_overlap": 0.7916429111481885,
+            "retained_profile_relative_l2": 0.6109840433504147
+          },
+          "case": "16_64_cosine_35"
+        },
+        {
+          "radial_points": 24,
+          "angular_points": 64,
+          "harmonics": 35,
+          "angular_basis": "cosine",
+          "matrix_dimension": 770,
+          "boundary_s": [
+            0.01,
+            0.99
+          ],
+          "selected_index": 142,
+          "selection": "largest overlap with the retained signed physical Phi profiles",
+          "frequency_hz": 27583.26106895875,
+          "frequency_relative_error": 0.08991988834723341,
+          "retained_profile_overlap": 0.6854462533984678,
+          "retained_profile_relative_l2": 0.7281232270035091,
+          "native_potential_norm_fraction_outside_reference": 0.0,
+          "residual": 1.4987450227465397e-14,
+          "max_spectrum_residual": 1.4246526943984417e-12,
+          "gain_real": 0.0030173553095311093,
+          "gain_imag": 0.0,
+          "nearest_frequency_mode": {
+            "index": 148,
+            "frequency_hz": 30300.47838365159,
+            "retained_profile_overlap": 0.024268754133670748
+          },
+          "projected_reference_rayleigh_frequency_hz": 29526.13281320347,
+          "assembly_cold_seconds": 1.3691711329993268,
+          "assembly_warm_seconds": 0.890956229000949,
+          "solve_seconds": 0.8715070830003242,
+          "retained_data_gates_passed": false,
+          "claim": "Retained-harmonic comparison; full AE3D basis/boundary parity not certified",
+          "change_from_previous_case": {
+            "case": "16_64_cosine_35",
+            "frequency_relative_change": 0.012314239023702656,
+            "retained_profile_overlap": 0.6487191599746637,
+            "retained_profile_relative_l2": 0.7610278913954249
+          },
+          "case": "24_64_cosine_35"
+        }
+      ],
+      "particle_tracing": false,
+      "imported_matrices": false,
+      "paper": "https://arxiv.org/html/2603.03118v1",
+      "frequency_source": "https://github.com/ORNL-Fusion/AE3D/blob/master/ae_solve_version31.f",
+      "frequency_convention": "AE3D scales inertia by (1000*2*pi)^2; sqrt(eigenvalue) is kHz",
+      "acceptance": {
+        "frequency_relative_error": 0.01,
+        "retained_profile_relative_l2": 0.1,
+        "residual": 1e-08
+      },
+      "reference": {
+        "doi": "10.5281/zenodo.21299908",
+        "source_sha256": "17983671ea72b829066b139d20d90127e696a5e378ed1c326b2e8f3584fecc36",
+        "equilibrium_sha256": "6a32726c66b57dc5d68e31bbf53f6f5833f1e7fb124404dadfe76873beb2b6d5",
+        "member": "Knyazev_JPP2026/simulations_fig4_fig5/QA/all_inputs/ae3d_saw_scaled/QA_35harmonics_scale0_001.npy",
+        "interpretation": "physical signed Phi harmonic coefficients in volts; sin(m theta-n zeta+omega t)",
+        "mass_density_kg_m3": 1.88e-06,
+        "density_profile": "flat",
+        "archive_eigenvalue_sqrt_times_1000": 30308.607688245924,
+        "archived_transport_omega_rad_s": 30308.607688245924,
+        "paper_frequency_label_hz": 30300.0
+      },
+      "platform": "cpu",
+      "device_kind": "cpu",
+      "operator_sha256": "983233479909b8d9ed005adf79cfb68cc917a06d8d8bee309aa2d849627782eb",
+      "benchmark_sha256": "74aa649119136c361acf512714cfe341838f120e58797d522ac2bf6031f49ebc",
+      "reference_sha256": "4b1cd5aa3241451c81916a3a30a87ea9b08e46738dc1bb19dcbae7fe2e9994a7",
+      "radial_coordinate": "Fortran boozmn half mesh: (jlist-1.5)/(ns_b-1)",
+      "boundary_policy": "Phi=0 at first and last half-mesh nodes; axis/LCFS not yet matched",
+      "elapsed_seconds": 21.576513852000062,
+      "retained_data_gates_passed": false,
+      "full_ae3d_parity": false
+    },
+    {
+      "status": "completed",
+      "cases": [
+        {
+          "radial_points": 6,
+          "angular_points": 80,
+          "harmonics": 158,
+          "angular_basis": "cosine",
+          "matrix_dimension": 632,
+          "boundary_s": [
+            0.01,
+            0.99
+          ],
+          "selected_index": 37,
+          "selection": "largest overlap with the retained signed physical Phi profiles",
+          "frequency_hz": 24229.674668902586,
+          "frequency_relative_error": 0.20056787437652002,
+          "retained_profile_overlap": 0.6198895348926379,
+          "retained_profile_relative_l2": 0.7846890878115924,
+          "native_potential_norm_fraction_outside_reference": 0.05220197361603174,
+          "residual": 1.321058408398459e-13,
+          "max_spectrum_residual": 4.499902229588281e-12,
+          "gain_real": -0.0018698496397868223,
+          "gain_imag": 0.0,
+          "nearest_frequency_mode": {
+            "index": 44,
+            "frequency_hz": 30579.213192668096,
+            "retained_profile_overlap": 0.02745561534787693
+          },
+          "projected_reference_rayleigh_frequency_hz": 30425.897989773053,
+          "assembly_cold_seconds": 2.1355564940004115,
+          "assembly_warm_seconds": 1.3245246070000576,
+          "solve_seconds": 0.7566640419991018,
+          "retained_data_gates_passed": false,
+          "claim": "Retained-harmonic comparison; full AE3D basis/boundary parity not certified",
+          "case": "6_80_cosine_158"
+        },
+        {
+          "radial_points": 8,
+          "angular_points": 80,
+          "harmonics": 158,
+          "angular_basis": "cosine",
+          "matrix_dimension": 948,
+          "boundary_s": [
+            0.01,
+            0.99
+          ],
+          "selected_index": 63,
+          "selection": "largest overlap with the retained signed physical Phi profiles",
+          "frequency_hz": 26093.654483648468,
+          "frequency_relative_error": 0.13906785979588465,
+          "retained_profile_overlap": 0.7712432600816567,
+          "retained_profile_relative_l2": 0.6365405201388346,
+          "native_potential_norm_fraction_outside_reference": 0.16331284502825827,
+          "residual": 1.4109165526049307e-13,
+          "max_spectrum_residual": 7.690374542006494e-12,
+          "gain_real": 0.0027088522451663762,
+          "gain_imag": 0.0,
+          "nearest_frequency_mode": {
+            "index": 72,
+            "frequency_hz": 30118.417174591643,
+            "retained_profile_overlap": 0.001833639119153076
+          },
+          "projected_reference_rayleigh_frequency_hz": 29789.253833099694,
+          "assembly_cold_seconds": 2.285431177000646,
+          "assembly_warm_seconds": 1.710153039000943,
+          "solve_seconds": 0.8205400369988638,
+          "retained_data_gates_passed": false,
+          "claim": "Retained-harmonic comparison; full AE3D basis/boundary parity not certified",
+          "change_from_previous_case": {
+            "case": "6_80_cosine_158",
+            "frequency_relative_change": 0.07692962618017307,
+            "retained_profile_overlap": 0.802732844798046,
+            "retained_profile_relative_l2": 0.5963388129934494
+          },
+          "case": "8_80_cosine_158"
+        }
+      ],
+      "particle_tracing": false,
+      "imported_matrices": false,
+      "paper": "https://arxiv.org/html/2603.03118v1",
+      "frequency_source": "https://github.com/ORNL-Fusion/AE3D/blob/master/ae_solve_version31.f",
+      "frequency_convention": "AE3D scales inertia by (1000*2*pi)^2; sqrt(eigenvalue) is kHz",
+      "acceptance": {
+        "frequency_relative_error": 0.01,
+        "retained_profile_relative_l2": 0.1,
+        "residual": 1e-08
+      },
+      "reference": {
+        "doi": "10.5281/zenodo.21299908",
+        "source_sha256": "17983671ea72b829066b139d20d90127e696a5e378ed1c326b2e8f3584fecc36",
+        "equilibrium_sha256": "6a32726c66b57dc5d68e31bbf53f6f5833f1e7fb124404dadfe76873beb2b6d5",
+        "member": "Knyazev_JPP2026/simulations_fig4_fig5/QA/all_inputs/ae3d_saw_scaled/QA_35harmonics_scale0_001.npy",
+        "interpretation": "physical signed Phi harmonic coefficients in volts; sin(m theta-n zeta+omega t)",
+        "mass_density_kg_m3": 1.88e-06,
+        "density_profile": "flat",
+        "archive_eigenvalue_sqrt_times_1000": 30308.607688245924,
+        "archived_transport_omega_rad_s": 30308.607688245924,
+        "paper_frequency_label_hz": 30300.0
+      },
+      "platform": "cpu",
+      "device_kind": "cpu",
+      "operator_sha256": "983233479909b8d9ed005adf79cfb68cc917a06d8d8bee309aa2d849627782eb",
+      "benchmark_sha256": "74aa649119136c361acf512714cfe341838f120e58797d522ac2bf6031f49ebc",
+      "reference_sha256": "4b1cd5aa3241451c81916a3a30a87ea9b08e46738dc1bb19dcbae7fe2e9994a7",
+      "radial_coordinate": "Fortran boozmn half mesh: (jlist-1.5)/(ns_b-1)",
+      "boundary_policy": "Phi=0 at first and last half-mesh nodes; axis/LCFS not yet matched",
+      "elapsed_seconds": 19.17987238400019,
+      "retained_data_gates_passed": false,
+      "full_ae3d_parity": false
+    },
+    {
+      "status": "completed",
+      "cases": [
+        {
+          "radial_points": 12,
+          "angular_points": 80,
+          "harmonics": 158,
+          "angular_basis": "cosine",
+          "matrix_dimension": 1580,
+          "boundary_s": [
+            0.01,
+            0.99
+          ],
+          "selected_index": 117,
+          "selection": "largest overlap with the retained signed physical Phi profiles",
+          "frequency_hz": 26258.53424379845,
+          "frequency_relative_error": 0.133627828968803,
+          "retained_profile_overlap": 0.8026108631233991,
+          "retained_profile_relative_l2": 0.5965029776927457,
+          "native_potential_norm_fraction_outside_reference": 0.21589223111583034,
+          "residual": 2.3312662978538636e-13,
+          "max_spectrum_residual": 8.437463973327279e-12,
+          "gain_real": -0.0034483160360209457,
+          "gain_imag": 0.0,
+          "nearest_frequency_mode": {
+            "index": 129,
+            "frequency_hz": 30476.357613455915,
+            "retained_profile_overlap": 0.07879157646707265
+          },
+          "projected_reference_rayleigh_frequency_hz": 29473.107113605805,
+          "assembly_cold_seconds": 3.1642240940000192,
+          "assembly_warm_seconds": 2.656084299998838,
+          "solve_seconds": 1.1557262380010798,
+          "retained_data_gates_passed": false,
+          "claim": "Retained-harmonic comparison; full AE3D basis/boundary parity not certified",
+          "case": "12_80_cosine_158"
+        },
+        {
+          "radial_points": 16,
+          "angular_points": 80,
+          "harmonics": 158,
+          "angular_basis": "cosine",
+          "matrix_dimension": 2212,
+          "boundary_s": [
+            0.01,
+            0.99
+          ],
+          "selected_index": 171,
+          "selection": "largest overlap with the retained signed physical Phi profiles",
+          "frequency_hz": 26873.442579373248,
+          "frequency_relative_error": 0.11333958802089339,
+          "retained_profile_overlap": 0.7531049937439702,
+          "retained_profile_relative_l2": 0.6579003483795206,
+          "native_potential_norm_fraction_outside_reference": 0.1330519948099259,
+          "residual": 2.2038588670747205e-13,
+          "max_spectrum_residual": 1.1825254453605858e-11,
+          "gain_real": -0.0034762756725990897,
+          "gain_imag": 0.0,
+          "nearest_frequency_mode": {
+            "index": 188,
+            "frequency_hz": 30355.2425925658,
+            "retained_profile_overlap": 0.03212425565109923
+          },
+          "projected_reference_rayleigh_frequency_hz": 29418.786159505413,
+          "assembly_cold_seconds": 3.7636074060010287,
+          "assembly_warm_seconds": 3.3233815399999003,
+          "solve_seconds": 2.443175763999534,
+          "retained_data_gates_passed": false,
+          "claim": "Retained-harmonic comparison; full AE3D basis/boundary parity not certified",
+          "change_from_previous_case": {
+            "case": "12_80_cosine_158",
+            "frequency_relative_change": 0.023417466103235363,
+            "retained_profile_overlap": 0.8659244335998095,
+            "retained_profile_relative_l2": 0.5001748447241715
+          },
+          "case": "16_80_cosine_158"
+        }
+      ],
+      "particle_tracing": false,
+      "imported_matrices": false,
+      "paper": "https://arxiv.org/html/2603.03118v1",
+      "frequency_source": "https://github.com/ORNL-Fusion/AE3D/blob/master/ae_solve_version31.f",
+      "frequency_convention": "AE3D scales inertia by (1000*2*pi)^2; sqrt(eigenvalue) is kHz",
+      "acceptance": {
+        "frequency_relative_error": 0.01,
+        "retained_profile_relative_l2": 0.1,
+        "residual": 1e-08
+      },
+      "reference": {
+        "doi": "10.5281/zenodo.21299908",
+        "source_sha256": "17983671ea72b829066b139d20d90127e696a5e378ed1c326b2e8f3584fecc36",
+        "equilibrium_sha256": "6a32726c66b57dc5d68e31bbf53f6f5833f1e7fb124404dadfe76873beb2b6d5",
+        "member": "Knyazev_JPP2026/simulations_fig4_fig5/QA/all_inputs/ae3d_saw_scaled/QA_35harmonics_scale0_001.npy",
+        "interpretation": "physical signed Phi harmonic coefficients in volts; sin(m theta-n zeta+omega t)",
+        "mass_density_kg_m3": 1.88e-06,
+        "density_profile": "flat",
+        "archive_eigenvalue_sqrt_times_1000": 30308.607688245924,
+        "archived_transport_omega_rad_s": 30308.607688245924,
+        "paper_frequency_label_hz": 30300.0
+      },
+      "platform": "cpu",
+      "device_kind": "cpu",
+      "operator_sha256": "983233479909b8d9ed005adf79cfb68cc917a06d8d8bee309aa2d849627782eb",
+      "benchmark_sha256": "74aa649119136c361acf512714cfe341838f120e58797d522ac2bf6031f49ebc",
+      "reference_sha256": "4b1cd5aa3241451c81916a3a30a87ea9b08e46738dc1bb19dcbae7fe2e9994a7",
+      "radial_coordinate": "Fortran boozmn half mesh: (jlist-1.5)/(ns_b-1)",
+      "boundary_policy": "Phi=0 at first and last half-mesh nodes; axis/LCFS not yet matched",
+      "elapsed_seconds": 28.33785985800023,
+      "retained_data_gates_passed": false,
+      "full_ae3d_parity": false
+    }
+  ],
+  "geometry_identity_audit": {
+    "quantity": "B*norm(iota*r_theta+r_zeta)/(G+iota*I)-1",
+    "plus_offset_relative_rms": 2.8175493853160735e-05,
+    "minus_offset_relative_rms": 0.1895420746166099
+  },
+  "scope": "No particle tracing or imported eigenproblem matrices; retained-profile comparison only"
+}

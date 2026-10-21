@@ -1,0 +1,22 @@
+--- a/ae_solve_version31.f
++++ b/ae_solve_version31.f
+@@ -909,17 +909,17 @@
+            stell_rfp_specific_term7 = 
+      >           ans_css*gsz_j(k,m)*kprl_j*rnj*rni*iota_inv_pf(m)
+ 	  else
+            stell_rfp_specific_term2 =
+-     >         -ans_scs*gss_j(k,m)*rmj*iotapf(m)*kprl_i
++     >         -ans_scs*gss_j(k,m)*rmi*iotapf(m)*kprl_j
+            stell_rfp_specific_term3 =
+      >          ans_scs*(gss_ji_djds2(k,m)*kprl_ij
+      >          - gss_djds(k,m)*iotapf(m)*(kprl_i*rmj - kprl_j*rmi)
+      >          + rmi*rmj*gss_j(k,m)*iotapf(m)*iotapf(m))
+            stell_rfp_specific_term4 =
+      >          -ans_scs*gst_djdt(k,m)*kprl_j*rmi*iotapf(m)
+            stell_rfp_specific_term5 =
+-     >          -ans_css*gst_j(k,m)*rmi*rmj*kprl_j*iotapf(m)
++     >          -ans_ssc*gst_j(k,m)*rmi*rmj*kprl_j*iotapf(m)
+            stell_rfp_specific_term6 =
+      >          -ans_scs*gsz_djdz(k,m)*kprl_j*rmi*iotapf(m)
+            stell_rfp_specific_term7 =
+      >           ans_css*gsz_j(k,m)*kprl_j*rnj*rmi*iotapf(m)

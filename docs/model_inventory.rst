@@ -132,6 +132,113 @@ TOML-driven global workflow
    eigenfrequency CSV files, mode-structure CSV files, and plotted dashboards.
    This is the recommended user path before writing custom Python analysis.
 
+Physical-potential vorticity operator
+   ``fax.vorticity.physical_potential_problem_from_boozer_geometry`` adds the
+   global weak form of equations 3--4 in
+   `Knyazev et al. <https://arxiv.org/html/2603.03118v1>`_. Its unknown is the
+   physical scalar potential Phi, rather than the reduced radial envelope.
+   It assembles
+
+   .. math::
+
+      K_{ij}=\int dV\,\nabla(\nabla_\parallel f_i)^*\cdot
+                          \nabla(\nabla_\parallel f_j),\qquad
+      M_{ij}=\int dV\,\frac{\mu_0\rho}{B^2}
+                          \nabla f_i^*\cdot\nabla f_j.
+
+   The complete embedding metric, including its cross terms, enters both
+   matrices. With ``h=(m*iota-n)*B/(G+iota*I)``, derivatives of ``h`` include
+   radial magnetic shear and derivatives of B, G and I, together with the
+   angular derivatives of B. Density is a scalar or nodal flux-function
+   profile; a zero endpoint density is permitted. No QA symmetry filter,
+   ``I=0`` approximation or adjustable radial stiffness is imposed. The same
+   equation applies to QA and QI under the paper's incompressible, flute-ordered
+   assumptions. QI needs its own equilibrium, density and harmonic convergence.
+
+   The radial discretization uses linear elements and two-point Gauss
+   quadrature. Periodic angular quadrature retains the full Fourier coupling.
+   The default ``angular_basis="complex"`` retains complex exponentials.
+   ``angular_basis="cosine"`` selects AE3D's cosine sector using real matrices.
+   It is equivalent to the paired positive/negative complex harmonics, as
+   checked by projection of the assembled matrices. A cosine export needs
+   half of each coefficient at both signed harmonics for complex reconstruction.
+   Element assembly uses a compiled ``lax.map`` with bounded angular workspace;
+   the resulting dense matrices use FAX's existing Hermitian eigensolver and
+   custom eigenvalue/cluster sensitivities. JIT and forward/reverse derivatives
+   are supported through geometry and profiles. For example, given a geometry
+   with correctly located radial surfaces:
+
+   .. code-block:: python
+
+      import jax
+      import jax.numpy as jnp
+      import numpy as np
+      from fax import (physical_potential_problem_from_boozer_geometry,
+                       solve_physical_potential_eigenmodes)
+      from fax.metric import generalized_hermitian_isolated_eigenvalue
+
+      jax.config.update("jax_enable_x64", True)
+      harmonics = jnp.array([[2, 1], [3, 1]])  # Choose a converged basis.
+      assemble = jax.jit(lambda geo, rho:
+          physical_potential_problem_from_boozer_geometry(
+              geo, harmonics, mass_density=rho,
+              theta_points=64, zeta_points=64, toroidal_offset_sign=1,
+              radial_nodes=np.linspace(0., 1., 51), boundary_condition="axis"))
+      rho = 1.88e-6*jnp.ones_like(geometry.s)  # Paper's QA density.
+      # For the paper's QI profile use rho_axis*(1-geometry.s**5).
+      problem = assemble(geometry, rho)
+      result = solve_physical_potential_eigenmodes(problem)
+
+      def omega2(log_density_scale):
+          p = assemble(geometry, rho*jnp.exp(log_density_scale))
+          return generalized_hermitian_isolated_eigenvalue(p.stiffness, p.mass, 0)
+
+      derivative = jax.jit(jax.grad(omega2))(0.)
+
+   Frequencies are in Hz, with ``omega2=(2*pi*frequency_hz)**2``. Neither the
+   density nor a frequency conversion is fitted to an external answer. Phi's
+   saturated amplitude remains an external input to particle tracing.
+
+   Without ``radial_nodes``, both supplied endpoints have Phi=0; an inner
+   half-mesh endpoint gives an annular domain. With ``radial_nodes`` and
+   ``boundary_condition="axis"``, the potential mesh spans s=0..1 independently
+   of the stored geometry. The m=0 axis value is retained, nonzero m vanish
+   there, and all modes vanish at the outer boundary. Linear functions in s
+   have zero derivative with respect to r=sqrt(s) at the axis. This supplies
+   finite-energy regularity, not the exact AE3D coefficient-averaging assembly or
+   an explicit r**abs(m) factor for every potential harmonic.
+
+   Geometry is sampled only at interior Gauss points, avoiding inversion of
+   the singular axis metric. Original half-mesh coefficients are linearly
+   interpolated in s, reproducing arithmetic averaging at interior full-mesh
+   locations. Below the first half-mesh surface, nonzero-m geometric Fourier
+   coefficients use r**abs(m); m=0 and flux profiles extrapolate linearly in s.
+   The outermost interval also uses linear extrapolation. The background
+   remains at its original resolution when refining the potential mesh.
+   The caller must provide the correct half/full mesh surface locations. Fortran
+   ``boozmn`` uses ``phi=zeta+p`` (offset sign +1); coefficients storing
+   ``nu=zeta-phi`` need offset sign -1. These sign conventions are documented
+   in the `booz_xform theory <https://hiddensymmetries.github.io/booz_xform/theory.html>`_.
+
+   Tests cover slab dispersion independent of radial wavelength, independent
+   quadrature of the metric/parallel-gradient terms and its radial refinement,
+   angular refinement, zero edge density, the independent circular-axis inertia
+   integral, full-domain boundary restoration, and reverse sensitivities
+   through a manufactured 3D embedding. These are mathematical/adapter checks, not
+   matched AE3D frequency/eigenfunction validation. No QA or QI cross-code
+   agreement is claimed by this addition. The TOML global workflow above
+   continues to select the existing envelope model; use this explicit Python
+   API for the vorticity operator. The reproducible native QA screen and
+   its current failed comparison are in :doc:`qa_ae3d_vorticity_benchmark`.
+   The independent Cartesian operator check and source-level coefficient
+   audit are in :doc:`qa_ae3d_operator_audit`.
+
+   This completes the spatial terms of the paper's stable shear-Alfven model.
+   It does not add acoustic/compressional coupling, the equilibrium-current
+   instability source, resistive continuum regularization, kinetic drive or
+   damping, or nonlinear saturation. Those require additional physical models;
+   QI geometry alone is not a reason to switch them on.
+
 Sparse and matrix-free paths
    ``assemble_radial_block_sparse_matrices`` and
    ``solve_radial_block_eigenmodes_sparse`` are non-differentiable scale-up

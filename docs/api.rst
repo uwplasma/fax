@@ -46,6 +46,9 @@ API
 .. automodule:: fax.global_modes
    :members:
 
+.. automodule:: fax.vorticity
+   :members:
+
 .. automodule:: fax.gap_models
    :members:
 

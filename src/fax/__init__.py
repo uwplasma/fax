@@ -202,6 +202,12 @@ from .vmec_boozer_design import (
     vmec_boundary_fax_frequencies,
     vmec_state_to_boozer_geometry,
 )
+from .vorticity import (
+    PhysicalPotentialProblem,
+    physical_potential_problem_from_boozer_geometry,
+    physical_potential_problem_from_grid,
+    solve_physical_potential_eigenmodes,
+)
 from .workflows import (
     BenchmarkRunSummary,
     ContinuumRunSummary,
@@ -216,6 +222,10 @@ from .workflows import (
 )
 
 __all__ = [
+    "PhysicalPotentialProblem",
+    "physical_potential_problem_from_boozer_geometry",
+    "physical_potential_problem_from_grid",
+    "solve_physical_potential_eigenmodes",
     "ContinuumRunSummary",
     "ContinuumArtifacts",
     "Ae3dEigenvalueData",
