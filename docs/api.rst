@@ -1,77 +1,23 @@
 API
 ===
 
-.. automodule:: fax
-   :members:
-
-.. automodule:: fax.config
-   :members:
-
-.. automodule:: fax.benchmark_manifest
-   :members:
-
-.. automodule:: fax.cross_code
-   :members:
-
-.. automodule:: fax.runner
-   :members:
-
-.. automodule:: fax.workflows
-   :members:
-
-.. automodule:: fax.equilibrium
+.. automodule:: fax.geometry
    :members:
 
 .. automodule:: fax.continuum
    :members:
 
-.. automodule:: fax.metric
+.. automodule:: fax.eigen
    :members:
 
-.. automodule:: fax.modes
+.. automodule:: fax.drive
    :members:
 
-.. automodule:: fax.maturity
+.. automodule:: fax.objectives
    :members:
 
-.. automodule:: fax.kinetic_validation
+.. automodule:: fax.io
    :members:
 
-.. automodule:: fax.far3d
-   :members:
-
-.. automodule:: fax.gaps
-   :members:
-
-.. automodule:: fax.global_modes
-   :members:
-
-.. automodule:: fax.gap_models
-   :members:
-
-.. automodule:: fax.fast_ions
-   :members:
-
-.. automodule:: fax.optimization
-   :members:
-
-.. automodule:: fax.vmec_boozer_design
-   :members:
-
-.. automodule:: fax.boozer
-   :members:
-
-.. automodule:: fax.plotting
-   :members:
-
-.. automodule:: fax.validation
-   :members:
-
-.. automodule:: fax.benchmarks
-   :members:
-
-.. automodule:: fax.reference_cases
-   :members:
-
-.. automodule:: fax.progress
+.. automodule:: fax.plot
    :members:

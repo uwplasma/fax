@@ -1,80 +1,53 @@
-from __future__ import annotations
+"""Continuum gates: analytic uniform-field limit, STELLGAP CTOK parity, gap formulas."""
+
+from pathlib import Path
 
 import jax
 import jax.numpy as jnp
 import numpy as np
 import pytest
 
-from fax.continuum import (
-    alfven_speed,
-    continuum_branch_matrix,
-    large_aspect_k_parallel,
-    local_continuum_angular_frequency,
-    local_continuum_frequency_hz,
-    nearest_rational_surface,
-)
-from fax.equilibrium import analytic_circular_tokamak, analytic_cylinder
-from fax.validation import finite_difference_derivative
+import fax
+from fax.continuum import MU0
+
+DATA = Path(__file__).parent / "data"
 
 
-def test_large_aspect_k_parallel_limit():
-    iota = jnp.asarray([0.25, 0.5, 0.75])
-    k_parallel = large_aspect_k_parallel(iota, m=2, n=1, major_radius=4.0)
-
-    np.testing.assert_allclose(np.asarray(k_parallel), np.asarray([0.125, 0.0, -0.125]))
-
-
-def test_local_continuum_matches_closed_form_cylinder():
-    geometry = analytic_cylinder(
-        radial_points=4,
-        iota=0.25,
-        magnetic_field=3.0,
-        number_density=2.0e20,
-        major_radius=5.0,
-    )
-
-    omega = local_continuum_angular_frequency(geometry, m=2, n=1)
-    expected = alfven_speed(geometry.magnetic_field, geometry.mass_density) * abs(1.0 - 2.0 * 0.25) / 5.0
-
-    np.testing.assert_allclose(np.asarray(omega), np.asarray(expected), rtol=2.0e-6)
-    np.testing.assert_allclose(np.asarray(local_continuum_frequency_hz(geometry, m=2, n=1)), np.asarray(omega / (2 * np.pi)))
+def test_uniform_field_continuum_is_k_parallel_v_alfven():
+    geo = fax.circular_torus(iota=jnp.linspace(0.3, 0.6, 24))
+    harmonics = fax.mode_family((1, 2), 4)
+    rho = fax.mass_density(1e19, 2.0)
+    f = fax.continuum(geo, harmonics, rho)
+    k = (harmonics[:, 1] - harmonics[:, 0] * geo.iota[:, None]) / 5.5
+    exact = jnp.sort(jnp.abs(k) * 2.7 / jnp.sqrt(MU0 * rho) / (2 * jnp.pi), axis=1)
+    np.testing.assert_allclose(f, exact, rtol=1e-9)
 
 
-def test_continuum_branch_matrix_shape_and_values():
-    geometry = analytic_cylinder(radial_points=5, iota=0.5, magnetic_field=1.0, major_radius=2.0)
-    harmonics = jnp.asarray([[1, 0], [2, 1], [3, 2]], dtype=float)
-
-    branches = continuum_branch_matrix(geometry, harmonics)
-
-    assert branches.shape == (5, 3)
-    np.testing.assert_allclose(np.asarray(branches[:, 1]), 0.0, atol=1.0e-12)
+def test_matrices_are_hermitian_and_resolution_converged():
+    geo = fax.read_boozmn(DATA / "boozmn_ctok.nc").surfaces(slice(10, 90, 10))
+    h = fax.mode_family(2, 6)
+    K, M = fax.continuum_matrices(geo, h, 3.4e-8)
+    np.testing.assert_allclose(K, jnp.conj(jnp.swapaxes(K, -1, -2)), atol=1e-12 * float(jnp.abs(K).max()))
+    np.testing.assert_allclose(fax.continuum(geo, h, 3.4e-8, 32, 32), fax.continuum(geo, h, 3.4e-8, 64, 64), rtol=1e-9)
 
 
-def test_nearest_rational_surface_for_linear_iota_profile():
-    geometry = analytic_circular_tokamak(radial_points=101, iota_axis=0.2, iota_edge=0.8)
-
-    surface, distance = nearest_rational_surface(geometry, m=2, n=1)
-
-    assert abs(float(surface) - 0.5) < 0.02
-    assert float(distance) < 0.01
-
-
-def test_density_scale_gradient_matches_finite_difference_and_formula():
-    geometry = analytic_cylinder(radial_points=16, iota=0.25, magnetic_field=3.0, major_radius=5.0)
-
-    def omega_at_scale(scale):
-        scaled = geometry.with_density_scale(scale)
-        return jnp.mean(local_continuum_angular_frequency(scaled, m=2, n=1))
-
-    scale0 = 1.3
-    autodiff = float(jax.grad(omega_at_scale)(scale0))
-    finite_difference = finite_difference_derivative(lambda x: float(omega_at_scale(x)), scale0, step=1.0e-2)
-    expected = float(-0.5 * omega_at_scale(scale0) / scale0)
-
-    np.testing.assert_allclose(autodiff, expected, rtol=3.0e-6)
-    np.testing.assert_allclose(finite_difference, expected, rtol=3.0e-4)
+def test_stellgap_ctok_parity():
+    """Same boozmn_ctok.nc and STELLGAP inputs (n = 2, m = 0..12, deuterium at 1e19 m^-3)."""
+    geo = fax.read_boozmn(DATA / "boozmn_ctok.nc")
+    khz = np.asarray(jax.jit(lambda g: fax.continuum(g, fax.mode_family(2, 12), fax.mass_density(1e19, 2.0)))(geo)) / 1e3
+    ref = np.load(DATA / "stellgap_ctok_continuum.npz")
+    errors = []
+    for s, row in zip(np.asarray(geo.s), khz, strict=True):
+        j = np.argmin(abs(ref["s"] - s))
+        if abs(ref["s"][j] - s) < 2e-3:
+            errors.append(np.linalg.norm(row - ref["khz"][j]) / np.linalg.norm(ref["khz"][j]))
+    assert len(errors) == 97
+    assert np.mean(errors) < 5e-3 and np.percentile(errors, 95) < 1.2e-2
 
 
-def test_nearest_rational_surface_rejects_m_zero():
-    with pytest.raises(ValueError, match="m must be nonzero"):
-        nearest_rational_surface(analytic_cylinder(), m=0, n=1)
+def test_gaps_and_gap_location():
+    center, width = fax.gaps(jnp.array([[1.0, 2.0, 5.0, 5.5], [0.0, 3.0, 3.5, 4.0]]))
+    np.testing.assert_allclose(center, [3.5, 1.5])
+    np.testing.assert_allclose(width, [3.0, 3.0])
+    assert fax.gap_location(1, 1, 1) == pytest.approx((2 / 3, 1 / 3))  # TAE: iota = 2n/(2m+1)
+    assert fax.gap_location(4, 1, 0, -1, 4)[0] == pytest.approx(2.0)  # MAE: iota = (2n - nfp)/(2m)
