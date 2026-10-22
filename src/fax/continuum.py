@@ -60,12 +60,13 @@ def continuum_matrices(geo: Geometry, harmonics: Any, density: Any, ntheta: int 
     h = jnp.asarray(harmonics, dtype=float)
     grid = surface_grid(geo, ntheta, nzeta)
     weight = jnp.abs(grid.jacobian) * grid.grad_s2 / grid.B**2
-    k = (h[:, 1] - h[:, 0] * geo.iota[:, None])[:, :, None, None] * grid.B[:, None] / (geo.G + geo.iota * geo.I)[:, None, None, None]
-    dm, dn = h[None, :, 0] - h[:, None, 0], h[None, :, 1] - h[:, None, 1]
-    phase = jnp.exp(1j * (dm[..., None, None] * grid.theta - dn[..., None, None] * grid.zeta))
+    a = (h[:, 1] - h[:, 0] * geo.iota[:, None]) / (geo.G + geo.iota * geo.I)[:, None]  # k_j = a_j |B|
     rho = jnp.broadcast_to(jnp.asarray(density, dtype=float), geo.s.shape)
-    K = jnp.mean((weight * grid.B**2 / MU0)[:, None, None] * k[:, :, None] * k[:, None, :] * phase, axis=(-2, -1))
-    M = rho[:, None, None] * jnp.mean(weight[:, None, None] * phase, axis=(-2, -1))
+    # <f exp(i(dm theta - dn zeta))> is the DFT of f at (-dm, dn): one FFT per surface instead of an (H, H, T, Z) tensor.
+    dm, dn = (h[None, :, 0] - h[:, None, 0]).astype(int), (h[None, :, 1] - h[:, None, 1]).astype(int)
+    mean = lambda f: jnp.fft.fft2(f)[:, -dm % ntheta, dn % nzeta] / (ntheta * nzeta)  # noqa: E731
+    K = a[:, :, None] * a[:, None, :] * mean(weight * grid.B**4 / MU0)
+    M = rho[:, None, None] * mean(weight)
     herm = lambda A: 0.5 * (A + jnp.conj(jnp.swapaxes(A, -1, -2)))  # noqa: E731
     return Matrices(herm(K), herm(M))
 

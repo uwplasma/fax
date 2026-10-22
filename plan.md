@@ -228,3 +228,34 @@ Open items: trapped and precessing particles, finite orbit width (Könies' FOW r
 LP-QA `NS_ARRAY` ladder: stages 1 and 2 converge (189 and 704 iterations). Stage 3 (ns = 50) converges linearly and reaches ftol 1e-13 at iteration 1115, so 1e-13 is reachable in float64 and NITER = 1000 was just short. VMEC2000 would write the wout anyway. Fix: NITER_ARRAY = 600 1000 2000. Not a vmex bug.
 
 Boozer radial label: booz_xform writes `jlist = compute_surfs + 2` for half-mesh rows (booz_xform_jax `io_utils.py`). Its in-memory `s_in` is `s_half`, so the right label is `s = (j - 1.5)/(ns - 1)`. `read_boozmn` now uses it, which matches `from_wout` and `prepare_design`. The old `(j - 1)/(ns - 1)` label happened to match STELLGAP because STELLGAP is off by one cell too. xmetric averages half rows k and k+1 onto full surface k at `(k - 1)/(ns - 1)`, but stellgap labels it `rho = nsurf/nsurf_max = k/(ns - 1)` (`stellgap_serial_ver5.f`, `rho(ir) = nsurf(ir)/nsurf(irads)`). The parity test now shifts the STELLGAP labels by `-1/(ns - 1)` and interpolates them onto FAX's s. A scan of the label offset has its minimum there. CTOK parity is now mean 6.3e-3 and p95 6.6e-3 (was 4.5e-3 and 1.13e-2), with a 7e-3 gate.
+
+**2026-10-22, P6 (performance).** `examples/benchmark.py [--design]` prints compile+first and steady (mean of 3) times. Changes (numerics unchanged, all tests pass as they were):
+
+- Continuum: `<f exp(i(dm theta - dn zeta))>` is now one `fft2` per surface gathered at `(-dm, dn)` instead of the `(S, H, H, T, Z)` phase tensor. Identical DFT, memory `O(S T Z)`. Steady 0.07 → 0.03 s (CTOK), 0.37 → 0.05 s (N = 200, H = 21), 1.33 → 0.12 s (N = 400, H = 31); compile 1.8 → 0.4 s at N = 400.
+- Shift-invert: block Thomas factors (`block_factor`) computed once instead of in each of the 40 iterations; `block_solve(factors, b)`. Gain 5–25% only: per iteration the triangular solves, the `G` matvec and the `(N H, p)` QR cost about the same (10 ms each at N = 400, H = 31); unrolling the scans gave nothing.
+- Not done: FFT for the global assembly (its `(S, H, T, Z, 3)` basis is linear in H, the einsum is not the bottleneck); vmap over n-families (one family per solve in all callers).
+
+Laptop CPU (M-series, 10 cores, loaded), seconds, compile+first / steady:
+
+| case | N | H | continuum | assembly | shift-invert (8) | grad frequency_hz | dense |
+|---|---|---|---|---|---|---|---|
+| CTOK | 98 | 13 | 0.69 / 0.03 | 0.68 / 0.036 | 1.17 / 0.13 | 1.87 / 0.17 | 1.61 / 1.20 |
+| torus | 200 | 21 | 0.36 / 0.06 | 0.61 / 0.09 | 1.18 / 0.42 | 2.09 / 0.53 | – |
+| torus | 400 | 31 | 0.39 / 0.12 | 0.71 / 0.18 | 2.04 / 1.25 | 3.83 / 1.61 | – |
+| LP-QA design `value_and_grad` (ns 16, 4 surfaces, 2 params) | | | | | | 10.96 / 1.46 | |
+
+Office RTX A4000 (fp64, JAX 0.6.2 cuda12) vs the office CPU (36 threads, JAX_PLATFORMS=cpu):
+
+| case | path | GPU | office CPU |
+|---|---|---|---|
+| CTOK | continuum | 1.04 / 0.010 | 0.81 / 0.14 |
+| CTOK | assembly | 1.74 / 0.014 | 0.82 / 0.14 |
+| CTOK | shift-invert | 3.09 / 0.29 | 1.44 / 0.33 |
+| CTOK | grad | 8.28 / 0.32 | 3.56 / 0.51 |
+| CTOK | dense | 1.92 / 0.22 | 8.03 / 5.54 |
+| N 200 | shift-invert / grad | 4.64 / 0.86, 11.5 / 0.98 | 2.28 / 1.14, 4.42 / 1.49 |
+| N 400 | shift-invert / grad | 5.49 / 1.75, 14.4 / 2.01 | 3.74 / 2.73, 6.04 / 3.43 |
+
+- The GPU wins steady assembly/continuum by 10x and dense by 25x, but shift-invert is a sequential `lax.scan` of small `H x H` blocks and gains only 1.1–1.6x; compile is 2–3x longer on GPU. For one-off solves and optimization loops of < ~50 steps the CPU wins. The design path was not run on office (its Python 3.10 cannot install vmex).
+
+Gates: CTOK-sized global solve (assembly + 8-mode shift-invert) 0.17 s steady on the laptop: **met** (under load; 0.11–0.13 s quiet). One LP-QA optimization step: 1.5 s steady (**met**), but the first step compiles for 11 s (23 s before the shift-invert change cut the traced graph); the 5 s gate holds only after compilation.

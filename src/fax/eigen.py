@@ -114,27 +114,26 @@ def _quad(y: jax.Array, A: Blocks) -> jax.Array:
     return jnp.real(jnp.einsum("kip,kip->p", jnp.conj(y), _matvec(A, y)))
 
 
-def block_solve(A: Blocks, b: jax.Array) -> jax.Array:
-    """Solve ``A x = b`` by block LU (Thomas algorithm), ``O(N H^3)``; ``b`` has shape ``(N, H, p)``."""
+def block_factor(A: Blocks) -> tuple[jax.Array, jax.Array, jax.Array]:
+    """Block LU (Thomas) factors of ``A``, ``O(N H^3)``: inverse pivots, multipliers and upper blocks."""
     zero = jnp.zeros_like(A.diag[:1])
     up_prev, up_next = jnp.concatenate([zero, A.upper]), jnp.concatenate([A.upper, zero])
-    adj = lambda a: jnp.conj(jnp.swapaxes(a, -1, -2))  # noqa: E731
 
-    def forward(carry: tuple, xs: tuple) -> tuple:
-        S_inv, z = carry
-        d, u, rhs = xs
-        L = adj(u) @ S_inv
-        S_inv, z = jnp.linalg.inv(d - L @ u), rhs - L @ z
-        return (S_inv, z), (S_inv, z)
+    def forward(S_inv: jax.Array, xs: tuple) -> tuple:
+        d, u = xs
+        L = jnp.conj(jnp.swapaxes(u, -1, -2)) @ S_inv
+        S_inv = jnp.linalg.inv(d - L @ u)
+        return S_inv, (S_inv, L)
 
-    init = (jnp.zeros_like(A.diag[0]), jnp.zeros_like(b[0]))
-    _, (S_inv, z) = jax.lax.scan(forward, init, (A.diag, up_prev, b))
+    S_inv, L = jax.lax.scan(forward, jnp.zeros_like(A.diag[0]), (A.diag, up_prev))[1]
+    return S_inv, L, up_next
 
-    def backward(x: jax.Array, xs: tuple) -> tuple:
-        S, u, zk = xs
-        x = S @ (zk - u @ x)
-        return x, x
 
+def block_solve(factors: tuple[jax.Array, jax.Array, jax.Array], b: jax.Array) -> jax.Array:
+    """Solve ``A x = b`` from :func:`block_factor` factors, ``O(N H^2 p)``; ``b`` has shape ``(N, H, p)``."""
+    S_inv, L, up_next = factors
+    z = jax.lax.scan(lambda z, xs: (xs[1] - xs[0] @ z,) * 2, jnp.zeros_like(b[0]), (L, b))[1]
+    backward = lambda x, xs: (xs[0] @ (xs[2] - xs[1] @ x),) * 2  # noqa: E731
     return jax.lax.scan(backward, jnp.zeros_like(b[0]), (S_inv, up_next, z), reverse=True)[1]
 
 
@@ -147,7 +146,7 @@ def shift_invert(F: Blocks, G: Blocks, target: float, count: int = 8, iters: int
     """
     N, H = F.diag.shape[:2]
     p = min(2 * count + 8, N * H)
-    A = Blocks(F.diag - target * G.diag, F.upper - target * G.upper)
+    A = block_factor(Blocks(F.diag - target * G.diag, F.upper - target * G.upper))
     step = lambda _, Y: jnp.linalg.qr(block_solve(A, _matvec(G, Y)).reshape(N * H, p))[0].reshape(N, H, p)  # noqa: E731
     Y = jax.lax.fori_loop(0, iters, step, jax.random.normal(jax.random.PRNGKey(0), (N, H, p)).astype(F.diag.dtype))
     Yf = Y.reshape(N * H, p)
