@@ -27,6 +27,7 @@ A case file has four tables; every key has a default:
    [run]
    task = "continuum"         # continuum | eigenmodes
    output = "../outputs/ctok_continuum"
+   # eigenmodes only: target_khz = 384.0 (0 solves densely for all modes), count = 6
 
 Results go to ``results.npz`` and ``case.json`` in ``run.output``.
 

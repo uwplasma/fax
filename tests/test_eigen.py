@@ -1,44 +1,118 @@
-"""Global operator gates: exact discrete spectrum and Hellmann-Feynman gradients."""
+"""Global operator gates: continuum accumulation, AE3D CTOK parity, Könies ITPA TAE, gradients."""
+
+from pathlib import Path
 
 import jax
 import jax.numpy as jnp
 import numpy as np
+import pytest
 
 import fax
-from fax.eigen import assemble
+from fax.continuum import MU0, generalized_eigh
+from fax.eigen import dense, global_matrices
+
+DATA = Path(__file__).parent / "data"
 
 
-def test_constant_coefficient_spectrum_is_exact():
-    n, w2, c = 30, 4.0, 0.5
-    s = jnp.linspace(0.0, 1.0, n + 2)
-    one = jnp.ones((n + 2, 1, 1), dtype=complex)
-    K, M = assemble(w2 * one, one, c * one, s)
-    lam = jnp.linalg.eigvalsh(K)
-    j = jnp.arange(1, n + 1)
-    exact = w2 + 4 * c * (n + 1) ** 2 * jnp.sin(j * jnp.pi / (2 * (n + 1))) ** 2
-    np.testing.assert_allclose(lam, exact, rtol=1e-12)
+def konies(N):
+    """Könies et al. (2018) ITPA TAE: R0 = 10 m, a = 1 m, B0 = 3 T, q = 1.71 + 0.16 r^2, n = 6, hydrogen 2e19."""
+    s = (jnp.arange(N) + 0.5) / N
+    return fax.circular_torus(s=s, major_radius=10.0, minor_radius=1.0, B0=3.0, iota=1 / (1.71 + 0.16 * s), epsilon_B=0.1)
 
 
-def test_eigenmodes_are_normalized_and_shaped():
-    geo = fax.circular_torus(iota=jnp.linspace(0.3, 0.6, 24), epsilon_B=0.1)
-    h = fax.mode_family(1, 3)
-    modes = fax.eigenmodes(geo, h, 3.4e-8, ntheta=16, nzeta=8)
-    assert modes.structures.shape == (22 * 4, 22, 4)
-    x = modes.structures.reshape(88, -1)
-    np.testing.assert_allclose(jnp.einsum("ki,ij,kj->k", jnp.conj(x), modes.M, x).real, 1.0, rtol=1e-9)
-    assert jnp.all(jnp.diff(modes.frequencies_hz) >= 0)
+def test_uniform_field_spectrum_is_a_continuum():
+    rho = fax.mass_density(1e19, 2.0)
+    edges = np.array([0.4, 0.7]) * 2.7 / 5.5 / np.sqrt(MU0 * rho)  # |n - m iota| v_A / R at s = 0, 1
+    spread = []
+    for N in (40, 160):
+        geo = fax.circular_torus(s=(jnp.arange(N) + 0.5) / N, iota=0.3 + 0.3 * (jnp.arange(N) + 0.5) / N)
+        modes = fax.eigenmodes(geo, jnp.array([[1.0, 1.0]]), rho, ntheta=8, nzeta=4)
+        w = np.sqrt(np.asarray(modes.omega2))
+        assert edges[0] < w.min() < edges[0] * (1 + 0.5 / N) and edges[1] * (1 - 0.5 / N) < w.max() < edges[1]
+        jump = np.abs(np.diff(np.asarray(modes.structures[:, :, 0]), axis=1)) ** 2  # singular: phi' localizes
+        spread.append(np.median(jump.sum(1) ** 2 / (jump**2).sum(1)))
+    assert spread[0] == pytest.approx(spread[1], rel=0.05)  # width in cells is fixed, so it shrinks as 1/N
 
 
-def test_hellmann_feynman_gradients_match_finite_differences():
-    h = fax.mode_family(1, 3)
+def test_ae3d_ctok_parity():
+    """AE3D's CTOK run (same boozmn, n = 2, m = 0..12, D at 1e19 m^-3) on its 99-point full mesh."""
+    geo = fax.read_boozmn(DATA / "boozmn_ctok.nc").full_mesh()
+    geo = jax.tree_util.tree_map(lambda a: jnp.concatenate([a, 2 * a[-1:] - a[-2:-1]]) if a.ndim and a.shape[0] == 98 else a, geo)
+    F, G = (np.asarray(dense(A)) for A in global_matrices(geo, fax.mode_family(2, 12), fax.mass_density(1e19, 2.0), 32, 4))
+    w, x = (np.asarray(a) for a in generalized_eigh(F, G))
+    x = x / np.linalg.norm(x, axis=0)
+    ref = np.load(DATA / "ae3d_ctok_modes.npz")
+    v = ref["vectors"].reshape(len(ref["khz"]), -1).astype(float)
+    v /= np.linalg.norm(v, axis=1, keepdims=True)
+    khz = np.sqrt(w) / 2e3 / np.pi
+    overlap = np.abs(v @ x)
+    best = overlap.argmax(1)
+    rel = khz[best] / ref["khz"] - 1
+    np.testing.assert_array_less(np.abs(rel[1:]), 0.015)  # six global modes, overlap > 0.9
+    assert overlap[np.arange(len(best)), best].min() > 0.9
+    tae = v[0]  # AE3D's 337.9 kHz TAE: FAX 272.8; AE3D's inter-surface iota' terms are wrong (plan.md section 6)
+    assert np.sqrt((tae @ F @ tae).real / (tae @ G @ tae).real) / 2e3 / np.pi == pytest.approx(ref["khz"][0], rel=0.03)
 
-    def f(p, start=0, stop=1):
-        geo = fax.circular_torus(s=jnp.linspace(0.05, 1.0, 16), iota=jnp.linspace(0.3, 0.6, 16) + p[1], epsilon_B=0.1)
-        return fax.frequency_hz(geo, h, 3.4e-8 * p[0], start, stop, ntheta=16, nzeta=8)
+
+def test_konies_tae_frequency_and_convergence():
+    h, rho = fax.mode_family(6, 16, 5), fax.mass_density(2e19, 1.0)
+    omega = []
+    for N in (50, 100, 200):
+        modes = fax.eigenmodes(konies(N), h, rho, target_hz=6.46e4, count=3, ntheta=32, nzeta=4)
+        omega.append(float(np.sqrt(modes.omega2[-1])))
+    assert 4.01e5 < omega[-1] < 4.13e5  # CAS3D (shifted equilibrium) and GYGLES (ad hoc, as here)
+    assert abs(omega[1] / omega[2] - 1) < 2e-4 and abs(omega[0] / omega[2] - 1) < 5e-4
+
+
+def test_shift_invert_matches_dense_and_gradients_match_finite_differences():
+    h, rho = fax.mode_family(6, 13, 9), fax.mass_density(2e19, 1.0)
+    dense_w = fax.eigenmodes(konies(40), h, rho, ntheta=16, nzeta=4).omega2
+    target = fax.eigenmodes(konies(40), h, rho, target_hz=6.46e4, count=4, ntheta=16, nzeta=4).omega2
+    np.testing.assert_allclose(target, dense_w[np.sort(np.argsort(np.abs(dense_w - (2 * np.pi * 6.46e4) ** 2))[:4])], rtol=1e-10)
+
+    def f(p, **options):
+        geo = fax.circular_torus(s=konies(40).s, major_radius=10.0, B0=3.0, iota=1 / (1.71 + 0.16 * konies(40).s) + p[1], epsilon_B=0.1)
+        return fax.frequency_hz(geo, h, rho * p[0], ntheta=16, nzeta=4, **options)
 
     p = jnp.array([1.0, 0.0])
-    for start, stop in ((0, 1), (2, 5)):
-        grad = jax.grad(f)(p, start, stop)
-        fd = jnp.array([(f(p + e, start, stop) - f(p - e, start, stop)) / 2e-6 for e in 1e-6 * jnp.eye(2)])
+    for options in ({"start": 2, "stop": 5}, {"target_hz": 6.46e4, "count": 4, "start": 3, "stop": 4}):
+        grad = jax.grad(f)(p, **options)
+        fd = jnp.array([(f(p + e, **options) - f(p - e, **options)) / 2e-6 for e in 1e-6 * jnp.eye(2)])
         np.testing.assert_allclose(grad, fd, rtol=1e-5)
-        np.testing.assert_allclose(grad[0], -0.5 * f(p, start, stop), rtol=1e-10)  # f ~ rho^(-1/2)
+        np.testing.assert_allclose(grad[0], -0.5 * f(p, **options), rtol=1e-10)  # f ~ rho^(-1/2)
+
+
+def test_ctok_bending_energy_matches_real_space_quadrature():
+    """F and G against finite differences of phi on the boozmn embedding; B^i from |B|, iota and g_ij only."""
+    geo, n = fax.read_boozmn(DATA / "boozmn_ctok.nc"), 2
+    s, xm, xn = (np.asarray(a) for a in (geo.s, geo.xm, geo.xn))
+    S, T, Z = np.meshgrid(s, *2 * [np.linspace(0, 2 * np.pi, 32, endpoint=False)], indexing="ij")
+
+    def field(c, sn):
+        ang = xm * T[..., None] - xn * Z[..., None]
+        return (np.asarray(c)[:, None, None] * np.cos(ang) + np.asarray(sn)[:, None, None] * np.sin(ang)).sum(-1)
+
+    def grad(f):  # d/ds by second-order differences, d/dtheta and d/dzeta spectrally
+        k = lambda a: np.fft.fftfreq(32, 1 / 32).reshape([-1 if i == a else 1 for i in range(f.ndim)])  # noqa: E731
+        spec = [np.fft.ifft(1j * k(a) * np.fft.fft(f, axis=a), axis=a).real for a in (1, 2)]
+        return np.stack([np.gradient(f, s, axis=0, edge_order=2), *spec], -1)
+
+    R, Zc, P, B = (field(geo.rmnc, geo.rmns), field(geo.zmnc, geo.zmns), field(geo.pmnc, geo.pmns), field(geo.bmnc, geo.bmns))
+    X = np.stack([R * np.cos(Z + P), R * np.sin(Z + P), Zc], -1)
+    e = np.swapaxes(grad(X), -1, -2)  # covariant basis r_i
+    g, iota = e @ np.swapaxes(e, -1, -2), np.asarray(geo.iota)[:, None, None]
+    gi, J = np.linalg.inv(g), np.abs(np.linalg.det(e))
+    Bz = B / np.sqrt(iota**2 * g[..., 1, 1] + 2 * iota * g[..., 1, 2] + g[..., 2, 2])  # B^theta = iota B^zeta
+    f = {3: np.sin(np.pi * s) ** 8, 4: -2 * s * np.sin(np.pi * s) ** 8}
+    phi = sum(f[m][:, None, None] * np.cos(m * T - n * Z) for m in f)
+    u = Bz * (iota * grad(phi)[..., 1] + grad(phi)[..., 2]) / B
+    rho = float(fax.mass_density(1e19, 2.0))
+    trapz = lambda a: ((a[1:] + a[:-1]) * np.diff(s)).sum() / 2  # noqa: E731
+    energy = lambda a, w: trapz((np.einsum("...i,...ij,...j", grad(a), gi, grad(a)) * w).mean((1, 2)))  # noqa: E731
+    F, G = (np.asarray(dense(A)) for A in global_matrices(geo, fax.mode_family(n, 4), rho, 32, 4))
+    y = np.zeros((len(s), 5))
+    for m in f:
+        y[:, m] = f[m]
+    y = y.ravel()
+    assert 0.5 * (y @ F @ y).real == pytest.approx(energy(u, J), rel=5e-3)
+    assert 0.5 * (y @ G @ y).real == pytest.approx(energy(phi, MU0 * rho * J / B**2), rel=5e-3)

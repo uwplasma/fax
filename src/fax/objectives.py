@@ -72,7 +72,7 @@ def prepare_design(
     """Prepare a design: parameters are boundary names ``rc|rs|zc|zs`` + ``m`` + ``n`` (e.g. ``"zs11"``).
 
     Each entry of ``surfaces`` snaps to the nearest half-mesh row ``(j - 0.5)/(ns - 1)``.
-    ``options`` are passed to :func:`fax.eigen.eigenmodes` (``scale``, ``boundary``, ``ntheta``, ``nzeta``).
+    ``options`` are passed to :func:`fax.eigen.eigenmodes` (``target_hz``, ``count``, ``ntheta``, ``nzeta``).
     """
     from booz_xform_jax.jax_api import prepare_booz_xform_constants
     from vmex import VmecInput

@@ -174,6 +174,27 @@ Open items carried forward:
 - **P2:**
   - The global solve is dense. The block-tridiagonal shift-invert solver comes with the AE3D operator.
 
+**2026-10-21, P2 (global operator).** The interim envelope (and its `scale`, `boundary` options) is gone. `eigen.py` now assembles the AE3D weak form with linear radial elements, element-averaged coefficient blocks and the full contravariant metric (added to `surface_grid` with `dB` and `sqrt_g`); `F y = w^2 G y` is block tridiagonal. The pressure and J_par (kink) terms are omitted: on CTOK, rerunning AE3D without them moves its global modes by < 0.1%. Solver: block Thomas LU in `lax.scan` plus shift-invert subspace iteration (2k + 8 vectors, 40 iterations) with Rayleigh-Ritz; the dense solver stays for small problems. `targeted_eigenvalues` carries the Hellmann-Feynman JVP with the shift-invert eigenvectors. Src 875 → 1003 lines (eigen 114 → 222, geometry +21).
+
+| Gate | Result |
+|---|---|
+| (i) uniform field, single harmonic | spectrum inside `[w_A^2(0), w_A^2(1)]`, edges within `0.5/N`; `phi'` participation fixed in cells, so width ∝ 1/N (N = 40, 160) |
+| (ii) AE3D CTOK (same boozmn, full mesh + AE3D's edge extrapolation, n = 2, m = 0–12) | matrix leading blocks and the operator continuum within 1%; 6 global modes matched by eigenvector overlap (> 0.9) within 1.4% (343.6, 384.1, 685.6, 703.3, 738.2, 741.2 kHz); AE3D's TAE at 337.9 kHz is not reproduced (FAX 272.8 kHz); real-space quadrature sides with FAX (below) |
+| (iii) Könies 2018 ITPA TAE, n = 6, `circular_torus(epsilon_B = a/R0)` | w = 4.0610e5 rad/s (CAS3D 4.01e5 +1.3%, GYGLES ad hoc 4.13e5 −1.7%) |
+| (iv) N_s convergence (Könies) | 4.0598 / 4.0607 / 4.0610 / 4.0610 e5 at N = 50 / 100 / 200 / 400 |
+| (v) HF gradients vs FD | 1e-5 (dense cluster and shift-invert) |
+
+Timings (CTOK, 99 × 13, one CPU core, compiled): assembly 0.018 s, shift-invert for 6 modes 0.067 s, dense 1.3 s. Full suite 56 s, coverage 99%.
+
+Other changes: `read_boozmn` now labels the half mesh correctly, `s = (j - 1.5)/(ns - 1)`; `Geometry.full_mesh()` averages to the full mesh as STELLGAP/AE3D do. STELLGAP labels half-mesh data with full-mesh `s`, so its parity test shifts by `0.5/(ns - 1)` (unchanged numbers). `circular_torus` now uses the Boozer poloidal angle (`m = 2` terms in R, Z, so `sqrt(g) ~ 1/B^2` to first order) and defaults to interior surfaces.
+
+Open items carried forward:
+
+- **CTOK TAE: FAX is right, AE3D's `iota'` terms are not.** The bending integrand follows from `u = B.grad(phi)/B = i (iota m - n) B/(G + iota I) phi` (Boozer `sqrt(g) = (G + iota I)/B^2`), so `d_s u` carries `i iota' m B/(G + iota I)`; this term is physical. `test_ctok_bending_energy_matches_real_space_quadrature` checks `F` and `G` against finite differences of `phi` on the boozmn embedding, with `B^i` built from `|B|`, `iota` and `g_ij` only: both agree to 0.3%; without the `iota'` term `F` is off by 9–20%. A finer quadrature (1201 × 64 × 16) gives the AE3D TAE eigenvector 329.7 kHz (FAX 328.5–329.3, FAX without `iota'` 342.4, AE3D's own eigenvalue 337.9). AE3D's `a_matrix` matches FAX within 0.3% on same-surface blocks (Frobenius 1.1% overall), but its m = 2/3 couplings between surfaces 45 and 46 (s ≈ 0.46) are 1.071 and 0.820 against FAX's 0.962 and 0.905: the `iota'` part with the wrong sign (FAX with `-iota'` gives 1.066 and 0.806). Neither a global `-iota'` (404.6 kHz) nor swapping the `f' f` blocks (332.1 kHz) reproduces AE3D's eigenvalue, so the AE3D defect is confined to the inter-surface `iota'` cross terms. Continuum: the n = 2 TAE gap at s ≈ 0.45 spans 232–396 kHz (cylinder estimate `v_A/(2 q R)` = 323 kHz with `R = R00`, 334 kHz with `R = G/B`). Both modes peak at s ≈ 0.45 inside it; 272.8 kHz meets the continuum only at s = 0.85–0.94 (1.8% of the FAX mode's norm), 337.9 kHz at s = 0.69–0.82 (14% of AE3D's). Könies is insensitive to `iota'` (4.061e5 vs 4.067e5 rad/s without it), so only CTOK-like shear separates the two forms.
+- **vmex gradient gate.** `test_boundary_gradient_matches_finite_differences` is now strict-xfail: FAX's own gradients are exact (≤ 7e-8 vs FD for every geometry leaf), but the vmex/booz_xform `iota` derivative wrt `zs01` is off by 1.1e-4 (FD converged, also at ftol 1e-14), which the resonant AE3D operator amplifies to 2.3e-4. Belongs to P0/P3.
+- `circular_torus` has no Shafranov shift; it reproduces the ad hoc equilibrium, not CAS3D's.
+- LHD (37, 73.7 kHz) and QPS (149 kHz) published AE3D frequencies need their equilibria.
+
 **2026-10-21, P4 (drive).** `drive.py` replaces the Lorentzian screen with a perturbative power-transfer growth rate (zero orbit width, passing particles, large aspect ratio, exact resonance integral in speed at each pitch; Maxwellian and slowing-down; bulk-ion Landau damping by the same integral). Gates:
 
 - Fu–Van Dam flat-Maxwellian scaling `x(1+2x^2+2x^4)e^{-x^2}`: rtol 1e-3.
