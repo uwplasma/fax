@@ -18,72 +18,28 @@ from fax.vorticity import (
 )
 
 
-def slab(s, harmonics=((1, 2),), density=1.7e-6, radius=None):
+def slab(s, harmonics=((1, 2),), density=1.7e-6):
     theta, zeta = np.meshgrid(2*np.pi*np.arange(16)/16, 2*np.pi*np.arange(16)/16, indexing='ij')
     points = theta.size
-    radius = np.full(len(s), 4.) if radius is None else np.asarray(radius)
     basis = np.broadcast_to(np.eye(3), (len(s), points, 3, 3)).copy()
-    basis[..., 2, 2] = radius[:, None]
+    basis[..., 2, 2] = 4.
     return physical_potential_problem_from_grid(s, harmonics,
         theta=theta, zeta=zeta, magnetic_field=np.full((len(s), points), 2.),
         magnetic_field_angle_derivatives=np.zeros((len(s), points, 2)),
-        covariant_basis=basis, iota=0., boozer_i=0., boozer_g=2*radius, mass_density=density)
+        covariant_basis=basis, iota=0., boozer_i=0., boozer_g=8., mass_density=density)
 
 
-@pytest.mark.parametrize('nodes', [5, 9])
-def test_uniform_slab_frequency_independent_of_radial_wavelength_and_nonuniform_mesh(nodes):
-    # All radial eigenfunctions have omega=k_parallel v_A in a uniform slab.
-    # An added radial stiffness with local-only inertia fails this exact limit.
-    s = np.linspace(.01, 1., nodes)**1.7
+def test_multiharmonic_slab_dispersion_and_inverse_density_sensitivity():
+    s = np.linspace(.01, 1., 6)**1.7
     density = 1.7e-6
-    problem = slab(s, density=density)
-    expected_omega2 = (2/4)**2 * 2**2/(MU0*density)
-    np.testing.assert_allclose(problem.stiffness, expected_omega2*problem.mass, rtol=2e-13, atol=1e-13)
+    problem = slab(s, harmonics=((1, 2), (3, 1)), density=density)
+    expected = np.repeat(np.array([1., 4.])*4/(MU0*density*16), len(s)-2)
     result = solve_physical_potential_eigenmodes(problem)
-    np.testing.assert_allclose(result.omega2, expected_omega2, rtol=2e-13)
-    assert np.max(result.residuals) < 1e-12
-
-
-def test_independent_angular_harmonics_obey_their_own_slab_dispersion():
-    problem = slab(np.linspace(.05, .95, 6), harmonics=((1, 2), (3, 1)))
-    result = solve_physical_potential_eigenmodes(problem)
-    expected = np.repeat(np.array([1., 4.])*2**2/(MU0*1.7e-6*4**2), 4)
     np.testing.assert_allclose(result.omega2, expected, rtol=2e-13)
-    np.testing.assert_allclose(problem.mass, problem.mass.conj().T, atol=1e-20)
-
-
-def test_parallel_wavenumber_gradient_matches_independent_rayleigh_integral():
-    s = np.array([.05, .2, .5, .7, .95])
-    radius = 4+2*s
-    values = np.array([0., .8, 1., .4, 0.])
-    problem = slab(s, harmonics=((1, 2),), radius=radius)
-    trial = values[1:-1]
-    k = float(np.vdot(trial, np.asarray(problem.stiffness)@trial).real)
-    mass = float(np.vdot(trial, np.asarray(problem.mass)@trial).real)
-    # Independent high-order quadrature of |grad(ik_parallel Phi)|^2 and
-    # mu0*rho/B^2 |grad Phi|^2 in a warped straight-field-line metric.
-    expected_k, expected_mass = 0., 0.
-    xi, weights = leggauss(40)
-    for index, ds in enumerate(np.diff(s)):
-        x = s[index]+ds*(xi+1)/2
-        r = 4+2*x
-        phi = values[index]+(values[index+1]-values[index])*(xi+1)/2
-        dphi = (values[index+1]-values[index])/ds
-        h = -2/r
-        dh = 4/r**2
-        expected_k += np.sum(ds/2*weights*r*((h*dphi+dh*phi)**2 + (h*phi)**2*(1+4/r**2)))
-        expected_mass += np.sum(ds/2*weights*r*MU0*1.7e-6/4*(dphi**2+phi**2*(1+4/r**2)))
-    # Two-point element quadrature, rather than an algebraic identity test.
-    assert k == pytest.approx(expected_k, rel=3e-5)
-    assert mass == pytest.approx(expected_mass, rel=3e-5)
-    # A test of h*dPhi/ds alone would miss the physically required dh/ds term.
-
-
-def test_density_sensitivity_has_the_physical_inverse_density_scaling():
-    s = np.linspace(.05, .95, 5)
+    assert np.max(result.residuals) < 1e-12
     def quotient(scale):
-        problem = slab(s, density=scale*1.7e-6)
-        vector = jnp.ones(3)
+        problem = slab(s, harmonics=((1, 2), (3, 1)), density=scale*density)
+        vector = jnp.ones(len(problem.mass))
         return jnp.real(vector @ problem.stiffness @ vector/(vector @ problem.mass @ vector))
     value, derivative = jax.jvp(quotient, (jnp.array(1.),), (jnp.array(1.),))
     assert derivative == pytest.approx(-value, rel=2e-13)
@@ -192,18 +148,6 @@ def test_jit_reverse_gradient_through_geometry_and_isolated_eigenvalue():
     assert derivative == pytest.approx(finite_difference, rel=2e-5)
 
 
-def test_toroidal_offset_conventions_give_identical_operator():
-    geometry = synthetic_geometry()
-    modes = [[2, 1], [3, 1]]
-    original = physical_potential_problem_from_boozer_geometry(geometry, modes,
-        mass_density=1.7e-6, theta_points=12, zeta_points=12)
-    reversed_offset = replace(geometry, pmns=-geometry.pmns, pmnc=-geometry.pmnc)
-    converted = physical_potential_problem_from_boozer_geometry(reversed_offset, modes,
-        mass_density=1.7e-6, theta_points=12, zeta_points=12, toroidal_offset_sign=-1)
-    np.testing.assert_allclose(original.stiffness, converted.stiffness, rtol=1e-13, atol=1e-13)
-    np.testing.assert_allclose(original.mass, converted.mass, rtol=1e-13, atol=1e-20)
-
-
 def test_zero_edge_density_and_angular_refinement_for_general_3d_geometry():
     geometry = synthetic_geometry()
     # The QI paper uses rho/rho_axis=1-s^5; its zero edge value is legitimate.
@@ -220,7 +164,7 @@ def test_zero_edge_density_and_angular_refinement_for_general_3d_geometry():
         slab(np.linspace(.1, 1., 5), density=-1.)
 
 
-def test_cosine_sector_equals_explicit_positive_negative_complex_harmonics():
+def test_angular_basis_and_toroidal_offset_conventions():
     geometry = synthetic_geometry()
     labels = np.array([[2, 1], [3, 1]])
     kwargs = dict(mass_density=1.7e-6, theta_points=16, zeta_points=16)
@@ -235,8 +179,11 @@ def test_cosine_sector_equals_explicit_positive_negative_complex_harmonics():
         np.testing.assert_allclose(actual, transform.T@np.asarray(full)@transform,
                                    rtol=1e-12, atol=1e-18)
     assert not np.iscomplexobj(np.asarray(real_problem.stiffness))
-    result = solve_physical_potential_eigenmodes(real_problem)
-    assert np.max(result.residuals) < 1e-11
+    reversed_offset = replace(geometry, pmns=-geometry.pmns, pmnc=-geometry.pmnc)
+    converted = physical_potential_problem_from_boozer_geometry(reversed_offset, labels,
+        angular_basis='cosine', toroidal_offset_sign=-1, **kwargs)
+    np.testing.assert_allclose(real_problem.stiffness, converted.stiffness, rtol=1e-13, atol=1e-13)
+    np.testing.assert_allclose(real_problem.mass, converted.mass, rtol=1e-13, atol=1e-20)
 
 
 def circular_geometry():

@@ -83,6 +83,115 @@ The detailed derivations, assumptions, and claim levels are in
 [the equations documentation](docs/equations.rst) and
 [the model inventory](docs/model_inventory.rst).
 
+## Physical-potential vorticity
+
+`fax.vorticity` assembles the global physical-potential model from the
+[incompressible vorticity equation](https://arxiv.org/html/2603.03118v1#S2):
+
+$$
+K_{ij}=\int\nabla(Df_i)^*\cdot\nabla(Df_j)\,dV,\qquad
+M_{ij}=\int\frac{\mu_0\rho}{B^2}\nabla f_i^*\cdot\nabla f_j\,dV,
+\qquad D=\mathbf b\cdot\nabla.
+$$
+
+It retains shear and the full 3-D metric, supports complex/cosine harmonics and
+regular axis/edge conditions, and differentiates assembly and isolated modes.
+The solve wrapper reuses FAX's existing generalized eigensolver.
+
+### Difference from the inspected AE3D source
+
+For row/test harmonic $i$, let $q=B/(G+\iota I)$,
+$\kappa_i=n_i-m_i\iota$, $\chi_i=m_i\theta-n_i\zeta$ and
+$f_i=N_i(s)\cos\chi_i$. Direct differentiation gives
+
+$$
+\partial_s(Df_i)=
+\left[q\kappa_iN_i'+(q_s\kappa_i-qm_i\iota')N_i\right]\sin\chi_i.
+$$
+
+Consequently, the shear coefficient of $N_iN_j'$ contains $-m_i\iota'\kappa_j$.
+The inspected [public AE3D v31 source](https://github.com/ORNL-Fusion/AE3D/blob/master/ae_solve_version31.f#L912)
+uses $-m_j\iota'\kappa_i$. Its mixed radial-poloidal shear term also interchanges
+the pairings of $\kappa_i,\kappa_j$ with the sine/cosine products. FAX uses
+$\kappa_j\sin\chi_i\cos\chi_j+\kappa_i\cos\chi_i\sin\chi_j$.
+Changing between exponential and cosine bases does not change these pairings.
+
+The derivation, exact manufactured solution and independent Cartesian finite
+differences support the native indices **for this operator**. The published
+QA run's modified AE3D revision is unavailable. Main's AE3D parity uses supplied
+matrices and does not validate native construction. This model excludes acoustic
+coupling, kinetic/resistive effects and equilibrium-current drive.
+
+### Exact manufactured benchmark
+
+On $0.1\le s\le0.9$, with $x=(s-0.1)/0.8$, prescribe
+
+$$
+\Phi_*=\sin(\pi x)\cos(2\theta-\zeta)
++[0.7\sin(2\pi x)+0.2\sin(3\pi x)]\cos(3\theta-3\zeta).
+$$
+
+The helical 3-D map has $\iota=0.3+0.8s$. Elementary Cartesian derivatives
+provide the continuous forcing independently of FAX's coefficients, without AD.
+Every case uses the same forcing, positive mass shift, boundaries and amplitude.
+The synthetic directional field is not a unit-vector MHD equilibrium.
+
+| Assembly, 129 radial nodes | Relative potential L2 error |
+|---|---:|
+| Native FAX | **0.01229%** |
+| Radial shear index interchange | 3.0368% |
+| Mixed-metric shear index interchange | 2.3335% |
+| Both interchanges (AE3D-like control) | 4.6044% |
+
+Native error converges quadratically; swapped-index errors plateau. Both
+changes vanish at zero shear. This verifies the equation/assembly, without
+running AE3D or reproducing a published eigenmode.
+
+![Exact manufactured-solution convergence](docs/_static/vorticity_benchmark.png)
+
+[Saved numerical comparison](examples/research/references/vorticity_benchmark.csv).
+Reproduce on CPU (the example has a 50-second computation cap), or regenerate
+only the figure from the saved CSV:
+
+```bash
+PYTHONPATH=src:. JAX_PLATFORMS=cpu python -m examples.research.vorticity_benchmark
+PYTHONPATH=src:. python -m examples.research.vorticity_benchmark --plot-only
+PYTHONPATH=src:. JAX_PLATFORMS=cpu python -m pytest -q tests/test_vorticity.py tests/test_vorticity_benchmark.py tests/test_vorticity_3d_cartesian.py
+```
+
+The 10 added tests cover dispersion, full derivatives/metric, boundaries,
+interpolation, conventions, AD/JIT, exact forcing and Cartesian checks.
+Existing main-branch tests are retained.
+
+### QA AE3D–FAX comparison (unresolved)
+
+The saved [QA profiles](examples/research/references/qa_ae3d_comparison.npz)
+compare native construction with the [published archive](https://doi.org/10.5281/zenodo.21299908)
+(Knyazev et al., CC BY 4.0). The calculations use 162 harmonics; errors compare
+the 35 exported signed profiles after one global amplitude/sign alignment.
+
+| Calculation | Frequency [kHz] | Aligned profile L2 error |
+|---|---:|---:|
+| Archived AE3D | 30.30861 | Reference |
+| Native FAX, 51 nodes | 27.57218 | 62.53% |
+| FAX with both shear index swaps | 30.10576 | 13.72% |
+| Public AE3D formulas and endpoint convention | 30.29840 | 4.30% |
+
+The last row reconstructs public-source coefficients; it does not import the
+original QA matrices or execute AE3D. Native refinement to 101 nodes gives
+27.52558 kHz and 58.92% profile error: physical-mode parity remains unestablished.
+Matching the archive better does not establish the swapped operator's validity.
+These are mode frequencies; the transport export's angular-frequency convention
+is recorded separately in the data metadata. No particle-loss result is changed.
+
+![QA archived and reconstructed profiles](docs/_static/qa_ae3d_comparison.png)
+
+Regenerate from saved data, without downloads or a solve:
+
+```bash
+python -m examples.research.qa_ae3d_comparison
+```
+
 ## Install
 
 From this repository:

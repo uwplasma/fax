@@ -1,18 +1,8 @@
-"""Global ideal shear-Alfven vorticity operator for the physical potential.
+"""Physical-potential vorticity (Knyazev et al., arXiv:2603.03118, eq. 4).
 
-This is distinct from the radial *envelope* model in ``global_modes``.
-The weak form (Knyazev et al., arXiv:2603.03118, eq. 4) is
-
-    K_ij = integral grad(b.grad f_i)* . grad(b.grad f_j) dV,
-    M_ij = integral mu0 rho/B**2 grad(f_i)* . grad(f_j) dV.
-
-Here f_i = N_i(s) exp(i(m theta - n zeta)), or the cosine basis used by
-stellarator-symmetric AE3D runs. Piecewise linear radial
-elements, two-point Gauss quadrature, and periodic angular quadrature are
-used. The default fixes Phi at both supplied endpoints. An optional full-domain
-mesh retains regular m=0 axis values and fixes nonzero-m axis values and the
-outer boundary. Geometry is then sampled inside elements, never at the axis.
-No density, frequency, or radial stiffness is fitted to a target mode.
+K_ij=int grad(b.grad f_i)*.grad(b.grad f_j); M_ij=int mu0*rho/B**2 grad(f_i)*.grad(f_j).
+P1 radial elements, two-point Gauss and periodic angular quadrature; distinct
+from the reduced radial envelope model in ``global_modes``.
 """
 
 from dataclasses import dataclass, replace
@@ -136,16 +126,12 @@ def physical_potential_problem_from_grid(
     s, harmonics, *, theta, zeta, magnetic_field, magnetic_field_angle_derivatives,
     covariant_basis, iota, boozer_i, boozer_g, mass_density, angular_basis='complex',
 ):
-    """Assemble the vorticity weak form on a sampled straight-field-line grid.
+    """Assemble on a straight-field-line grid with linearly interpolated data.
 
-    ``covariant_basis[..., a, :]`` contains dr/dq^a in any common orthonormal
-    frame, for q=(s,theta,zeta). Angular dimensions may be flattened or a tensor
-    grid. Magnetic angular derivatives end in (dB/dtheta,dB/dzeta). Profiles
-    and geometric coefficients are linearly interpolated inside each element.
-    B and G+iota*I must correspond to the same straight-field-line convention.
-    ``angular_basis='cosine'`` selects AE3D's stellarator-symmetric spatial
-    sector; use the default complex basis for unrestricted mode coefficients.
-    Only Phi's arbitrary global amplitude remains unspecified.
+    ``covariant_basis[..., a, :]`` is dr/dq^a in an orthonormal frame,
+    q=(s,theta,zeta); angular B derivatives end in (dB/dtheta,dB/dzeta).
+    B and G+iota*I must use the same convention. ``angular_basis='cosine'``
+    restricts the spatial parity; complex coefficients are unrestricted.
     """
     radial = jnp.asarray(s)
     labels = jnp.asarray(harmonics)
@@ -185,12 +171,7 @@ def physical_potential_problem_from_grid(
 
 
 def _sample_radial(s, values, target, poloidal_modes=None):
-    """Linear half-mesh coefficients, with regular r**|m| extension to axis.
-
-    Interior full-mesh points equal the arithmetic averages of adjacent
-    half-mesh coefficients. m=0 profiles and the outer edge use linear
-    extrapolation. Return the derivative of this same interpolation.
-    """
+    """Linear sampling/extrapolation and its derivative; r**|m| toward axis."""
     index = jnp.clip(jnp.searchsorted(s, target, side='right')-1, 0, len(s)-2)
     extra = (1,)*(values.ndim-1)
     width = (s[index+1]-s[index]).reshape((-1,)+extra)
@@ -210,14 +191,19 @@ def _sample_radial(s, values, target, poloidal_modes=None):
     return sampled, derivative
 
 
-def _sample_boozer_quadrature(geometry, target, theta, zeta, density, offset_sign):
+def _sample_boozer_geometry(geometry, target, theta, zeta, density, offset_sign):
+    def sample(values, modes=None):
+        if target is None:
+            return values, None if modes is None else _radial_derivative(values, geometry.s)
+        return _sample_radial(geometry.s, values, target, modes)
+
     def scalar(cosine, sine):
         if cosine is None and sine is None:
             raise ValueError('Full embedding and B arrays are required')
         cosine = jnp.zeros_like(sine) if cosine is None else cosine
         sine = jnp.zeros_like(cosine) if sine is None else sine
-        c, dc = _sample_radial(geometry.s, cosine, target, geometry.xm)
-        a, da = _sample_radial(geometry.s, sine, target, geometry.xm)
+        c, dc = sample(cosine, geometry.xm)
+        a, da = sample(sine, geometry.xm)
         value, dt, dz = reconstruct_boozer_modes_with_derivatives(c, a,
             geometry.xm, geometry.xn, theta, zeta)
         ds = reconstruct_boozer_modes(dc, da, geometry.xm, geometry.xn, theta, zeta)
@@ -229,12 +215,13 @@ def _sample_boozer_quadrature(geometry, target, theta, zeta, density, offset_sig
     dp = (offset_sign*dp).at[..., 2].add(1.)
     b, db = scalar(geometry.bmnc, geometry.bmns)
     basis = jnp.stack([dr, r[..., None]*dp, dz], axis=-1)
-    b, db = b.reshape(len(target), -1), db.reshape(len(target), -1, 3)
-    basis = basis.reshape(len(target), -1, 3, 3)
-    rot, drot = _sample_radial(geometry.s, geometry.iota, target)
-    ci, di = _sample_radial(geometry.s, geometry.boozer_i, target)
-    cg, dg = _sample_radial(geometry.s, geometry.boozer_g, target)
-    rho, _ = _sample_radial(geometry.s, density, target)
+    ns = len(geometry.s) if target is None else len(target)
+    b, db = b.reshape(ns, -1), db.reshape(ns, -1, 3)
+    basis = basis.reshape(ns, -1, 3, 3)
+    rot, drot = sample(geometry.iota)
+    ci, di = sample(geometry.boozer_i)
+    cg, dg = sample(geometry.boozer_g)
+    rho, _ = sample(density)
     return b, db[..., 0], db[..., 1:], basis, rot, drot, ci, di, cg, dg, rho
 
 
@@ -242,22 +229,14 @@ def physical_potential_problem_from_boozer_geometry(
     geometry: BoozerGeometry, harmonics, *, mass_density, theta_points=64, zeta_points=64,
     toroidal_offset_sign=1, angular_basis='complex', radial_nodes=None, boundary_condition='dirichlet',
 ):
-    """Build physical-potential matrices from Boozer field and embedding.
+    """Build from Boozer B and embedding; density is sampled on ``geometry.s``.
 
-    The default, as in FAX's existing embedding grid, is phi=zeta+p for the
-    Fortran boozmn p=phi-zeta convention. Use ``toroidal_offset_sign=-1`` for
-    coefficients storing nu=zeta-phi (C++/Python booz_xform convention).
-    ``geometry.s`` must give the actual surface locations, including half-mesh
-    offsets when reading an archived Fortran boozmn file.
-
-    With ``radial_nodes``, sample the original geometry at element Gauss
-    points, independently of the potential mesh. ``boundary_condition='axis'``
-    requires nodes spanning s=0..1 and static harmonic labels. It retains m=0
-    axis values; P1 functions in s have dPhi/dr=0 there. Nonzero m vanish at
-    the axis and all modes vanish at the edge. No singular axis metric is
-    evaluated. This is a regular variational boundary; AE3D uses a different
-    coefficient-averaging finite-element assembly.
-    Array mass density is supplied on geometry.s, not on radial_nodes.
+    Default phi=zeta+p (Fortran boozmn); toroidal_offset_sign=-1 accepts nu=zeta-phi.
+    With ``radial_nodes``, reconstruct geometry at interior Gauss points.
+    ``boundary_condition='axis'`` requires s=0..1 and static harmonics: m=0
+    axis values are free (P1 in s gives dPhi/dr=0); other m vanish there.
+    All modes vanish at the edge; no singular axis metric is evaluated.
+    Geometry surface coordinates must include any half-mesh offsets.
     """
     if toroidal_offset_sign not in (-1, 1):
         raise ValueError('toroidal_offset_sign must be +1 or -1')
@@ -266,6 +245,7 @@ def physical_potential_problem_from_boozer_geometry(
     if boundary_condition == 'axis' and radial_nodes is None:
         raise ValueError('Axis treatment requires full-domain radial_nodes')
     theta, zeta = boozer_angle_grid(theta_points=theta_points, zeta_points=zeta_points)
+    density = jnp.broadcast_to(jnp.asarray(mass_density), geometry.s.shape)
 
     if radial_nodes is not None:
         radial, labels = jnp.asarray(radial_nodes), jnp.asarray(harmonics)
@@ -277,17 +257,13 @@ def physical_potential_problem_from_boozer_geometry(
                 raise ValueError('Radial nodes must increase within 0..1')
             if boundary_condition == 'axis' and (nodes[0] != 0 or nodes[-1] != 1):
                 raise ValueError('Axis radial nodes must span 0..1')
-        density = jnp.broadcast_to(jnp.asarray(mass_density), geometry.s.shape)
         if not isinstance(density, jax.core.Tracer) and (np.any(np.asarray(density) < 0) or not np.any(np.asarray(density) > 0)):
             raise ValueError('Density must be nonnegative and nonzero')
         axis_indices = tuple(np.flatnonzero(np.asarray(harmonics)[:, 0] == 0)) if boundary_condition == 'axis' else ()
         phase, dphase = _angular_phase(theta, zeta, labels, angular_basis)
-        # Reconstruct geometry in one radial batch, rather than repeating
-        # small Fourier matrix products inside the element loop. Only geometry
-        # samples scale with radial*angular size; pairwise harmonic contractions
-        # remain inside lax.map, with no radial*angular*harmonic**2 tensor.
+        # Batch Fourier sampling; retain bounded harmonic contractions in lax.map.
         targets = radial[:-1, None]+jnp.diff(radial)[:, None]*(1+jnp.array([-1., 1.])/jnp.sqrt(3.))/2
-        samples = _sample_boozer_quadrature(geometry, targets.ravel(), theta, zeta, density, toroidal_offset_sign)
+        samples = _sample_boozer_geometry(geometry, targets.ravel(), theta, zeta, density, toroidal_offset_sign)
         samples = tuple(p.reshape((len(radial)-1, 2)+p.shape[1:]) for p in samples)
 
         def element(index):
@@ -304,30 +280,12 @@ def physical_potential_problem_from_boozer_geometry(
             ('boundary_condition', boundary_condition),
         ))
 
-    def scalar(cosine, sine):
-        if cosine is None and sine is None:
-            raise ValueError('Full embedding and B arrays are required')
-        cosine = jnp.zeros_like(sine) if cosine is None else cosine
-        sine = jnp.zeros_like(cosine) if sine is None else sine
-        value, dt, dz = reconstruct_boozer_modes_with_derivatives(
-            cosine, sine, geometry.xm, geometry.xn, theta, zeta)
-        ds = reconstruct_boozer_modes(_radial_derivative(cosine, geometry.s),
-            _radial_derivative(sine, geometry.s), geometry.xm, geometry.xn, theta, zeta)
-        return value, jnp.stack([ds, dt, dz], axis=-1)
-
-    r, dr = scalar(geometry.rmnc, geometry.rmns)
-    _, dz = scalar(geometry.zmnc, geometry.zmns)
-    _, dp = scalar(geometry.pmnc, geometry.pmns)
-    dp *= toroidal_offset_sign
-    dp = dp.at[..., 2].add(1.)
-    b, db = scalar(geometry.bmnc, geometry.bmns)
-    # Cylindrical orthonormal components avoid rotation by the physical phi.
-    basis = jnp.stack([dr, r[..., None]*dp, dz], axis=-1)
+    b, _, db_angles, basis, rot, _, ci, _, cg, _, rho = _sample_boozer_geometry(
+        geometry, None, theta, zeta, density, toroidal_offset_sign)
     problem = physical_potential_problem_from_grid(geometry.s, harmonics,
         theta=theta, zeta=zeta, magnetic_field=b,
-        magnetic_field_angle_derivatives=db[..., 1:], covariant_basis=basis,
-        iota=geometry.iota, boozer_i=geometry.boozer_i, boozer_g=geometry.boozer_g,
-        mass_density=mass_density, angular_basis=angular_basis)
+        magnetic_field_angle_derivatives=db_angles, covariant_basis=basis,
+        iota=rot, boozer_i=ci, boozer_g=cg, mass_density=rho, angular_basis=angular_basis)
     return replace(problem, metadata=problem.metadata+(
         ('geometry', 'full Boozer embedding metric'),
         ('toroidal_offset_sign', toroidal_offset_sign),

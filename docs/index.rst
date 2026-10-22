@@ -35,8 +35,6 @@ claim levels, :doc:`equations` for the implemented models, and
    publication_results
    research_grade_roadmap
    benchmark_manifest
-   qa_ae3d_vorticity_benchmark
-   qa_ae3d_operator_audit
    external_codes
    kinetic_validation
    figures
