@@ -2205,3 +2205,5 @@ FAX now declares it as the optional ``vmex`` extra (Python 3.11+, brings
   n != 0 (the m = 1 angle gauge); vmex's frozen-path differences match to
   5e-7 for all six.  Gate tolerances follow (1e-4 and 1e-2).
 - Not regenerated: the VMEC figures and JSON artifacts in ``docs/_static``.
+
+- Continuum weighting fix: `boozer_3d_continuum_matrices` now uses the STELLGAP Galerkin weights (`stellgap_serial_ver5.f`: mass `g^ss J / B^2`, stiffness `g^ss /(J B^2) (n - m iota)^2`), i.e. `K=<|J||grad s|^2 k_par^2/mu0>` and `M=<|J||grad s|^2 rho/B^2>`. The previous weights carried an extra `|B|^2` in both matrices, which is not equivalent when `|B|` varies on a surface. STELLGAP CTOK local continuum: mean `1.30e-2 -> 4.57e-3`, p95 `2.55e-2 -> 1.17e-2`, max `3.32e-2 -> 1.65e-2` (97 surfaces, independent of 32/64 angular points). Largest-gap parity metric `4.41e-2 -> 3.17e-2`. The global radial stiffness `C_s` was not changed.

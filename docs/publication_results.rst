@@ -106,7 +106,7 @@ Figure Suite
 
    **Artifact parity plus screening application.** FAX local 3-D Boozer
    continuum branches are compared with the public ORNL STELLGAP CTOK output;
-   the current p95 sorted-spectrum relative error is ``2.55e-2``. The global
+   the current p95 sorted-spectrum relative error is ``1.17e-2``. The global
    radial mode overlay is a FAX screening workflow and should not be described
    as full STELLGAP/AE3D global operator parity.
 

@@ -302,8 +302,16 @@ def test_landreman_paul_metric_adapter_smoke():
 
     assert metric_geometry.name == case.case_id
     assert metric_geometry.field_periods == 2
-    assert metric_geometry.jacobian.shape == (50, 12, 10)
+    assert metric_geometry.jacobian.shape == (_wout_ns(case.wout), 12, 10)
     assert metric_geometry.magnetic_field.shape == metric_geometry.jacobian.shape
     assert float(jnp.min(metric_geometry.jacobian)) > 0.0
     assert float(jnp.min(metric_geometry.magnetic_field)) > 0.0
     assert dict(metric_geometry.metadata)["metric_adapter"] == "vmec_wout_nyquist"
+
+
+def _wout_ns(path):
+    """Radial surface count of a VMEC wout, so the smoke test follows the local file."""
+    import netCDF4
+
+    with netCDF4.Dataset(path) as dataset:
+        return int(dataset.variables["ns"][...])

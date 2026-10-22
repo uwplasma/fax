@@ -1417,8 +1417,9 @@ def boozer_3d_continuum_matrices(
     This operator uses real ``boozmn`` geometry rather than the large-aspect
     ratio ``(n-m*iota)/R`` bridge.  The straight-field-line derivative is
     ``k_parallel=(n-m*iota)|B|/(G+iota I)`` and the Galerkin weights are
-    ``K=<|J| |grad s|^2 B^2 k_i k_j phi_i^* phi_j / mu0>`` and
-    ``M=<|J| |grad s|^2 rho phi_i^* phi_j>``.  It is a local
+    ``K=<|J| |grad s|^2 k_i k_j phi_i^* phi_j / mu0>`` and
+    ``M=<|J| |grad s|^2 rho phi_i^* phi_j / B^2>``, the STELLGAP weighting
+    (Spong, Sanchez, Weller 2003).  It is a local
     surface-by-surface continuum operator; a global radial eigenmode operator
     still needs radial coupling and boundary conditions.
     """
@@ -1444,7 +1445,10 @@ def boozer_3d_continuum_matrices(
             magnetic_field=magnetic_field,
             floor=floor,
         )
-    integration_weight = jnp.abs(signed_jacobian) * jnp.maximum(radial_weight, float(floor))
+    # STELLGAP weight |J| |grad s|^2 / B^2; the stiffness restores B^2 so K carries |J| |grad s|^2 k_par^2.
+    integration_weight = (
+        jnp.abs(signed_jacobian) * jnp.maximum(radial_weight, float(floor)) / jnp.maximum(magnetic_field**2, float(floor))
+    )
     surface_count = int(geometry.s.shape[0])
     density_array = _surface_parameter(mass_density, surface_count, name="mass_density")
     numerator = geometry.boozer_g + geometry.iota * geometry.boozer_i
