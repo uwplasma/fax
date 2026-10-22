@@ -5,7 +5,7 @@ import jax
 jax.config.update("jax_enable_x64", True)  # eigenvalues of stiff Alfven operators need float64
 
 from .continuum import continuum, continuum_matrices, gap_location, gaps, mass_density, mode_family
-from .drive import FastIons, growth_rate
+from .drive import FastIons, Plasma, growth_rate, ion_landau_damping
 from .eigen import eigenmodes, eigenvalue_mean, frequency_hz, global_matrices
 from .geometry import Geometry, circular_torus, from_vmec_input, from_wout, read_boozmn, surface_grid
 from .io import load, run
@@ -30,9 +30,11 @@ __all__ = [
     "gaps",
     "global_matrices",
     "growth_rate",
+    "ion_landau_damping",
     "load",
     "mass_density",
     "mode_family",
+    "Plasma",
     "prepare_design",
     "read_boozmn",
     "run",

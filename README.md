@@ -32,7 +32,7 @@ enters through vmex's implicit-function derivative of the converged equilibrium.
 | `geometry` | Boozer geometry from `boozmn`, `wout`, a vmex solve, or an analytic torus |
 | `continuum` | continuum matrices and frequencies, gaps, gap locations |
 | `eigen` | global radial operator, differentiable eigenvalues |
-| `drive` | fast-ion resonance screen |
+| `drive` | perturbative fast-ion growth rate and ion Landau damping |
 | `objectives` | smooth objectives and the VMEC-boundary design pipeline |
 | `io`, `plot` | TOML cases, `fax` command, figures |
 
@@ -77,10 +77,11 @@ The CTOK continuum takes 0.04 s per call after compilation on one CPU core
 
 ## Status
 
-The local continuum is complete. The global operator is an interim radial
-envelope without continuum resonance, and the drive is a ranking screen, not a
-calibrated growth rate. Both are being replaced by the AE3D weak form and a
-perturbative energetic-particle growth rate; see [plan.md](plan.md).
+The local continuum is complete. The drive is a perturbative zero-orbit-width
+growth rate for passing fast ions (Könies 2018 TAE: 33×10³ s⁻¹ at 300 keV vs
+38–43×10³ published). The global operator is an interim radial envelope
+without continuum resonance and is being replaced by the AE3D weak form; see
+[plan.md](plan.md).
 
 ## Documentation
 

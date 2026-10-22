@@ -174,3 +174,12 @@ Open items carried forward:
 - **P2:**
   - `read_boozmn` labels surfaces `s = (j - 1)/(ns - 1)`; VMEC's half grid is `(j - 1.5)/(ns - 1)`. STELLGAP agreement is better with the current label (p95 1.1e-2 vs 2.4e-2) because STELLGAP interpolates to the full grid. Settle this together with the AE3D operator.
   - The global solve is dense. The block-tridiagonal shift-invert solver comes with the AE3D operator.
+
+**2026-10-21, P4 (drive).** `drive.py` replaces the Lorentzian screen with a perturbative power-transfer growth rate (zero orbit width, passing particles, large aspect ratio, exact resonance integral in speed at each pitch; Maxwellian and slowing-down; bulk-ion Landau damping by the same integral). Gates:
+
+- Fu–Van Dam flat-Maxwellian scaling `x(1+2x^2+2x^4)e^{-x^2}`: rtol 1e-3.
+- Könies 2018 TAE, model Gaussian eigenfunction (m = 10, 11, FWHM 10 cm at q = 1.75), ω = 4.0e5: 4.4, 16.6, 33.1, 65 ×10³ s⁻¹ at 100, 200, 300, 400 keV. 300 keV is within 20% of the ZLR band; 100 and 200 keV are about 40% low. The result changes by under 15% with mode width (3–8 cm) and relative harmonic amplitude. Candidate causes: trapped particles and orbit nonuniformity near the trapped–passing boundary, missing δB_∥, and the model eigenfunction; recheck with the P2 eigenfunction.
+- Sign: flat profile gives the same damping for (m, n) and (−m, −n); a peaked profile drives n > 0 and damps n < 0; a hollow profile damps.
+- `jax.grad` with respect to fast-ion density scale, T_f and ω matches central differences to 1e-5.
+
+Open items: trapped and precessing particles, finite orbit width (Könies' FOW roll-over above 300 keV is absent, ZOW keeps growing), continuum and electron Landau damping (only a subtraction hook), stellarator helical drift sidebands (only the toroidal ±1 coupling plus orbit harmonics).
