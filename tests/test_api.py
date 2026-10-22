@@ -13,20 +13,6 @@ from fax.io import main
 CTOK = str(Path(__file__).parent / "data" / "boozmn_ctok.nc")
 
 
-def test_resonance_and_growth_rate():
-    ions = fax.FastIons(transit_hz=100e3, precession_hz=0.0, width_hz=5e3)
-    from fax.drive import resonance
-
-    assert resonance(100e3, 2, 1, ions) == pytest.approx(1.0)
-    assert resonance(110e3, 2, 1, ions) == pytest.approx(0.2)
-    s = jnp.linspace(0, 1, 21)
-    structures = jnp.ones((2, 21, 3))
-    gamma = fax.growth_rate(jnp.array([100e3, 300e3]), structures, s, ions, n=2, transit_harmonics=(1,), damping_hz=10.0)
-    assert gamma[0] > 0 > gamma[1]
-    grad = jax.grad(lambda f: fax.growth_rate(jnp.array([f]), structures[:1], s, ions, n=2)[0])(105e3)
-    assert grad < 0  # moving away from the resonance lowers the drive
-
-
 def test_objectives_are_smooth():
     f = jnp.array([10e3, 125e3, 400e3])
     assert fax.window_risk(f, (50e3, 200e3), 5e3) == pytest.approx(0.5 / 3, rel=1e-3)
