@@ -31,3 +31,8 @@ def test_boundary_gradient_matches_finite_differences():
     grad = jax.grad(objective)(p)
     fd = np.array([(objective(p + e) - objective(p - e)) / 2e-4 for e in 1e-4 * jnp.eye(2)])
     np.testing.assert_allclose(grad, fd, rtol=1e-4)
+
+
+def test_design_rejects_surfaces_that_share_a_half_mesh_row():
+    with pytest.raises(ValueError, match="raise ns"):
+        fax.prepare_design(INPUT, harmonics=[[1.0, 0.0]], density=3.4e-8, surfaces=(0.35, 0.37))

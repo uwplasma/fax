@@ -170,9 +170,8 @@ Each phase is one PR. Each must pass CI on JAX x64, ruff, mypy and docs builds b
 
 Open items carried forward:
 
-- **P0:** the radial-refinement drift of the VMEC gradient (old gate, 10.8%) is not yet diagnosed. The LP-QA low-resolution input also does not converge on vmex's own `NS_ARRAY` ladder (ns = 50, ftol 1e-13, 1000 iterations); examples use one stage at ns = 16.
+- **P0:** done, see the next entry.
 - **P2:**
-  - `read_boozmn` labels surfaces `s = (j - 1)/(ns - 1)`; VMEC's half grid is `(j - 1.5)/(ns - 1)`. STELLGAP agreement is better with the current label (p95 1.1e-2 vs 2.4e-2) because STELLGAP interpolates to the full grid. Settle this together with the AE3D operator.
   - The global solve is dense. The block-tridiagonal shift-invert solver comes with the AE3D operator.
 
 **2026-10-21, P2 (global operator).** The interim envelope (and its `scale`, `boundary` options) is gone. `eigen.py` now assembles the AE3D weak form with linear radial elements, element-averaged coefficient blocks and the full contravariant metric (added to `surface_grid` with `dB` and `sqrt_g`); `F y = w^2 G y` is block tridiagonal. The pressure and J_par (kink) terms are omitted: on CTOK, rerunning AE3D without them moves its global modes by < 0.1%. Solver: block Thomas LU in `lax.scan` plus shift-invert subspace iteration (2k + 8 vectors, 40 iterations) with Rayleigh-Ritz; the dense solver stays for small problems. `targeted_eigenvalues` carries the Hellmann-Feynman JVP with the shift-invert eigenvectors. Src 875 → 1003 lines (eigen 114 → 222, geometry +21).
@@ -195,3 +194,37 @@ Open items carried forward:
 - **vmex gradient gate.** `test_boundary_gradient_matches_finite_differences` is now strict-xfail: FAX's own gradients are exact (≤ 7e-8 vs FD for every geometry leaf), but the vmex/booz_xform `iota` derivative wrt `zs01` is off by 1.1e-4 (FD converged, also at ftol 1e-14), which the resonant AE3D operator amplifies to 2.3e-4. Belongs to P0/P3.
 - `circular_torus` has no Shafranov shift; it reproduces the ad hoc equilibrium, not CAS3D's.
 - LHD (37, 73.7 kHz) and QPS (149 kHz) published AE3D frequencies need their equilibria.
+
+**2026-10-21, P4 (drive).** `drive.py` replaces the Lorentzian screen with a perturbative power-transfer growth rate (zero orbit width, passing particles, large aspect ratio, exact resonance integral in speed at each pitch; Maxwellian and slowing-down; bulk-ion Landau damping by the same integral). Gates:
+
+- Fu–Van Dam flat-Maxwellian scaling `x(1+2x^2+2x^4)e^{-x^2}`: rtol 1e-3.
+- Könies 2018 TAE, model Gaussian eigenfunction (m = 10, 11, FWHM 10 cm at q = 1.75), ω = 4.0e5: 4.4, 16.6, 33.1, 65 ×10³ s⁻¹ at 100, 200, 300, 400 keV. 300 keV is within 20% of the ZLR band; 100 and 200 keV are about 40% low. The result changes by under 15% with mode width (3–8 cm) and relative harmonic amplitude. Candidate causes: trapped particles and orbit nonuniformity near the trapped–passing boundary, missing δB_∥, and the model eigenfunction; recheck with the P2 eigenfunction.
+- Sign: flat profile gives the same damping for (m, n) and (−m, −n); a peaked profile drives n > 0 and damps n < 0; a hollow profile damps.
+- `jax.grad` with respect to fast-ion density scale, T_f and ω matches central differences to 1e-5.
+
+Open items: trapped and precessing particles, finite orbit width (Könies' FOW roll-over above 300 keV is absent, ZOW keeps growing), continuum and electron Landau damping (only a subtraction hook), stellarator helical drift sidebands (only the toroidal ±1 coupling plus orbit harmonics).
+
+**2026-10-21, P0 (diagnosis).** LP-QA low-res, `harmonics [[1,0],[2,1]]`, `rc01`, ntheta = nzeta = 8, FD step 1e-4.
+
+| surfaces | ns | mboz | s used | f (kHz) | df/dp (kHz per unit) | AD vs FD |
+|---|---|---|---|---|---|---|
+| 5 | 16 | 3 | 0.167 ... 0.833 | 122.2, 138.4, 158.1 | -212.6, -171.4, -130.4 | 5.8e-5 |
+| 7 | 16 | 3 | 0.167 ... 0.833 | 122.1, 134.0, 150.2 | -213.8, -183.0, -142.4 | 5.4e-5 |
+| 13 | 16 | 3 | two pairs repeat | NaN | NaN | NaN |
+| 5 | 16 | 6 | 0.167 ... 0.833 | 122.6, 138.9, 158.7 | -215.8, -174.7, -134.0 | 5.1e-5 |
+| 5 | 31 | 3 | 0.183 ... 0.817 | 124.0, 136.9, 154.3 | -208.2, -176.9, -137.0 | 4.4e-5 |
+| 7 | 31 | 3 | 0.183 ... 0.817 | 123.5, 141.9, 157.1 | -209.3, -165.5, -133.7 | 4.4e-5 |
+| 13 | 31 | 3 | 0.183 ... 0.817 | 123.2, 138.6, 156.6 | -210.9, -172.4, -133.8 | 3.7e-5 |
+| 5 | 61 | 3 | 0.208 ... 0.792 | 125.8, 141.6, 151.8 | -204.5, -164.2, -144.0 | 3.3e-5 |
+| 7 | 61 | 3 | 0.208 ... 0.792 | 125.3, 145.7, 164.2 | -205.3, -155.2, -122.2 | 3.7e-5 |
+| 13 | 61 | 3 | 0.208 ... 0.792 | 125.2, 145.2, 162.9 | -205.9, -156.8, -123.0 | 4.0e-5 |
+
+- The gradient is right: AD matches centered FD to ≤ 6e-5 at every level. The drift is in the objective.
+- Main cause (a): the interim operator. Its Dirichlet ends sit on the first and last chosen surfaces, so the radial domain is set by the surface list, and the FD term is first-order in the spacing. Going from 5 to 7 surfaces moves f3 by 8% and its gradient by 15% (ns = 61). From 7 to 13, with the same ends, f moves ≤ 0.8% and df/dp ≤ 1.6%.
+- (d) Snapping: `prepare_design` maps each surface to the nearest half-mesh row, so at ns = 16 the ends 0.2 and 0.8 become 0.167 and 0.833. Changing ns moves the domain (f3 at 7 surfaces: 150 → 164 kHz from ns 16 to 61). Snapping two surfaces onto one row gave zero spacing and NaN. It now raises `ValueError`.
+- (b) mboz/nboz 3 → 6: ≤ 0.4% in f and 1.5% in the gradient. (c) ns: confounded with snapping. The old gate also ran vmec_jax with `vmec_max_iter=4`, a truncated equilibrium.
+- P2 restatement: fix the radial domain (axis to edge, or fixed physical ends), interpolate rather than snap, and refine the FE radial grid at fixed vmex ns and mboz. Gate on the eigenvalue and gradient converging at the expected FE order, with AD-vs-FD ≤ 1e-4 at each level.
+
+LP-QA `NS_ARRAY` ladder: stages 1 and 2 converge (189 and 704 iterations). Stage 3 (ns = 50) converges linearly and reaches ftol 1e-13 at iteration 1115, so 1e-13 is reachable in float64 and NITER = 1000 was just short. VMEC2000 would write the wout anyway. Fix: NITER_ARRAY = 600 1000 2000. Not a vmex bug.
+
+Boozer radial label: booz_xform writes `jlist = compute_surfs + 2` for half-mesh rows (booz_xform_jax `io_utils.py`). Its in-memory `s_in` is `s_half`, so the right label is `s = (j - 1.5)/(ns - 1)`. `read_boozmn` now uses it, which matches `from_wout` and `prepare_design`. The old `(j - 1)/(ns - 1)` label happened to match STELLGAP because STELLGAP is off by one cell too. xmetric averages half rows k and k+1 onto full surface k at `(k - 1)/(ns - 1)`, but stellgap labels it `rho = nsurf/nsurf_max = k/(ns - 1)` (`stellgap_serial_ver5.f`, `rho(ir) = nsurf(ir)/nsurf(irads)`). The parity test now shifts the STELLGAP labels by `-1/(ns - 1)` and interpolates them onto FAX's s. A scan of the label offset has its minimum there. CTOK parity is now mean 6.3e-3 and p95 6.6e-3 (was 4.5e-3 and 1.13e-2), with a 7e-3 gate.

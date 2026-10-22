@@ -71,6 +71,7 @@ def prepare_design(
 ) -> Design:
     """Prepare a design: parameters are boundary names ``rc|rs|zc|zs`` + ``m`` + ``n`` (e.g. ``"zs11"``).
 
+    Each entry of ``surfaces`` snaps to the nearest half-mesh row ``(j - 0.5)/(ns - 1)``.
     ``options`` are passed to :func:`fax.eigen.eigenmodes` (``target_hz``, ``count``, ``ntheta``, ``nzeta``).
     """
     from booz_xform_jax.jax_api import prepare_booz_xform_constants
@@ -86,6 +87,8 @@ def prepare_design(
     s_full = np.asarray(implicit.runtime_from_params(params, config).setup.s_full)
     s_half = 0.5 * (s_full[:-1] + s_full[1:])
     index = np.asarray([int(np.argmin(abs(s_half - x))) for x in surfaces])
+    if np.unique(index).size != index.size:  # repeated rows make zero radial spacing (NaN)
+        raise ValueError(f"surfaces {surfaces} snap to repeated half-mesh rows s = {s_half[index]}; raise ns")
     modes: dict[str, np.ndarray] = {}
 
     def probe(p: Any) -> jax.Array:  # mode tables are static; read them from an abstract trace

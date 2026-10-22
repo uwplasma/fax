@@ -133,3 +133,56 @@ derivative is the trace of the projected perturbation, which remains smooth
 when eigenvalues inside the cluster cross. The VMEC boundary enters through
 ``vmex``'s implicit-function-theorem derivative of the converged
 equilibrium and through ``booz_xform_jax``.
+
+Energetic-particle drive
+------------------------
+
+The growth rate of a fixed eigenmode is the power the fast ions give to it
+over twice its energy (perturbative, NOVA-K / CAS3D-K style),
+
+.. math::
+
+   \gamma_h = -\frac{\operatorname{Im}\delta W_h}{2\omega\,\delta K}
+            = -\frac{P}{2W}, \qquad
+   W = \int \frac{\rho\,|\nabla_\perp\phi|^2}{2B^2}\,d^3x .
+
+The model is a large-aspect-ratio circular torus with
+:math:`B = B_0(1-\epsilon\cos\theta)`, zero orbit width and zero Larmor radius,
+and passing guiding centres with drift
+:math:`v_d = (v_\parallel^2 + v_\perp^2/2)/(\Omega R)`. With
+:math:`\phi = \sum_h \phi_h(s)\,e^{i(n\zeta - m_h\theta - \omega t)}`, the work
+:math:`Z e\,v_d\cdot\delta E` along an orbit of pitch
+:math:`\lambda = \mu B_0/E` is Fourier-decomposed in the uniform transit angle
+:math:`\vartheta`. Harmonic :math:`p` resonates at
+:math:`\omega = (nq - p)\,\omega_\theta(v, \lambda)`; for a TAE this gives
+:math:`v_\parallel \approx v_A, v_A/3, v_A/5`. Since
+:math:`\dot P_\zeta = (n/\omega)\dot E` for a single toroidal harmonic, linearizing
+along unperturbed orbits and using the Landau prescription gives
+
+.. math::
+
+   P = -\frac{\pi}{2}\int d^3x\,d^3v \sum_p |A_p|^2\,
+       \delta\!\left(\omega - (nq-p)\omega_\theta\right)\frac{QF}{\omega},
+   \qquad
+   \frac{QF}{\omega} = \frac{\partial F}{\partial E}
+       + \frac{n}{\omega}\frac{\partial F}{\partial P_\zeta},
+
+with :math:`P_\zeta = -Ze\psi_p` at zero orbit width. The delta function is
+integrated exactly over speed at each pitch. The remaining pitch integral uses
+Gauss–Legendre nodes and the orbit integral a uniform :math:`\theta` grid, so
+:math:`\gamma` is smooth in every parameter without artificial broadening.
+Maxwellian and slowing-down distributions are supported; the birth-energy
+edge of the slowing-down distribution is smoothed over 2% of :math:`v_b`.
+Bulk-ion Landau damping is the same integral for a flat thermal Maxwellian
+(Fu & Van Dam 1989; Betti & Freidberg 1992). Continuum damping and electron
+Landau damping are not computed; subtract them from
+:func:`fax.growth_rate` as an external :math:`\gamma_d`.
+
+Checks: the flat-Maxwellian rate scales as
+:math:`x(1+2x^2+2x^4)e^{-x^2}`, :math:`x = v_A/v_{th}` (Fu & Van Dam). For the
+Könies et al. (2018) ITPA TAE with a model two-harmonic eigenfunction, FAX gives
+4.4, 16.6 and 33.1 :math:`\times 10^3\,\mathrm{s^{-1}}` at 100, 200 and 300 keV.
+The published zero-Larmor-radius values are about 8–10, 25–33 and
+38–43 :math:`\times 10^3\,\mathrm{s^{-1}}`, so the 300 keV point is within 20%
+and the lower energies are about 40% low. Trapped particles and finite orbit
+width are not included.

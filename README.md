@@ -36,7 +36,7 @@ enters through vmex's implicit-function derivative of the converged equilibrium.
 | `geometry` | Boozer geometry from `boozmn`, `wout`, a vmex solve, or an analytic torus |
 | `continuum` | continuum matrices and frequencies, gaps, gap locations |
 | `eigen` | AE3D global operator, block-tridiagonal shift-invert, differentiable eigenvalues |
-| `drive` | fast-ion resonance screen |
+| `drive` | perturbative fast-ion growth rate and ion Landau damping |
 | `objectives` | smooth objectives and the VMEC-boundary design pipeline |
 | `io`, `plot` | TOML cases, `fax` command, figures |
 
@@ -85,9 +85,9 @@ The CTOK continuum takes 0.04 s per call after compilation on one CPU core
 ## Status
 
 The local continuum and the AE3D global operator (without the pressure and
-parallel-current terms) are in place. The drive is a ranking screen, not a
-calibrated growth rate; it is being replaced by a perturbative
-energetic-particle growth rate. See [plan.md](plan.md).
+parallel-current terms) are in place. The drive is a perturbative
+zero-orbit-width growth rate for passing fast ions (Könies 2018 TAE: 33×10³ s⁻¹
+at 300 keV vs 38–43×10³ published). See [plan.md](plan.md).
 
 ## Documentation
 
