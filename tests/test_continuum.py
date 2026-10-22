@@ -36,13 +36,14 @@ def test_stellgap_ctok_parity():
     geo = fax.read_boozmn(DATA / "boozmn_ctok.nc")
     khz = np.asarray(jax.jit(lambda g: fax.continuum(g, fax.mode_family(2, 12), fax.mass_density(1e19, 2.0)))(geo)) / 1e3
     ref = np.load(DATA / "stellgap_ctok_continuum.npz")
-    errors = []
-    for s, row in zip(np.asarray(geo.s), khz, strict=True):
-        j = np.argmin(abs(ref["s"] - s))
-        if abs(ref["s"][j] - s) < 2e-3:
-            errors.append(np.linalg.norm(row - ref["khz"][j]) / np.linalg.norm(ref["khz"][j]))
-    assert len(errors) == 97
-    assert np.mean(errors) < 5e-3 and np.percentile(errors, 95) < 1.2e-2
+    # STELLGAP averages half-mesh rows k, k+1 onto full surface k = 2..ns-1 but labels it
+    # k/(ns-1) (stellgap rho = nsurf/nsurf_max), one cell outward of the physical (k-1)/(ns-1).
+    s_ref = ref["s"] - 1.0 / 100.0  # boozmn_ctok.nc has ns_b = 101
+    inside = (geo.s > s_ref[0]) & (geo.s < s_ref[-1])
+    expected = np.stack([np.interp(geo.s[inside], s_ref, col) for col in ref["khz"].T], axis=1)
+    errors = np.linalg.norm(khz[inside] - expected, axis=1) / np.linalg.norm(expected, axis=1)
+    assert errors.size == 97
+    assert np.mean(errors) < 7e-3 and np.percentile(errors, 95) < 7e-3
 
 
 def test_gaps_and_gap_location():

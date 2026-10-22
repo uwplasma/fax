@@ -86,7 +86,7 @@ def read_boozmn(path: str | Path) -> Geometry:
         nfp = int(np.asarray(var["nfp_b"][...])) if "nfp_b" in var else 1
         return Geometry.from_arrays(
             nfp,
-            s=(jlist - 1.0) / max(ns - 1.0, 1.0),
+            s=(jlist - 1.5) / (ns - 1.0),  # half-mesh row j; booz_xform writes jlist = surface index + 2
             xm=np.asarray(var["ixm_b"][:], dtype=float),
             xn=np.asarray(var["ixn_b"][:], dtype=float),
             iota=profile("iota_b"),
