@@ -40,7 +40,8 @@ $|n - m\iota|\,v_A/R_0$ to 1e-9.
 STELLGAP labels its full-mesh surface $k$ as $k/(n_s - 1)$ instead of
 $(k - 1)/(n_s - 1)$ (`rho = nsurf/nsurf_max` in `stellgap_serial_ver5.f`), so
 the test shifts its labels by one cell; a scan of the offset has its minimum
-there. The compiled CTOK continuum takes 0.04 s on one CPU core (STELLGAP 0.8 s).
+there. The compiled CTOK continuum takes 0.03 s on a laptop CPU (STELLGAP 0.8 s);
+`python examples/benchmark.py` prints the timings of every hot path.
 
 ## Global operator
 
