@@ -103,6 +103,13 @@ the axis; :math:`m = 0` harmonics are flat between the axis and the first
 surface. The singular :math:`f'f'` blocks reproduce the local continuum, so the
 spectrum has continuum accumulation points and discrete gap modes.
 
+:math:`\partial_s c_j` contains the magnetic-shear term :math:`i\iota' m_j B/(G + \iota I)`.
+A test checks :math:`F` and :math:`G` against real-space finite differences of
+:math:`\phi` on the CTOK embedding to 0.3%; without the shear term :math:`F` is
+off by 9–20%. AE3D's inter-surface shear couplings have the opposite sign, so
+its CTOK TAE (337.9 kHz) sits 2.5% above the quadrature value of its own
+eigenvector (329.7 kHz); FAX's best-overlap mode is at 272.8 kHz.
+
 Eigenpairs near a target :math:`\omega^2` come from shift-invert subspace
 iteration: :math:`F - \sigma G` is factored by block LU (the Thomas algorithm
 with :math:`H\times H` blocks, :math:`O(N H^3)`), and Rayleigh–Ritz on

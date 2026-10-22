@@ -50,7 +50,7 @@ def test_ae3d_ctok_parity():
     rel = khz[best] / ref["khz"] - 1
     np.testing.assert_array_less(np.abs(rel[1:]), 0.015)  # six global modes, overlap > 0.9
     assert overlap[np.arange(len(best)), best].min() > 0.9
-    tae = v[0]
+    tae = v[0]  # AE3D's 337.9 kHz TAE: FAX 272.8; AE3D's inter-surface iota' terms are wrong (plan.md section 6)
     assert np.sqrt((tae @ F @ tae).real / (tae @ G @ tae).real) / 2e3 / np.pi == pytest.approx(ref["khz"][0], rel=0.03)
 
 
@@ -80,3 +80,39 @@ def test_shift_invert_matches_dense_and_gradients_match_finite_differences():
         fd = jnp.array([(f(p + e, **options) - f(p - e, **options)) / 2e-6 for e in 1e-6 * jnp.eye(2)])
         np.testing.assert_allclose(grad, fd, rtol=1e-5)
         np.testing.assert_allclose(grad[0], -0.5 * f(p, **options), rtol=1e-10)  # f ~ rho^(-1/2)
+
+
+def test_ctok_bending_energy_matches_real_space_quadrature():
+    """F and G against finite differences of phi on the boozmn embedding; B^i from |B|, iota and g_ij only."""
+    geo, n = fax.read_boozmn(DATA / "boozmn_ctok.nc"), 2
+    s, xm, xn = (np.asarray(a) for a in (geo.s, geo.xm, geo.xn))
+    S, T, Z = np.meshgrid(s, *2 * [np.linspace(0, 2 * np.pi, 32, endpoint=False)], indexing="ij")
+
+    def field(c, sn):
+        ang = xm * T[..., None] - xn * Z[..., None]
+        return (np.asarray(c)[:, None, None] * np.cos(ang) + np.asarray(sn)[:, None, None] * np.sin(ang)).sum(-1)
+
+    def grad(f):  # d/ds by second-order differences, d/dtheta and d/dzeta spectrally
+        k = lambda a: np.fft.fftfreq(32, 1 / 32).reshape([-1 if i == a else 1 for i in range(f.ndim)])  # noqa: E731
+        spec = [np.fft.ifft(1j * k(a) * np.fft.fft(f, axis=a), axis=a).real for a in (1, 2)]
+        return np.stack([np.gradient(f, s, axis=0, edge_order=2), *spec], -1)
+
+    R, Zc, P, B = (field(geo.rmnc, geo.rmns), field(geo.zmnc, geo.zmns), field(geo.pmnc, geo.pmns), field(geo.bmnc, geo.bmns))
+    X = np.stack([R * np.cos(Z + P), R * np.sin(Z + P), Zc], -1)
+    e = np.swapaxes(grad(X), -1, -2)  # covariant basis r_i
+    g, iota = e @ np.swapaxes(e, -1, -2), np.asarray(geo.iota)[:, None, None]
+    gi, J = np.linalg.inv(g), np.abs(np.linalg.det(e))
+    Bz = B / np.sqrt(iota**2 * g[..., 1, 1] + 2 * iota * g[..., 1, 2] + g[..., 2, 2])  # B^theta = iota B^zeta
+    f = {3: np.sin(np.pi * s) ** 8, 4: -2 * s * np.sin(np.pi * s) ** 8}
+    phi = sum(f[m][:, None, None] * np.cos(m * T - n * Z) for m in f)
+    u = Bz * (iota * grad(phi)[..., 1] + grad(phi)[..., 2]) / B
+    rho = float(fax.mass_density(1e19, 2.0))
+    trapz = lambda a: ((a[1:] + a[:-1]) * np.diff(s)).sum() / 2  # noqa: E731
+    energy = lambda a, w: trapz((np.einsum("...i,...ij,...j", grad(a), gi, grad(a)) * w).mean((1, 2)))  # noqa: E731
+    F, G = (np.asarray(dense(A)) for A in global_matrices(geo, fax.mode_family(n, 4), rho, 32, 4))
+    y = np.zeros((len(s), 5))
+    for m in f:
+        y[:, m] = f[m]
+    y = y.ravel()
+    assert 0.5 * (y @ F @ y).real == pytest.approx(energy(u, J), rel=5e-3)
+    assert 0.5 * (y @ G @ y).real == pytest.approx(energy(phi, MU0 * rho * J / B**2), rel=5e-3)
