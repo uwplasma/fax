@@ -210,7 +210,7 @@ def eigenmodes(
 def frequency_hz(
     geo: Geometry, harmonics: Any, density: Any, start: int = 0, stop: int = 1, *, target_hz: float | None = None, **options: Any
 ) -> jax.Array:
-    """Differentiable mean frequency of eigenvalues ``start:stop`` (all modes, or those nearest ``target_hz``).
+    """Differentiable ``sqrt(mean omega^2) / 2 pi`` of eigenvalues ``start:stop`` (all modes, or those nearest ``target_hz``).
 
     ``options`` are ``count`` and ``iters`` for the targeted solve and the grid sizes.
     """

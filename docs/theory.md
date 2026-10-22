@@ -357,7 +357,7 @@ for zero orbit width (ZOW), zero Larmor radius and passing guiding centres.
 The curvature plus $\nabla B$ drift is vertical with speed
 $v_d = (v_\parallel^2 + v_\perp^2/2)/(\Omega R)$, so the work done by the
 mode field is $Ze\,\mathbf v_d\cdot\delta\mathbf E \propto
-(1 - \lambda b/2)\,[\sin\theta\,\partial_r - \cos\theta\,\partial_\theta/r]\phi$,
+(1 - \lambda b/2)\,[\sin\theta\,\partial_r + \cos\theta\,\partial_\theta/r]\phi$ (the vertical unit vector is $\hat z = \sin\theta\,\hat r + \cos\theta\,\hat\theta$),
 with pitch $\lambda = \mu B_0/E$, $b = B/B_0$ and $\xi = v_\parallel/v = \sqrt{1 - \lambda b}$.
 
 **Resonances.** Along a passing orbit the uniform transit angle
