@@ -12,11 +12,16 @@ from __future__ import annotations
 
 import argparse
 import json
-import tomllib
+import sys
 from pathlib import Path
 from typing import Any
 
 import numpy as np
+
+if sys.version_info >= (3, 11):
+    import tomllib
+else:  # pragma: no cover - Python 3.10
+    import tomli as tomllib
 
 from .continuum import continuum, gaps, mass_density, mode_family
 from .eigen import eigenmodes

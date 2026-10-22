@@ -7,7 +7,7 @@ zeros when absent, so every geometry has the same pytree structure.
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field, fields, replace
+from dataclasses import dataclass, fields, replace
 from pathlib import Path
 from typing import Any, NamedTuple
 
@@ -18,7 +18,6 @@ import numpy as np
 _MODES = ("bmnc", "bmns", "rmnc", "rmns", "zmns", "zmnc", "pmns", "pmnc", "gmnc", "gmns")
 
 
-@jax.tree_util.register_dataclass
 @dataclass(frozen=True)
 class Geometry:
     """Boozer harmonics on a set of flux surfaces ``s`` (normalized toroidal flux).
@@ -43,7 +42,7 @@ class Geometry:
     iota: jax.Array
     G: jax.Array
     I: jax.Array  # noqa: E741 - standard Boozer notation
-    nfp: int = field(default=1, metadata={"static": True})
+    nfp: int = 1
 
     @classmethod
     def from_arrays(cls, nfp: int, **arrays: Any) -> Geometry:
@@ -56,6 +55,10 @@ class Geometry:
         """Return the geometry restricted to the given surface indices."""
         sliced = {name: getattr(self, name)[index] for name in ("s", "iota", "G", "I", *_MODES)}
         return replace(self, **sliced)
+
+
+_ARRAYS = ("s", "xm", "xn", *_MODES, "iota", "G", "I")
+jax.tree_util.register_dataclass(Geometry, data_fields=list(_ARRAYS), meta_fields=["nfp"])
 
 
 class SurfaceGrid(NamedTuple):
@@ -212,7 +215,7 @@ def surface_grid(geo: Geometry, ntheta: int = 32, nzeta: int = 32) -> SurfaceGri
     harmonics use second-order finite differences in ``s``.
     """
     theta, zeta = angle_grid(ntheta, nzeta)
-    ds = lambda a: jnp.gradient(a, geo.s, axis=0)  # noqa: E731
+    ds = lambda a: _d_ds(a, geo.s)
     B = synthesize(geo.bmnc, geo.bmns, geo.xm, geo.xn, theta, zeta)[0]
     jac = synthesize(geo.gmnc, geo.gmns, geo.xm, geo.xn, theta, zeta)[0]
     R, Rt, Rz = synthesize(geo.rmnc, geo.rmns, geo.xm, geo.xn, theta, zeta)
@@ -231,3 +234,11 @@ def surface_grid(geo: Geometry, ntheta: int = 32, nzeta: int = 32) -> SurfaceGri
     sqrt_g = jnp.sum(cart(Rs, ps, Zs) * normal, axis=-1)
     grad_s2 = jnp.sum(normal**2, axis=-1) / sqrt_g**2
     return SurfaceGrid(theta=theta, zeta=zeta, B=B, jacobian=jac, grad_s2=grad_s2)
+
+
+def _d_ds(a: jax.Array, s: jax.Array) -> jax.Array:
+    """Radial derivative along axis 0: central differences inside, one-sided at the ends."""
+    inner = (a[2:] - a[:-2]) / (s[2:] - s[:-2])[:, None]
+    first = (a[1] - a[0]) / (s[1] - s[0])
+    last = (a[-1] - a[-2]) / (s[-1] - s[-2])
+    return jnp.concatenate([first[None], inner, last[None]])

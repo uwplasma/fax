@@ -19,7 +19,6 @@ import jax
 import jax.numpy as jnp
 
 
-@jax.tree_util.register_dataclass
 @dataclass(frozen=True)
 class FastIons:
     """Fast-ion parameters; each may be a scalar or a radial profile on the mode grid."""
@@ -29,6 +28,11 @@ class FastIons:
     transit_hz: Any = 100.0e3
     precession_hz: Any = 5.0e3
     width_hz: Any = 10.0e3
+
+
+jax.tree_util.register_dataclass(
+    FastIons, data_fields=["density_fraction", "pressure_gradient", "transit_hz", "precession_hz", "width_hz"], meta_fields=[]
+)
 
 
 def resonance(f_hz: Any, n: int, l: int, ions: FastIons) -> jax.Array:  # noqa: E741
@@ -50,8 +54,13 @@ def growth_rate(
 ) -> jax.Array:
     """Mode-energy-weighted drive minus damping for each mode, in 1/s."""
     weight = jnp.sum(jnp.abs(jnp.asarray(structures)) ** 2, axis=-1)
-    weight = weight / jnp.trapezoid(weight, s, axis=-1)[:, None]
+    weight = weight / _integrate(weight, s)[:, None]
     f = jnp.asarray(frequencies_hz)[:, None]
     res = sum(resonance(f, n, l, ions) for l in transit_harmonics)  # noqa: E741
     density = -jnp.asarray(ions.density_fraction) * jnp.asarray(ions.pressure_gradient) * res
-    return drive_scale_hz * jnp.trapezoid(weight * density, s, axis=-1) - jnp.asarray(damping_hz)
+    return drive_scale_hz * _integrate(weight * density, s) - jnp.asarray(damping_hz)
+
+
+def _integrate(y: jax.Array, s: Any) -> jax.Array:
+    """Trapezoidal rule along the last axis (``jnp.trapezoid`` is missing from older JAX)."""
+    return 0.5 * jnp.sum((y[..., 1:] + y[..., :-1]) * jnp.diff(jnp.asarray(s)), axis=-1)

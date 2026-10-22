@@ -7,19 +7,21 @@ name = "uwplasma-fax"
 version = "0.1.0"
 description = "Differentiable JAX code for Alfvén eigenmodes and fast-ion physics in stellarators."
 readme = "README.md"
-requires-python = ">=3.11"
+requires-python = ">=3.10"
 authors = [{ name = "UWPlasma contributors" }]
 license = "MIT"
 dependencies = [
   "jax",
   "numpy",
   "netCDF4",
+  "tomli; python_version < '3.11'",
 ]
 classifiers = [
   "Development Status :: 3 - Alpha",
   "Intended Audience :: Science/Research",
   "Operating System :: OS Independent",
   "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.10",
   "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
   "Programming Language :: Python :: 3.13",
@@ -38,7 +40,7 @@ fax = "fax.io:main"
 
 [project.optional-dependencies]
 plot = ["matplotlib"]
-vmex = ["vmex>=0.11.10"]
+vmex = ["vmex>=0.11.10; python_version >= '3.11'"]
 test = ["pytest", "coverage", "matplotlib"]
 docs = ["sphinx", "furo"]
 dev = ["uwplasma-fax[test,docs]", "ruff", "build", "twine"]

@@ -166,7 +166,7 @@ Each phase is one PR. Each must pass CI on JAX x64, ruff, mypy and docs builds b
 
 - STELLGAP CTOK data (MIT) are vendored in `tests/data` (0.6 MB), so the parity gate runs in CI.
 - Dropped: validation/benchmark/maturity registries, FAR3D ingestion, AE3D matrix readers, the profile and metric continuum models, the gyro-Landau calibration fit, the dense radial `radial_coupling_fraction` path, `docs/_static` (15 MB) and `external_artifacts`.
-- Python ≥ 3.11.
+- Python ≥ 3.10 kept (tomli fallback, oldest JAX that pip resolves on 3.10 is tested).
 
 Open items carried forward:
 
