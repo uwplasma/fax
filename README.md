@@ -23,6 +23,10 @@ k_{\parallel j}=\frac{(n_j-m_j\iota)\,|B|}{G+\iota I}.
 $$
 
 Gaps between branches give the TAE, EAE, MAE and HAE frequency windows.
+Global eigenmodes solve the AE3D reduced ideal-MHD weak form (Spong, D'Azevedo
+& Todo 2010) with radial finite elements, giving a Hermitian block-tridiagonal
+problem $F y = \omega^2 G y$ that is solved near a target frequency by
+shift-invert with a block Thomas factorization.
 Eigenvalue derivatives use the Hellmann–Feynman identity
 $\delta\lambda = x^\dagger(\delta K-\lambda\,\delta M)x$, and the VMEC boundary
 enters through vmex's implicit-function derivative of the converged equilibrium.
@@ -31,7 +35,7 @@ enters through vmex's implicit-function derivative of the converged equilibrium.
 |---|---|
 | `geometry` | Boozer geometry from `boozmn`, `wout`, a vmex solve, or an analytic torus |
 | `continuum` | continuum matrices and frequencies, gaps, gap locations |
-| `eigen` | global radial operator, differentiable eigenvalues |
+| `eigen` | AE3D global operator, block-tridiagonal shift-invert, differentiable eigenvalues |
 | `drive` | fast-ion resonance screen |
 | `objectives` | smooth objectives and the VMEC-boundary design pipeline |
 | `io`, `plot` | TOML cases, `fax` command, figures |
@@ -57,7 +61,8 @@ harmonics = fax.mode_family(2, 12)  # (m, n) for m = 0..12, n = 2
 rho = fax.mass_density(1e19, ion_mass_amu=2.0)
 f_hz = fax.continuum(geo, harmonics, rho)  # (surfaces, harmonics)
 center_hz, width_hz = fax.gaps(f_hz)
-dfdrho = jax.grad(lambda r: fax.frequency_hz(geo, harmonics, r))(rho)
+modes = fax.eigenmodes(geo, harmonics, rho, target_hz=384e3, count=6)
+dfdrho = jax.grad(lambda r: fax.frequency_hz(geo, harmonics, r, 2, 3, target_hz=384e3, count=6))(rho)
 ```
 
 `examples/boundary_gradient.py` differentiates global frequencies with respect
@@ -69,18 +74,20 @@ to VMEC boundary coefficients of the precise-QA configuration.
 |---|---|
 | Uniform field, $\omega = \lvert n-m\iota\rvert v_A/R$ | exact to 1e-9 |
 | STELLGAP CTOK continuum (97 surfaces, n = 2, m = 0–12) | mean 4.6e-3, p95 1.2e-2 relative |
-| Constant-coefficient global spectrum | exact to 1e-12 |
-| Eigenvalue and boundary gradients vs. finite differences | 1e-5 (eigen), 1e-4 (vmex) |
+| Uniform field, global spectrum fills $[\omega_A^2(0), \omega_A^2(1)]$, singular modes | edges within $0.5/N$, width $\propto 1/N$ |
+| AE3D CTOK global modes (same boozmn, 99 surfaces, n = 2, m = 0–12) | 6 modes within 1.4%; TAE at 338 kHz unresolved (see plan) |
+| Könies et al. 2018 ITPA TAE (n = 6, m = 10, 11) | $\omega$ = 4.061e5 rad/s (CAS3D 4.01e5, GYGLES 4.13e5), converged to 1e-4 |
+| Eigenvalue gradients vs. finite differences | 1e-5 (dense and shift-invert) |
 
 The CTOK continuum takes 0.04 s per call after compilation on one CPU core
 (STELLGAP: 0.8 s).
 
 ## Status
 
-The local continuum is complete. The global operator is an interim radial
-envelope without continuum resonance, and the drive is a ranking screen, not a
-calibrated growth rate. Both are being replaced by the AE3D weak form and a
-perturbative energetic-particle growth rate; see [plan.md](plan.md).
+The local continuum and the AE3D global operator (without the pressure and
+parallel-current terms) are in place. The drive is a ranking screen, not a
+calibrated growth rate; it is being replaced by a perturbative
+energetic-particle growth rate. See [plan.md](plan.md).
 
 ## Documentation
 

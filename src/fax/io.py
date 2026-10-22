@@ -5,7 +5,7 @@ A case file has four tables (every key is optional except ``geometry.source``)::
     [geometry]  source = "boozmn" | "wout" | "vmec" | "circular", path, mboz, nboz, surfaces, ns, ftol, max_iter
     [modes]     n = [2], m_max = 12, m_min = 0
     [plasma]    density = 1e19 (ions/m^3), ion_mass = 2.0 (proton masses)
-    [run]       task = "continuum" | "eigenmodes", output, ntheta, nzeta, scale, boundary, count
+    [run]       task = "continuum" | "eigenmodes", output, ntheta, nzeta, target_khz (0: all modes), count
 """
 
 from __future__ import annotations
@@ -40,7 +40,7 @@ DEFAULTS: dict[str, dict[str, Any]] = {
     },
     "modes": {"n": [1], "m_max": 8, "m_min": 0},
     "plasma": {"density": 1.0e19, "ion_mass": 1.0},
-    "run": {"task": "continuum", "output": "outputs", "ntheta": 32, "nzeta": 32, "scale": 1.0e-4, "boundary": "dirichlet", "count": 8},
+    "run": {"task": "continuum", "output": "outputs", "ntheta": 32, "nzeta": 32, "target_khz": 0.0, "count": 8},
 }
 
 
@@ -92,7 +92,8 @@ def run(case: str | Path | dict[str, Any], save: bool = True) -> dict[str, Any]:
         center, width = gaps(f)
         out.update(frequencies_hz=f, gap_center_hz=center, gap_width_hz=width)
     elif r["task"] == "eigenmodes":
-        modes = eigenmodes(geo, harmonics, rho, scale=r["scale"], boundary=r["boundary"], ntheta=r["ntheta"], nzeta=r["nzeta"])
+        target = 1e3 * r["target_khz"] if r["target_khz"] > 0 else None
+        modes = eigenmodes(geo, harmonics, rho, target_hz=target, count=r["count"], ntheta=r["ntheta"], nzeta=r["nzeta"])
         out.update(
             mode_s=modes.s,
             frequencies_hz=modes.frequencies_hz[: r["count"]],

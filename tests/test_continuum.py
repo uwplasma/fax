@@ -37,7 +37,7 @@ def test_stellgap_ctok_parity():
     khz = np.asarray(jax.jit(lambda g: fax.continuum(g, fax.mode_family(2, 12), fax.mass_density(1e19, 2.0)))(geo)) / 1e3
     ref = np.load(DATA / "stellgap_ctok_continuum.npz")
     errors = []
-    for s, row in zip(np.asarray(geo.s), khz, strict=True):
+    for s, row in zip(np.asarray(geo.s) + 0.005, khz, strict=True):  # STELLGAP labels half-mesh data with full-mesh s
         j = np.argmin(abs(ref["s"] - s))
         if abs(ref["s"][j] - s) < 2e-3:
             errors.append(np.linalg.norm(row - ref["khz"][j]) / np.linalg.norm(ref["khz"][j]))

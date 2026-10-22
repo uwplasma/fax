@@ -56,19 +56,31 @@ class Geometry:
         sliced = {name: getattr(self, name)[index] for name in ("s", "iota", "G", "I", *_MODES)}
         return replace(self, **sliced)
 
+    def full_mesh(self) -> Geometry:
+        """Average neighbouring half-mesh surfaces onto the VMEC full mesh, as STELLGAP and AE3D do."""
+        return jax.tree_util.tree_map(lambda a, b: 0.5 * (a + b), self.surfaces(slice(None, -1)), self.surfaces(slice(1, None)))
+
 
 _ARRAYS = ("s", "xm", "xn", *_MODES, "iota", "G", "I")
 jax.tree_util.register_dataclass(Geometry, data_fields=list(_ARRAYS), meta_fields=["nfp"])
 
 
 class SurfaceGrid(NamedTuple):
-    """Field and metric sampled on a tensor Boozer grid, shape ``(surfaces, theta, zeta)``."""
+    """Field and metric sampled on a tensor Boozer grid, shape ``(surfaces, theta, zeta)``.
+
+    ``dB`` stacks ``(d_s, d_theta, d_zeta) |B|`` on a last axis, ``sqrt_g`` is the
+    embedding Jacobian of ``(s, theta, zeta)`` and ``metric`` the contravariant
+    tensor ``g^ij = grad(u^i) . grad(u^j)``, shape ``(..., 3, 3)``.
+    """
 
     theta: jax.Array
     zeta: jax.Array
     B: jax.Array
     jacobian: jax.Array
     grad_s2: jax.Array
+    dB: jax.Array
+    sqrt_g: jax.Array
+    metric: jax.Array
 
 
 def read_boozmn(path: str | Path) -> Geometry:
@@ -86,7 +98,7 @@ def read_boozmn(path: str | Path) -> Geometry:
         nfp = int(np.asarray(var["nfp_b"][...])) if "nfp_b" in var else 1
         return Geometry.from_arrays(
             nfp,
-            s=(jlist - 1.0) / max(ns - 1.0, 1.0),
+            s=(jlist - 1.5) / max(ns - 1.0, 1.0),
             xm=np.asarray(var["ixm_b"][:], dtype=float),
             xn=np.asarray(var["ixn_b"][:], dtype=float),
             iota=profile("iota_b"),
@@ -160,13 +172,16 @@ def circular_torus(
     epsilon_B: float = 0.0,
     nfp: int = 1,
 ) -> Geometry:
-    """Analytic large-aspect circular torus in approximate Boozer form.
+    """Concentric circular tokamak in Boozer form, to first order in ``eps = epsilon_B sqrt(s)``.
 
-    ``R = R0 + a sqrt(s) cos(theta)``, ``Z = a sqrt(s) sin(theta)`` and
-    ``|B| = B0 (1 - epsilon_B sqrt(s) cos(theta))``. With ``epsilon_B = 0``
-    the field is uniform and the continuum reduces to ``k_par v_A`` exactly.
+    ``|B| = B0 (1 - eps cos(theta))`` and the surfaces are circles of radius
+    ``r = a sqrt(s)`` in the geometric angle ``theta + eps sin(theta)``, which makes
+    ``sqrt(g) ~ 1/B^2``. ``epsilon_B = a/R0`` is the ad hoc equilibrium of
+    Könies et al. (2018, appendix); ``epsilon_B = 0`` gives a uniform field, for
+    which the continuum is ``k_par v_A`` exactly. Surfaces default to the
+    midpoints of 24 equal intervals of ``s``.
     """
-    s = jnp.linspace(0.05, 1.0, 24) if s is None else jnp.asarray(s, dtype=float)
+    s = (jnp.arange(24) + 0.5) / 24 if s is None else jnp.asarray(s, dtype=float)
     xm, xn = jnp.array([0.0, 1.0, 2.0]), jnp.zeros(3)
     root = jnp.sqrt(s)
     zero = jnp.zeros_like(s)
@@ -175,6 +190,7 @@ def circular_torus(
     bmnc = jnp.stack([jnp.full_like(s, B0), -B0 * epsilon_B * root, zero], axis=1)
     # Jacobian (G + iota I)/B^2 with I = 0, expanded to first order in epsilon_B.
     gmnc = jnp.stack([G / B0**2, 2.0 * G * epsilon_B * root / B0**2, zero], axis=1)
+    shift = 0.5 * minor_radius * epsilon_B * s  # r cos(theta + eps sin) ~ r cos - r eps (1 - cos 2 theta) / 2
     return Geometry.from_arrays(
         nfp,
         s=s,
@@ -182,8 +198,8 @@ def circular_torus(
         xn=xn,
         bmnc=bmnc,
         gmnc=gmnc,
-        rmnc=jnp.stack([jnp.full_like(s, major_radius), minor_radius * root, zero], axis=1),
-        zmns=jnp.stack([zero, minor_radius * root, zero], axis=1),
+        rmnc=jnp.stack([major_radius - shift, minor_radius * root, shift], axis=1),
+        zmns=jnp.stack([zero, minor_radius * root, shift], axis=1),
         iota=iota,
         G=G,
         I=zero,
@@ -208,15 +224,17 @@ def angle_grid(ntheta: int, nzeta: int, nfp: int = 1) -> tuple[jax.Array, jax.Ar
 
 
 def surface_grid(geo: Geometry, ntheta: int = 32, nzeta: int = 32) -> SurfaceGrid:
-    """Sample ``|B|``, the Boozer Jacobian and ``|grad s|^2`` on every surface.
+    """Sample ``|B|``, its derivatives, the Boozer Jacobian and the metric on every surface.
 
-    ``|grad s|^2 = |r_theta x r_zeta|^2 / (r_s . r_theta x r_zeta)^2`` from the
-    cylindrical embedding ``(R, phi = zeta + p, Z)``; radial derivatives of the
-    harmonics use second-order finite differences in ``s``.
+    The covariant basis ``r_s, r_theta, r_zeta`` comes from the cylindrical
+    embedding ``(R, phi = zeta + p, Z)``; ``g^ij`` is the inverse of
+    ``g_ij = r_i . r_j``. Radial derivatives of the harmonics use second-order
+    finite differences in ``s``.
     """
     theta, zeta = angle_grid(ntheta, nzeta)
     ds = lambda a: _d_ds(a, geo.s)
-    B = synthesize(geo.bmnc, geo.bmns, geo.xm, geo.xn, theta, zeta)[0]
+    B, Bt, Bz = synthesize(geo.bmnc, geo.bmns, geo.xm, geo.xn, theta, zeta)
+    Bs = synthesize(ds(geo.bmnc), ds(geo.bmns), geo.xm, geo.xn, theta, zeta)[0]
     jac = synthesize(geo.gmnc, geo.gmns, geo.xm, geo.xn, theta, zeta)[0]
     R, Rt, Rz = synthesize(geo.rmnc, geo.rmns, geo.xm, geo.xn, theta, zeta)
     _, Zt, Zz = synthesize(geo.zmnc, geo.zmns, geo.xm, geo.xn, theta, zeta)
@@ -230,10 +248,11 @@ def surface_grid(geo: Geometry, ntheta: int = 32, nzeta: int = 32) -> SurfaceGri
     def cart(dR: jax.Array, dphi: jax.Array, dZ: jax.Array) -> jax.Array:
         return jnp.stack([dR * cp - R * sp * dphi, dR * sp + R * cp * dphi, dZ], axis=-1)
 
-    normal = jnp.cross(cart(Rt, pt, Zt), cart(Rz, 1.0 + pz, Zz))
-    sqrt_g = jnp.sum(cart(Rs, ps, Zs) * normal, axis=-1)
-    grad_s2 = jnp.sum(normal**2, axis=-1) / sqrt_g**2
-    return SurfaceGrid(theta=theta, zeta=zeta, B=B, jacobian=jac, grad_s2=grad_s2)
+    basis = jnp.stack([cart(Rs, ps, Zs), cart(Rt, pt, Zt), cart(Rz, 1.0 + pz, Zz)], axis=-2)
+    sqrt_g = jnp.linalg.det(basis)
+    metric = jnp.linalg.inv(basis @ jnp.swapaxes(basis, -1, -2))
+    dB = jnp.stack([Bs, Bt, Bz], axis=-1)
+    return SurfaceGrid(theta=theta, zeta=zeta, B=B, jacobian=jac, grad_s2=metric[..., 0, 0], dB=dB, sqrt_g=sqrt_g, metric=metric)
 
 
 def _d_ds(a: jax.Array, s: jax.Array) -> jax.Array:
