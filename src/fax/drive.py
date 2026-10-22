@@ -17,7 +17,7 @@ unperturbed orbits with ``dP_zeta/dt = (n/omega) dE/dt`` and the Landau prescrip
 
     gamma = pi m_f^2 / (4 R^2) * int r dr sum_p int dlam <b/|xi|> v^6 |A_p|^2 QF/omega / ((nq - p) w_th / v)
                                / int r rho sum_h (|phi_h'|^2 + m_h^2 |phi_h|^2 / r^2) dr,
-    A_p = < (1 - lam b/2) [sin(theta) d_r - cos(theta) d_theta / r] phi e^{i[(nq - m) theta - (nq - p) vartheta]} >_orbit,
+    A_p = < (1 - lam b/2) [sin(theta) d_r + cos(theta) d_theta / r] phi e^{i[(nq - m) theta - (nq - p) vartheta]} >_orbit,
     QF/omega = dF/dE + (n/omega) dF/dP_zeta = dF/dE - n q / (omega Z e B r) dF/dr,
 
 with ``v = omega / |(nq - p) omega_theta/v|``. The delta function is integrated exactly
