@@ -42,7 +42,7 @@ fax = "fax.io:main"
 plot = ["matplotlib"]
 vmex = ["vmex>=0.11.10; python_version >= '3.11'"]
 test = ["pytest", "coverage", "matplotlib"]
-docs = ["sphinx", "furo"]
+docs = ["sphinx", "furo", "myst-parser"]
 dev = ["uwplasma-fax[test,docs]", "ruff", "build", "twine"]
 
 [tool.setuptools.packages.find]
