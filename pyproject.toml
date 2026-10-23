@@ -50,6 +50,8 @@ where = ["src"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+addopts = "-m 'not slow'"
+markers = ["slow: end-to-end vmex runs (minutes); run with -m slow or -m ''"]
 
 [tool.ruff]
 line-length = 140

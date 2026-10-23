@@ -24,9 +24,11 @@ logbook (`plan.md`, section 6).
 | Shift-invert vs dense | `test_shift_invert_matches_dense_and_gradients_match_finite_differences` | 1e-10 |
 | Eigenvalue gradients vs finite differences | same | 1e-5 (cluster mean and shift-invert) |
 | Fu–Van Dam Maxwellian scaling | `test_fu_van_dam_maxwellian_scaling` | 1e-3 |
-| Drive vs Könies 2018 | `test_koenies_2018_tae_growth_rates` | 300 keV within 20%; 100, 200 keV about 40% low |
+| Drive vs Könies 2018 (Boozer form of the circular model) | `test_koenies_2018_tae_growth_rates` | old circular model within 3%; 300 keV within 20% of Könies, 100, 200 keV about 40% low |
 | Drive sign rules | `test_drive_sign_and_flat_profile` | flat, peaked, hollow, $\pm n$ |
-| Drive gradients vs finite differences | `test_gradients_match_finite_differences` | 1e-5 |
+| Drive gradients vs finite differences | `test_gradients_match_finite_differences`, `test_geometry_and_mode_gradients` | 1e-5 (density, $T_f$, $\omega$, every geometry leaf and the mode) |
+| CTOK global TAE driven | `test_ctok_global_tae_drive` | 272.8 kHz mode, $\gamma/\omega$ = 9.2e-4, 3.6e-3 at 25, 50 keV |
+| LP-QA drive: helical sidebands, gradient through vmex geometry | `test_stellarator_drive_gradient_and_sidebands` | $k \ne n$ resonances present; FAX chain AD vs FD ≤ 1e-4 |
 | vmex → booz_xform_jax → FAX continuum | `test_vmec_input_to_continuum` | runs, finite |
 | Compression harmonics of an elliptic torus, $\epsilon_{\pm2,0} = (\kappa^2-1)/2(\kappa^2+1)$ | `test_continuum_cost_of_an_elliptic_torus` | exact to 1e-12; $f_\mathrm{cont}$ analytic; AD vs FD 1e-7 |
 | $f_\mathrm{cont}$ descent step through vmex | `test_continuum_cost_gradient_step_and_vmex_terms` | decreases; vmex aspect on the same state |
@@ -226,43 +228,69 @@ $\iota$ (−0.8%), as $f \propto |\iota m - n|$ near the continuum minimum.
 
 ## Fast-ion drive
 
+The drive is evaluated in Boozer geometry ({doc}`theory`, section 8); the
+tokamak gates use {func}`fax.circular_torus`, axisymmetric (`helical = 0`,
+`nzeta = 1`).
+
 - **Fu–Van Dam.** A flat Maxwellian with one $v_\parallel = v_A$ resonance
   scales as $x(1 + 2x^2 + 2x^4)e^{-x^2}$, $x = v_A/v_{th}$, to 1e-3.
 - **Könies et al. (2018).** Model TAE ($m = 10, 11$, $n = 6$, Gaussian
   envelope of 10 cm FWHM at $q = 1.75$), $\omega = 4.0$e5 rad/s, the paper's
-  fast-ion density profile (its eq. 1):
+  fast-ion density profile (its eq. 1), `circular_torus(epsilon_B = a/R0)`:
 
   | $T_f$ (keV) | 100 | 200 | 300 | 400 |
   |---|---|---|---|---|
-  | FAX (10³ s⁻¹) | 4.4 | 16.6 | 33.1 | 65 |
+  | FAX, Boozer geometry (10³ s⁻¹) | 4.37 | 16.64 | 33.18 | 65.3 |
+  | FAX, previous circular large-aspect-ratio model | 4.4 | 16.6 | 33.1 | 65 |
   | Könies ZLR band (10³ s⁻¹) | 8–10 | 25–33 | 38–43 | |
 
-  300 keV is within 20%; 100 and 200 keV are about 40% low. The result changes
-  by less than 15% with mode width (3–8 cm) and relative harmonic amplitude.
+  The geometric path and the circular model differ only in $O(\varepsilon)$
+  terms ($dl/d\zeta = G/B$ instead of $R_0$, the Boozer angle, the exact
+  $\nabla B$); at the same 0.5 cm radial resolution they agree within 4%.
+  300 keV is within 20% of Könies; 100 and 200 keV are about 40% low.
   Candidate causes are trapped particles and orbit non-uniformity near the
   trapped–passing boundary, the missing $\delta B_\parallel$, and the model
   eigenfunction. Above 300 keV the published finite-orbit-width results roll
   over and FAX (ZOW) keeps growing.
 - **Signs.** A flat profile gives equal damping for $(m, n)$ and $(-m, -n)$;
-  a peaked profile drives $n > 0$ and damps $n < 0$; a hollow profile damps;
-  bulk-ion Landau damping is positive.
+  a peaked profile drives $n > 0$ and damps $n < 0$ ($\iota\psi' > 0$); a
+  hollow profile damps; bulk-ion Landau damping is positive.
+- **Gradients.** `jax.grad` with respect to every {class}`fax.Geometry` leaf and
+  the mode, along a random direction, matches central differences to 1e-5.
+- **CTOK.** The FAX TAE of the CTOK `boozmn` (272.8 kHz, $n = 2$, $m = 0..12$,
+  D at 10¹⁹ m⁻³) from the shift-invert solve, driven by deuterons with
+  $n_f = 10^{17}(1 - s)^2$ m⁻³: $\gamma/\omega$ = 9.2e-4 (25 keV), 3.6e-3
+  (50 keV), 1.6e-2 (100 keV); bulk-ion Landau damping at 1 keV is 2.6 s⁻¹.
+- **Stellarators.** LP-QA (ns 16, 16 FE nodes, $n = 1$ family $m = 0..5$,
+  $n \in \{-1, 1, 3\}$, the four modes nearest 104 kHz, 150 keV Maxwellian
+  deuterons, $n_f = 10^{15}(1 - s)^2$): resonances with $k \ne 1$ carry a
+  fraction $10^{-6}$–$10^{-2}$ of $\gamma$, as expected for quasi-axisymmetry,
+  and the pure helical sidebands $k = -3, 5$ (outside the mode's own $n$) are
+  nonzero. `jax.jvp` of {func}`fax.drive_risk` of {func}`fax.geometry_growth_rates`
+  (FE interpolation, shift-invert eigenvectors differentiated through the
+  iteration, drive) along the re-solved geometry tangent of `rc01` matches FD
+  to ≤ 1e-4 (5e-8 measured at 24 nodes). The full `jax.grad` through the vmex
+  adjoint differs from re-solve FD by 1.6e-3: vmex's released $m = 1$ gauge
+  ({ref}`vmex-gradients`), amplified by the drive's sensitivity. In LP-QH
+  (helical $B \sim \cos(\theta + 4\zeta)$, $N_{fp} = 4$) the helical sidebands
+  dominate some modes: for the 43.9 kHz gap mode of the $n = 1$ family
+  driven by slowing-down alphas, 99% of $\gamma$ comes from $k = -7$, a
+  toroidal number absent from the mode.
 
 ## Not done
 
 - **Sound and fast-wave coupling** (no BAE gap; $\gamma p|\nabla\cdot\boldsymbol\xi|^2$
   dropped), and an AE3D rerun with its $J_\parallel$ term for CTOK.
-- **Trapped and precessing fast ions** in the drive.
+- **Trapped and precessing fast ions** in the drive (bounce-averaged
+  precession resonances), and the covariant $B_s$ and $\delta B_\parallel$ in the drift.
 - **Finite orbit width** and finite Larmor radius in the drive.
-- **Stellarator drift sidebands**: the drive uses a circular large-aspect-ratio
-  model with only the toroidal $\pm1$ coupling plus orbit harmonics; helical
-  $B$ harmonics do not enter the resonance or the drift.
 - **Continuum and electron Landau damping** are not computed (subtract an
   external $\gamma_d$).
 - **AE3D LHD (37, 73.7 kHz) and QPS (149 kHz)** published frequencies need
   their equilibria; Mishchenko et al. (2011) is not yet a gate.
 - **P5 open items**: HSX optimization (the HSX fixed-boundary decks are
-  mpol 18, ntor 24, and were not reduced or run); a lower $\gamma_\mathrm{max}$ at fixed QS through
-  {func}`fax.growth_rate` (the drive is circular large-aspect-ratio); a
+  mpol 18, ntor 24, and were not reduced or run); a larger $\gamma_\mathrm{max}$ reduction (the 4-coefficient LP-QA
+  `--drive` run lowers it by only 4.4%, 8500 → 8123 s⁻¹, at QS 1.1e-6 → 1.6e-6); a
   fast-ion resonance-band term; higher resolution ($n_s \ge 25$) and longer
   QH runs.
 - {func}`fax.circular_torus` has no Shafranov shift: it reproduces Könies'
