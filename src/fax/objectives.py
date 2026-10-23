@@ -209,8 +209,7 @@ def geometry_frequencies(geo: Geometry, design: Design, mode_count: int = 3) -> 
     if target is None:
         K, M = dense(F), dense(G)
         return _hz(jnp.stack([eigenvalue_mean(K, M, i, i + 1) for i in range(mode_count)]))
-    lam = targeted_eigenvalues(F, G, float((2 * jnp.pi * target) ** 2), solver.get("count", 8), solver.get("iters", 40))
-    return _hz(lam[:mode_count])
+    return _hz(targeted_eigenvalues(F, G, (2 * jnp.pi * target) ** 2, **solver)[:mode_count])
 
 
 def design_frequencies(offsets: Any, design: Design, mode_count: int = 3) -> jax.Array:

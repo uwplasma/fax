@@ -21,7 +21,7 @@ logbook (`plan.md`, section 6).
 | Cylinder: Newcomb $m = 1$ cancellation; Suydam threshold | `test_cylinder_newcomb_m1_and_suydam_threshold` | bending + kink = 1e-3 of bending; stable at 1.0e4 Pa, unstable at 2.0e4 (Suydam 1.05e4) |
 | Könies ITPA with $p(s)$, vmex equilibrium | `test_konies_itpa_finite_beta_tae` | 4.127e5 → 3.947e5 rad/s with finite-$\beta$ terms (CAS3D 4.01e5) |
 | Könies 2018 ITPA TAE frequency | `test_konies_tae_frequency_and_convergence` | 4.0610e5 rad/s, $N_s$-converged to 1e-4 |
-| Shift-invert vs dense | `test_shift_invert_matches_dense_and_gradients_match_finite_differences` | 1e-10 |
+| Shift-invert (SOLVAX) vs dense | `test_shift_invert_matches_dense_and_gradients_match_finite_differences` | 1e-10 |
 | Eigenvalue gradients vs finite differences | same | 1e-5 (cluster mean and shift-invert) |
 | Fu–Van Dam Maxwellian scaling and closed-form ZOW coefficient (weak toroidicity) | `test_fu_van_dam_maxwellian_scaling` | 1e-3 |
 | Slowing-down $\int F\,d^3v = 1$ with the smoothed edge; duplicated toroidal samples | `test_slowing_down_is_normalized_with_its_smoothed_edge`, `test_duplicated_toroidal_samples_leave_the_drive_unchanged` | 1e-6; 1e-10 |
@@ -51,6 +51,24 @@ $(k - 1)/(n_s - 1)$ (`rho = nsurf/nsurf_max` in `stellgap_serial_ver5.f`), so
 the test shifts its labels by one cell; a scan of the offset has its minimum
 there. The compiled CTOK continuum takes 0.03 s on a laptop CPU (STELLGAP 0.8 s);
 `python examples/benchmark.py` prints the timings of every hot path.
+
+(performance)=
+### Performance note: SOLVAX eigensolver
+
+FAX's own block Thomas shift-invert (a fixed 40 iterations at `tol = 1e-6`) was replaced by
+{func}`solvax.generalized_eigenpairs` (stops at `tol = 1e-10`). Eigenvalues, gradients and the CTOK, Könies and
+drive references are unchanged to 1e-9 relative. One CPU core, float64, JAX 0.12; cold is compile plus first call,
+warm the median of five (seconds, before / after; forward is `eigenmodes` including assembly, 0.024, 0.039 and 0.079 s,
+gradient is `jax.grad` of `frequency_hz`). Iterations: 40 / 40 / 40 before, 11 / 17 / 33 after.
+
+| case | $N$, $H$ | forward cold | forward warm | gradient cold | gradient warm |
+|---|---|---|---|---|---|
+| CTOK, 6 modes, 384 kHz | 98, 13 | 0.70 / 0.85 | 0.076 / 0.047 | 1.76 / 1.93 | 0.115 / 0.074 |
+| Könies, 3 modes, 64.6 kHz | 200, 12 | 0.89 / 1.04 | 0.110 / 0.088 | 1.78 / 2.07 | 0.171 / 0.134 |
+| Könies, 3 modes, 64.6 kHz | 400, 12 | 1.11 / 1.25 | 0.220 / 0.236 | 2.10 / 2.20 | 0.324 / 0.324 |
+
+Warm times are equal or better, cold compile about 0.15 s longer, and the iteration count now adapts to the accuracy
+rather than being fixed. Timings on a shared laptop vary by about 10%.
 
 ## Global operator
 
@@ -154,7 +172,7 @@ its $J_\parallel$ term on to compare; `test_ae3d_ctok_parity` keeps the default
 ## Gradients
 
 - **Eigenvalues.** For the Könies operator at $N = 40$, the Hellmann–Feynman
-  derivative of a dense cluster mean and of a shift-invert eigenvalue with
+  derivative of a dense cluster mean and of a (SOLVAX) shift-invert eigenvalue with
   respect to density and an $\iota$ offset matches central differences to
   1e-5, and $\partial f/\partial\ln\rho = -f/2$ to 1e-10. The same holds with
   `finite_beta=True` and the Könies pressure (central step 1e-7).
@@ -277,8 +295,8 @@ tokamak gates use {func}`fax.circular_torus`, axisymmetric (`helical = 0`,
   fraction $10^{-6}$–$10^{-2}$ of $\gamma$, as expected for quasi-axisymmetry,
   and the pure helical sidebands $k = -3, 5$ (outside the mode's own $n$) are
   nonzero. `jax.jvp` of {func}`fax.drive_risk` of {func}`fax.geometry_growth_rates`
-  (FE interpolation, shift-invert eigenvectors differentiated through the
-  iteration, drive) along the re-solved geometry tangent of `rc01` matches FD
+  (FE interpolation, shift-invert eigenvectors differentiated implicitly,
+  drive) along the re-solved geometry tangent of `rc01` matches FD
   to ≤ 1e-4 (5e-8 measured at 24 nodes). The full `jax.grad` through the vmex
   adjoint differs from re-solve FD by 1.6e-3: vmex's released $m = 1$ gauge
   ({ref}`vmex-gradients`), amplified by the drive's sensitivity. In LP-QH

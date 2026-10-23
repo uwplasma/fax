@@ -301,27 +301,29 @@ modes appear as isolated eigenvalues.
 
 The modes of interest lie in the interior of the spectrum, near a target
 $\sigma = (2\pi f_\mathrm{target})^2$. {func}`fax.eigenmodes` with
-`target_hz` uses shift-invert subspace iteration
-(`fax.eigen.shift_invert`):
+`target_hz` hands the Hermitian block-tridiagonal pencil to
+{func}`solvax.generalized_eigenpairs` (SOLVAX owns the numerics;
+`fax.eigen.targeted_eigenpairs` is the thin wrapper):
 
 1. Factor $A = F - \sigma G$ by block LU (the Thomas algorithm with
-   $H\times H$ blocks, a `lax.scan` forward and backward), at cost
-   $O(NH^3)$ instead of $O((NH)^3)$:
-   $S_1 = A_{11}$, $S_k = A_{kk} - A_{k,k-1}S_{k-1}^{-1}A_{k-1,k}$,
-   $z_k = b_k - A_{k,k-1}S_{k-1}^{-1}z_{k-1}$, then
-   $x_k = S_k^{-1}(z_k - A_{k,k+1}x_{k+1})$ backwards.
-2. Iterate a block of $p = \min(2\,\mathrm{count} + 8, NH)$ vectors (seeded
-   with a fixed random block) `iters = 40` times:
-   $Y \leftarrow \mathrm{qr}\big((F - \sigma G)^{-1} G\,Y\big)$. Eigenvalues
-   near $\sigma$ have the largest $|\lambda - \sigma|^{-1}$ and dominate.
-3. Rayleigh–Ritz: solve $(Y^\dagger FY)c = \lambda(Y^\dagger GY)c$, keep the
-   `count` values nearest $\sigma$ in ascending order, and return
-   $G$-normalized eigenvectors $y = Yc$.
+   $H\times H$ blocks), at cost $O(NH^3)$ instead of $O((NH)^3)$. A probe solve
+   checks every factorization; if a Schur pivot has broken down (for example
+   $\begin{pmatrix}0&1\\1&0\end{pmatrix}$), a dense pivoted LU takes over for
+   $NH \le 2048$ and `Status.fallback` is set.
+2. Iterate a block of $p = \min(2\,\mathrm{count} + 8, NH)$ vectors,
+   $Y \leftarrow \mathrm{qr}\big((F - \sigma G)^{-1} G\,Y\big)$, with Rayleigh–Ritz on
+   $(F, G)$ each step, until the `count` values nearest $\sigma$ and the nearest
+   excluded one reach the relative residual `tol` (default 1e-10) or `iters`
+   (default 100) is exhausted. Eigenvectors are $G$-normalized.
 
-Without a target, `eigenmodes` assembles the dense matrices and solves all
-$NH$ modes. A test checks both solvers agree to 1e-10. The CTOK case
-($N = 99$, $H = 13$) assembles in 0.018 s and finds 6 modes in 0.067 s once
-compiled; the dense solve takes 1.3 s.
+{class}`fax.eigen.Status` reports the worst residual, the $G$-orthogonality, the
+iterations, `converged` and the selection `gap` (distance to the target of the
+nearest excluded eigenvalue minus that of the farthest selected one; 0 means the
+selection splits a tied set). Without a target, `eigenmodes` assembles the dense
+matrices and solves all $NH$ modes (SOLVAX has no all-modes dense route, so
+`eigenvalue_mean` stays dense). A test checks both solvers agree to 1e-10. The
+CTOK case ($N = 99$, $H = 13$) assembles in 0.024 s and the six-mode solve takes
+0.047 s once compiled; the dense solve takes 0.9 s.
 
 ## 6. Eigenvalue derivatives (Hellmann–Feynman)
 
@@ -333,11 +335,15 @@ $$
 \delta\lambda = y^\dagger\left(\delta F - \lambda\,\delta G\right)y .
 $$ (hellmann-feynman)
 
-FAX implements this as a `custom_jvp`, so no derivative passes through the
-iteration or the dense `eigh`:
+The derivative is a `custom_jvp`, so none passes through the iteration or the
+dense `eigh`:
 
 - `fax.eigen.targeted_eigenvalues` (used by {func}`fax.frequency_hz` with a
-  target) applies {eq}`hellmann-feynman` to the shift-invert pairs;
+  target) applies {eq}`hellmann-feynman` to the SOLVAX pairs. SOLVAX also
+  differentiates the eigenvectors (a bordered solve, first order, phase-gauge
+  tangent). FAX multiplies every such tangent by NaN unless the solve
+  `converged` and `gap > 0`, in forward and reverse mode, so an unconverged
+  or tie-splitting solve is rejected rather than silently used;
 - {func}`fax.eigenvalue_mean` applies it to dense eigenvalues
   `start <= i < stop` and returns the **mean**,
   $\bar\lambda = \frac1k\sum_{i}\lambda_i$, whose derivative
@@ -546,7 +552,7 @@ Eigenvalues and gaps are not smooth (crossings, `max`), so the objectives are:
 $\mathrm{softplus}(\mathrm{LSE}(\gamma_k/\gamma_s) - \gamma_\mathrm{th}/\gamma_s)$ (scale
 $\gamma_s$ = `scale`, default 10³ s⁻¹) of the growth rates that
 {func}`fax.geometry_growth_rates` returns for the modes nearest `target_hz`
-(shift-invert eigenvectors, differentiated through the iteration, then
+(shift-invert eigenvectors, differentiated implicitly by SOLVAX, then
 {func}`fax.growth_rate`). Cluster means
 ({func}`fax.eigenvalue_mean`, `start:stop` in {func}`fax.frequency_hz`)
 keep objectives smooth through crossings inside the cluster.
