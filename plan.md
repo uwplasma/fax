@@ -334,3 +334,9 @@ Findings and open items:
 Traps: the grid `max |B|` for the passing boundary has derivative jumps (argmax switches) and made FD noisy at 1e-2; a log-sum-exp bound fixed it. Re-solve FD at h = 1e-4 is off by 4e-4 from curvature (gamma is ~100x more sensitive than f), so gates use h = 1e-5. Without the drive row weighted 10x, least_squares retreats to p = 0: QS has zero slope but huge curvature in `rc11`/`zs11`. `test_vmex.py` drive test takes ~4 min.
 
 Open: trapped/precessing particles (bounce averages), larger gamma reductions (more/other coefficients, n = 0 boundary modes), FOW, `B_s` in the drift.
+
+**2026-10-23, integration of uwplasma/fax#9 (physical-potential vorticity, E. Lascas Neto).** #9 added a second assembly of the same weak form (`vorticity.py`, 305 lines; 1,108 lines with tests, scripts, 0.5 MB of figures and data) on the pre-P1 code.
+- Same physics as `eigen.global_matrices`: on CTOK (N = 99, H = 13, 32² angles) every AE3D-matched mode agrees within 5.6e-4 and both give 280 modes in 50-800 kHz. FAX assembly 0.145 s vs 0.352 s steady; dense solve the same.
+- Ported: its exact sheared 3-D manufactured solution as one test (FAX nodal error 2.1e-2, 9.2e-3, 3.1e-3, 8.9e-4 at N = 8-64, ratio → 4), and its regular axis extension `(s/s0)^(m/2)` for `m > 0` harmonics in `Geometry.interpolate` (exact for `sqrt(s)` harmonics).
+- Recorded, not kept as files: its Knyazev et al. QA comparison (archived AE3D 30.31 kHz; public AE3D formulas 30.30; physical indices 27.57), an independent confirmation of the AE3D shear-index error found on CTOK.
+- Not ported: the duplicate operator, its cosine-basis option (no caller; a real basis for stellarator-symmetric cases is a possible later speed-up), Gauss-point geometry sampling (FAX's element averaging already converges at second order), README additions, PNGs (313 kB, 126 kB) and the CSV/NPZ data.
