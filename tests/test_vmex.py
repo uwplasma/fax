@@ -12,6 +12,17 @@ import fax
 
 pytest.importorskip("vmex", exc_type=ImportError)
 INPUT = Path(__file__).parents[1] / "examples" / "data" / "input.LandremanPaul2021_QA_lowres"
+# A tilted-ellipse tokamak (R = 10 + cos t + 0.05 sin t, Z = sin t + 0.03 cos t) with up-down asymmetry.
+ASYMMETRIC_TOKAMAK = """&INDATA
+  LASYM = T, NFP = 1, MPOL = 5, NTOR = 0, NZETA = 1, NTHETA = 16,
+  NS_ARRAY = 17, FTOL_ARRAY = 1e-10, NITER_ARRAY = 3000,
+  DELT = 0.9, NSTEP = 200, PHIEDGE = 9.42477796, NCURR = 0, GAMMA = 0.0,
+  PRES_SCALE = 1.0, AM = 7.17e3 -6.811e3 -3.585e2,
+  AI = 5.84795322e-01 -5.47176905e-02 5.11977817e-03 -4.79011335e-04 4.47304912e-05 -4.05618024e-06 2.86012825e-07,
+  RAXIS_CC = 10.0, ZAXIS_CS = 0.0, RAXIS_CS = 0.0, ZAXIS_CC = 0.0,
+  RBC(0,0) = 10.0, RBC(0,1) = 1.0, ZBS(0,1) = 1.0, RBS(0,1) = 0.05, ZBC(0,1) = 0.03,
+/
+"""
 
 
 @pytest.mark.slow
@@ -117,3 +128,35 @@ def test_stellarator_drive_gradient_and_sidebands():
     side = jnp.sum(jnp.where(pairs[:, 1] != 1, gam, 0.0))
     pure = jnp.sum(jnp.where(jnp.abs(pairs[:, 1]) > 3, jnp.abs(gam), 0.0))  # k = -3, 5: only through the helical B harmonics
     assert jnp.all(jnp.isfinite(gam)) and 1e-6 < abs(side / jnp.sum(gam)) < 1e-2 and pure > 0
+
+
+@pytest.mark.slow
+def test_asymmetric_equilibrium_wout_path_and_design_tables_agree(tmp_path):
+    """Up-down asymmetric tokamak: the ``wout`` file, the in-memory ``wout`` and the traceable vmex design path give one Boozer geometry.
+
+    The asymmetric tables (``rmns``, ``zmnc``, ``bmns``) carry the boundary tilt (``RBS(0,1) = 0.05``, ``ZBC(0,1) = 0.03``,
+    so ``rmns[m = 1]`` and ``zmnc[m = 1]`` are about 0.04 at the edge) and the three routes agree to the equilibrium
+    tolerance, which exercises the ``lasym`` table list of :func:`fax.objectives.state_geometry`.
+    """
+    import vmex
+
+    inp_path = tmp_path / "input.asym"
+    inp_path.write_text(ASYMMETRIC_TOKAMAK)
+    inp = vmex.VmecInput.from_file(str(inp_path))
+    wout = vmex.wout_from_result(inp, vmex.solve_multigrid(inp))
+    vmex.write_wout(str(tmp_path / "wout_asym.nc"), wout)
+    booz = {"mboz": 4, "nboz": 0, "surfaces": (0.9,)}
+    in_memory = fax.from_wout(wout, **booz)
+    from_file = fax.io.geometry(fax.load({"geometry": {"source": "wout", "path": str(tmp_path / "wout_asym.nc"), **booz}}))
+    for name in ("s", "iota", "G", "bmnc", "bmns", "rmnc", "rmns", "zmns", "zmnc"):
+        np.testing.assert_allclose(getattr(from_file, name), getattr(in_memory, name), rtol=1e-12, atol=1e-12)
+    design = fax.prepare_design(
+        inp_path, harmonics=[[1.0, 0.0]], density=1.0, parameters=("rc01",), nodes=4, ns=17, ftol=1e-10, mboz=4, nboz=0
+    )
+    geo = fax.design_geometry(jnp.zeros(1), design)
+    assert float(in_memory.s[0]) == pytest.approx(float(geo.s[-2]))
+    assert abs(float(in_memory.rmns[0, 1])) == pytest.approx(0.039, abs=5e-3) and abs(float(in_memory.zmnc[0, 1])) == pytest.approx(
+        0.039, abs=5e-3
+    )
+    for name in ("iota", "bmnc", "bmns", "rmnc", "rmns", "zmns", "zmnc"):
+        np.testing.assert_allclose(np.asarray(getattr(geo, name))[-2], np.asarray(getattr(in_memory, name))[0], atol=5e-3, err_msg=name)

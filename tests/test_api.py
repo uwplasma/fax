@@ -1,5 +1,8 @@
 """Drive screen, objectives, TOML runs, CLI and plotting."""
 
+import importlib
+import sys
+import types
 from dataclasses import replace
 from pathlib import Path
 
@@ -74,3 +77,27 @@ def test_circular_geometry_run():
         fax.run({"run": {"ntheta": 8, "nzeta": 4}}, save=False)
     with pytest.raises(ValueError):
         fax.run({"run": {"task": "nope"}}, save=False)
+
+
+def test_cli_run_without_plot_writes_results_only(tmp_path, capsys):
+    case = tmp_path / "case.toml"
+    case.write_text('[run]\noutput = "out"\nntheta = 32\nnzeta = 4\n')
+    assert main(["run", str(case)]) == 0
+    assert "(24, 9) frequencies" in capsys.readouterr().out
+    assert (tmp_path / "out" / "results.npz").exists() and (tmp_path / "out" / "case.json").exists()
+    assert not list((tmp_path / "out").glob("*.png"))
+
+
+def test_geometry_source_is_validated():
+    with pytest.raises(ValueError, match="geometry.source must be one of"):
+        fax.io.geometry(fax.load({"geometry": {"source": "gs2"}}))
+
+
+def test_toml_reader_falls_back_to_tomli(monkeypatch):
+    fallback = types.ModuleType("tomli")
+    with monkeypatch.context() as patch:
+        patch.setitem(sys.modules, "tomllib", None)  # ``import tomllib`` now raises ImportError
+        patch.setitem(sys.modules, "tomli", fallback)
+        assert importlib.reload(fax.io).tomllib is fallback
+    assert importlib.reload(fax.io).tomllib is not fallback
+    assert fax.load({})["modes"]["n"] == [1]

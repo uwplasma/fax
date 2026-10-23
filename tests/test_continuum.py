@@ -169,3 +169,20 @@ def test_asymmetric_geometry_is_hermitian_finite_and_differentiable(asymmetric_t
         fd = (loss(shifted(name, direction, 1e-4)) - loss(shifted(name, direction, -1e-4))) / 2e-4
         assert abs(fd) > 1e-8, name
         assert float(jnp.sum(getattr(grads, name) * direction)) == pytest.approx(float(fd), rel=1e-5), name
+
+
+def test_booz_xform_output_dictionary_matches_the_file_reader():
+    """The traceable converter reads ``gmn_b`` when ``gmnc_b`` is absent and prefers ``gmnc_b`` when both are given."""
+    from netCDF4 import Dataset
+
+    ref = fax.read_boozmn(DATA / "boozmn_ctok.nc")
+    with Dataset(DATA / "boozmn_ctok.nc") as ds:
+        jlist = np.asarray(ds["jlist"][:], dtype=int) - 1
+        out = {k: np.asarray(ds[k][:]) for k in ("bmnc_b", "rmnc_b", "zmns_b", "gmn_b", "ixm_b", "ixn_b")}
+        out.update({k: np.asarray(ds[k][:])[jlist] for k in ("iota_b", "bvco_b", "buco_b")})
+    geo = fax.geometry.from_booz_xform(out, ref.s, ref.nfp)
+    for name in ("s", "iota", "G", "I", "xm", "xn", "bmnc", "rmnc", "zmns", "gmnc"):
+        np.testing.assert_array_equal(getattr(geo, name), getattr(ref, name))
+    assert float(jnp.abs(geo.gmnc).max()) > 0 and not jnp.any(geo.bmns) and geo.nfp == ref.nfp
+    both = fax.geometry.from_booz_xform({**out, "gmnc_b": 2 * out["gmn_b"]}, ref.s, ref.nfp)
+    np.testing.assert_array_equal(both.gmnc, 2 * ref.gmnc)
