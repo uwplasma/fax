@@ -11,7 +11,7 @@ import jax
 import jax.numpy as jnp
 
 import fax
-from fax.eigen import dense, global_matrices, shift_invert
+from fax.eigen import dense, global_matrices
 
 
 def timed(f, *args):
@@ -29,7 +29,7 @@ def paths(h, rho, target_hz=3e5, ntheta=32, nzeta=4):
     return {
         "continuum": lambda g: fax.continuum(g, h, rho),
         "assembly": F,
-        "shift-invert (8)": lambda g: shift_invert(*F(g), (2 * jnp.pi * target_hz) ** 2)[0],
+        "eigenmodes (8)": lambda g: fax.eigenmodes(g, h, rho, target_hz=target_hz, ntheta=ntheta, nzeta=nzeta).omega2,
         "grad frequency_hz": jax.grad(
             lambda g: fax.frequency_hz(g, h, rho, target_hz=target_hz, ntheta=ntheta, nzeta=nzeta), allow_int=True
         ),

@@ -10,7 +10,7 @@ import pytest
 
 import fax
 from fax.continuum import MU0, generalized_eigh
-from fax.eigen import Blocks, block_factor, block_solve, dense, equilibrium_currents, global_matrices, targeted_eigenvalues
+from fax.eigen import Blocks, dense, equilibrium_currents, global_matrices, targeted_eigenpairs, targeted_eigenvalues
 from fax.geometry import surface_grid
 
 DATA = Path(__file__).parent / "data"
@@ -224,35 +224,44 @@ def test_unstable_omega2_is_signed_with_finite_gradients():
         assert jnp.isfinite(jax.jacfwd(omega2)(x)).all() and jnp.isfinite(jax.jacrev(omega2)(x)).all()
 
 
-def test_block_solve_survives_zero_pivot():
-    """The invertible [[0, 1], [1, 0]] has a zero first Schur pivot: dense fallback, also under jit and with 2x2 blocks."""
-    A = Blocks(jnp.zeros((2, 1, 1)), jnp.ones((1, 1, 1)))
-    solve = jax.jit(lambda A, b: block_solve(block_factor(A), b))
-    np.testing.assert_allclose(solve(A, jnp.ones((2, 1, 1))), 1.0)
+def test_targeted_eigenpairs_fallback_and_tied_selection():
+    """The invertible [[0, 1], [1, 0]] has a zero first Schur pivot: SOLVAX's dense fallback is
+    reported in the status. Selecting one of a tied pair has no derivative; selecting the pair does."""
+    F, G = Blocks(jnp.zeros((2, 1, 1)), jnp.ones((1, 1, 1))), Blocks(jnp.ones((2, 1, 1)), jnp.zeros((1, 1, 1)))
+    lam, y, status = targeted_eigenpairs(F, G, 0.0, 2)
+    np.testing.assert_allclose(lam, [-1.0, 1.0])
+    assert status.fallback and status.converged and y.shape == (2, 1, 2)
     d = jnp.array([[[0.0, 0.0], [0.0, 0.0]], [[2.0, 0.5], [0.5, 1.0]], [[3.0, 0.0], [0.0, 4.0]]])
     B = Blocks(d, jnp.array([[[1.0, 0.2], [0.3, 1.0]], [[0.4, 0.0], [0.1, 0.6]]]))
-    b = jnp.arange(12.0).reshape(3, 2, 2)
-    np.testing.assert_allclose(solve(B, b), jnp.linalg.solve(dense(B), b.reshape(6, 2)).reshape(3, 2, 2), atol=1e-12)
-    assert not block_factor(A)[3] and block_factor(Blocks(jnp.ones((2, 1, 1)) * 3, A.upper))[3]
+    M = Blocks(jnp.broadcast_to(jnp.eye(2), (3, 2, 2)), jnp.zeros((2, 2, 2)))
+    lam, y, status = targeted_eigenpairs(B, M, 0.0, 3)
+    w = np.linalg.eigvalsh(np.asarray(dense(B)))
+    np.testing.assert_allclose(lam, np.sort(w[np.argsort(abs(w))[:3]]), atol=1e-12)
+    assert status.converged
+    tied = Blocks(jnp.stack([jnp.eye(2), jnp.diag(jnp.array([3.0, 4.0]))]), jnp.zeros((1, 2, 2)))
+    I2 = Blocks(jnp.broadcast_to(jnp.eye(2), (2, 2, 2)), jnp.zeros((1, 2, 2)))
+    mean = lambda t, count: targeted_eigenvalues(Blocks(tied.diag + t * jnp.eye(2), tied.upper), I2, 1.0, count).mean()  # noqa: E731
+    assert jnp.isnan(jax.grad(mean)(0.0, 1)) and jax.grad(mean)(0.0, 2) == pytest.approx(1.0)
 
 
-def test_shift_invert_status_and_rejection_of_unconverged_gradients():
+def test_solver_status_and_rejection_of_unconverged_gradients():
     h, rho = fax.mode_family(6, 13, 9), fax.mass_density(2e19, 1.0)
     options = dict(target_hz=6.46e4, count=4, ntheta=16, nzeta=4)
-    good, poor = (fax.eigenmodes(konies(40), h, rho, iters=iters, **options) for iters in (40, 3))
-    assert good.status.converged and good.status.residual < 1e-12 and good.status.orthogonality < 1e-10 and good.status.iterations == 40
-    assert not poor.status.converged and poor.status.residual > 1e-6 and poor.status.iterations == 3
+    good, poor = (fax.eigenmodes(konies(40), h, rho, iters=iters, **options) for iters in (100, 3))
+    assert good.status.converged and good.status.residual < 1e-10 and good.status.orthogonality < 1e-10 and good.status.gap > 0
+    assert not good.status.fallback and 3 < good.status.iterations < 100
+    assert not poor.status.converged and poor.status.residual > 1e-10 and poor.status.iterations == 3
     full = fax.eigenmodes(konies(40), h, rho, ntheta=16, nzeta=4)
     assert full.status.converged and full.status.iterations == 0 and full.status.residual < 1e-12
 
     F, G = global_matrices(konies(40), h, rho, 16, 4)
     target = float((2 * np.pi * 6.46e4) ** 2)
-    assert jnp.isfinite(targeted_eigenvalues(F, G, target, 4, 40)).all()
+    assert jnp.isfinite(targeted_eigenvalues(F, G, target, 4, 100)).all()
     assert jnp.isnan(targeted_eigenvalues(F, G, target, 4, 3)).all()
     jvp = jax.jvp(lambda f: targeted_eigenvalues(Blocks(f, F.upper), G, target, 4, 3), (F.diag,), (jnp.ones_like(F.diag),))
     assert jnp.isnan(jvp[1]).all()
     run = lambda iters: fax.frequency_hz(konies(40), h, rho, 0, 1, iters=iters, **options)  # noqa: E731
-    assert jnp.isfinite(run(40)) and jnp.isnan(run(3))
+    assert jnp.isfinite(run(100)) and jnp.isnan(run(3))
 
 
 def test_cluster_mean_first_derivative_at_degeneracy():

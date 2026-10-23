@@ -21,8 +21,11 @@ inside the cluster. That is a first-order statement: ``eigenvalue_mean`` has a N
 spectrum has a repeated eigenvalue (``eigh`` eigenvectors are undefined there); without one, higher orders work.
 
 ``omega^2`` stays signed (``omega^2 < 0`` is an ideal instability): ``frequencies_hz`` is the stable frequency
-(0 for ``omega^2 <= 0``) and ``growth_rate`` is ``sqrt(-omega^2)``, both with finite gradients. Shift-invert
-reports a :class:`Status` and ``targeted_eigenvalues`` returns NaN for unconverged pairs rather than a wrong gradient.
+(0 for ``omega^2 <= 0``) and ``growth_rate`` is ``sqrt(-omega^2)``, both with finite gradients.
+
+Targeted solves are :func:`solvax.generalized_eigenpairs` (block-Thomas shift-invert with a dense pivoted fallback and
+implicit first-order derivatives of values and vectors); FAX adds the :class:`Status` report and rejects, with a NaN
+tangent, any derivative of an unconverged solve or of a selection that splits a tied set (``gap <= 0``).
 """
 
 from __future__ import annotations
@@ -32,6 +35,7 @@ from typing import Any, NamedTuple
 
 import jax
 import jax.numpy as jnp
+import solvax
 
 from .continuum import MU0, generalized_eigh
 from .geometry import Geometry, _d_ds, surface_grid
@@ -45,13 +49,17 @@ class Blocks(NamedTuple):
 
 
 class Status(NamedTuple):
-    """Solver report: worst relative residual ``||F y - lam G y|| / ((||F|| + |lam| ||G||) ||y||)`` (Frobenius norms),
-    ``||Y^H G Y - I||``, iterations used, and whether both are within ``tol`` (False for NaN)."""
+    """Solver report: worst relative residual ``||F y - lam G y|| / ((||F|| + |lam| ||G||) ||y||)``, ``||Y^H G Y - I||``,
+    iterations used, ``converged`` (residual within ``tol``; False for NaN), the selection ``gap`` (distance of the nearest
+    excluded eigenvalue to the target minus that of the farthest selected one; 0 splits a tied set, so no gradient) and
+    whether the dense ``fallback`` ran (block Thomas broke down)."""
 
     residual: jax.Array
     orthogonality: jax.Array
     iterations: jax.Array
     converged: jax.Array
+    gap: jax.Array
+    fallback: jax.Array
 
 
 class Eigenmodes(NamedTuple):
@@ -173,106 +181,55 @@ def dense(A: Blocks) -> jax.Array:
     return jnp.swapaxes(full, 1, 2).reshape(N * H, N * H)
 
 
-def _matvec(A: Blocks, x: jax.Array) -> jax.Array:
-    """``A x`` for ``x`` of shape ``(N, H, p)``."""
-    y = jnp.einsum("kij,kjp->kip", A.diag, x)
-    y = y.at[:-1].add(jnp.einsum("kij,kjp->kip", A.upper, x[1:]))
-    return y.at[1:].add(jnp.einsum("kji,kjp->kip", jnp.conj(A.upper), x[:-1]))
+def band(A: Blocks) -> tuple[jax.Array, jax.Array, jax.Array]:
+    """SOLVAX band triple ``(lower, diag, upper)``: ``upper`` padded with a zero block, ``lower`` its adjoint."""
+    upper = jnp.concatenate([A.upper, jnp.zeros_like(A.diag[:1])])
+    return jnp.roll(jnp.conj(jnp.swapaxes(upper, -1, -2)), 1, axis=0), A.diag, upper
 
 
 def _quad(y: jax.Array, A: Blocks) -> jax.Array:
     """``y_k.H A y_k`` for each column ``k`` of ``y`` (shape ``(N, H, p)``)."""
-    return jnp.real(jnp.einsum("kip,kip->p", jnp.conj(y), _matvec(A, y)))
+    return jnp.real(jnp.einsum("kip,kip->p", jnp.conj(y), solvax.block_tridiag_matvec(*band(A), y)))
 
 
-_DENSE_MAX = 2048  # largest N H for which a pivot breakdown falls back to a dense solve
+@jax.custom_jvp
+def _certified(x: jax.Array, ok: jax.Array) -> jax.Array:
+    """``x``, whose tangent is NaN unless ``ok``: an unconverged or tied-selection derivative is rejected, not used."""
+    return x
 
 
-def block_factor(A: Blocks) -> tuple:
-    """Block LU (Thomas) factors of ``A``, ``O(N H^3)``: inverse pivots, multipliers, upper blocks, ``ok`` and ``A``.
-
-    ``ok`` is False if a Schur pivot is non-finite or smaller than ``100 eps`` of its block norm; :func:`block_solve`
-    then falls back to a dense solve (``N H <= 2048``, otherwise the NaN shows up in the solver :class:`Status`).
-    """
-    zero = jnp.zeros_like(A.diag[:1])
-    up_prev, up_next = jnp.concatenate([zero, A.upper]), jnp.concatenate([A.upper, zero])
-
-    def forward(S_inv: jax.Array, xs: tuple) -> tuple:
-        d, u = xs
-        L = jnp.conj(jnp.swapaxes(u, -1, -2)) @ S_inv
-        S_inv = jnp.linalg.inv(d - L @ u)
-        ok = jnp.isfinite(S_inv).all() & (jnp.linalg.norm(S_inv) * jnp.linalg.norm(d) < 1e-2 / jnp.finfo(d.dtype).eps)
-        return S_inv, (S_inv, L, ok)
-
-    S_inv, L, ok = jax.lax.scan(forward, jnp.zeros_like(A.diag[0]), (A.diag, up_prev))[1]
-    return S_inv, L, up_next, ok.all(), A
+@_certified.defjvp
+def _certified_jvp(primals: tuple, tangents: tuple) -> tuple:
+    return primals[0], tangents[0] * jnp.where(primals[1], 1.0, jnp.nan)  # a product, so reverse mode also gives NaN
 
 
-def block_solve(factors: tuple, b: jax.Array) -> jax.Array:
-    """Solve ``A x = b`` from :func:`block_factor` factors, ``O(N H^2 p)``; ``b`` has shape ``(N, H, p)``."""
-    S_inv, L, up_next, ok, A = factors
-
-    def thomas(b: jax.Array) -> jax.Array:
-        z = jax.lax.scan(lambda z, xs: (xs[1] - xs[0] @ z,) * 2, jnp.zeros_like(b[0]), (L, b))[1]
-        backward = lambda x, xs: (xs[0] @ (xs[2] - xs[1] @ x),) * 2  # noqa: E731
-        return jax.lax.scan(backward, jnp.zeros_like(b[0]), (S_inv, up_next, z), reverse=True)[1]
-
-    if b.shape[0] * b.shape[1] > _DENSE_MAX:
-        return thomas(b)
-    return jax.lax.cond(ok, thomas, lambda b: jnp.linalg.solve(dense(A), b.reshape(-1, b.shape[-1])).reshape(b.shape), b)
-
-
-def _status(F: Blocks, G: Blocks, lam: jax.Array, y: jax.Array, iters: Any, tol: float) -> Status:
-    """:class:`Status` of the pairs ``F y = lam G y``, ``y`` of shape ``(N, H, modes)``."""
-    N, H, c = y.shape
-    norm = lambda A: jnp.sqrt(jnp.sum(jnp.abs(A.diag) ** 2) + 2 * jnp.sum(jnp.abs(A.upper) ** 2))  # noqa: E731
-    flat = lambda a: a.reshape(N * H, c)  # noqa: E731
-    r = jnp.linalg.norm(flat(_matvec(F, y) - lam * _matvec(G, y)), axis=0)
-    eta = jnp.max(r / ((norm(F) + jnp.abs(lam) * norm(G)) * jnp.linalg.norm(flat(y), axis=0)))
-    ortho = jnp.linalg.norm(jnp.conj(flat(y).T) @ flat(_matvec(G, y)) - jnp.eye(c))
-    return Status(eta, ortho, jnp.asarray(iters), (eta <= tol) & (ortho <= tol))
-
-
-def shift_invert(
-    F: Blocks, G: Blocks, target: float, count: int = 8, iters: int = 40, tol: float = 1e-6
+def targeted_eigenpairs(
+    F: Blocks, G: Blocks, target: Any, count: int = 8, iters: int = 100, tol: float = 1e-10
 ) -> tuple[jax.Array, jax.Array, Status]:
-    """``count`` eigenpairs of ``F y = lam G y`` nearest ``target`` (ascending), by shift-invert subspace iteration.
+    """``count`` eigenpairs of ``F y = lam G y`` nearest ``target`` (ascending) by :func:`solvax.generalized_eigenpairs`.
 
-    A block of ``2 count + 8`` vectors is iterated ``iters`` times (a fixed count, so reverse mode works)
-    with ``(F - target G)^-1 G`` and Rayleigh-Ritz on ``(F, G)`` extracts the pairs. Eigenvectors have
-    shape ``(N, H, count)`` and are ``G``-normalized. The :class:`Status` compares the residual and
-    ``G``-orthogonality with ``tol``; increase ``iters`` if it is not ``converged``.
+    Eigenvectors have shape ``(N, H, count)`` and are ``G``-normalized; ``iters`` bounds the shift-invert
+    applications and ``tol`` is the relative residual (see :class:`Status`). First derivatives of values and
+    vectors are implicit; their tangents are NaN unless the solve ``converged`` and ``gap > 0``.
     """
-    N, H = F.diag.shape[:2]
-    p = min(2 * count + 8, N * H)
-    A = block_factor(Blocks(F.diag - target * G.diag, F.upper - target * G.upper))
-    step = lambda _, Y: jnp.linalg.qr(block_solve(A, _matvec(G, Y)).reshape(N * H, p))[0].reshape(N, H, p)  # noqa: E731
-    Y = jax.lax.fori_loop(0, iters, step, jax.random.normal(jax.random.PRNGKey(0), (N, H, p)).astype(F.diag.dtype))
-    Yf = Y.reshape(N * H, p)
-    project = lambda M: jnp.conj(Yf.T) @ _matvec(M, Y).reshape(N * H, p)  # noqa: E731
-    lam, c = generalized_eigh(project(F), project(G))
-    pick = jnp.sort(jnp.argsort(jnp.abs(lam - target))[:count])
-    lam, y = lam[pick], (Yf @ c[:, pick]).reshape(N, H, count)
-    return lam, y, _status(F, G, lam, y, iters, tol)
+    r = solvax.generalized_eigenpairs(band(F), band(G), target, count, tol, iters)
+    ok = r.converged & (r.gap > 0)
+    status = Status(r.residuals.max(), r.orthogonality, r.iterations, r.converged, r.gap, r.fallback)
+    return _certified(r.values, ok), _certified(r.vectors, ok), status
 
 
-@partial(jax.custom_jvp, nondiff_argnums=(2, 3, 4, 5))
-def targeted_eigenvalues(F: Blocks, G: Blocks, target: float, count: int = 8, iters: int = 40, tol: float = 1e-6) -> jax.Array:
-    """Differentiable eigenvalues from :func:`shift_invert` (Hellmann-Feynman JVP).
-
-    All eigenvalues and tangents are NaN if the solve is not ``converged`` within ``tol``, so an
-    unconverged gradient is rejected rather than silently used (jit-safe; no exception).
-    """
-    lam, _, status = shift_invert(F, G, target, count, iters, tol)
-    return jnp.where(status.converged, lam, jnp.nan)
+def targeted_eigenvalues(F: Blocks, G: Blocks, target: Any, count: int = 8, iters: int = 100, tol: float = 1e-10) -> jax.Array:
+    """Differentiable eigenvalues of :func:`targeted_eigenpairs`, all NaN unless the solve ``converged``."""
+    lam, _, status = targeted_eigenpairs(F, G, target, count, iters, tol)
+    return lam + jnp.where(status.converged, 0.0, jnp.nan)  # a sum, so the (NaN) tangent is kept
 
 
-@targeted_eigenvalues.defjvp
-def _targeted_jvp(target: float, count: int, iters: int, tol: float, primals: tuple, tangents: tuple) -> tuple:
-    (F, G), (dF, dG) = primals, tangents
-    lam, y, status = shift_invert(F, G, target, count, iters, tol)
-    keep = lambda a: jnp.where(status.converged, a, jnp.nan)  # noqa: E731
-    return keep(lam), keep(_quad(y, dF) - lam * _quad(y, dG))
+def _dense_status(K: jax.Array, M: jax.Array, lam: jax.Array, X: jax.Array, tol: float) -> Status:
+    """:class:`Status` of the dense pairs ``K X = lam M X`` (columns of ``X``)."""
+    scale = jnp.linalg.norm(K) + jnp.abs(lam) * jnp.linalg.norm(M)
+    r = jnp.max(jnp.linalg.norm(K @ X - lam * (M @ X), axis=0) / (scale * jnp.linalg.norm(X, axis=0)))
+    ortho = jnp.linalg.norm(jnp.conj(X.T) @ M @ X - jnp.eye(X.shape[1]))
+    return Status(r, ortho, jnp.asarray(0), (r <= tol) & (ortho <= tol), jnp.asarray(jnp.inf), jnp.asarray(False))
 
 
 @partial(jax.custom_jvp, nondiff_argnums=(2, 3))
@@ -316,11 +273,11 @@ def eigenmodes(
     *,
     target_hz: float | None = None,
     count: int = 8,
-    iters: int = 40,
-    tol: float = 1e-6,
+    iters: int = 100,
+    tol: float = 1e-10,
     **grid: Any,
 ) -> Eigenmodes:
-    """Global eigenmodes: all of them densely, or ``count`` nearest ``target_hz`` by shift-invert.
+    """Global eigenmodes: all of them densely, or ``count`` nearest ``target_hz`` by :func:`targeted_eigenpairs`.
 
     ``grid`` (``ntheta``, ``nzeta``) is passed to :func:`global_matrices`. ``status`` reports the solve
     (``iterations`` is 0 for the dense solve); unlike :func:`frequency_hz`, the modes are returned even if not ``converged``.
@@ -328,11 +285,11 @@ def eigenmodes(
     F, G = global_matrices(geo, harmonics, density, **grid)
     N, H = F.diag.shape[:2]
     if target_hz is None:
-        omega2, x = generalized_eigh(dense(F), dense(G))
-        x = jnp.swapaxes(x, 0, 1).reshape(-1, N, H)
-        status = _status(F, G, omega2, jnp.moveaxis(x, 0, -1), 0, tol)
+        K, M = dense(F), dense(G)
+        omega2, x = generalized_eigh(K, M)
+        status, x = _dense_status(K, M, omega2, x, tol), jnp.swapaxes(x, 0, 1).reshape(-1, N, H)
     else:
-        omega2, y, status = shift_invert(F, G, (2 * jnp.pi * target_hz) ** 2, count, iters, tol)
+        omega2, y, status = targeted_eigenpairs(F, G, (2 * jnp.pi * target_hz) ** 2, count, iters, tol)
         x = jnp.moveaxis(y, -1, 0)
     return Eigenmodes(geo.s, omega2, _hz(omega2), x, _growth(omega2), status)
 
@@ -359,8 +316,5 @@ def frequency_hz(
     if target_hz is None:
         mean = eigenvalue_mean(dense(F), dense(G), start, stop)
     else:
-        lam = targeted_eigenvalues(
-            F, G, float((2 * jnp.pi * target_hz) ** 2), solver.get("count", 8), solver.get("iters", 40), solver.get("tol", 1e-6)
-        )
-        mean = jnp.mean(lam[start:stop])
+        mean = jnp.mean(targeted_eigenvalues(F, G, (2 * jnp.pi * target_hz) ** 2, **solver)[start:stop])
     return _growth(mean) if growth else _hz(mean)
