@@ -121,7 +121,7 @@ def test_geometry_and_mode_gradients():
     move = lambda t: jax.tree_util.tree_map(lambda x, d: x + t * d, (ITPA, TAE), du)  # noqa: E731
     grad = jax.grad(lambda p: f(*p))((ITPA, TAE))
     ad = sum(jnp.vdot(a, b) for a, b in zip(jax.tree_util.tree_leaves(grad), jax.tree_util.tree_leaves(du), strict=True))
-    fd = (f(*move(1e-4)) - f(*move(-1e-4))) / 2e-4
+    fd = (f(*move(1e-5)) - f(*move(-1e-5))) / 2e-5
     assert ad == pytest.approx(fd, rel=1e-5)
 
 
