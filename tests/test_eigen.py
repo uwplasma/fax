@@ -10,7 +10,7 @@ import pytest
 
 import fax
 from fax.continuum import MU0, generalized_eigh
-from fax.eigen import Blocks, dense, equilibrium_currents, global_matrices, targeted_eigenpairs, targeted_eigenvalues
+from fax.eigen import Blocks, _certified, dense, equilibrium_currents, global_matrices, targeted_eigenpairs, targeted_eigenvalues
 from fax.geometry import surface_grid
 
 DATA = Path(__file__).parent / "data"
@@ -241,7 +241,11 @@ def test_targeted_eigenpairs_fallback_and_tied_selection():
     tied = Blocks(jnp.stack([jnp.eye(2), jnp.diag(jnp.array([3.0, 4.0]))]), jnp.zeros((1, 2, 2)))
     I2 = Blocks(jnp.broadcast_to(jnp.eye(2), (2, 2, 2)), jnp.zeros((1, 2, 2)))
     mean = lambda t, count: targeted_eigenvalues(Blocks(tied.diag + t * jnp.eye(2), tied.upper), I2, 1.0, count).mean()  # noqa: E731
-    assert jnp.isnan(jax.grad(mean)(0.0, 1)) and jax.grad(mean)(0.0, 2) == pytest.approx(1.0)
+    gap = targeted_eigenpairs(tied, I2, 1.0, 1)[2].gap  # 0 or an ulp, by platform: the gradient follows it either way
+    assert jnp.isnan(jax.grad(mean)(0.0, 1)) == ~(gap > 0) and jax.grad(mean)(0.0, 2) == pytest.approx(1.0)
+    for ok, expect in ((True, 2.0), (False, np.nan)):
+        fwd, rev = jax.jvp(lambda x, ok=ok: _certified(x, ok), (3.0,), (2.0,))[1], jax.grad(lambda x, ok=ok: _certified(x, ok) * 2)(3.0)
+        np.testing.assert_array_equal([fwd, rev], [expect, expect])
 
 
 def test_solver_status_and_rejection_of_unconverged_gradients():
