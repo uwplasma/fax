@@ -90,12 +90,13 @@ dfdrho = jax.grad(lambda r: fax.frequency_hz(geo, harmonics, r, 2, 3, target_hz=
 | Uniform-field global spectrum fills $[\omega_A(0), \omega_A(1)]$ | edges within $0.5/N$, singular modes of width $\propto 1/N$ |
 | AE3D CTOK global modes (n = 2, m = 0–12) | 6 modes within 1.4%; AE3D's TAE is off by its $\iota'$ sign error (checked by real-space quadrature to 0.3%) |
 | Könies et al. 2018 ITPA TAE (n = 6) | $\omega$ = 4.061e5 rad/s (CAS3D 4.01e5, GYGLES 4.13e5), converged to 1e-4 |
+| Könies ITPA with $p(s)$, vmex equilibrium, `finite_beta=True` | 3.947e5 rad/s (4.127e5 without the $J_\parallel$ and pressure terms) |
 | Könies et al. 2018 drive, 100/200/300 keV | 4.4/16.6/33.1 vs 8–10/25–33/38–43 ×10³ s⁻¹ (ZOW, passing only) |
 | Eigenvalue and drive gradients vs finite differences | 1e-5 |
 
 The compiled CTOK continuum takes 0.04 s on one CPU core (STELLGAP 0.8 s); the
-six-mode CTOK shift-invert takes 0.07 s. Not yet included: pressure and
-$J_\parallel$ terms, trapped particles, finite orbit width and stellarator
+six-mode CTOK shift-invert takes 0.07 s. Not yet included: sound and
+fast-wave coupling, trapped particles, finite orbit width and stellarator
 drift sidebands in the drive. Details are on the
 [validation page](https://fax.readthedocs.io/en/latest/validation.html).
 

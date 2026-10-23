@@ -63,3 +63,21 @@ def test_continuum_cost_gradient_step_and_vmex_terms():
     from vmex.core import implicit
 
     assert implicit.aspect_ratio(*fax.design_state(jnp.zeros(2), design)) == pytest.approx(6.0, rel=1e-3)
+
+
+def test_konies_itpa_finite_beta_tae():
+    """Könies (2018) ITPA case solved by vmex with p(s) = 7.17e3 - 6.811e3 s - 358.5 s^2 Pa (shifted equilibrium).
+
+    The TAE (the most global mode near 64.6 kHz) is 4.127e5 rad/s without and 3.947e5 with the
+    finite-beta terms; CAS3D (compressible) gives 4.01e5.
+    """
+    geo = fax.from_vmec_input(INPUT.with_name("input.ITPA_Konies2018"), mboz=12, nboz=0, surfaces=tuple(np.arange(1, 50) / 50))
+    geo = geo.interpolate((jnp.arange(100) + 0.5) / 100)
+    omega = []
+    for finite_beta in (False, True):
+        modes = fax.eigenmodes(
+            geo, fax.mode_family(6, 16, 5), fax.mass_density(2e19, 1.0), target_hz=6.46e4, ntheta=32, nzeta=4, finite_beta=finite_beta
+        )
+        x = np.abs(np.asarray(modes.structures).reshape(8, -1)) ** 2
+        omega.append(float(np.sqrt(modes.omega2[np.argmax(x.sum(1) ** 2 / (x**2).sum(1))])))
+    assert omega[0] == pytest.approx(4.127e5, rel=2e-3) and omega[1] == pytest.approx(3.947e5, rel=2e-3)

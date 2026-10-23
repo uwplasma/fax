@@ -146,14 +146,55 @@ form. With $u = \mathbf B\cdot\nabla\phi/B$ and a test function $\tilde\phi$,
 $$
 \omega^2\int \frac{\mu_0\rho}{B^2}\,\nabla\tilde\phi^*\cdot\nabla\phi\,dV
 = \int \nabla\tilde u^*\cdot\nabla u\,dV
-\;[\,-\text{pressure-gradient and } J_\parallel \text{ (kink) terms}\,].
+\;[\,+\,K + P\,].
 $$ (weak-form)
 
 The left side is the inertia (kinetic energy of the $E\times B$ flow), the
-right side the field-line bending energy. FAX omits the bracket: on CTOK,
-rerunning AE3D without those terms moves its global modes by less than 0.1%,
-and they are small for TAE-type modes at low $\beta$. The integrals use the
-full contravariant metric, so both sides are coordinate-free.
+right side the field-line bending energy. The integrals use the full
+contravariant metric, so both sides are coordinate-free. The bracket is
+optional (`finite_beta=True`, off by default).
+
+### Finite-$\beta$ terms
+
+With $\boldsymbol\xi_\perp = \mathbf b\times\nabla\phi/(-i\omega B)$ and
+$\mathbf Q_\perp = \nabla A_\parallel\times\mathbf b$, $A_\parallel = u/i\omega$,
+the $J_\parallel$ and pressure terms of the ideal-MHD energy,
+$-J_\parallel(\boldsymbol\xi_\perp^*\times\mathbf b)\cdot\mathbf Q_\perp$ and
+$-2(\boldsymbol\xi_\perp\cdot\nabla p)(\boldsymbol\kappa\cdot\boldsymbol\xi_\perp^*)$
+(Freidberg), become, in the units of {eq}`weak-form`,
+
+$$
+K = \int\sigma\,\mathbf b\cdot(\nabla\tilde\phi^*\times\nabla u)\,dV,\qquad
+P = -2\mu_0\int p'\,\frac{(\mathbf b\times\nabla\phi\cdot\nabla s)\,
+(\mathbf b\times\nabla\tilde\phi^*\cdot\boldsymbol\kappa)}{B^2}\,dV,
+$$
+
+with $\sigma = \mu_0\mathbf J\cdot\mathbf B/B^2$ and
+$\boldsymbol\kappa = \nabla_\perp(\mu_0p + B^2/2)/B^2$. Integrating $K$ by
+parts gives AE3D's third term, $-\int u\,\mathbf b\cdot(\nabla\tilde\phi^*\times\nabla\sigma)\,dV$
+(the same term follows from the vorticity equation); the form above needs no
+derivative of $\sigma$. FAX assembles the Hermitian part of $K$ and $P$, as
+AE3D version 30 does with its own symmetrized terms; it does not copy
+AE3D's matrix elements. With $\mathbf B = B_s\nabla s + I\nabla\theta + G\nabla\zeta$,
+$\mathbf b\cdot(\nabla a\times\nabla c) = \mathbf B_{\rm cov}\cdot(\partial a\times\partial c)/(B\sqrt g)$
+on covariant components, so both terms are tensor contractions like the
+bending term.
+
+The equilibrium quantities come from $G$, $I$ and $|B|$ alone. The radial
+force balance in Boozer coordinates,
+
+$$
+(\iota\partial_\theta + \partial_\zeta)B_s = G' + \iota I' + \mu_0p'\,\frac{G + \iota I}{B^2},
+$$
+
+fixes $\mu_0p'$ by solvability (its surface average) and $B_s$ (the
+Pfirsch–Schlüter part) by dividing by $i(\iota m + n)$ in Fourier space,
+skipping resonant harmonics. Then
+$\sigma = [I(\partial_\zeta B_s - G') - G(\partial_\theta B_s - I')]/(\sqrt g B^2)$.
+Both vanish for a vacuum field ($G$, $I$ constant). {func}`fax.circular_torus`
+has $I = 0$ unless `current=True` ($I = \iota s a^2B_0/R_0$) or a `pressure`
+polynomial is given, which also lowers $G$ so that
+$G' + \iota I' = -\mu_0p'R_0/B_0$.
 
 ### Fourier–finite-element basis
 

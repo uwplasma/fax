@@ -183,6 +183,8 @@ def circular_torus(
     iota: Any = 0.4,
     epsilon_B: float = 0.0,
     nfp: int = 1,
+    pressure: Any = None,
+    current: bool = False,
 ) -> Geometry:
     """Concentric circular tokamak in Boozer form, to first order in ``eps = epsilon_B sqrt(s)``.
 
@@ -192,6 +194,10 @@ def circular_torus(
     Könies et al. (2018, appendix); ``epsilon_B = 0`` gives a uniform field, for
     which the continuum is ``k_par v_A`` exactly. Surfaces default to the
     midpoints of 24 equal intervals of ``s``.
+
+    ``current=True`` adds the toroidal current of the ``iota`` profile, ``I = iota s a^2 B0 / R0``
+    (leading order in ``a/R0``); ``pressure`` (polynomial coefficients in ``s``, Pa) also sets it and
+    lowers ``G`` so that ``G' + iota I' = -mu0 p' R0 / B0`` (Boozer radial force balance).
     """
     s = (jnp.arange(24) + 0.5) / 24 if s is None else jnp.asarray(s, dtype=float)
     xm, xn = jnp.array([0.0, 1.0, 2.0]), jnp.zeros(3)
@@ -199,6 +205,13 @@ def circular_torus(
     zero = jnp.zeros_like(s)
     G = jnp.full_like(s, B0 * major_radius)
     iota = jnp.broadcast_to(jnp.asarray(iota, dtype=float), s.shape)
+    I = zero  # noqa: E741
+    if current or pressure is not None:
+        c = jnp.asarray([0.0] if pressure is None else pressure, dtype=float)
+        I = iota * s * minor_radius**2 * B0 / major_radius  # noqa: E741
+        x, i = jnp.concatenate([jnp.zeros(1), s * iota]), jnp.concatenate([iota[:1], iota])
+        G = G - jnp.cumsum(0.5 * (i[1:] + i[:-1]) * jnp.diff(x)) * minor_radius**2 * B0 / major_radius
+        G = G - 4e-7 * jnp.pi * major_radius * (jnp.polyval(c[::-1], s) - c[0]) / B0
     bmnc = jnp.stack([jnp.full_like(s, B0), -B0 * epsilon_B * root, zero], axis=1)
     # Jacobian (G + iota I)/B^2 with I = 0, expanded to first order in epsilon_B.
     gmnc = jnp.stack([G / B0**2, 2.0 * G * epsilon_B * root / B0**2, zero], axis=1)
@@ -214,7 +227,7 @@ def circular_torus(
         zmns=jnp.stack([zero, minor_radius * root, shift], axis=1),
         iota=iota,
         G=G,
-        I=zero,
+        I=I,
     )
 
 
