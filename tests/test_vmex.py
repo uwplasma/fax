@@ -81,3 +81,35 @@ def test_konies_itpa_finite_beta_tae():
         x = np.abs(np.asarray(modes.structures).reshape(8, -1)) ** 2
         omega.append(float(np.sqrt(modes.omega2[np.argmax(x.sum(1) ** 2 / (x**2).sum(1))])))
     assert omega[0] == pytest.approx(4.127e5, rel=2e-3) and omega[1] == pytest.approx(3.947e5, rel=2e-3)
+
+
+def test_stellarator_drive_gradient_and_sidebands():
+    """LP-QA n = 1 modes near 104 kHz driven by peaked 150 keV deuterons: helical sidebands ``k != n`` appear, and the
+    drive objective's FAX chain (FE interpolation, shift-invert eigenvectors, drive) matches FD along the re-solved geometry."""
+    design = fax.prepare_design(
+        INPUT,
+        harmonics=fax.mode_family((1, -1, 3), 5),
+        density=3.4e-8,
+        parameters=("rc01",),
+        nodes=16,
+        ntheta=16,
+        nzeta=16,
+        target_hz=104e3,
+        count=4,
+    )
+    ions = fax.FastIons(density=1e15 * (1 - jnp.arange(1, 17) / 17) ** 2, temperature_ev=150e3)
+    h = 1e-5
+    g0, gp, gm = (fax.design_geometry(jnp.array([x]), design) for x in (0.0, h, -h))
+    dg = jax.tree_util.tree_map(lambda a, b: (a - b) / (2 * h), gp, gm)
+    risk = jax.jit(lambda g: fax.drive_risk(fax.geometry_growth_rates(g, design, ions, 4, ntheta=32, nzeta=32)))
+    value, ad = jax.jvp(risk, (g0,), (dg,))
+    assert jnp.isfinite(value) and value > 0
+    np.testing.assert_allclose(ad, (risk(gp) - risk(gm)) / (2 * h), rtol=1e-4)
+    geo = g0.interpolate(jnp.arange(1, 17) / 17)
+    ev = fax.eigenmodes(geo, design.harmonics, 3.4e-8, target_hz=104e3, count=4, ntheta=16, nzeta=16)
+    pairs, gam = fax.growth_rate(
+        jnp.sqrt(ev.omega2[-1]), ev.structures[-1], geo, design.harmonics, ions, 3.4e-8, ntheta=32, nzeta=32, resolved=True
+    )
+    side = jnp.sum(jnp.where(pairs[:, 1] != 1, gam, 0.0))
+    pure = jnp.sum(jnp.where(jnp.abs(pairs[:, 1]) > 3, jnp.abs(gam), 0.0))  # k = -3, 5: only through the helical B harmonics
+    assert jnp.all(jnp.isfinite(gam)) and 1e-6 < abs(side / jnp.sum(gam)) < 1e-2 and pure > 0

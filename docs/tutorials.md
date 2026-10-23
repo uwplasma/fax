@@ -110,7 +110,8 @@ tiny model (three harmonics, 8 × 8 angles, 24 radial nodes) to stay fast;
 
 `examples/koenies_tae_drive.py` evaluates the perturbative growth rate
 {func}`fax.growth_rate` of a model TAE (harmonics `m = 10, 11`, `n = 6`,
-Gaussian radial envelope centred on `q = 1.75`, `ω = 4.0e5` rad/s) driven by
+Gaussian radial envelope centred on `q = 1.75`, `ω = 4.0e5` rad/s) on the Boozer
+form of the ad hoc equilibrium ({func}`fax.circular_torus`) driven by
 the Maxwellian fast-ion profile of Könies et al. (2018), for fast-ion
 temperatures from 50 to 500 keV.
 
@@ -126,8 +127,10 @@ cd examples && python koenies_tae_drive.py       # about 8 s, writes koenies_tae
 The dots mark the zero-Larmor-radius band of Könies et al. (2018, fig. 1a).
 FAX is a zero-orbit-width, passing-only model, so it keeps growing above
 300 keV where the finite-orbit-width codes roll over; see {doc}`validation`.
-Every argument of `growth_rate` (density profile, temperature, `ω`, the mode)
-is differentiable.
+Every argument of `growth_rate` (density profile, temperature, `ω`, the mode,
+the geometry) is differentiable. The same call takes a stellarator
+{class}`fax.Geometry` and a mode from {func}`fax.eigenmodes`; pass `helical`
+for the helical sidebands and a full `nzeta`.
 
 ## 6. Optimizing the Alfvén spectrum with quasisymmetry
 
@@ -141,6 +144,7 @@ Jacobian: one vmex + FAX forward pass and one adjoint per row
 python examples/optimize_alfven.py --case qh    # Paul's f_cont on LP-QH, about 3 min
 python examples/optimize_alfven.py --case qa    # LP-QA global modes out of a window, about 3 min
 python examples/optimize_alfven.py --nfev 60 --ns 25    # longer, finer
+python examples/optimize_alfven.py --case qa --drive    # LP-QA fast-ion growth rates down at fixed QS
 ```
 
 - **QH** (Paul et al. 2025, eq. 7.1): 34 coefficients with $m \le 3$, $|n| \le 2$;
@@ -150,6 +154,11 @@ python examples/optimize_alfven.py --nfev 60 --ns 25    # longer, finer
   just inside the lower edge of a window $[f_\mathrm{min} - 1, f_\mathrm{max} + 20]$ kHz;
   the Alfvén row is $30\sqrt{\text{window\_risk}}$ (1 kHz softness) at fixed
   aspect ratio and QS.
+- **QA, `--drive`**: the Alfvén row is
+  $\text{drive\_risk}/\text{drive\_risk}_0$ of the growth rates of the four $n = 1$
+  modes ($m = 0$–5, $n \in \{-1, 1, 3\}$) nearest 104 kHz, driven by 150 keV
+  Maxwellian deuterons with $n_f = 10^{15}(1 - s)^2$ m⁻³
+  ({func}`fax.geometry_growth_rates`, {func}`fax.drive_risk`).
 
 The script prints the objective history, aspect, $\iota$, QS, $f_\mathrm{cont}$,
 the largest gaps above the cut (centre and width in $\omega_A$ units) and, for

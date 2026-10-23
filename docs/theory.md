@@ -399,81 +399,132 @@ over twice its energy (Chen & Zonca 2016, eq. 3.22; NOVA-K and CAS3D-K form),
 
 $$
 \gamma_h = -\frac{\operatorname{Im}\delta W_h}{2\omega\,\delta K} = -\frac{P}{2W},\qquad
-W = \int\frac{\rho\,|\nabla_\perp\phi|^2}{2B^2}\,d^3x .
+W = \int\frac{\rho\,|\nabla\phi|^2}{2B^2}\,dV = \frac{2\pi^2}{\mu_0}\,y^\dagger G\,y ,
 $$ (gamma-power)
 
-{func}`fax.growth_rate` evaluates it in a large-aspect-ratio circular model
-({class}`fax.Plasma`: $R_0$, $a$, $B_0$, $q(s)$, $\rho(s)$, with
-$B = B_0(1 - \varepsilon\cos\theta)$, $\varepsilon = r/R_0$, $r = a\sqrt s$),
-for zero orbit width (ZOW), zero Larmor radius and passing guiding centres.
+with $G$ the inertia matrix of {func}`fax.global_matrices` (angle-averaged, so
+$\int dV = 4\pi^2\int ds\,\langle|\sqrt g|\,\cdot\rangle$) and $y$ the nodal
+values of the mode. {func}`fax.growth_rate` evaluates $P$ on the surfaces of a
+{class}`fax.Geometry`, for zero orbit width (ZOW), zero Larmor radius and
+passing guiding centres, so tokamaks and stellarators share one code path.
 
-**Mode and drift.** $\phi = \sum_h\phi_h(r)e^{i(n\zeta - m_h\theta - \omega t)}$.
-The curvature plus $\nabla B$ drift is vertical with speed
-$v_d = (v_\parallel^2 + v_\perp^2/2)/(\Omega R)$, so the work done by the
-mode field is $Ze\,\mathbf v_d\cdot\delta\mathbf E \propto
-(1 - \lambda b/2)\,[\sin\theta\,\partial_r + \cos\theta\,\partial_\theta/r]\phi$ (the vertical unit vector is $\hat z = \sin\theta\,\hat r + \cos\theta\,\hat\theta$),
-with pitch $\lambda = \mu B_0/E$, $b = B/B_0$ and $\xi = v_\parallel/v = \sqrt{1 - \lambda b}$.
-
-**Resonances.** Along a passing orbit the uniform transit angle
-$\vartheta$ advances at
-$\omega_\theta = 2\pi v/(qR\oint d\theta/|\xi|)$. Decomposing the work in
-$\vartheta$, the component $p = m + \ell$ resonates at
+**Mode and drift.** $\phi = \sum_h\phi_h(s)e^{i(m_h\theta - n_h\zeta - \omega t)}$,
+the convention of {mod}`fax.eigen`. At low $\beta$ the curvature plus
+$\nabla B$ drift is
+$\mathbf v_d = \frac{m v^2(1 + \xi^2)}{2ZeB^3}\,\mathbf B\times\nabla B$, with
+$\xi = v_\parallel/v$. With the Boozer covariant components $B_\theta = I$,
+$B_\zeta = G$ ($B_s$ dropped) and the embedding Jacobian $\sqrt g$ of
+$(s, \theta, \zeta)$,
+$(\mathbf B\times\nabla B)^i = \epsilon^{ijk}B_j\partial_kB/\sqrt g$:
 
 $$
-\omega = (nq - p)\,\omega_\theta(v, \lambda).
+\mathbf v_d\cdot\nabla s \propto \frac{I\partial_\zeta B - G\partial_\theta B}{\sqrt g},\qquad
+\mathbf v_d\cdot\nabla\theta \propto \frac{G\,\partial_sB}{\sqrt g},\qquad
+\mathbf v_d\cdot\nabla\zeta \propto -\frac{I\,\partial_sB}{\sqrt g},
+$$
+
+so the work $Ze\,\mathbf v_d\cdot\delta\mathbf E = -Ze\,\mathbf v_d\cdot\nabla\phi$
+of harmonic $h$ is $-m v^2$ times
+
+$$
+w_h = \frac{1 + \xi^2}{2B^3\sqrt g}\Big[(I\partial_\zeta B - G\partial_\theta B)\,\phi_h'
+  + i\,\partial_sB\,(Gm_h + In_h)\,\phi_h\Big]e^{i(m_h\theta - n_h\zeta)} .
+$$
+
+The binormal terms ($\partial_sB$) are the $\cos\theta\,\partial_\theta/r$
+part of the large-aspect-ratio vertical drift. Only the overall sign of
+$\sqrt g$ is convention, and it cancels in $|w|^2$.
+
+**Orbits and resonances.** A passing guiding centre of pitch
+$\lambda = \mu/E \in [0, 1/B_\max)$ follows the field line
+$\theta - \iota\zeta = \text{const}$ with
+$dt/d\zeta = (G + \iota I)/(v|\xi|B)$, since $B^\zeta = B^2/(G + \iota I)$. Its
+mean toroidal transit frequency is
+$\omega_\zeta = v/[(G + \iota I)\langle h\rangle]$, $h = 1/(|\xi|B)$ and
+$\langle\cdot\rangle$ the Boozer-angle average (the field-line average on an
+irrational surface). The angles that advance uniformly in time are
+$\vartheta = \theta + \iota\chi$, $\varphi = \zeta + \chi$, with $\chi$ the
+periodic solution of the magnetic differential equation
+
+$$
+(\iota\partial_\theta + \partial_\zeta)\chi = h/\langle h\rangle - 1,
+$$
+
+solved by FFT on the angle grid (a $10^{-2}$ guard on the small divisors
+$\iota k_\theta + k_\zeta$). Decomposing the work in $(\vartheta, \varphi)$, the
+component $e^{i(j\vartheta - k\varphi)}$ resonates at
+
+$$
+\omega = |j\iota - k|\,\omega_\zeta(v, \lambda),\qquad j = m + \ell,\quad k = n + k'N_{fp},
 $$ (resonance)
 
-For a TAE ($nq - m = \tfrac12$) and deeply passing ions this is
-$v_\parallel = v_A$ ($p = m$, $m + 1$) and $v_A/3$ ($p = m - 1$, $m + 2$), and
-so on; sidebands $|\ell| \le$ `sidebands` (default 3) are summed.
-
-**Power transfer.** For one toroidal harmonic
-$\dot P_\zeta = (n/\omega)\dot E$, so linearizing along unperturbed orbits
-gives the operator $QF/\omega = \partial_EF + (n/\omega)\partial_{P_\zeta}F$.
-At ZOW $P_\zeta = -Ze\psi_p$ with $d\psi_p/dr = B_0r/q$, so
+for either sign of $v_\parallel$. The $\ell$ sidebands come from the poloidal
+variation of $B$ and of the drift (TAE: $v_\parallel = v_A$, $v_A/3$, ...), the
+$k'$ sidebands from the helical harmonics of $B$ (Kolesnichenko et al. 2002;
+Heidbrink 2008). `sidebands` (default 3) bounds $|\ell|$ and `helical`
+(default 1) bounds $|k'|$; `resolved=True` returns $\gamma$ per $(j, k)$.
+The orbit coefficient is
 
 $$
-\frac{QF}{\omega} = \frac{\partial F}{\partial E}
-  - \frac{nq}{\omega ZeB_0 r}\frac{\partial F}{\partial r}.
+C_{h,jk} = \frac{\langle h\,w_h\,e^{-i(j\vartheta - k\varphi)}\rangle}{\langle h\rangle}.
 $$
 
-The Landau prescription
-$\langle\delta E\,\dot{\delta E}\rangle \to \tfrac\pi2|A_p|^2\delta(\omega - (nq-p)\omega_\theta)$
+**Power transfer.** At ZOW, $P_\zeta = m v_\parallel G/B - Ze\psi_p$ with
+$\psi_p' = \iota\psi'$ and $\psi' = \langle\sqrt g\,B^2\rangle/(G + \iota I)$
+($\psi$ the toroidal flux over $2\pi$). With $E_\parallel = 0$ the radial
+$E\times B$ and $v_\parallel\delta B_r$ drifts combine into $-\partial_\zeta\phi$, so
+each harmonic carries its own
+
+$$
+Q_hF = \frac{\partial F}{\partial E} + \frac{n_h}{\omega Ze\,\iota\psi'}\frac{\partial F}{\partial s}
+$$
+
+(for one $n$ this is $\partial_EF - (n/\omega)\partial_{P_\zeta}F$). Linearizing
+along unperturbed orbits, the Landau prescription
+$\operatorname{Re}[1/(0^+ - i\Delta)] = \pi\delta(\Delta)$, the phase-space
+measure $d^3x\,d^3v = d\psi\,d\theta\,d\zeta\,\sum_\sigma\pi v^2dv\,d\lambda\,(G + \iota I)/(|\xi|B)$
 and the delta function integrated exactly over speed at each pitch give
 
 $$
-\gamma = \frac{\pi m_f^2}{4R_0^2}\,
-\frac{\displaystyle\int r\,dr\sum_p\int d\lambda\,
-  \Big\langle\frac{b}{|\xi|}\Big\rangle\,\frac{v^6|A_p|^2}{|nq - p|\,\hat\omega_\theta}\,\frac{QF}{\omega}\Big|_{v = v_p}}
-{\displaystyle\int r\,\rho\sum_h\Big(|\phi_h'|^2 + \frac{m_h^2|\phi_h|^2}{r^2}\Big)dr},
+\gamma = \frac{\pi^2\mu_0m_f^2}{2\,y^\dagger Gy}\int|\psi'|\,ds\int d\lambda
+  \sum_{jk}\frac{v^6\operatorname{Re}\big[\bar C\,\textstyle\sum_hQ_hF\,C_h\big]}{|j\iota - k|\,\hat\omega_\zeta^2}\Big|_{v = v_{jk}},\qquad
+\bar C = \sum_hC_h,\quad v_{jk} = \frac{\omega}{|j\iota - k|\,\hat\omega_\zeta},
 $$ (gamma-zow)
 
-$$
-A_p = \sum_h\Big\langle(1 - \tfrac12\lambda b)\Big[\sin\theta\,\phi_h' - \frac{i m_h\cos\theta}{r}\phi_h\Big]
-e^{i[(nq - m_h)\theta - (nq - p)\vartheta]}\Big\rangle_\text{orbit},\qquad
-v_p = \frac{\omega}{|nq - p|\,\hat\omega_\theta},
-$$
+$\hat\omega_\zeta = \omega_\zeta/v$. Numerics: Gauss–Legendre (`nodes = 32`) in
+$\lambda$ up to a smooth (log-sum-exp) upper bound of $B_\max$, the
+`ntheta` × `nzeta` Boozer grid of {func}`fax.surface_grid`, central
+differences in $s$, the trapezoidal rule in $s$ with $\phi = 0$ at the ends.
+There is no artificial broadening, so $\gamma$ is smooth in the geometry, the
+mode, $\omega$ and the distribution. In an axisymmetric geometry with
+`helical = 0` one toroidal grid point (`nzeta = 1`) is exact.
 
-where $\hat\omega_\theta = \omega_\theta/v$ and $\langle\cdot\rangle_\text{orbit}$
-is the time average over one poloidal transit. Numerics: Gauss–Legendre
-(`nodes = 32`) in $\lambda \in [0, 1/(1+\varepsilon))$ (passing only), a
-uniform grid of `angles = 64` in $\theta$, central differences in $r$ and the
-trapezoidal rule in $r$. No artificial broadening is used, so $\gamma$ is
-smooth in every argument and `jax.grad` matches finite differences to 1e-5.
+**Reduction to the circular model.** For {func}`fax.circular_torus`
+($G = B_0R_0$, $I = 0$, $B = B_0(1 - \varepsilon\cos\theta)$) $w_h$ becomes the
+vertical drift $(1 - \lambda B/2)[\sin\theta\,\phi_h' + \cos\theta\,\partial_\theta\phi_h/r]/R$,
+$\omega_\zeta/\iota$ the poloidal transit frequency and $Q_hF$ the familiar
+$\partial_EF - nq\,\partial_rF/(\omega ZeB_0r)$ (with $n \to -n$ for the mode
+convention). The Könies TAE then reproduces the earlier large-aspect-ratio
+implementation within 4% ({doc}`validation`).
 
 **Distributions.** {class}`fax.FastIons` is isotropic: a Maxwellian
 ($F \propto e^{-E/T}$, so $\partial_EF = -F/T$) or a slowing-down
 $F \propto 1/(v^3 + v_c^3)$ below the birth speed $v_b$, normalized by
 $3/(4\pi\ln(1 + v_b^3/v_c^3))$, with the birth edge smoothed by
 $\tfrac12\operatorname{erfc}((v - v_b)/0.02v_b)$ so it stays differentiable.
-The density may be a profile on $s$; its gradient drives ($n > 0$ with
-outward-decreasing density is destabilizing), $\partial_EF < 0$ damps.
+The density may be a profile on $s$; with $\iota\psi' > 0$ an
+outward-decreasing density drives $n > 0$, and $\partial_EF < 0$ damps.
 
 **Landau damping.** {func}`fax.ion_landau_damping` is the same integral for
 a flat thermal Maxwellian of the bulk ions, with the sign flipped so that a
 positive number damps (Fu & Van Dam 1989; Betti & Freidberg 1992). Continuum
 damping and electron Landau damping are not computed; subtract them as an
 external $\gamma_d$, $\gamma = \gamma_h - \gamma_d$.
+
+**Not included.** Trapped and precessing particles (their resonance is
+$\omega = k\langle\omega_d\rangle_b + p\,\omega_b$ with bounce averages; not
+yet implemented), finite orbit width, $\delta B_\parallel$ and the covariant
+$B_s$ in the drift.
 
 ## 9. Smooth objectives
 
@@ -485,8 +536,12 @@ Eigenvalues and gaps are not smooth (crossings, `max`), so the objectives are:
 | {func}`fax.soft_max` | $\beta^{-1}\log\sum_k e^{\beta x_k}$ (log-sum-exp), e.g. of growth rates |
 | {func}`fax.gap_closure` | $\mathrm{mean}_s\,\mathrm{softplus}(-w_s/\Delta)$ with $w_s$ the widest gap on surface $s$: grows as gaps close |
 
-A stability target such as $\mathrm{softplus}(\mathrm{LSE}(\gamma_k) - \gamma_\mathrm{th})$
-(Paul et al. 2025, eqs. 7.1–7.4) is composed from these. Cluster means
+{func}`fax.drive_risk` is the stability target
+$\mathrm{softplus}(\mathrm{LSE}(\gamma_k/\gamma_s) - \gamma_\mathrm{th}/\gamma_s)$ (scale
+$\gamma_s$ = `scale`, default 10³ s⁻¹) of the growth rates that
+{func}`fax.geometry_growth_rates` returns for the modes nearest `target_hz`
+(shift-invert eigenvectors, differentiated through the iteration, then
+{func}`fax.growth_rate`). Cluster means
 ({func}`fax.eigenvalue_mean`, `start:stop` in {func}`fax.frequency_hz`)
 keep objectives smooth through crossings inside the cluster.
 

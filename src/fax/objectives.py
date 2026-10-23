@@ -17,7 +17,8 @@ import jax.numpy as jnp
 import numpy as np
 
 from .continuum import gaps
-from .eigen import _hz, dense, eigenvalue_mean, global_matrices, targeted_eigenvalues
+from .drive import FastIons, growth_rate
+from .eigen import _hz, dense, eigenmodes, eigenvalue_mean, global_matrices, targeted_eigenvalues
 from .geometry import Geometry, from_booz_xform, surface_grid
 
 
@@ -31,6 +32,11 @@ def window_risk(frequencies_hz: Any, window_hz: tuple[float, float], softness_hz
 def soft_max(x: Any, sharpness: float = 10.0) -> jax.Array:
     """Log-sum-exp smooth maximum; it avoids the kinks of ``max`` at eigenvalue crossings."""
     return jax.nn.logsumexp(sharpness * jnp.asarray(x)) / sharpness
+
+
+def drive_risk(gammas: Any, threshold: float = 0.0, scale: float = 1.0e3) -> jax.Array:
+    """``softplus(soft_max(gamma_k) - gamma_th)`` in units of ``scale`` (1/s): a smooth penalty on the most unstable mode."""
+    return jax.nn.softplus(soft_max(jnp.asarray(gammas) / scale) - threshold / scale)
 
 
 def gap_closure(frequencies_hz: Any, scale_hz: float = 1.0e4) -> jax.Array:
@@ -192,3 +198,18 @@ def geometry_frequencies(geo: Geometry, design: Design, mode_count: int = 3) -> 
 def design_frequencies(offsets: Any, design: Design, mode_count: int = 3) -> jax.Array:
     """``boundary offsets -> vmex -> booz_xform_jax -> FE nodes -> frequencies`` (Hz), differentiable."""
     return geometry_frequencies(design_geometry(offsets, design), design, mode_count)
+
+
+def geometry_growth_rates(geo: Geometry, design: Design, ions: FastIons, mode_count: int = 3, **drive: Any) -> jax.Array:
+    """Fast-ion growth rates (1/s) of the first ``mode_count`` of the ``count`` modes nearest ``target_hz``.
+
+    The modes come from the shift-invert solve on the design's FE nodes (differentiated
+    through the iteration); ``ions.density`` is a scalar or a profile on those nodes and
+    ``drive`` goes to :func:`fax.growth_rate`.
+    """
+    opts = dict(design.options)
+    target, solver = opts.pop("target_hz"), {key: opts.pop(key) for key in ("count", "iters") if key in opts}
+    geo = geo.interpolate(jnp.arange(1, design.nodes + 1) / (design.nodes + 1))
+    ev = eigenmodes(geo, design.harmonics, design.density, target_hz=target, **solver, **opts)
+    rate = lambda w2, y: growth_rate(jnp.sqrt(w2), y, geo, design.harmonics, ions, design.density, **drive)  # noqa: E731
+    return jnp.stack([rate(ev.omega2[i], ev.structures[i]) for i in range(mode_count)])

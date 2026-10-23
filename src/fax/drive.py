@@ -1,29 +1,32 @@
-"""Perturbative energetic-particle drive and Landau damping of an Alfvén eigenmode.
+"""Perturbative energetic-particle drive and Landau damping of an Alfvén eigenmode in Boozer geometry.
 
 The growth rate is the power the particles give to a fixed mode over twice its
-energy (NOVA-K / CAS3D-K style, ``gamma_h = -Im dW_h / (2 omega dK)``)::
+energy (NOVA-K / CAS3D-K style), ``gamma = -P / (2 W)``, with ``W`` the inertia form
+``int rho |grad phi|^2 / (2 B^2) dV`` of :func:`fax.eigen.global_matrices`.
 
-    gamma = -P / (2 W),   W = int rho |grad_perp phi|^2 / (2 B^2) d^3x.
+Model: zero orbit width (ZOW), zero Larmor radius, passing guiding centres on the
+surfaces of a :class:`fax.Geometry`, low-beta drift ``v_d = m v^2 (1 + xi^2) / (2 Z e B^3)
+B x grad B`` with Boozer components ``(B x grad B)^i = eps^ijk B_j d_k B / sqrt(g)``,
+``B_theta = I``, ``B_zeta = G`` (``B_s`` dropped). The mode is ``phi = sum_h phi_h(s)
+exp[i(m_h theta - n_h zeta - omega t)]`` (the convention of :mod:`fax.eigen`). A passing
+orbit of pitch ``lam = mu / E`` follows ``theta - iota zeta = const`` with ``dt/dzeta =
+(G + iota I) / (v |xi| B)``; the uniform angles ``vartheta = theta + iota chi``,
+``varphi = zeta + chi`` solve ``(iota d_theta + d_zeta) chi = h / <h> - 1``,
+``h = 1 / (|xi| B)``. The work ``Ze v_d . E`` decomposed in them resonates at
+``omega = |j iota - k| omega_zeta(v, lam)`` for ``j = m + l`` and ``k = n + k' N_fp``:
+the toroidal (``l``) and helical (``k'``) sidebands of the B spectrum. With ZOW
+``P_zeta = m v_par G / B - Z e psi_p`` and ``E_par = 0`` each harmonic carries
+``Q_h F = dF/dE + n_h dF/ds / (omega Z e iota psi')``, and the resonance is integrated
+exactly in speed at each pitch (Gauss-Legendre in ``lam``), so ``gamma`` is smooth::
 
-Model: large-aspect-ratio circular geometry (``B = B0 (1 - eps cos theta)``), zero
-orbit width (ZOW), zero Larmor radius, passing guiding centres with the curvature
-plus grad-B drift ``v_d = (v_par^2 + v_perp^2/2) / (Omega R)``. The mode is
-``phi = sum_h phi_h(s) exp[i(n_h zeta - m_h theta - omega t)]``. Along a passing orbit
-of pitch ``lam = mu B0 / E`` the work ``Z e v_d . E`` is Fourier-decomposed in the
-uniform transit angle ``vartheta``; the component ``p = m + l`` resonates at
-``omega = (n q - p) omega_theta`` (TAE: ``v_par ~ v_A, v_A/3, v_A/5``). Linearising along
-unperturbed orbits with ``dP_zeta/dt = (n/omega) dE/dt`` and the Landau prescription
-``<dE dE/dt> -> (pi/2)|A_p|^2 delta(omega - (nq - p) omega_theta)`` gives::
+    gamma = pi^2 mu0 m_f^2 / (2 y.H G y) int |psi'| ds int dlam sum_jk v^6 Re[C* Q C] / (|j iota - k| w^2),
+    C_h = < (1 + xi^2) / (2 B^3 sqrt(g)) [(I B_zeta - G B_theta) phi_h' + i B_s (G m_h + I n_h) phi_h]
+            e^{i(m_h theta - n_h zeta)} e^{-i(j vartheta - k varphi)} >_orbit,
 
-    gamma = pi m_f^2 / (4 R^2) * int r dr sum_p int dlam <b/|xi|> v^6 |A_p|^2 QF/omega / ((nq - p) w_th / v)
-                               / int r rho sum_h (|phi_h'|^2 + m_h^2 |phi_h|^2 / r^2) dr,
-    A_p = < (1 - lam b/2) [sin(theta) d_r + cos(theta) d_theta / r] phi e^{i[(nq - m) theta - (nq - p) vartheta]} >_orbit,
-    QF/omega = dF/dE + (n/omega) dF/dP_zeta = dF/dE - n q / (omega Z e B r) dF/dr,
+with ``w = omega_zeta / v``, ``B_i = d_i |B|`` and ``v = omega / (|j iota - k| w)``.
 
-with ``v = omega / |(nq - p) omega_theta/v|``. The delta function is integrated exactly
-over speed at each pitch (Gauss–Legendre in ``lam``, uniform ``theta``), so ``gamma`` is
-smooth in every parameter without artificial broadening. Trapped particles are
-omitted. Sign convention: ``n > 0`` with an outward-decreasing density is destabilising.
+Trapped and precessing particles are omitted (no bounce-averaged precession resonance).
+``n > 0`` with a peaked density drives (``iota psi' > 0``).
 """
 
 from __future__ import annotations
@@ -35,20 +38,12 @@ import jax
 import jax.numpy as jnp
 import numpy as np
 
+from .eigen import _quad, global_matrices
+from .geometry import Geometry, _d_ds, surface_grid
+
 E = 1.602176634e-19
 AMU = 1.66053906660e-27
 MU0 = 4e-7 * np.pi
-
-
-@dataclass(frozen=True)
-class Plasma:
-    """Large-aspect-ratio circular plasma; ``q`` and ``mass_density`` are scalars or profiles on ``s``."""
-
-    major_radius: Any = 10.0
-    minor_radius: Any = 1.0
-    b0: Any = 3.0
-    q: Any = 1.75
-    mass_density: Any = 2.0e19 * 1.00727647 * AMU
 
 
 @dataclass(frozen=True)
@@ -69,7 +64,6 @@ class FastIons:
     kind: str = field(default="maxwellian", metadata={"static": True})
 
 
-jax.tree_util.register_dataclass(Plasma, data_fields=["major_radius", "minor_radius", "b0", "q", "mass_density"], meta_fields=[])
 jax.tree_util.register_dataclass(
     FastIons,
     data_fields=["density", "temperature_ev", "birth_ev", "critical_ev", "mass_amu", "charge"],
@@ -78,66 +72,100 @@ jax.tree_util.register_dataclass(
 
 
 def growth_rate(
-    omega: Any, phi: Any, s: Any, harmonics: Any, plasma: Plasma, ions: FastIons, *, sidebands: int = 3, nodes: int = 32, angles: int = 64
-) -> jax.Array:
-    """Fast-ion growth rate ``gamma_h`` (1/s) of a mode ``phi`` (shape ``(len(s), H)``) at ``omega`` (rad/s).
+    omega: Any,
+    phi: Any,
+    geo: Geometry,
+    harmonics: Any,
+    ions: FastIons,
+    mass_density: Any,
+    *,
+    sidebands: int = 3,
+    helical: int = 1,
+    nodes: int = 32,
+    ntheta: int = 64,
+    nzeta: int = 32,
+    resolved: bool = False,
+) -> Any:
+    """Fast-ion growth rate (1/s) of a mode ``phi`` (shape ``(len(geo.s), H)``, nodal values) at ``omega`` (rad/s).
 
-    ``harmonics`` is a static sequence of ``(m, n)``; Boozer families ``n0 + k Nfp`` enter
-    as separate ``n``. Resonances ``p = m + l`` with ``|l| <= sidebands`` are summed. Use ``s > 0``.
+    ``harmonics`` is a static ``(H, 2)`` list of ``(m, n)``; ``geo.s`` lies strictly inside
+    ``(0, 1)`` as for :func:`fax.eigenmodes`. Resonances ``j = m + l``, ``|l| <= sidebands``,
+    and ``k = n + k' nfp``, ``|k'| <= helical``, are summed. An axisymmetric case with
+    ``helical = 0`` is exact with ``nzeta = 1``. ``resolved=True`` returns the resonances
+    ``(j, k)`` and the growth rate of each instead of their sum.
     """
-    s, phi = jnp.asarray(s), jnp.asarray(phi)
-    r = plasma.minor_radius * jnp.sqrt(s)
-    q, rho, dens = (jnp.asarray(x) * jnp.ones_like(s) for x in (plasma.q, plasma.mass_density, ions.density))
-    dr = jnp.gradient(r)  # chain rule: jnp.gradient has no non-uniform spacing in JAX 0.4.30
-    dphi, ddens = jnp.gradient(phi, axis=0) / dr[:, None], jnp.gradient(dens) / dr
-    mass, R = ions.mass_amu * AMU, plasma.major_radius
-    eps = (r / R)[:, None, None]
-    # passing pitches lam = mu B0 / E in [0, 1/(1+eps)), Gauss-Legendre in x = lam (1 + eps)
+    hm = np.asarray(harmonics, dtype=float)
+    m, n = (jnp.asarray(hm[:, i])[:, None, None] for i in (0, 1))
+    phi = jnp.asarray(phi)
+    g = surface_grid(geo, ntheta, nzeta)
+    col = lambda a: jnp.asarray(a)[:, None, None]  # noqa: E731 - per-surface value -> (S, 1, 1)
+    D = geo.G + geo.iota * geo.I
+    psi = jnp.mean(g.sqrt_g * g.B**2, axis=(1, 2)) / D  # dpsi/ds, psi = toroidal flux / 2 pi
+    Bs, Bt, Bz = (g.dB[..., i] for i in range(3))
+    e = jnp.exp(1j * (m * g.theta - n * g.zeta)) / (g.B**3 * g.sqrt_g)[:, None]  # (S, H, T, Z)
+    kernel = (col(geo.I) * Bz - col(geo.G) * Bt)[:, None] * e * _d_ds(phi, geo.s)[..., None, None]
+    kernel = kernel + 1j * Bs[:, None] * (col(geo.G)[:, None] * m + col(geo.I)[:, None] * n) * e * phi[..., None, None]
+    # passing pitches lam = mu/E in [0, 1/B_max), Gauss-Legendre; B_max a smooth upper bound (log-sum-exp)
     x, wx = (jnp.asarray(z) for z in np.polynomial.legendre.leggauss(nodes))
-    lam = (0.5 * (x + 1.0))[None, :, None] / (1.0 + eps)
-    theta = jnp.linspace(0.0, 2 * jnp.pi, angles, endpoint=False)
-    b = 1.0 - eps * jnp.cos(theta)
-    xi = jnp.sqrt(1.0 - lam * b)
-    loop = 2 * jnp.pi * jnp.mean(1.0 / xi, axis=-1)  # oint dtheta / |xi|
-    vartheta = 2 * jnp.pi * (jnp.cumsum(1.0 / xi, axis=-1) - 0.5 / xi - 0.5 / xi[..., :1]) / (angles * loop[..., None] / (2 * jnp.pi))
-    omega_hat = 2 * jnp.pi / (q[:, None] * R * loop)  # transit frequency / v
-    drift = (1.0 - 0.5 * lam * b) / xi / (angles * loop[..., None] / (2 * jnp.pi))  # orbit-time weight * v_D / v^2
-    jac = (0.5 / (1.0 + eps[..., 0])) * wx * jnp.mean(b / xi, axis=-1) * 2 * jnp.pi
-    power = 0.0
-    for n in sorted({n for _, n in harmonics}):
-        ms = [m for m, nn in harmonics if nn == n]
-        for p in range(min(ms) - sidebands, max(ms) + sidebands + 1):
-            amp = 0.0
-            for h, (m, nn) in enumerate(harmonics):
-                if nn == n:
-                    kick = jnp.sin(theta) * dphi[:, h, None, None] - 1j * m * jnp.cos(theta) * phi[:, h, None, None] / r[:, None, None]
-                    phase = (n * q[:, None, None] - m) * theta - (n * q[:, None, None] - p) * vartheta
-                    amp = amp + jnp.sum(drift * kick * jnp.exp(1j * phase), axis=-1)
-            rate = jnp.abs(n * q[:, None] - p) * omega_hat
-            v = omega / jnp.where(rate > 1e-12, rate, 1e-12)
-            g = _resonant_qf(v, dens[:, None], -n * q[:, None] / (omega * ions.charge * E * plasma.b0 * r[:, None]) * ddens[:, None], ions)
-            power = power + jnp.sum(jac * v**6 * jnp.abs(amp) ** 2 * g / jnp.where(rate > 1e-12, rate, 1e-12), axis=-1)
-    energy = sum(jnp.abs(dphi[:, h]) ** 2 + (m * jnp.abs(phi[:, h]) / r) ** 2 for h, (m, _) in enumerate(harmonics))
-    return jnp.pi * mass**2 / (4 * R**2) * _integrate(r * power, r) / _integrate(r * rho * energy, r)
+    scale = 1e-3 * jnp.mean(g.B, axis=(1, 2), keepdims=True)
+    bmax = scale[..., 0] * jax.nn.logsumexp(g.B / scale, axis=(1, 2))[:, None]
+    lam = 0.5 * (x + 1.0) / bmax  # (S, L)
+    xi = jnp.sqrt(1.0 - lam[..., None, None] * g.B[:, None])  # (S, L, T, Z)
+    h = 1.0 / (xi * g.B[:, None])
+    hbar = jnp.mean(h, axis=(2, 3))
+    kt, kz = (jnp.fft.fftfreq(k, 1.0 / k)[:, None] for k in (ntheta, nzeta))
+    kappa = geo.iota[:, None, None, None] * kt + kz.T  # (iota d_theta + d_zeta) -> i kappa
+    chi = jnp.real(jnp.fft.ifft2(jnp.fft.fft2(h / hbar[..., None, None] - 1.0) * -1j * kappa / (kappa**2 + 1e-4)))
+    weight = (0.5 * (1.0 + xi**2) * h / hbar[..., None, None])[:, :, None] * kernel[:, None]  # (S, L, H, T, Z)
+    omega_hat = 1.0 / (jnp.abs(D)[:, None] * hbar)  # omega_zeta / v
+    dens = jnp.asarray(ions.density) * jnp.ones_like(geo.s)
+    pairs = np.array(
+        [
+            (j, k)
+            for j in range(int(hm[:, 0].min()) - sidebands, int(hm[:, 0].max()) + sidebands + 1)
+            for k in sorted({nn + kk * geo.nfp for nn in hm[:, 1] for kk in range(-helical, helical + 1)})
+        ],
+        dtype=float,
+    )
+
+    def resonance(jk: jax.Array) -> jax.Array:
+        j, k = jk[0], jk[1]
+        kap = (j * geo.iota - k)[:, None]
+        phase = jnp.exp(-1j * (kap[..., None, None] * chi + j * g.theta - k * g.zeta)[:, :, None])
+        c = jnp.mean(weight * phase, axis=(-2, -1))  # (S, L, H)
+        C, N = jnp.sum(c, -1), jnp.sum(c * n[:, 0, 0], -1)
+        rate = jnp.maximum(jnp.abs(kap) * omega_hat, 1e-12)
+        v = omega / rate
+        dfde, f = _distribution(v, ions)
+        star = _d_ds(dens[:, None], geo.s) / (omega * ions.charge * E * (geo.iota * psi)[:, None])
+        q = dens[:, None] * dfde * jnp.abs(C) ** 2 + star * f * jnp.real(jnp.conj(C) * N)
+        return v**6 * q / (rate * omega_hat)
+
+    power = jnp.abs(psi) * jnp.sum(jax.lax.map(jax.checkpoint(resonance), jnp.asarray(pairs)) * wx / (2 * bmax), axis=-1)  # (P, S)
+    zero = jnp.zeros((len(pairs), 1))
+    radial = _integrate(jnp.concatenate([zero, power, zero], 1), jnp.concatenate([zero[0], geo.s, jnp.ones(1)]))
+    inertia = global_matrices(geo, hm, mass_density, ntheta=ntheta, nzeta=nzeta)[1]
+    gamma = jnp.pi**2 * MU0 * (ions.mass_amu * AMU) ** 2 / 2 * radial / _quad(phi[..., None], inertia)[0]
+    return (pairs.astype(int), gamma) if resolved else jnp.sum(gamma)
 
 
 def ion_landau_damping(
-    omega: Any, phi: Any, s: Any, harmonics: Any, plasma: Plasma, temperature_ev: Any, density: Any, *, mass_amu: Any = 1.00727647
+    omega: Any, phi: Any, geo: Geometry, harmonics: Any, temperature_ev: Any, density: Any, *, mass_amu: Any = 1.00727647, **options: Any
 ) -> jax.Array:
     """Bulk-ion Landau damping rate (1/s, positive damps): the same power transfer for a flat
     thermal Maxwellian (Fu & Van Dam 1989; Betti & Freidberg 1992). Electron Landau damping
-    needs ``E_par`` and is not included."""
+    needs ``E_par`` and is not included. ``options`` go to :func:`growth_rate`."""
     bulk = FastIons(density=density, temperature_ev=temperature_ev, mass_amu=mass_amu)
-    return -growth_rate(omega, phi, s, harmonics, plasma, bulk)
+    return -growth_rate(omega, phi, geo, harmonics, bulk, density * mass_amu * AMU, **options)
 
 
-def _resonant_qf(v: jax.Array, dens: Any, ddens_term: Any, ions: FastIons) -> jax.Array:
-    """``QF/omega = dens dF/dE + ddens_term F`` at speed ``v`` with ``F`` per unit density."""
+def _distribution(v: jax.Array, ions: FastIons) -> tuple[jax.Array, jax.Array]:
+    """``(dF/dE, F)`` per unit density at speed ``v``."""
     m = ions.mass_amu * AMU
     if ions.kind == "maxwellian":
         t = ions.temperature_ev * E
         f = (m / (2 * jnp.pi * t)) ** 1.5 * jnp.exp(-0.5 * m * v**2 / t)
-        return f * (-dens / t + ddens_term)
+        return -f / t, f
     vb, vc = jnp.sqrt(2 * ions.birth_ev * E / m), jnp.sqrt(2 * ions.critical_ev * E / m)
     norm = 3.0 / (4 * jnp.pi * jnp.log1p((vb / vc) ** 3))
 
@@ -145,7 +173,7 @@ def _resonant_qf(v: jax.Array, dens: Any, ddens_term: Any, ions: FastIons) -> ja
         return norm * 0.5 * jax.scipy.special.erfc((u - vb) / (0.02 * vb)) / (u**3 + vc**3)
 
     f, dfdv = jax.jvp(shape, (v,), (jnp.ones_like(v),))
-    return dens * dfdv / (m * v) + ddens_term * f
+    return dfdv / (m * v), f
 
 
 def _integrate(y: jax.Array, x: Any) -> jax.Array:
