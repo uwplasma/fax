@@ -9,7 +9,8 @@ stellarators. It computes shear-Alfvén continua, AE3D-form global Alfvén
 eigenmodes and a perturbative fast-ion drive, and differentiates all of them
 with respect to profiles and, through [vmex](https://github.com/uwplasma/vmex)
 and [booz_xform_jax](https://github.com/uwplasma/booz_xform_jax), the VMEC
-plasma boundary.
+plasma boundary. Its eigensolver is [SOLVAX](https://github.com/uwplasma/SOLVAX)'s
+`generalized_eigenpairs`.
 
 <p align="center">
   <img src="docs/_static/ctok_eigenmodes_continuum.png" width="44%" alt="CTOK continuum and global modes">
@@ -29,7 +30,7 @@ ITPA TAE against the published zero-Larmor-radius band.*
 - **Global modes.** The AE3D weak form (Spong, D'Azevedo & Todo 2010) with the
   full metric and the magnetic-shear term, linear radial finite elements and
   axis regularity, giving a block-tridiagonal $F y = \omega^2 G y$ solved near
-  a target by shift-invert with a block Thomas factorization ($O(N H^3)$).
+  a target by SOLVAX's shift-invert subspace iteration with a block Thomas factorization ($O(N H^3)$).
 - **Gradients.** Hellmann–Feynman eigenvalue derivatives
   $\delta\lambda = y^\dagger(\delta F - \lambda\,\delta G)y$, cluster means
   that stay smooth through crossings, and vmex's implicit-function derivative
@@ -42,7 +43,8 @@ ITPA TAE against the published zero-Larmor-radius band.*
 
 ## Install
 
-Python 3.10 or newer.
+Python 3.10 or newer (JAX 0.4.38 or newer; SOLVAX 0.32 or newer, until it is released install it from
+`git+https://github.com/uwplasma/SOLVAX`).
 
 ```bash
 pip install uwplasma-fax              # core
@@ -98,7 +100,7 @@ dfdrho = jax.grad(lambda r: fax.frequency_hz(geo, harmonics, r, 2, 3, target_hz=
 | LP-QA drive through vmex geometry and shift-invert eigenvectors | AD vs FD ≤ 1e-4; helical sidebands present (dominant in LP-QH) |
 
 The compiled CTOK continuum takes 0.04 s on one CPU core (STELLGAP 0.8 s); the
-six-mode CTOK shift-invert takes 0.07 s. Not yet included: sound and
+six-mode CTOK shift-invert takes 0.05 s. Not yet included: sound and
 fast-wave coupling, trapped particles and finite orbit width in the drive. Details are on the
 [validation page](https://fax.readthedocs.io/en/latest/validation.html).
 

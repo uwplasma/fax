@@ -99,7 +99,7 @@ A and B start now. C runs in parallel with A/B. D needs C. E needs B and D. F ca
 **Gate:** qualified against dense references, including singular and indefinite cases and clusters.
 
 ### D. Migrate numerics and geometry (FAX + SOLVAX, VMEX, booz_xform_jax)
-- [ ] Replace FAX's `block_factor`/`block_solve`/`shift_invert`/`targeted_eigenvalues` with the SOLVAX contract. FAX keeps a thin wrapper only. Results stay within error budgets.
+- [x] Replace FAX's `block_factor`/`block_solve`/`shift_invert`/`targeted_eigenvalues` with the SOLVAX contract. FAX keeps a thin wrapper only. Results stay within error budgets. Done: `eigen.py` calls `solvax.generalized_eigenpairs` (SOLVAX #160; git pin in CI until 0.32.0), adds `Status` (with `gap`, `fallback`) and NaN tangents for unconverged or tie-splitting solves; CTOK, Könies, drive and vmex references unchanged; timings in `docs/validation.md`. The dense all-modes solve and `eigenvalue_mean` stay in FAX: `dense_limit` only covers SOLVAX's pivot-breakdown fallback.
 - [ ] Use the public VMEX state → Boozer bridge. Drop the half-row-1 workaround once a VMEX release contains #631.
 - [ ] Continuum: triangular solves instead of the explicit Cholesky inverse. Share surface grids across continuum, global and drive.
 

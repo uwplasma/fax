@@ -6,7 +6,7 @@
 |---|---|
 | `src/fax/geometry.py` | Boozer geometry, readers, the vmex/booz_xform_jax path, metric grids |
 | `src/fax/continuum.py` | continuum matrices and frequencies, gaps |
-| `src/fax/eigen.py` | AE3D operator, block solver, Hellmann–Feynman derivatives |
+| `src/fax/eigen.py` | AE3D operator, a thin wrapper of `solvax.generalized_eigenpairs`, `Status`, derivative rejection |
 | `src/fax/drive.py` | perturbative fast-ion drive, Landau damping |
 | `src/fax/objectives.py` | smooth objectives, VMEC-boundary design |
 | `src/fax/io.py`, `plot.py` | TOML cases, `fax` command, figures |
@@ -24,8 +24,10 @@ python -m coverage run --branch --source=src/fax -m pytest -q -m '' && python -m
 sphinx-build -W -b html docs docs/_build/html
 ```
 
-CI runs the suite on Python 3.10–3.13, on the oldest supported JAX (0.4.30 on
-Python 3.10), and the vmex path, lint, coverage and docs on Python 3.12. Keep
+CI runs the suite on Python 3.10–3.13, on the oldest supported JAX (0.4.38 on
+Python 3.10, the SOLVAX floor), and the vmex path, lint, coverage and docs on Python 3.12. SOLVAX is
+installed from a pinned git commit in CI until release 0.32.0 (see `SOLVAX_GIT` in `tests.yml`); locally,
+`pip install "solvax @ git+https://github.com/uwplasma/SOLVAX@907f4d95f3e117e6bd29b508d093de84bf873861"`. Keep
 Python 3.10 working (the `tomli` fallback, no newer-JAX-only functions).
 
 Coverage is measured with branches on the full suite (fast and slow tests,

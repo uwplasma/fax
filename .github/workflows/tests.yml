@@ -9,6 +9,11 @@ on:
 permissions:
   contents: read
 
+env:
+  # TEMPORARY until SOLVAX 0.32.0 (the first release with generalized_eigenpairs, SOLVAX #160) is on PyPI:
+  # install SOLVAX main at that commit and relax the pyproject floor, whose metadata still reads 0.31.0. Then delete both.
+  SOLVAX_GIT: "solvax @ git+https://github.com/uwplasma/SOLVAX@907f4d95f3e117e6bd29b508d093de84bf873861"
+
 jobs:
   tests:
     name: Python ${{ matrix.python-version }}
@@ -22,18 +27,20 @@ jobs:
       - uses: actions/setup-python@v6
         with:
           python-version: ${{ matrix.python-version }}
-      - run: python -m pip install -e ".[test]"
+      - run: sed -i 's/"solvax>=0.32.0"/"solvax"/' pyproject.toml  # TEMPORARY, see SOLVAX_GIT
+      - run: python -m pip install -e ".[test]" "$SOLVAX_GIT"
       - run: python -m pytest -q
 
   oldest-jax:
-    name: Python 3.10, JAX 0.4.30
+    name: Python 3.10, JAX 0.4.38
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-python@v6
         with:
           python-version: "3.10"
-      - run: python -m pip install -e ".[test]" "jax==0.4.30" "jaxlib==0.4.30" "numpy<2"
+      - run: sed -i 's/"solvax>=0.32.0"/"solvax"/' pyproject.toml  # TEMPORARY, see SOLVAX_GIT
+      - run: python -m pip install -e ".[test]" "$SOLVAX_GIT" "jax==0.4.38" "jaxlib==0.4.38" "numpy<2"
       - run: python -m pytest -q
 
   full:
@@ -44,7 +51,8 @@ jobs:
       - uses: actions/setup-python@v6
         with:
           python-version: "3.12"
-      - run: python -m pip install -e ".[dev,vmex]"
+      - run: sed -i 's/"solvax>=0.32.0"/"solvax"/' pyproject.toml  # TEMPORARY, see SOLVAX_GIT
+      - run: python -m pip install -e ".[dev,vmex]" "$SOLVAX_GIT"
       - run: ruff check . && ruff format --check .
       - run: python -m coverage run --branch --source=src/fax -m pytest -q -m ''
       - run: python -m coverage report -m
