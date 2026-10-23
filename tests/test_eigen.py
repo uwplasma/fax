@@ -180,12 +180,17 @@ def test_cylinder_newcomb_m1_and_suydam_threshold():
     rho = fax.mass_density(2e19, 1.0)
     vacuum = [global_matrices(konies(16), fax.mode_family(6, 13, 9), rho, 16, 4, finite_beta=x) for x in (False, True)]
     jax.tree_util.tree_map(lambda a, b: np.testing.assert_array_equal(a, b), *vacuum)  # no current, no pressure
-    s = (jnp.arange(800) + 0.5) / 800
-    geo = fax.circular_torus(s=s, major_radius=10.0, B0=3.0, iota=1 / (0.8 + s), current=True)
-    F0, F1 = (np.asarray(dense(global_matrices(geo, [[1.0, 1.0]], rho, 8, 4, finite_beta=x)[0])).real for x in (False, True))
-    r = np.sqrt(np.asarray(s))
-    y = r * np.clip((np.sqrt(0.2) - r) / 0.02 + 0.5, 0, 1)
-    assert abs(y @ F1 @ y) < 2e-3 * (y @ F0 @ y)
+
+    def bending_ratio(N):
+        s = (jnp.arange(N) + 0.5) / N
+        geo = fax.circular_torus(s=s, major_radius=10.0, B0=3.0, iota=1 / (0.8 + s), current=True)
+        F0, F1 = (np.asarray(dense(global_matrices(geo, [[1.0, 1.0]], rho, 8, 4, finite_beta=x)[0])).real for x in (False, True))
+        r = np.sqrt(np.asarray(s))
+        y = r * np.clip((np.sqrt(0.2) - r) / 0.02 + 0.5, 0, 1)
+        return abs(y @ F1 @ y) / (y @ F0 @ y)
+
+    # Converged 0.0201 at N = 400/800/1600; with first-order ends it drifted 0.059 -> 0.0012 -> 0.0105 (old 2e-3 pass was an artifact).
+    assert bending_ratio(800) < 3e-2 and bending_ratio(1600) == pytest.approx(bending_ratio(800), rel=0.1)
     lowest = {}
     for N, p0 in itertools.product((400, 1600), (1.0e4, 2.0e4)):
         s = (jnp.arange(N) + 0.5) / N

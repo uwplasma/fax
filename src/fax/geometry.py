@@ -46,8 +46,8 @@ class Geometry:
 
     @classmethod
     def from_arrays(cls, nfp: int, **arrays: Any) -> Geometry:
-        """Build a geometry, filling missing asymmetric harmonics with zeros."""
-        zeros = np.zeros_like(np.asarray(arrays["bmnc"], dtype=float))
+        """Build a geometry (traceable), filling missing asymmetric harmonics with zeros."""
+        zeros = jnp.zeros_like(jnp.asarray(arrays["bmnc"], dtype=float))
         values = {f.name: jnp.asarray(arrays.get(f.name, zeros), dtype=float) for f in fields(cls) if f.name != "nfp"}
         return cls(**values, nfp=int(nfp))
 
@@ -71,6 +71,12 @@ class Geometry:
     def full_mesh(self) -> Geometry:
         """Average neighbouring half-mesh surfaces onto the VMEC full mesh, as STELLGAP and AE3D do."""
         return jax.tree_util.tree_map(lambda a, b: 0.5 * (a + b), self.surfaces(slice(None, -1)), self.surfaces(slice(1, None)))
+
+
+def check(ok: Any, message: str) -> None:
+    """Raise ``ValueError`` when a host (concrete) condition fails; traced values are not checked."""
+    if not isinstance(ok, jax.core.Tracer) and not bool(np.all(ok)):
+        raise ValueError(message)
 
 
 _ARRAYS = ("s", "xm", "xn", *_MODES, "iota", "G", "I")
@@ -101,9 +107,9 @@ def read_boozmn(path: str | Path) -> Geometry:
 
     with Dataset(Path(path).expanduser(), "r") as ds:
         var = ds.variables
-        arrays = {name: _surface_major(var[f"{name}_b"][:]) for name in _MODES if f"{name}_b" in var}
+        arrays = {name: _surface_major(var[f"{name}_b"]) for name in _MODES if f"{name}_b" in var}
         if "gmn_b" in var:
-            arrays["gmnc"] = _surface_major(var["gmn_b"][:])
+            arrays["gmnc"] = _surface_major(var["gmn_b"])
         jlist = np.asarray(var["jlist"][:], dtype=int) if "jlist" in var else np.arange(1, arrays["bmnc"].shape[0] + 1)
         ns = float(np.asarray(var["ns_b"][...])) if "ns_b" in var else float(jlist.max())
         profile = lambda name: np.asarray(var[name][:], dtype=float)[jlist - 1]  # noqa: E731
@@ -120,9 +126,10 @@ def read_boozmn(path: str | Path) -> Geometry:
         )
 
 
-def _surface_major(values: Any) -> np.ndarray:
-    array = np.asarray(values, dtype=float)
-    return array.T if array.shape[0] > array.shape[1] else array
+def _surface_major(variable: Any) -> np.ndarray:
+    """``(surfaces, modes)`` from a netCDF variable, using its named dimensions rather than its shape."""
+    array = np.asarray(variable[:], dtype=float)
+    return array.T if variable.dimensions[0] == "mn_modes" else array
 
 
 def from_booz_xform(output: dict[str, Any], s: Any, nfp: int) -> Geometry:
@@ -256,6 +263,7 @@ def surface_grid(geo: Geometry, ntheta: int = 32, nzeta: int = 32) -> SurfaceGri
     ``g_ij = r_i . r_j``. Radial derivatives of the harmonics use second-order
     finite differences in ``s``.
     """
+    check(jnp.all(jnp.diff(geo.s) > 0) & (geo.s.shape[0] >= 3), "geometry.s must be increasing with at least 3 surfaces")
     theta, zeta = angle_grid(ntheta, nzeta)
     ds = lambda a: _d_ds(a, geo.s)
     B, Bt, Bz = synthesize(geo.bmnc, geo.bmns, geo.xm, geo.xn, theta, zeta)
@@ -267,6 +275,7 @@ def surface_grid(geo: Geometry, ntheta: int = 32, nzeta: int = 32) -> SurfaceGri
     Rs = synthesize(ds(geo.rmnc), ds(geo.rmns), geo.xm, geo.xn, theta, zeta)[0]
     Zs = synthesize(ds(geo.zmnc), ds(geo.zmns), geo.xm, geo.xn, theta, zeta)[0]
     ps = synthesize(ds(geo.pmnc), ds(geo.pmns), geo.xm, geo.xn, theta, zeta)[0]
+    check(jnp.all(B > 0), "|B| must be positive on every surface")
     phi = zeta + p
     cp, sp = jnp.cos(phi), jnp.sin(phi)
 
@@ -281,8 +290,16 @@ def surface_grid(geo: Geometry, ntheta: int = 32, nzeta: int = 32) -> SurfaceGri
 
 
 def _d_ds(a: jax.Array, s: jax.Array) -> jax.Array:
-    """Radial derivative along axis 0: central differences inside, one-sided at the ends."""
-    inner = (a[2:] - a[:-2]) / (s[2:] - s[:-2])[:, None]
-    first = (a[1] - a[0]) / (s[1] - s[0])
-    last = (a[-1] - a[-2]) / (s[-1] - s[-2])
-    return jnp.concatenate([first[None], inner, last[None]])
+    """Radial derivative along axis 0 on a nonuniform grid: three-point Lagrange weights, second order including the ends."""
+
+    def d(x: jax.Array, i: jax.Array) -> jax.Array:  # derivative at x of the parabola through nodes i, i+1, i+2
+        x0, x1, x2 = s[i], s[i + 1], s[i + 2]
+        w = (
+            (2 * x - x1 - x2) / ((x0 - x1) * (x0 - x2)),
+            (2 * x - x0 - x2) / ((x1 - x0) * (x1 - x2)),
+            (2 * x - x0 - x1) / ((x2 - x0) * (x2 - x1)),
+        )
+        return sum(wk.reshape(-1, *[1] * (a.ndim - 1)) * a[i + k] for k, wk in enumerate(w))
+
+    inner = jnp.arange(s.shape[0] - 2)
+    return jnp.concatenate([d(s[:1], inner[:1]), d(s[1:-1], inner), d(s[-1:], inner[-1:])])
