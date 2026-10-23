@@ -14,6 +14,7 @@ pytest.importorskip("vmex", exc_type=ImportError)
 INPUT = Path(__file__).parents[1] / "examples" / "data" / "input.LandremanPaul2021_QA_lowres"
 
 
+@pytest.mark.slow
 def test_vmec_input_to_continuum():
     geo = fax.from_vmec_input(INPUT, ns=16, mboz=6, nboz=6, surfaces=(0.3, 0.5, 0.7))
     assert geo.nfp == 2 and geo.s.shape == (3,)
@@ -21,6 +22,7 @@ def test_vmec_input_to_continuum():
     assert jnp.all(jnp.isfinite(f)) and f.shape == (3, 5)
 
 
+@pytest.mark.slow
 def test_boundary_gradient_and_radial_refinement():
     """Lowest n = 0 global frequency of LP-QA: AD vs re-solve FD in ``zs01`` while only the FE grid is refined.
 
@@ -65,6 +67,7 @@ def test_continuum_cost_gradient_step_and_vmex_terms():
     assert implicit.aspect_ratio(*fax.design_state(jnp.zeros(2), design)) == pytest.approx(6.0, rel=1e-3)
 
 
+@pytest.mark.slow
 def test_konies_itpa_finite_beta_tae():
     """Könies (2018) ITPA case solved by vmex with p(s) = 7.17e3 - 6.811e3 s - 358.5 s^2 Pa (shifted equilibrium).
 
@@ -83,6 +86,7 @@ def test_konies_itpa_finite_beta_tae():
     assert omega[0] == pytest.approx(4.127e5, rel=2e-3) and omega[1] == pytest.approx(3.947e5, rel=2e-3)
 
 
+@pytest.mark.slow
 def test_stellarator_drive_gradient_and_sidebands():
     """LP-QA n = 1 modes near 104 kHz driven by peaked 150 keV deuterons: helical sidebands ``k != n`` appear, and the
     drive objective's FAX chain (FE interpolation, shift-invert eigenvectors, drive) matches FD along the re-solved geometry."""

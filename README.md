@@ -111,7 +111,7 @@ reference, tutorials, full derivations, validation and the API.
 
 ```bash
 pip install -e ".[dev,vmex]"
-python -m pytest -q
+python -m pytest -q          # fast suite; add -m '' for the slow vmex end-to-end tests
 ruff check . && ruff format --check .
 sphinx-build -W -b html docs docs/_build/html
 ```
