@@ -78,6 +78,7 @@ dfdrho = jax.grad(lambda r: fax.frequency_hz(geo, harmonics, r, 2, 3, target_hz=
 | `examples/ctok_eigenmodes.toml` | AE3D-form global modes by shift-invert |
 | `examples/qa_continuum.toml` | precise QA: vmex solve → booz_xform_jax → continuum |
 | `examples/boundary_gradient.py` | gradient of a frequency objective with respect to VMEC boundary coefficients |
+| `examples/optimize_alfven.py` | QS + aspect + Paul's continuum-gap objective (QH) or a global-mode window (QA), `least_squares` with exact Jacobians |
 | `examples/koenies_tae_drive.py` | fast-ion growth rate of the Könies ITPA TAE vs temperature |
 
 ## Validation

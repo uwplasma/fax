@@ -128,3 +128,38 @@ FAX is a zero-orbit-width, passing-only model, so it keeps growing above
 300 keV where the finite-orbit-width codes roll over; see {doc}`validation`.
 Every argument of `growth_rate` (density profile, temperature, `ω`, the mode)
 is differentiable.
+
+## 6. Optimizing the Alfvén spectrum with quasisymmetry
+
+`examples/optimize_alfven.py` runs `scipy.optimize.least_squares` on VMEC
+boundary coefficients with residual rows (aspect ratio, $\sqrt{f_{QS}}$,
+$\iota$ floor, Alfvén term), each scaled to about one at the start, and an exact
+Jacobian: one vmex + FAX forward pass and one adjoint per row
+({ref}`continuum-objective`).
+
+```console
+python examples/optimize_alfven.py --case qh    # Paul's f_cont on LP-QH, about 3 min
+python examples/optimize_alfven.py --case qa    # LP-QA global modes out of a window, about 3 min
+python examples/optimize_alfven.py --nfev 60 --ns 25    # longer, finer
+```
+
+- **QH** (Paul et al. 2025, eq. 7.1): 34 coefficients with $m \le 3$, $|n| \le 2$;
+  rows $10(A/A_0 - 1)$, $0.1\sqrt{f_{QS}/f_{QS,0}}$, $10\sqrt{f_\iota}$ with
+  $|\iota| \ge 1.03$, and $\sqrt{f_\mathrm{cont}/f_{\mathrm{cont},0}}$.
+- **QA**: the three lowest $n = 0$ global modes ($m = 1$–3, 24 FE nodes) sit
+  just inside the lower edge of a window $[f_\mathrm{min} - 1, f_\mathrm{max} + 20]$ kHz;
+  the Alfvén row is $30\sqrt{\text{window\_risk}}$ (1 kHz softness) at fixed
+  aspect ratio and QS.
+
+The script prints the objective history, aspect, $\iota$, QS, $f_\mathrm{cont}$,
+the largest gaps above the cut (centre and width in $\omega_A$ units) and, for
+QA, the mode frequencies, and writes the figures below; {doc}`validation`
+lists the numbers.
+
+```{image} _static/optimize_alfven_qh.png
+:alt: LP-QH continuum before and after continuum optimization, and the objective history
+```
+
+```{image} _static/optimize_alfven_qa.png
+:alt: LP-QA continuum and global modes before and after moving them out of a window
+```

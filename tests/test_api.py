@@ -1,5 +1,6 @@
 """Drive screen, objectives, TOML runs, CLI and plotting."""
 
+from dataclasses import replace
 from pathlib import Path
 
 import jax
@@ -19,6 +20,19 @@ def test_objectives_are_smooth():
     assert fax.soft_max(f / 1e3) >= 400.0
     branches = jnp.array([[1e3, 2e3, 50e3], [1e3, 1.5e3, 2e3]])
     assert jnp.isfinite(jax.grad(lambda b: fax.gap_closure(b))(branches)).all()
+
+
+def test_continuum_cost_of_an_elliptic_torus():
+    """``|grad s|^2`` of ellipses ``(r cos, kappa r sin)`` is ``1 + (k^2 - 1)/(k^2 + 1) cos 2 theta`` times its mean."""
+    base = fax.circular_torus(s=jnp.linspace(0.2, 0.8, 31), iota=0.4)
+    geo = lambda k: replace(base, zmns=base.zmns.at[:, 1].multiply(k))  # noqa: E731
+    cost = lambda k: fax.continuum_cost(geo(k), (1, 0), 16, 8)  # noqa: E731
+    c, dm, n = fax.compression_harmonics(geo(1.5), 16, 8)
+    e = (1.5**2 - 1) / (2 * (1.5**2 + 1))
+    np.testing.assert_allclose(c[:, [2, -2], 0], e, atol=1e-12)
+    assert (dm[2], n[0]) == (2, 0) and jnp.abs(c).sum() == pytest.approx(2 * e * 31)
+    assert cost(1.5) == pytest.approx(31 * 2 * e**2 * (2 * 0.4) ** 2) and fax.continuum_cost(geo(1.5), (2, 0), 16, 8) < 1e-20
+    assert jax.grad(cost)(1.5) == pytest.approx((cost(1.5 + 1e-5) - cost(1.5 - 1e-5)) / 2e-5, rel=1e-7)
 
 
 def test_load_rejects_unknown_keys():

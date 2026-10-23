@@ -25,6 +25,8 @@ logbook (`plan.md`, section 6).
 | Drive sign rules | `test_drive_sign_and_flat_profile` | flat, peaked, hollow, $\pm n$ |
 | Drive gradients vs finite differences | `test_gradients_match_finite_differences` | 1e-5 |
 | vmex → booz_xform_jax → FAX continuum | `test_vmec_input_to_continuum` | runs, finite |
+| Compression harmonics of an elliptic torus, $\epsilon_{\pm2,0} = (\kappa^2-1)/2(\kappa^2+1)$ | `test_continuum_cost_of_an_elliptic_torus` | exact to 1e-12; $f_\mathrm{cont}$ analytic; AD vs FD 1e-7 |
+| $f_\mathrm{cont}$ descent step through vmex | `test_continuum_cost_gradient_step_and_vmex_terms` | decreases; vmex aspect on the same state |
 | Boundary gradient and FE radial refinement | `test_boundary_gradient_and_radial_refinement` | AD vs FD 1e-4 at 16, 32, 64 nodes; first-order convergence |
 
 ## Continuum
@@ -126,6 +128,56 @@ ad hoc equilibrium as here). The test requires $4.01 < \omega/10^5 < 4.13$.
   $m = 1$ gauge drift of the re-solves ({ref}`vmex-gradients`), which is
   2.7e-3 for `zs11`.
 
+## Optimization
+
+`examples/optimize_alfven.py` ({doc}`tutorials`, section 6), $n_s = 16$,
+`mboz = nboz = 6`, office CPU (`JAX_PLATFORMS=cpu`).
+
+**QH: Paul et al. (2025) eq. 7.1 on LP-QH** (reactor scale, $N_P = 4$, helicity
+$(1, -1)$, cut $|\iota + 4|$), 34 coefficients, 60 evaluations, 31 min:
+
+| | initial | optimized |
+|---|---|---|
+| $f_\mathrm{cont}$ | 7.038 | 5.226 (−26%) |
+| QS total ($f_{QS}$) | 1.32e-4 | 5.72e-4 |
+| aspect ratio | 8.0000 | 8.0037 |
+| mean $\iota$ | −1.2431 | −1.2393 |
+
+Largest gaps above the cut, centre $\omega^{(0)}/\omega_A$ and width
+$\omega^{(0)}|\epsilon|/\omega_A$ (surface-averaged):
+
+| $(\delta m, n)$ | centre | width before | width after |
+|---|---|---|---|
+| (3, −8) HAE | 2.14 | 0.140 | 0.139 |
+| (0, 4) MAE | 2.00 | 0.116 | 0.098 |
+| (2, −8) HAE | 2.76 | 0.087 | 0.068 |
+| (0, 8) MAE | 4.00 | 0.069 | 0.049 |
+| (3, −12) HAE | 4.14 | 0.066 | 0.058 |
+
+The trend of Paul's figures 8–9 is reproduced: the high-frequency gaps
+narrow (up to 29%) while QS degrades moderately (×4.3, still 5.7e-4) and
+aspect ratio and $\iota$ hold. The reduction is smaller than Paul's
+(Wistell-A start, many more evaluations): the cost was still falling at
+60 evaluations, and the dominant (3, −8) gap barely moved, since closing it
+costs QS on this precise-QS start (QS row weight 0.1).
+
+**QA: global modes out of a window.** The three lowest $n = 0$ global modes
+($m = 1$–3, 24 nodes) start at 294.10–294.92 kHz inside
+[293.10, 314.92] kHz; 4 coefficients (`rc11, zs11, rc12, zs12`),
+30 evaluations, 18 min:
+
+| | initial | optimized |
+|---|---|---|
+| modes (kHz) | 294.10, 294.44, 294.92 | 290.65, 290.99, 291.47 |
+| window risk row (cost) | 143.2 | 5.17 |
+| QS total | 1.09e-6 | 3.96e-6 |
+| aspect ratio | 6.0000 | 5.9881 |
+| mean $\iota$ | 0.4191 | 0.4159 |
+
+All three modes leave the window (2.4 kHz below its edge, 2.4 softness
+widths) with QS still at the 4e-6 level; the shift comes mainly from
+$\iota$ (−0.8%), as $f \propto |\iota m - n|$ near the continuum minimum.
+
 ## Fast-ion drive
 
 - **Fu–Van Dam.** A flat Maxwellian with one $v_\parallel = v_A$ resonance
@@ -162,5 +214,10 @@ ad hoc equilibrium as here). The test requires $4.01 < \omega/10^5 < 4.13$.
   external $\gamma_d$).
 - **AE3D LHD (37, 73.7 kHz) and QPS (149 kHz)** published frequencies need
   their equilibria; Mishchenko et al. (2011) is not yet a gate.
+- **P5 open items**: HSX optimization (the HSX fixed-boundary decks are
+  mpol 18, ntor 24, and were not reduced or run); a lower $\gamma_\mathrm{max}$ at fixed QS through
+  {func}`fax.growth_rate` (the drive is circular large-aspect-ratio); a
+  fast-ion resonance-band term; higher resolution ($n_s \ge 25$) and longer
+  QH runs.
 - {func}`fax.circular_torus` has no Shafranov shift: it reproduces Könies'
   ad hoc equilibrium, not the CAS3D one.

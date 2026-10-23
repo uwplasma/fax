@@ -18,7 +18,7 @@ import numpy as np
 
 from .continuum import gaps
 from .eigen import _hz, dense, eigenvalue_mean, global_matrices, targeted_eigenvalues
-from .geometry import Geometry, from_booz_xform
+from .geometry import Geometry, from_booz_xform, surface_grid
 
 
 def window_risk(frequencies_hz: Any, window_hz: tuple[float, float], softness_hz: float) -> jax.Array:
@@ -36,6 +36,29 @@ def soft_max(x: Any, sharpness: float = 10.0) -> jax.Array:
 def gap_closure(frequencies_hz: Any, scale_hz: float = 1.0e4) -> jax.Array:
     """Smooth penalty that grows as the largest continuum gap on each surface closes."""
     return jnp.mean(jax.nn.softplus(-gaps(frequencies_hz)[1] / scale_hz))
+
+
+def compression_harmonics(geo: Geometry, ntheta: int = 32, nzeta: int = 64) -> tuple[jax.Array, jax.Array, jax.Array]:
+    """Complex harmonics of ``eps = |grad s|^2 / <|grad s|^2> - 1`` (Paul et al. 2025, eq. 4.28).
+
+    ``eps = sum c[:, i, j] exp(i (dm[i] theta - n[j] zeta))`` in Boozer angles, with
+    ``<.>`` the angle average and ``n`` the full toroidal mode number (``N_P dn``).
+    """
+    g = surface_grid(geo, ntheta, nzeta).grad_s2
+    c = jnp.fft.fft2(g / jnp.mean(g, axis=(1, 2), keepdims=True) - 1.0) / (ntheta * nzeta)
+    return c, jnp.fft.fftfreq(ntheta, 1.0 / ntheta), -jnp.fft.fftfreq(nzeta, 1.0 / nzeta)
+
+
+def continuum_cost(geo: Geometry, helicity: tuple[int, int] = (1, 1), ntheta: int = 32, nzeta: int = 64) -> jax.Array:
+    """Paul et al. (2025) eq. 7.4: ``sum_s sum |eps_{dm,n}|^2 (iota dm - n)^2`` over ``|iota dm - n| > |iota M - N N_P|``.
+
+    Each term is the squared width of the gap that ``(dm, n)`` opens at ``w / w_A = |iota dm - n| / 2``,
+    so the cost narrows every gap above the frequency of the quasisymmetry helicity ``(M, N)``.
+    """
+    c, dm, n = compression_harmonics(geo, ntheta, nzeta)
+    k = geo.iota[:, None, None] * dm[:, None] - n
+    cut = jnp.abs(geo.iota * helicity[0] - helicity[1] * geo.nfp)[:, None, None]
+    return jnp.sum(jnp.where(jnp.abs(k) > cut, jnp.abs(c) ** 2 * k**2, 0.0))
 
 
 _BOUNDARY = {"rc": "rbc", "rs": "rbs", "zc": "zbc", "zs": "zbs"}
@@ -136,13 +159,17 @@ def state_geometry(state: Any, runtime: Any, design: Design) -> Geometry:
     return from_booz_xform(output, c["s"], c["nfp"])
 
 
-def design_geometry(offsets: Any, design: Design) -> Geometry:
-    """Half-mesh Boozer geometry of the boundary ``input + offsets`` (traceable in ``offsets``)."""
+def design_state(offsets: Any, design: Design) -> tuple[Any, Any]:
+    """vmex ``(state, runtime)`` of the boundary ``input + offsets``, for vmex objectives (QS, aspect, iota)."""
     from vmex.core import implicit
 
-    params = design_params(offsets, design)
-    config = design._cache["config"]
-    return state_geometry(implicit.solve_implicit(params, config), implicit.runtime_from_params(params, config), design)
+    params, config = design_params(offsets, design), design._cache["config"]
+    return implicit.solve_implicit(params, config), implicit.runtime_from_params(params, config)
+
+
+def design_geometry(offsets: Any, design: Design) -> Geometry:
+    """Half-mesh Boozer geometry of the boundary ``input + offsets`` (traceable in ``offsets``)."""
+    return state_geometry(*design_state(offsets, design), design)
 
 
 def geometry_frequencies(geo: Geometry, design: Design, mode_count: int = 3) -> jax.Array:

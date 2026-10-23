@@ -290,3 +290,14 @@ Differences halve, so this is first order, as expected for the continuum minimum
 **API for P5.** `design_params` (offsets → vmex params), `state_geometry` (state → half-mesh Boozer geometry; usable as a vmex `metric_fn`), `design_geometry`, and `geometry_frequencies`: FE nodes → dense lowest frequencies, or shift-invert `targeted_eigenvalues` near `target_hz`, both with a Hellmann–Feynman JVP. `design_frequencies` composes them and feeds `window_risk` / `soft_max`. One `jax.grad` is one forward solve plus one adjoint solve. `test_vmex.py` takes about 55 s.
 
 Open: HSX gate; m = 1 boundary coefficients need frozen-path FD (or a gauge-fixed vmex) for a 1e-4 check; drop the j >= 2 workaround after vmex#631 is released.
+
+**2026-10-22, P5 (optimization).** `compression_harmonics` (FFT of `eps = |grad s|^2/<|grad s|^2> - 1` from `surface_grid`) and `continuum_cost` (Paul 2025 eq. 7.4, helicity cut `|iota M - N N_P|`) in `objectives.py`; `design_state` returns the vmex `(state, runtime)` so vmex QS (`QuasisymmetryRatioResidual.total_state`), `implicit.aspect_ratio` and FAX terms share one implicit solve. `examples/optimize_alfven.py`: `scipy.optimize.least_squares`, 4 rows each scaled to ~1 at the start, Jacobian = one forward + one `vjp` per row (independent of the number of coefficients). ns 16, mboz = nboz = 6, office CPU.
+
+| case | coefficients / evaluations / time | Alfvén term | QS total | aspect, mean iota |
+|---|---|---|---|---|
+| LP-QH, eq. 7.1 (helicity (1, -1)) | 34 / 60 / 31 min | f_cont 7.038 -> 5.226 (-26%) | 1.32e-4 -> 5.72e-4 | 8.000 -> 8.004, -1.2431 -> -1.2393 |
+| LP-QA, 3 lowest n = 0 modes out of [293.1, 314.9] kHz | 4 / 30 / 18 min | 294.10-294.92 -> 290.65-291.47 kHz | 1.09e-6 -> 3.96e-6 | 6.000 -> 5.988, 0.4191 -> 0.4159 |
+
+QH gap widths above the cut (Paul eqs. 4.5, 4.16, w/w_A): MAE (0,4) 0.116 -> 0.098, HAE (2,-8) 0.087 -> 0.068, MAE (0,8) 0.069 -> 0.049, but the dominant HAE (3,-8) 0.140 -> 0.139. Traps: the vmex equilibrium is `custom_vjp`, so reverse mode only (jacrev or per-row vjp); a 2% boundary step destroys precise QS (use 0.2% of the minor radius as x_scale); a window centred on the modes has zero gradient (sigmoid plateau), so put the modes near an edge; LP-QH Boozer |B| ~ cos(theta + 4 zeta) (iota < 0), so its helicity is (1, -1). `f_cont` is resolution-converged at 32 x 64 angles (1e-6 vs 48 x 128).
+
+Open: HSX (mpol 18 / ntor 24 decks, not run); lower gamma_max at fixed QS (needs a stellarator drive); resonance-band term; longer/finer QH runs (cost still falling at 60 evaluations).
