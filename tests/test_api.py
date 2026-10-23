@@ -9,6 +9,7 @@ import numpy as np
 import pytest
 
 import fax
+from fax.continuum import MU0
 from fax.io import main
 
 CTOK = str(Path(__file__).parent / "data" / "boozmn_ctok.nc")
@@ -65,7 +66,11 @@ def test_run_cases_and_cli(tmp_path, task):
 
 
 def test_circular_geometry_run():
-    out = fax.run({"run": {"ntheta": 8, "nzeta": 4}}, save=False)
-    assert out["frequencies_hz"].shape == (24, 9)
+    out = fax.run({"run": {"ntheta": 32, "nzeta": 4}}, save=False)
+    k = np.abs(1.0 - np.arange(9) * 0.4) / 5.5  # uniform field: f = |n - m iota| B0 / (R sqrt(mu0 rho)) / 2 pi
+    exact = np.sort(k * 2.7 / np.sqrt(MU0 * fax.mass_density(1e19)) / (2 * np.pi))
+    np.testing.assert_allclose(out["frequencies_hz"], np.broadcast_to(exact, (24, 9)), rtol=1e-9)
+    with pytest.raises(ValueError, match="aliases"):
+        fax.run({"run": {"ntheta": 8, "nzeta": 4}}, save=False)
     with pytest.raises(ValueError):
         fax.run({"run": {"task": "nope"}}, save=False)
