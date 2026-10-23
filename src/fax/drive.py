@@ -51,8 +51,10 @@ class FastIons:
     """Isotropic fast ions: ``density`` (m^-3, scalar or profile on ``s``), energies in eV.
 
     ``kind="maxwellian"`` uses ``temperature_ev``; ``kind="slowing_down"`` uses
-    ``F ~ 1/(v^3 + v_c^3)`` below ``birth_ev`` with ``critical_ev`` (the edge delta of
-    ``dF/dE`` at ``birth_ev`` is not included).
+    ``F ~ 1/(v^3 + v_c^3)`` below ``birth_ev`` with ``critical_ev``. The birth edge is smoothed
+    (``erfc`` over 2% of ``v_b``) and ``dF/dE`` includes the smoothed edge, so ``F`` is normalized
+    to ``int F d^3v = 1`` with the smoothed edge and the edge drive is differentiable. Any other
+    ``kind`` raises ``ValueError``.
     """
 
     density: Any = 1.0e17
@@ -62,6 +64,10 @@ class FastIons:
     mass_amu: Any = 2.01410178
     charge: Any = 1.0
     kind: str = field(default="maxwellian", metadata={"static": True})
+
+    def __post_init__(self) -> None:
+        if self.kind not in ("maxwellian", "slowing_down"):
+            raise ValueError(f"unknown FastIons kind {self.kind!r}: use 'maxwellian' or 'slowing_down'")
 
 
 jax.tree_util.register_dataclass(
@@ -105,10 +111,10 @@ def growth_rate(
     e = jnp.exp(1j * (m * g.theta - n * g.zeta)) / (g.B**3 * g.sqrt_g)[:, None]  # (S, H, T, Z)
     kernel = (col(geo.I) * Bz - col(geo.G) * Bt)[:, None] * e * _d_ds(phi, geo.s)[..., None, None]
     kernel = kernel + 1j * Bs[:, None] * (col(geo.G)[:, None] * m + col(geo.I)[:, None] * n) * e * phi[..., None, None]
-    # passing pitches lam = mu/E in [0, 1/B_max), Gauss-Legendre; B_max a smooth upper bound (log-sum-exp)
+    # passing pitches lam = mu/E in [0, 1/B_max), Gauss-Legendre; B_max is the exact sample maximum, so
+    # duplicated toroidal samples change nothing (a log-sum-exp bound shifts with the sample count)
     x, wx = (jnp.asarray(z) for z in np.polynomial.legendre.leggauss(nodes))
-    scale = 1e-3 * jnp.mean(g.B, axis=(1, 2), keepdims=True)
-    bmax = scale[..., 0] * jax.nn.logsumexp(g.B / scale, axis=(1, 2))[:, None]
+    bmax = jnp.max(g.B, axis=(1, 2))[:, None]
     lam = 0.5 * (x + 1.0) / bmax  # (S, L)
     xi = jnp.sqrt(1.0 - lam[..., None, None] * g.B[:, None])  # (S, L, T, Z)
     h = 1.0 / (xi * g.B[:, None])
@@ -167,7 +173,9 @@ def _distribution(v: jax.Array, ions: FastIons) -> tuple[jax.Array, jax.Array]:
         f = (m / (2 * jnp.pi * t)) ** 1.5 * jnp.exp(-0.5 * m * v**2 / t)
         return -f / t, f
     vb, vc = jnp.sqrt(2 * ions.birth_ev * E / m), jnp.sqrt(2 * ions.critical_ev * E / m)
-    norm = 3.0 / (4 * jnp.pi * jnp.log1p((vb / vc) ** 3))
+    # int 4 pi u^2 du erfc((u - vb) / w) / 2 / (u^3 + vc^3) = 4 pi / 3 E[ln((u^3 + vc^3) / vc^3)], u ~ N(vb, w^2 / 2) (by parts)
+    t, wt = (jnp.asarray(z) for z in np.polynomial.hermite.hermgauss(24))
+    norm = 3.0 / (4 * jnp.pi * (jnp.sum(wt * jnp.log1p((vb * (1 + 0.02 * t) / vc) ** 3)) / jnp.sqrt(jnp.pi)))
 
     def shape(u: jax.Array) -> jax.Array:  # birth edge smoothed over 2% of v_b so the edge drive stays differentiable
         return norm * 0.5 * jax.scipy.special.erfc((u - vb) / (0.02 * vb)) / (u**3 + vc**3)

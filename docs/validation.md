@@ -23,7 +23,9 @@ logbook (`plan.md`, section 6).
 | Könies 2018 ITPA TAE frequency | `test_konies_tae_frequency_and_convergence` | 4.0610e5 rad/s, $N_s$-converged to 1e-4 |
 | Shift-invert vs dense | `test_shift_invert_matches_dense_and_gradients_match_finite_differences` | 1e-10 |
 | Eigenvalue gradients vs finite differences | same | 1e-5 (cluster mean and shift-invert) |
-| Fu–Van Dam Maxwellian scaling | `test_fu_van_dam_maxwellian_scaling` | 1e-3 |
+| Fu–Van Dam Maxwellian scaling and closed-form ZOW coefficient (weak toroidicity) | `test_fu_van_dam_maxwellian_scaling` | 1e-3 |
+| Slowing-down $\int F\,d^3v = 1$ with the smoothed edge; duplicated toroidal samples | `test_slowing_down_is_normalized_with_its_smoothed_edge`, `test_duplicated_toroidal_samples_leave_the_drive_unchanged` | 1e-6; 1e-10 |
+| Elliptic two-mode gap, full width $2f_0\lvert c\rvert$ | `test_elliptic_two_mode_gap_has_full_width_two_f0_c` | 1e-6 |
 | Drive vs Könies 2018 (Boozer form of the circular model) | `test_koenies_2018_tae_growth_rates` | old circular model within 3%; 300 keV within 20% of Könies, 100, 200 keV about 40% low |
 | Drive sign rules | `test_drive_sign_and_flat_profile` | flat, peaked, hollow, $\pm n$ |
 | Drive gradients vs finite differences | `test_gradients_match_finite_differences`, `test_geometry_and_mode_gradients` | 1e-5 (density, $T_f$, $\omega$, every geometry leaf and the mode) |
@@ -192,15 +194,15 @@ $(1, -1)$, cut $|\iota + 4|$), 34 coefficients, 60 evaluations, 31 min:
 | mean $\iota$ | −1.2431 | −1.2393 |
 
 Largest gaps above the cut, centre $\omega^{(0)}/\omega_A$ and width
-$\omega^{(0)}|\epsilon|/\omega_A$ (surface-averaged):
+$2\omega^{(0)}|\epsilon|/\omega_A$ (full width, surface-averaged):
 
 | $(\delta m, n)$ | centre | width before | width after |
 |---|---|---|---|
-| (3, −8) HAE | 2.14 | 0.140 | 0.139 |
-| (0, 4) MAE | 2.00 | 0.116 | 0.098 |
-| (2, −8) HAE | 2.76 | 0.087 | 0.068 |
-| (0, 8) MAE | 4.00 | 0.069 | 0.049 |
-| (3, −12) HAE | 4.14 | 0.066 | 0.058 |
+| (3, −8) HAE | 2.14 | 0.280 | 0.278 |
+| (0, 4) MAE | 2.00 | 0.232 | 0.196 |
+| (2, −8) HAE | 2.76 | 0.174 | 0.136 |
+| (0, 8) MAE | 4.00 | 0.138 | 0.098 |
+| (3, −12) HAE | 4.14 | 0.132 | 0.116 |
 
 The trend of Paul's figures 8–9 is reproduced: the high-frequency gaps
 narrow (up to 29%) while QS degrades moderately (×4.3, still 5.7e-4) and
@@ -232,8 +234,16 @@ The drive is evaluated in Boozer geometry ({doc}`theory`, section 8); the
 tokamak gates use {func}`fax.circular_torus`, axisymmetric (`helical = 0`,
 `nzeta = 1`).
 
-- **Fu–Van Dam.** A flat Maxwellian with one $v_\parallel = v_A$ resonance
-  scales as $x(1 + 2x^2 + 2x^4)e^{-x^2}$, $x = v_A/v_{th}$, to 1e-3.
+- **Fu–Van Dam.** Weak toroidicity ($\varepsilon_B = 10^{-4}$, $R_0 = 10^4a$,
+  nonzero drift coupling) and a flat Maxwellian with the two
+  $v_\parallel = v_A$ resonances: $\gamma$ at fixed $\beta_h$ scales as
+  $x(1 + 2x^2 + 2x^4)e^{-x^2}$, $x = v_A/v_{th}$, to 1e-3, and its absolute
+  value equals the closed-form ZOW integral (NumPy, derived in the test
+  docstring: orbit-averaged kernel, $\int 2\xi\,d\xi\,\xi^{-8}(1 + \xi^2)^2e^{-x^2/\xi^2}
+  = 2(1 + 2x^2 + 2x^4)e^{-x^2}/x^6$, independent $W$) to 1e-3. The prefactor
+  $\pi^2\mu_0m_f^2/2W$ is that of {eq}`gamma-zow`, pinned by the Könies gate,
+  not derived there. The earlier test used $\varepsilon_B = 0$, where $\gamma = 0$
+  exactly (no $|B|$ variation, no drift coupling), so it checked nothing.
 - **Könies et al. (2018).** Model TAE ($m = 10, 11$, $n = 6$, Gaussian
   envelope of 10 cm FWHM at $q = 1.75$), $\omega = 4.0$e5 rad/s, the paper's
   fast-ion density profile (its eq. 1), `circular_torus(epsilon_B = a/R0)`:

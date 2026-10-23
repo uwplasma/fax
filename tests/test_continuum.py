@@ -1,5 +1,6 @@
 """Continuum gates: analytic uniform-field limit, STELLGAP CTOK parity, gap formulas."""
 
+from dataclasses import replace
 from pathlib import Path
 
 import jax
@@ -52,3 +53,18 @@ def test_gaps_and_gap_location():
     np.testing.assert_allclose(width, [3.0, 3.0])
     assert fax.gap_location(1, 1, 1) == pytest.approx((2 / 3, 1 / 3))  # TAE: iota = 2n/(2m+1)
     assert fax.gap_location(4, 1, 0, -1, 4)[0] == pytest.approx(2.0)  # MAE: iota = (2n - nfp)/(2m)
+
+
+def test_elliptic_two_mode_gap_has_full_width_two_f0_c():
+    """``circular_torus(iota=1)``, ellipticity kappa on the (0, 1)-(2, 1) crossing: the edge separation is ``2 f0 |c|``,
+    ``c = (kappa^2 - 1) / (2 (kappa^2 + 1))`` the complex Fourier coefficient of ``|grad s|^2 / <|grad s|^2> - 1``, and
+    ``|c|^2 (iota dm - n)^2`` of the cost is the squared full width in ``w_A`` units (``w_A = B0 / (R0 sqrt(mu0 rho))``)."""
+    base, kappa, harmonics, rho = fax.circular_torus(iota=1.0), 1.001, [[0, 1], [2, 1]], fax.mass_density(1e19, 2.0)
+    geo = replace(base, zmns=base.zmns.at[:, 1].multiply(kappa))
+    f0 = fax.continuum(base, harmonics, rho)[:, 0]  # both branches cross at f0
+    c = (kappa**2 - 1) / (2 * (kappa**2 + 1))
+    center, width = fax.gaps(fax.continuum(geo, harmonics, rho))
+    np.testing.assert_allclose(width, 2 * f0 * c, rtol=1e-6)
+    np.testing.assert_allclose(center, f0, rtol=1e-6)
+    f_a = 2.7 / (5.5 * jnp.sqrt(MU0 * rho)) / (2 * jnp.pi)
+    assert fax.continuum_cost(geo, (0, 0)) / 2 == pytest.approx(jnp.sum((width / f_a) ** 2), rel=1e-2)  # +-(dm, n) twice

@@ -79,7 +79,8 @@ def continuum(geo: Geometry, harmonics: Any, density: Any, ntheta: int = 32, nze
 
 
 def gaps(frequencies_hz: Any) -> tuple[jax.Array, jax.Array]:
-    """Largest gap between adjacent sorted branches on each surface: ``(center, width)`` in Hz."""
+    """Largest gap between adjacent sorted branches on each surface: ``(center, width)`` in Hz, the width edge to edge
+    (a Fourier coefficient ``c`` of the coupling opens ``2 f0 |c|``)."""
     f = jnp.sort(jnp.asarray(frequencies_hz), axis=-1)
     width = jnp.diff(f, axis=-1)
     i = jnp.argmax(width, axis=-1)
