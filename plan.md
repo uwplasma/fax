@@ -259,3 +259,34 @@ Office RTX A4000 (fp64, JAX 0.6.2 cuda12) vs the office CPU (36 threads, JAX_PLA
 - The GPU wins steady assembly/continuum by 10x and dense by 25x, but shift-invert is a sequential `lax.scan` of small `H x H` blocks and gains only 1.1–1.6x; compile is 2–3x longer on GPU. For one-off solves and optimization loops of < ~50 steps the CPU wins. The design path was not run on office (its Python 3.10 cannot install vmex).
 
 Gates: CTOK-sized global solve (assembly + 8-mode shift-invert) 0.17 s steady on the laptop: **met** (under load; 0.11–0.13 s quiet). One LP-QA optimization step: 1.5 s steady (**met**), but the first step compiles for 11 s (23 s before the shift-invert change cut the traced graph); the 5 s gate holds only after compilation.
+
+**2026-10-22, P3 (gradients).** LP-QA low-res, ns = 16, ftol 1e-12, mboz = nboz = 3.
+
+The 1.1e-4 `iota` gap is not an upstream gradient bug. VMEC's released m = 1 `Z_sin` pair combination is an angle gauge. The adjoint holds it at its converged value; each re-solve leaves it wherever its own path ended, so re-solve FD adds the response to that drift. Evidence (`iota` on half row 4, wrt `zs01` unless noted):
+
+| check | result |
+|---|---|
+| adjoint vs re-solve FD, h = 1e-3, 1e-4, 1e-5 | -0.1336287 vs -0.1335700 at every h: gap 4.4e-4, reproducible, not FD noise |
+| `rc01`, h = 1e-3 vs 1e-4 | gap 1.0e-4 vs 1.5e-4: the gauge drift itself changes with h (1.9e-4 vs 2.5e-4), a solver-path effect |
+| constrained-family drift of the re-solves | 2.1e-3 (`zs01`), 1.3e-3 (`rc01`); nothing else frozen moves |
+| adjoint + response to that drift (Newton on the frozen residual, as vmex's `test_li383_mean_iota_resolve_fd_gap_is_the_m1_constrained_family`) | closes to 3.3e-9 (`zs01`), 5.8e-9 (`rc01`) |
+| global frequency, adjoint vs re-solve FD | 3.0e-5 (`zs01`, `rc01`), 2.6e-5 (`rc10`), 2.7e-3 (`zs11`, an m = 1 boundary mode) |
+
+`frozen_path_directional_fd` is the vmex reference, but it took over 10 min here, so CI compares against re-solve FD on non-m = 1 coefficients with rtol 1e-4 (the gauge term is 3e-5).
+
+**Upstream bug found on the way.** `boozer_input_tables(state, rt, 1)` returns `rmnc`/`zmns` of order 1e13–1e14. The odd-m parity interpolation divides axis round-off by `max(sqrt(0), 1e-30)`. Fix (divide by 1, as booz_xform does) plus regression test: uwplasma/vmex#631. FAX uses half rows j >= 2 until it is released.
+
+**Radial domain.** `prepare_design` no longer snaps surfaces. It transforms every half row j >= 2 and `Geometry.interpolate` maps them, linearly in s and extrapolated to 0 and 1, onto `nodes` uniform FE nodes `k/(nodes + 1)`. So the domain is always [0, 1] and only the FE grid refines. Gate (`test_boundary_gradient_and_radial_refinement`, lowest n = 0 frequency, m = 1–3, 8 × 8 angles; FAX AD vs FD along the re-solved geometry tangent):
+
+| nodes | f (kHz) | df/dzs01 (kHz) | AD vs FD |
+|---|---|---|---|
+| 16 | 294.648 | -62.528 | 3.4e-8 |
+| 32 | 294.219 | -61.230 | 3.5e-8 |
+| 64 | 293.989 | -60.583 | 3.6e-8 |
+| 128 | 293.873 | -60.261 | 3.6e-8 |
+
+Differences halve, so this is first order, as expected for the continuum minimum. Single harmonics converge the same way, and (2,1)+(3,1) reaches AD vs FD of 1e-10. Before the row fix, any FE grid that sampled row 1 gave AD vs FD of order 1. With the sparse low-lying (2,1) spectrum, eigenvalues inside a dense continuum cross under an h = 1e-4 step, so gates use the lowest eigenvalue or a target away from crossings.
+
+**API for P5.** `design_params` (offsets → vmex params), `state_geometry` (state → half-mesh Boozer geometry; usable as a vmex `metric_fn`), `design_geometry`, and `geometry_frequencies`: FE nodes → dense lowest frequencies, or shift-invert `targeted_eigenvalues` near `target_hz`, both with a Hellmann–Feynman JVP. `design_frequencies` composes them and feeds `window_risk` / `soft_max`. One `jax.grad` is one forward solve plus one adjoint solve. `test_vmex.py` takes about 55 s.
+
+Open: HSX gate; m = 1 boundary coefficients need frozen-path FD (or a gauge-fixed vmex) for a 1e-4 check; drop the j >= 2 workaround after vmex#631 is released.

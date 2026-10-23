@@ -12,13 +12,13 @@ import fax
 
 design = fax.prepare_design(
     Path(__file__).parent / "data" / "input.LandremanPaul2021_QA_lowres",
-    harmonics=[[1.0, 0.0], [2.0, 1.0]],
+    harmonics=[[1.0, 0.0], [2.0, 0.0], [3.0, 0.0]],
     density=3.4e-8,
     parameters=("rc01", "zs01"),
     ntheta=8,
     nzeta=8,
 )
-objective = lambda p: fax.window_risk(fax.design_frequencies(p, design), (50e3, 500e3), 25e3)  # noqa: E731
+objective = lambda p: fax.window_risk(fax.design_frequencies(p, design), (250e3, 290e3), 10e3)  # noqa: E731
 p = jnp.zeros(2)
 value, grad = jax.value_and_grad(objective)(p)
 print(f"frequencies (kHz): {fax.design_frequencies(p, design) / 1e3}")

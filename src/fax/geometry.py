@@ -56,6 +56,18 @@ class Geometry:
         sliced = {name: getattr(self, name)[index] for name in ("s", "iota", "G", "I", *_MODES)}
         return replace(self, **sliced)
 
+    def interpolate(self, s: Any) -> Geometry:
+        """Piecewise-linear interpolation in ``s`` onto new surfaces, extrapolated linearly to ``s = 0`` and ``1``."""
+        x = jnp.concatenate([jnp.zeros(1), self.s, jnp.ones(1)])
+
+        def line(a: jax.Array) -> jax.Array:
+            end = lambda i, j, to: a[i] + (to - self.s[i]) * (a[i] - a[j]) / (self.s[i] - self.s[j])  # noqa: E731
+            a = jnp.concatenate([end(0, 1, 0.0)[None], a, end(-1, -2, 1.0)[None]])
+            return jax.vmap(lambda c: jnp.interp(s, x, c), 1, 1)(a) if a.ndim == 2 else jnp.interp(s, x, a)
+
+        s = jnp.asarray(s, dtype=float)
+        return replace(self, s=s, **{name: line(getattr(self, name)) for name in ("iota", "G", "I", *_MODES)})
+
     def full_mesh(self) -> Geometry:
         """Average neighbouring half-mesh surfaces onto the VMEC full mesh, as STELLGAP and AE3D do."""
         return jax.tree_util.tree_map(lambda a, b: 0.5 * (a + b), self.surfaces(slice(None, -1)), self.surfaces(slice(1, None)))

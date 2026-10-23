@@ -90,20 +90,20 @@ precise QA with respect to the boundary coefficients `rc01` (`RBC(n=1, m=0)`)
 and `zs01` (`ZBS(n=1, m=0)`).
 
 ```console
-python examples/boundary_gradient.py             # about 50 s
+python examples/boundary_gradient.py             # about 40 s
 ```
 
 ```text
-frequencies (kHz): [115.38719622 116.51928851 118.58626689]
-risk = 4.3745e-01, d risk / d ('rc01', 'zs01') = [-0.52197097  0.41081828]
-risk after a 1e-3 step along -grad: 4.3678e-01
+frequencies (kHz): [294.36787292 294.71040894 295.20747717]
+risk = 7.1802e-02, d risk / d ('rc01', 'zs01') = [-0.6231568  0.5461438]
+risk after a 1e-3 step along -grad: 7.0970e-02
 ```
 
 {func}`fax.prepare_design` builds the static part (vmex configuration, Boozer
-tables, surface rows) once; {func}`fax.design_frequencies` is then a traceable
+tables, FE nodes) once; {func}`fax.design_frequencies` is then a traceable
 function of the boundary offsets, differentiated through the vmex implicit
 equilibrium ({ref}`vmex-gradients`). This example uses a
-tiny model (two harmonics, 8 × 8 angles, four surfaces) to stay fast;
+tiny model (three harmonics, 8 × 8 angles, 24 radial nodes) to stay fast;
 {doc}`validation` lists what its gradient is checked against.
 
 ## 5. Fast-ion drive of the Könies ITPA TAE
