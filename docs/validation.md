@@ -17,6 +17,9 @@ logbook (`plan.md`, section 6).
 | AE3D CTOK global modes | `test_ae3d_ctok_parity` | 6 modes within 1.4%, overlap > 0.9 |
 | AE3D CTOK TAE | same | not reproduced; AE3D sign error, see below |
 | Bending and inertia vs real-space quadrature | `test_ctok_bending_energy_matches_real_space_quadrature` | 0.3% (gate 0.5%) |
+| Finite-$\beta$ terms vs real-space quadrature ($\sigma$ from curl $\mathbf B$; CTOK and Könies with $p$) | `test_finite_beta_terms_match_real_space_quadrature` | 0.3% CTOK, 0.2% pressure (gate 0.5%) |
+| Cylinder: Newcomb $m = 1$ cancellation; Suydam threshold | `test_cylinder_newcomb_m1_and_suydam_threshold` | bending + kink = 1e-3 of bending; stable at 1.0e4 Pa, unstable at 2.0e4 (Suydam 1.05e4) |
+| Könies ITPA with $p(s)$, vmex equilibrium | `test_konies_itpa_finite_beta_tae` | 4.127e5 → 3.947e5 rad/s with finite-$\beta$ terms (CAS3D 4.01e5) |
 | Könies 2018 ITPA TAE frequency | `test_konies_tae_frequency_and_convergence` | 4.0610e5 rad/s, $N_s$-converged to 1e-4 |
 | Shift-invert vs dense | `test_shift_invert_matches_dense_and_gradients_match_finite_differences` | 1e-10 |
 | Eigenvalue gradients vs finite differences | same | 1e-5 (cluster mean and shift-invert) |
@@ -102,12 +105,55 @@ $a = 1$ m, $B_0 = 3$ T, $q = 1.71 + 0.16s$, $\epsilon_B = a/R_0$, hydrogen at
 against CAS3D 4.01e5 (+1.3%, shifted equilibrium) and GYGLES 4.13e5 (−1.7%,
 ad hoc equilibrium as here). The test requires $4.01 < \omega/10^5 < 4.13$.
 
+**Finite-$\beta$ terms.** The $J_\parallel$ term is tested in a cylinder
+($\epsilon_B = 0$, $q = 0.8 + s$): for an $m = n = 1$ rigid shift inside
+$q = 1$ it cancels the bending energy to 1e-3, Newcomb's $(m^2 - 1)$
+marginality. This also fixes its sign; the opposite sign doubles the energy.
+The pressure term reproduces the Suydam threshold for $m/n = 11/6$ with
+$p = p_0(1 - s)$: $p_0 = 1.05\cdot10^4$ Pa from
+$rB^2(q'/q)^2/8\mu_0 + p' = 0$. At $1.0\cdot10^4$ Pa the lowest
+$\omega^2$ falls as $1/N^2$ (a marginal continuum), and at $2\cdot10^4$ Pa it is
+a converged instability. Suydam growth is exponentially small near
+threshold, so the test brackets it rather than locating it.
+
+Könies ITPA, $p(s) = 7.17\cdot10^3 - 6.811\cdot10^3 s - 358.5 s^2$ Pa
+(Könies et al. 2018), TAE in rad/s:
+
+| equilibrium | no finite-$\beta$ terms | $J_\parallel$ and pressure |
+|---|---|---|
+| `circular_torus`, `current=True`, $N_s = 400$ | 4.0610e5 | 4.0637e5 ($J_\parallel$ only, +0.07%) |
+| `circular_torus` with $p(s)$ | 4.0601e5 | Mercier-unstable (see below) |
+| vmex, $p = 0$ (`PRES_SCALE = 0`), $N_s = 400$ | 4.0958e5 | 4.0978e5 (+0.05%) |
+| vmex with $p(s)$, $N_s = 100$–400 | 4.1271e5 | 3.9482e5 (−4.3%, overlap 0.98) |
+
+CAS3D, which is compressible and uses the shifted finite-$\beta$
+equilibrium, gives 4.01e5. FAX with both terms is 1.5% below it, and 2.9% above
+it without them. The remaining gap is plausibly the sound coupling
+($\gamma p|\nabla\cdot\boldsymbol\xi|^2$), which the reduced model drops
+and which raises the frequency. In the ad hoc equilibrium, which has no
+Shafranov shift, the pressure term gives a converged localized instability
+($\omega^2 = -3.1\cdot10^9$ s⁻²) at $q = 11/6$, below the cylindrical
+Suydam threshold. That equilibrium lacks the $O(\epsilon^2)$ terms behind
+the $(1 - q^2)$ Mercier stabilization. On the vmex equilibrium the
+negative eigenvalues fall as $1/N^2$. Use a real equilibrium with
+`finite_beta=True`.
+
+On CTOK ($q_0 \approx 0.996$, $\sigma \approx -0.7$ m⁻¹), the $J_\parallel$ term
+is large. It gives a converged near-axis $m = n = 2$ instability
+($\omega^2 \approx -2.4\cdot10^{10}$ s⁻²), and it moves the AE3D-matched
+modes by 0.1–10% (388 → 428 kHz; overlaps with AE3D fall to 0.72–0.87). The earlier logbook
+statement that AE3D moves its modes by less than 0.1% with these terms
+therefore does not carry over to this form. AE3D has not been rerun with
+its $J_\parallel$ term on to compare; `test_ae3d_ctok_parity` keeps the default
+`finite_beta=False`.
+
 ## Gradients
 
 - **Eigenvalues.** For the Könies operator at $N = 40$, the Hellmann–Feynman
   derivative of a dense cluster mean and of a shift-invert eigenvalue with
   respect to density and an $\iota$ offset matches central differences to
-  1e-5, and $\partial f/\partial\ln\rho = -f/2$ to 1e-10.
+  1e-5, and $\partial f/\partial\ln\rho = -f/2$ to 1e-10. The same holds with
+  `finite_beta=True` and the Könies pressure (central step 1e-7).
 - **Drive.** `jax.grad` of $\gamma_h$ with respect to the fast-ion density
   scale, $T_f$ and $\omega$ matches central differences to 1e-5; the
   slowing-down gradient is finite through the smoothed birth edge.
@@ -203,8 +249,8 @@ $\iota$ (−0.8%), as $f \propto |\iota m - n|$ near the continuum minimum.
 
 ## Not done
 
-- **Pressure-gradient and $J_\parallel$ (kink) terms** of the AE3D weak form
-  (below 0.1% on CTOK, needed at finite $\beta$; no BAE or sound coupling).
+- **Sound and fast-wave coupling** (no BAE gap; $\gamma p|\nabla\cdot\boldsymbol\xi|^2$
+  dropped), and an AE3D rerun with its $J_\parallel$ term for CTOK.
 - **Trapped and precessing fast ions** in the drive.
 - **Finite orbit width** and finite Larmor radius in the drive.
 - **Stellarator drift sidebands**: the drive uses a circular large-aspect-ratio

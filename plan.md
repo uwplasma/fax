@@ -301,3 +301,21 @@ Open: HSX gate; m = 1 boundary coefficients need frozen-path FD (or a gauge-fixe
 QH gap widths above the cut (Paul eqs. 4.5, 4.16, w/w_A): MAE (0,4) 0.116 -> 0.098, HAE (2,-8) 0.087 -> 0.068, MAE (0,8) 0.069 -> 0.049, but the dominant HAE (3,-8) 0.140 -> 0.139. Traps: the vmex equilibrium is `custom_vjp`, so reverse mode only (jacrev or per-row vjp); a 2% boundary step destroys precise QS (use 0.2% of the minor radius as x_scale); a window centred on the modes has zero gradient (sigmoid plateau), so put the modes near an edge; LP-QH Boozer |B| ~ cos(theta + 4 zeta) (iota < 0), so its helicity is (1, -1). `f_cont` is resolution-converged at 32 x 64 angles (1e-6 vs 48 x 128).
 
 Open: HSX (mpol 18 / ntor 24 decks, not run); lower gamma_max at fixed QS (needs a stellarator drive); resonance-band term; longer/finer QH runs (cost still falling at 60 evaluations).
+
+**2026-10-22, P2b (finite-beta terms).** `global_matrices(..., finite_beta=False)` adds, when on, the Hermitian parts of the ideal-MHD `J_par` and pressure-curvature energies in the AE3D units: `K = int sigma b.(grad phi~* x grad u)`, `P = -2 mu0 int p' (b x grad phi.grad s)(b x grad phi~*.kappa)/B^2`, `sigma = mu0 J.B/B^2`, `kappa = grad_perp(mu0 p + B^2/2)/B^2`. `K` integrated by parts is AE3D eq. 4's third term; the vorticity-equation and `delta W` derivations agree on its sign, and the Newcomb gate fixes it. FAX does not use AE3D's matrix elements. `equilibrium_currents` gets `mu0 p'` from the solvability of the Boozer radial force balance `(iota d_theta + d_zeta) B_s = G' + iota I' + mu0 p' (G + iota I)/B^2` and `B_s` (Pfirsch-Schlueter) by FFT, so `Geometry` is unchanged. On the vmex ITPA equilibrium the inferred `p'` is within 0.4–1.8% of the input. `circular_torus(current=True | pressure=[...])` adds `I = iota s a^2 B0/R0` and the force-balance `G`. `_coefficients` now takes a left and a right vector set and returns Hermitian parts. Src +64 lines (eigen +51, geometry +13).
+
+| Gate | Result |
+|---|---|
+| vacuum (`I = 0`, `G` const) | matrices bit-identical with and without the flag |
+| real-space quadrature, `sigma` from curl of `B_i` on the grid | CTOK: `sigma` to 1e-4 and the kink form to 0.3% (`B_i`, `kappa = (b.grad) b` from the embedding alone); Könies with `p`: 0.16% at N = 128 (0.65% at 64, so O(h^2)) |
+| cylinder m = n = 1 rigid shift, q = 0.8 + s | bending + kink = 1.2e-3 of bending (Newcomb `m^2 - 1`); the flipped sign doubles it |
+| cylinder Suydam, m/n = 11/6, `p = p0 (1 - s)` | analytic threshold 1.05e4 Pa; 1.0e4 marginal (`1/N^2`), 2.0e4 converged unstable (-7.3e8) |
+| HF gradient vs FD with `finite_beta` and the Könies `p` | 1e-7 at step 1e-7. The step must be ≤ 1e-6, since at 1e-4 an eigenvalue crossing gives nonsense. The test step is now 1e-7. |
+| Könies ITPA TAE (rad/s), vmex `examples/data/input.ITPA_Konies2018` | `p = 0`: 4.0958 → 4.0978e5 (`J_par`, +0.05%); with `p(s)`: 4.1271 → 3.9482e5 (−4.3%, overlap 0.98, N = 100–400 converged); CAS3D 4.01e5, GYGLES 4.13e5 |
+| Könies, `circular_torus` | `J_par` alone +0.07% (4.0610 → 4.0637e5); with `p(s)` Mercier-unstable at q = 11/6 (-3.1e9, converged): no Shafranov shift, so no `(1 - q^2)` stabilization; vmex negatives fall as `1/N^2` |
+
+Findings and open items:
+
+- CAS3D (compressible) lies between FAX's frequencies with and without the finite-beta terms. The 1.5% low bias is plausibly the dropped sound coupling `gamma p |div xi|^2`.
+- **CTOK with `finite_beta=True` is not AE3D-like.** `q0 ≈ 0.996`, `sigma ≈ -0.7 /m`. A converged near-axis m = n = 2 instability appears (-2.4e10), and the AE3D-matched modes move 0.1–10% (388 → 428 kHz, overlaps 0.72–0.87). The P2 statement that AE3D's modes move < 0.1% with its terms on does not transfer. Either AE3D's symmetrized `jprl` terms differ from the Freidberg form, or they are as weak as reported. Next: rebuild AE3D (`ae_solve_version31.f`, test-problem `plasma.dat` carries `jprl_coef0..2` and `brho`) with and without `jprl`, and compare the `jprl` blocks with FAX's `K` on CTOK. That was not done here. `test_ae3d_ctok_parity` stays at the default.
+- No sound or fast-wave coupling, so no BAE gap.
