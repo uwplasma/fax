@@ -93,7 +93,7 @@ dfdrho = jax.grad(lambda r: fax.frequency_hz(geo, harmonics, r, 2, 3, target_hz=
 | AE3D CTOK global modes (n = 2, m = 0–12) | 6 modes within 1.4%; AE3D's TAE is off by its $\iota'$ sign error (checked by real-space quadrature to 0.3%) |
 | Könies et al. 2018 ITPA TAE (n = 6) | $\omega$ = 4.061e5 rad/s (CAS3D 4.01e5, GYGLES 4.13e5), converged to 1e-4 |
 | Könies ITPA with $p(s)$, vmex equilibrium, `finite_beta=True` | 3.947e5 rad/s (4.127e5 without the $J_\parallel$ and pressure terms) |
-| Könies et al. 2018 drive, 100/200/300 keV | 4.37/16.6/33.2 vs 8–10/25–33/38–43 ×10³ s⁻¹ (ZOW, passing only; old circular model within 4%) |
+| Könies et al. 2018 drive, 100/200/300 keV | 4.33/16.5/32.9 vs 8–10/25–33/38–43 ×10³ s⁻¹ (ZOW, passing only; old circular model within 4%) |
 | Eigenvalue and drive gradients vs finite differences | 1e-5 (drive: profiles, $\omega$, every geometry leaf, the mode) |
 | LP-QA drive through vmex geometry and shift-invert eigenvectors | AD vs FD ≤ 1e-4; helical sidebands present (dominant in LP-QH) |
 

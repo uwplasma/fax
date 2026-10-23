@@ -250,7 +250,7 @@ tokamak gates use {func}`fax.circular_torus`, axisymmetric (`helical = 0`,
 
   | $T_f$ (keV) | 100 | 200 | 300 | 400 |
   |---|---|---|---|---|
-  | FAX, Boozer geometry (10³ s⁻¹) | 4.37 | 16.64 | 33.18 | 65.3 |
+  | FAX, Boozer geometry (10³ s⁻¹) | 4.33 | 16.52 | 32.94 | 64.85 |
   | FAX, previous circular large-aspect-ratio model | 4.4 | 16.6 | 33.1 | 65 |
   | Könies ZLR band (10³ s⁻¹) | 8–10 | 25–33 | 38–43 | |
 
