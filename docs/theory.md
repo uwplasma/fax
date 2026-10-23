@@ -329,11 +329,24 @@ $$
 - **Parameters.** Names `rc|rs|zc|zs` + `m` + `n` select `RBC`, `RBS`, `ZBC`,
   `ZBS` entries; `"zs01"` is `ZBS(n=1, m=0)`. Offsets are added to the input's
   coefficients.
-- **Boozer transform.** `booz_xform_jax_impl` is traced on the chosen
-  half-mesh rows (each requested surface snaps to the nearest
-  $s = (j - 0.5)/(n_s - 1)$; two surfaces on one row raise `ValueError`).
-- **Spectrum.** The Boozer geometry feeds {func}`fax.eigenmodes`, whose
-  eigenvalues carry the {eq}`hellmann-feynman` JVP.
+- **Boozer transform.** `booz_xform_jax_impl` is traced on the half-mesh
+  rows $j \ge 2$, $s = (j - 1/2)/(n_s - 1)$ (row 1 waits for a vmex fix of its
+  $R$, $Z$ tables).
+- **Radial grid.** {meth}`fax.geometry.Geometry.interpolate` maps that geometry,
+  linearly in $s$ and extrapolated to $s = 0, 1$, onto `nodes` uniform FE
+  nodes $k/(\text{nodes} + 1)$. The radial domain is always $[0, 1]$, and the
+  FE grid refines independently of $n_s$ and `mboz`.
+- **Spectrum.** {func}`fax.geometry_frequencies` returns the lowest
+  frequencies (dense) or those nearest `target_hz` (shift-invert). Both carry
+  the {eq}`hellmann-feynman` JVP, so a smooth objective
+  ({func}`fax.window_risk`, {func}`fax.soft_max`) of {func}`fax.design_frequencies`
+  is differentiable from the boundary offsets.
+- **Gauge.** VMEC's released $m = 1$ constraint combination is an angle gauge.
+  The adjoint holds it fixed, while a re-solve lets it drift along its own
+  path. Re-solve finite differences therefore differ from the adjoint by the
+  response to that drift: 4.4e-4 for $\iota$ wrt `zs01`, about 3e-5 for the
+  global frequencies wrt `rc01`, `zs01`, `rc10`, and 2.7e-3 wrt the $m = 1$
+  coefficient `zs11`. Adding the drift response closes the $\iota$ gap to 3e-9.
 
 `jax.grad` of any scalar of {func}`fax.design_frequencies` therefore costs one
 forward solve plus one adjoint equilibrium solve.

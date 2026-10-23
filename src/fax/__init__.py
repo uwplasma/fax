@@ -9,7 +9,17 @@ from .drive import FastIons, Plasma, growth_rate, ion_landau_damping
 from .eigen import eigenmodes, eigenvalue_mean, frequency_hz, global_matrices
 from .geometry import Geometry, circular_torus, from_vmec_input, from_wout, read_boozmn, surface_grid
 from .io import load, run
-from .objectives import design_frequencies, design_geometry, gap_closure, prepare_design, soft_max, window_risk
+from .objectives import (
+    design_frequencies,
+    design_geometry,
+    design_params,
+    gap_closure,
+    geometry_frequencies,
+    prepare_design,
+    soft_max,
+    state_geometry,
+    window_risk,
+)
 
 __version__ = "0.1.0"
 __all__ = [
@@ -20,12 +30,14 @@ __all__ = [
     "continuum_matrices",
     "design_frequencies",
     "design_geometry",
+    "design_params",
     "eigenmodes",
     "eigenvalue_mean",
     "frequency_hz",
     "from_vmec_input",
     "from_wout",
     "gap_closure",
+    "geometry_frequencies",
     "gap_location",
     "gaps",
     "global_matrices",
@@ -39,6 +51,7 @@ __all__ = [
     "read_boozmn",
     "run",
     "soft_max",
+    "state_geometry",
     "surface_grid",
     "window_risk",
 ]

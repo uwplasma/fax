@@ -25,7 +25,7 @@ logbook (`plan.md`, section 6).
 | Drive sign rules | `test_drive_sign_and_flat_profile` | flat, peaked, hollow, $\pm n$ |
 | Drive gradients vs finite differences | `test_gradients_match_finite_differences` | 1e-5 |
 | vmex → booz_xform_jax → FAX continuum | `test_vmec_input_to_continuum` | runs, finite |
-| Boundary gradient vs finite differences | `test_boundary_gradient_matches_finite_differences` | strict xfail at 1e-4 (upstream, below) |
+| Boundary gradient and FE radial refinement | `test_boundary_gradient_and_radial_refinement` | AD vs FD 1e-4 at 16, 32, 64 nodes; first-order convergence |
 
 ## Continuum
 
@@ -109,12 +109,22 @@ ad hoc equilibrium as here). The test requires $4.01 < \omega/10^5 < 4.13$.
 - **Drive.** `jax.grad` of $\gamma_h$ with respect to the fast-ion density
   scale, $T_f$ and $\omega$ matches central differences to 1e-5; the
   slowing-down gradient is finite through the smoothed birth edge.
-- **Boundary.** On low-resolution precise QA, FAX's own derivatives are exact
-  (at most 7e-8 against finite differences for every geometry leaf). The
-  end-to-end check against finite differences in `rc01`, `zs01` is a strict
-  xfail at 1e-4: the vmex/booz_xform_jax derivative of $\iota$ with respect to
-  `zs01` is off by 1.1e-4 (finite differences converged, also at ftol 1e-14),
-  and the resonant operator amplifies that to 2.3e-4.
+- **Boundary.** On low-resolution precise QA ($n_s = 16$, ftol 1e-12,
+  `mboz = 3`), with the lowest $n = 0$ global frequency ($m = 1$–3), only the
+  FE radial grid is refined:
+
+  | nodes | f (kHz) | df/d`zs01` (kHz) | FAX AD vs FD |
+  |---|---|---|---|
+  | 16 | 294.648 | -62.528 | 3.4e-8 |
+  | 32 | 294.219 | -61.230 | 3.5e-8 |
+  | 64 | 293.989 | -60.583 | 3.6e-8 |
+  | 128 | 293.873 | -60.261 | 3.6e-8 |
+
+  Both converge at first order (differences halve), as expected for the
+  continuum minimum. The full adjoint gradient matches re-solve finite
+  differences to 3e-5 for `zs01`, `rc01` and `rc10`; the remainder is the
+  $m = 1$ gauge drift of the re-solves ({ref}`vmex-gradients`), which is
+  2.7e-3 for `zs11`.
 
 ## Fast-ion drive
 
