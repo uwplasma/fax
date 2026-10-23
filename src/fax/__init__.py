@@ -10,9 +10,12 @@ from .eigen import eigenmodes, eigenvalue_mean, frequency_hz, global_matrices
 from .geometry import Geometry, circular_torus, from_vmec_input, from_wout, read_boozmn, surface_grid
 from .io import load, run
 from .objectives import (
+    compression_harmonics,
+    continuum_cost,
     design_frequencies,
     design_geometry,
     design_params,
+    design_state,
     gap_closure,
     geometry_frequencies,
     prepare_design,
@@ -26,11 +29,14 @@ __all__ = [
     "FastIons",
     "Geometry",
     "circular_torus",
+    "compression_harmonics",
     "continuum",
+    "continuum_cost",
     "continuum_matrices",
     "design_frequencies",
     "design_geometry",
     "design_params",
+    "design_state",
     "eigenmodes",
     "eigenvalue_mean",
     "frequency_hz",

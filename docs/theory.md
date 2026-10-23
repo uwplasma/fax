@@ -448,3 +448,49 @@ A stability target such as $\mathrm{softplus}(\mathrm{LSE}(\gamma_k) - \gamma_\m
 (Paul et al. 2025, eqs. 7.1–7.4) is composed from these. Cluster means
 ({func}`fax.eigenvalue_mean`, `start:stop` in {func}`fax.frequency_hz`)
 keep objectives smooth through crossings inside the cluster.
+
+(continuum-objective)=
+## 10. Continuum-gap objective
+
+Gaps open where the flux compression $|\nabla\psi|^2$ varies on a surface
+(sections 2–3). Paul et al. (2025, eq. 4.28) write the coupling as
+
+$$
+\epsilon = \frac{|\nabla s|^2}{\langle|\nabla s|^2\rangle} - 1
+         = \sum_{\delta m,\,n} \epsilon_{\delta m,n}\, e^{i(\delta m\,\theta - n\zeta)},
+$$
+
+in Boozer angles, with $\langle\cdot\rangle$ the angle average and $n$ the full
+toroidal number ($N_P\,\delta n$ in the paper). {func}`fax.compression_harmonics`
+takes $|\nabla s|^2$ from {func}`fax.surface_grid` and returns $\epsilon_{\delta m,n}$
+from one 2-D FFT per surface. The harmonic $(\delta m, n)$ opens a gap centred at
+$\omega^{(0)}/\omega_A = |\iota\,\delta m - n|/2$ of width
+$\omega^{(0)}|\epsilon_{\delta m,n}|$ (eqs. 4.5, 4.16). Gaps above the
+quasisymmetry-helicity gap are the ones passing fast ions near birth energy can
+resonate with, so Paul's eq. 7.4 penalizes the squared widths of those:
+
+$$
+f_\mathrm{cont} = \sum_s \sum_{|\iota\delta m - n| > |\iota M - N N_P|}
+                  |\epsilon_{\delta m,n}|^2\,(\iota\,\delta m - n)^2,
+$$
+
+{func}`fax.continuum_cost`, with helicity $(M, N)$: $(1, 0)$ for QA and
+$(1, \pm1)$ for QH (the sign follows the Boozer $|B|$ spectrum: LP-QH with
+$\iota < 0$ has $|B| \sim \cos(\theta + 4\zeta)$, i.e. $(1, -1)$). Each term is
+the square of a width times a frequency, so wide high-frequency gaps
+dominate. The sum runs over both $\pm(\delta m, n)$; the cut is a hard mask
+(smooth almost everywhere: a term only enters or leaves when $\iota$ crosses
+a threshold). The full objective of Paul's eq. 7.1,
+
+$$
+f = (A - A^*)^2 + f_{QS} + f_\iota + f_\mathrm{cont},\qquad
+f_\iota = \sum_s \min(|\iota| - \iota_\mathrm{min}, 0)^2,
+$$
+
+takes $A$ and $f_{QS}$ from vmex (`implicit.aspect_ratio`,
+`QuasisymmetryRatioResidual.total_state`) on the same implicit state:
+{func}`fax.design_state` returns `(state, runtime)` and
+{func}`fax.state_geometry` the Boozer geometry, so one adjoint covers every
+term. For the global spectrum, {func}`fax.window_risk` of
+{func}`fax.geometry_frequencies` moves targeted modes out of a frequency window
+instead (section 9).

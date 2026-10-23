@@ -52,3 +52,14 @@ def test_boundary_gradient_and_radial_refinement():
     targeted = replace(d, options={**d.options, "target_hz": 0.98 * float(values[1]), "count": 2})
     v, t = jax.jvp(lambda g: fax.geometry_frequencies(g, targeted, 1)[0], (g0,), (dg,))
     np.testing.assert_allclose([v, t], [values[1], grads[1]], rtol=1e-8)
+
+
+def test_continuum_cost_gradient_step_and_vmex_terms():
+    """One descent step on Paul's ``f_cont`` through vmex lowers it; the vmex QS/aspect terms share the state."""
+    design = fax.prepare_design(INPUT, harmonics=[[1.0, 0.0]], density=1.0, parameters=("rc11", "zs11"), nodes=8)
+    cost = lambda p: fax.continuum_cost(fax.design_geometry(p, design), (1, 0))  # noqa: E731
+    value, grad = jax.value_and_grad(cost)(jnp.zeros(2))
+    assert cost(-1e-3 * grad / jnp.linalg.norm(grad)) < value
+    from vmex.core import implicit
+
+    assert implicit.aspect_ratio(*fax.design_state(jnp.zeros(2), design)) == pytest.approx(6.0, rel=1e-3)
