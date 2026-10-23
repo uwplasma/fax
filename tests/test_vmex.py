@@ -1,0 +1,119 @@
+"""End-to-end ``vmex -> booz_xform_jax -> FAX`` gates (skipped without ``vmex``)."""
+
+from dataclasses import replace
+from pathlib import Path
+
+import jax
+import jax.numpy as jnp
+import numpy as np
+import pytest
+
+import fax
+
+pytest.importorskip("vmex", exc_type=ImportError)
+INPUT = Path(__file__).parents[1] / "examples" / "data" / "input.LandremanPaul2021_QA_lowres"
+
+
+@pytest.mark.slow
+def test_vmec_input_to_continuum():
+    geo = fax.from_vmec_input(INPUT, ns=16, mboz=6, nboz=6, surfaces=(0.3, 0.5, 0.7))
+    assert geo.nfp == 2 and geo.s.shape == (3,)
+    f = fax.continuum(geo, fax.mode_family(1, 4), fax.mass_density(1e19), 16, 16)
+    assert jnp.all(jnp.isfinite(f)) and f.shape == (3, 5)
+
+
+@pytest.mark.slow
+def test_boundary_gradient_and_radial_refinement():
+    """Lowest n = 0 global frequency of LP-QA: AD vs re-solve FD in ``zs01`` while only the FE grid is refined.
+
+    ``ns``, ``ftol`` and ``mboz`` stay fixed; the FE nodes are uniform on ``[0, 1]``.
+    At every level the FAX chain (interpolation, metric, Hellmann-Feynman) matches
+    FD along the re-solved Boozer geometry to ~1e-8, and the full adjoint
+    gradient matches the re-solve FD to 3e-5: the remainder is vmex's released
+    m = 1 gauge, which the adjoint holds fixed and each re-solve lets drift
+    (closure to 3e-9 on iota, plan.md P3). The lowest eigenvalue is the
+    continuum minimum, so both it and its gradient converge at first order.
+    """
+    h = 1e-4
+    harmonics = [[1.0, 0.0], [2.0, 0.0], [3.0, 0.0]]
+    design = fax.prepare_design(INPUT, harmonics=harmonics, density=3.4e-8, parameters=("zs01",), ntheta=8, nzeta=8)
+    g0, gp, gm = (fax.design_geometry(jnp.array([x]), design) for x in (0.0, h, -h))
+    dg = jax.tree_util.tree_map(lambda a, b: (a - b) / (2 * h), gp, gm)
+    values, grads = [], []
+    for nodes in (16, 32, 64):
+        d = replace(design, nodes=nodes)
+        f = lambda g: fax.geometry_frequencies(g, d, 1)[0]  # noqa: B023, E731
+        value, ad = jax.jvp(f, (g0,), (dg,))
+        np.testing.assert_allclose(ad, (f(gp) - f(gm)) / (2 * h), rtol=1e-4)
+        values, grads = values + [value], grads + [ad]
+    for x in (values, grads):
+        ratio = (x[0] - x[1]) / (x[1] - x[2])
+        assert 1.7 < ratio < 2.3  # first order
+    d = replace(design, nodes=32)
+    np.testing.assert_allclose(jax.grad(lambda p: fax.design_frequencies(p, d, 1)[0])(jnp.zeros(1))[0], grads[1], rtol=1e-4)
+    targeted = replace(d, options={**d.options, "target_hz": 0.98 * float(values[1]), "count": 2})
+    v, t = jax.jvp(lambda g: fax.geometry_frequencies(g, targeted, 1)[0], (g0,), (dg,))
+    np.testing.assert_allclose([v, t], [values[1], grads[1]], rtol=1e-8)
+
+
+def test_continuum_cost_gradient_step_and_vmex_terms():
+    """One descent step on Paul's ``f_cont`` through vmex lowers it; the vmex QS/aspect terms share the state."""
+    design = fax.prepare_design(INPUT, harmonics=[[1.0, 0.0]], density=1.0, parameters=("rc11", "zs11"), nodes=8)
+    cost = lambda p: fax.continuum_cost(fax.design_geometry(p, design), (1, 0))  # noqa: E731
+    value, grad = jax.value_and_grad(cost)(jnp.zeros(2))
+    assert cost(-1e-3 * grad / jnp.linalg.norm(grad)) < value
+    from vmex.core import implicit
+
+    assert implicit.aspect_ratio(*fax.design_state(jnp.zeros(2), design)) == pytest.approx(6.0, rel=1e-3)
+
+
+@pytest.mark.slow
+def test_konies_itpa_finite_beta_tae():
+    """Könies (2018) ITPA case solved by vmex with p(s) = 7.17e3 - 6.811e3 s - 358.5 s^2 Pa (shifted equilibrium).
+
+    The TAE (the most global mode near 64.6 kHz) is 4.127e5 rad/s without and 3.947e5 with the
+    finite-beta terms; CAS3D (compressible) gives 4.01e5.
+    """
+    geo = fax.from_vmec_input(INPUT.with_name("input.ITPA_Konies2018"), mboz=12, nboz=0, surfaces=tuple(np.arange(1, 50) / 50))
+    geo = geo.interpolate((jnp.arange(100) + 0.5) / 100)
+    omega = []
+    for finite_beta in (False, True):
+        modes = fax.eigenmodes(
+            geo, fax.mode_family(6, 16, 5), fax.mass_density(2e19, 1.0), target_hz=6.46e4, ntheta=32, nzeta=4, finite_beta=finite_beta
+        )
+        x = np.abs(np.asarray(modes.structures).reshape(8, -1)) ** 2
+        omega.append(float(np.sqrt(modes.omega2[np.argmax(x.sum(1) ** 2 / (x**2).sum(1))])))
+    assert omega[0] == pytest.approx(4.127e5, rel=2e-3) and omega[1] == pytest.approx(3.947e5, rel=2e-3)
+
+
+@pytest.mark.slow
+def test_stellarator_drive_gradient_and_sidebands():
+    """LP-QA n = 1 modes near 104 kHz driven by peaked 150 keV deuterons: helical sidebands ``k != n`` appear, and the
+    drive objective's FAX chain (FE interpolation, shift-invert eigenvectors, drive) matches FD along the re-solved geometry."""
+    design = fax.prepare_design(
+        INPUT,
+        harmonics=fax.mode_family((1, -1, 3), 5),
+        density=3.4e-8,
+        parameters=("rc01",),
+        nodes=16,
+        ntheta=16,
+        nzeta=16,
+        target_hz=104e3,
+        count=4,
+    )
+    ions = fax.FastIons(density=1e15 * (1 - jnp.arange(1, 17) / 17) ** 2, temperature_ev=150e3)
+    h = 1e-5
+    g0, gp, gm = (fax.design_geometry(jnp.array([x]), design) for x in (0.0, h, -h))
+    dg = jax.tree_util.tree_map(lambda a, b: (a - b) / (2 * h), gp, gm)
+    risk = jax.jit(lambda g: fax.drive_risk(fax.geometry_growth_rates(g, design, ions, 4, ntheta=32, nzeta=32)))
+    value, ad = jax.jvp(risk, (g0,), (dg,))
+    assert jnp.isfinite(value) and value > 0
+    np.testing.assert_allclose(ad, (risk(gp) - risk(gm)) / (2 * h), rtol=1e-4)
+    geo = g0.interpolate(jnp.arange(1, 17) / 17)
+    ev = fax.eigenmodes(geo, design.harmonics, 3.4e-8, target_hz=104e3, count=4, ntheta=16, nzeta=16)
+    pairs, gam = fax.growth_rate(
+        jnp.sqrt(ev.omega2[-1]), ev.structures[-1], geo, design.harmonics, ions, 3.4e-8, ntheta=32, nzeta=32, resolved=True
+    )
+    side = jnp.sum(jnp.where(pairs[:, 1] != 1, gam, 0.0))
+    pure = jnp.sum(jnp.where(jnp.abs(pairs[:, 1]) > 3, jnp.abs(gam), 0.0))  # k = -3, 5: only through the helical B harmonics
+    assert jnp.all(jnp.isfinite(gam)) and 1e-6 < abs(side / jnp.sum(gam)) < 1e-2 and pure > 0

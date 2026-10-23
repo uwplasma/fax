@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "uwplasma-fax"
-version = "0.0.2"
+version = "0.1.0"
 description = "Differentiable JAX code for Alfvén eigenmodes and fast-ion physics in stellarators."
 readme = "README.md"
 requires-python = ">=3.10"
@@ -12,11 +12,8 @@ authors = [{ name = "UWPlasma contributors" }]
 license = "MIT"
 dependencies = [
   "jax",
-  "jaxlib",
   "numpy",
-  "scipy",
   "netCDF4",
-  "rich",
   "tomli; python_version < '3.11'",
 ]
 classifiers = [
@@ -39,31 +36,29 @@ Documentation = "https://fax.readthedocs.io"
 Issues = "https://github.com/uwplasma/fax/issues"
 
 [project.scripts]
-fax = "fax.cli:main"
+fax = "fax.io:main"
 
 [project.optional-dependencies]
-test = ["coverage", "pytest", "matplotlib", "pillow"]
-docs = ["sphinx", "furo"]
-plots = ["matplotlib", "pillow"]
-ecosystem = ["diffrax", "equinox", "jaxopt", "lineax", "optimistix", "optax"]
-dev = ["build", "coverage", "pytest", "ruff", "mypy", "sphinx", "furo", "matplotlib", "pillow", "twine"]
+plot = ["matplotlib"]
 vmex = ["vmex>=0.11.10; python_version >= '3.11'"]
+test = ["pytest", "coverage", "matplotlib"]
+docs = ["sphinx", "furo", "myst-parser"]
+dev = ["uwplasma-fax[test,docs]", "ruff", "build", "twine"]
 
 [tool.setuptools.packages.find]
 where = ["src"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-markers = [
-  "slow: long-running physics or convergence test",
-  "regression: reference-data regression test",
-  "requires_vmex: requires the optional vmex package (pip install 'uwplasma-fax[vmex]')",
-  "requires_booz_xform_jax: requires a local booz_xform_jax checkout or installation",
-]
+addopts = "-m 'not slow'"
+markers = ["slow: end-to-end vmex runs (minutes); run with -m slow or -m ''"]
 
 [tool.ruff]
-line-length = 120
+line-length = 140
 
-[tool.mypy]
-python_version = "3.10"
-ignore_missing_imports = true
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B"]
+ignore = ["E731", "E741"]
+
+[tool.ruff.lint.per-file-ignores]
+"src/fax/__init__.py" = ["E402"]

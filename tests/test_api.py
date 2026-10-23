@@ -1,0 +1,62 @@
+"""Drive screen, objectives, TOML runs, CLI and plotting."""
+
+from dataclasses import replace
+from pathlib import Path
+
+import jax
+import jax.numpy as jnp
+import numpy as np
+import pytest
+
+import fax
+from fax.io import main
+
+CTOK = str(Path(__file__).parent / "data" / "boozmn_ctok.nc")
+
+
+def test_objectives_are_smooth():
+    f = jnp.array([10e3, 125e3, 400e3])
+    assert fax.window_risk(f, (50e3, 200e3), 5e3) == pytest.approx(0.5 / 3, rel=1e-3)
+    assert fax.soft_max(f / 1e3) >= 400.0
+    branches = jnp.array([[1e3, 2e3, 50e3], [1e3, 1.5e3, 2e3]])
+    assert jnp.isfinite(jax.grad(lambda b: fax.gap_closure(b))(branches)).all()
+
+
+def test_continuum_cost_of_an_elliptic_torus():
+    """``|grad s|^2`` of ellipses ``(r cos, kappa r sin)`` is ``1 + (k^2 - 1)/(k^2 + 1) cos 2 theta`` times its mean."""
+    base = fax.circular_torus(s=jnp.linspace(0.2, 0.8, 31), iota=0.4)
+    geo = lambda k: replace(base, zmns=base.zmns.at[:, 1].multiply(k))  # noqa: E731
+    cost = lambda k: fax.continuum_cost(geo(k), (1, 0), 16, 8)  # noqa: E731
+    c, dm, n = fax.compression_harmonics(geo(1.5), 16, 8)
+    e = (1.5**2 - 1) / (2 * (1.5**2 + 1))
+    np.testing.assert_allclose(c[:, [2, -2], 0], e, atol=1e-12)
+    assert (dm[2], n[0]) == (2, 0) and jnp.abs(c).sum() == pytest.approx(2 * e * 31)
+    assert cost(1.5) == pytest.approx(31 * 2 * e**2 * (2 * 0.4) ** 2) and fax.continuum_cost(geo(1.5), (2, 0), 16, 8) < 1e-20
+    assert jax.grad(cost)(1.5) == pytest.approx((cost(1.5 + 1e-5) - cost(1.5 - 1e-5)) / 2e-5, rel=1e-7)
+
+
+def test_load_rejects_unknown_keys():
+    with pytest.raises(ValueError):
+        fax.load({"run": {"tsk": "continuum"}})
+    assert fax.load({})["modes"]["n"] == [1]
+
+
+@pytest.mark.parametrize("task", ["continuum", "eigenmodes"])
+def test_run_cases_and_cli(tmp_path, task):
+    case = tmp_path / "case.toml"
+    case.write_text(
+        f'[geometry]\nsource = "boozmn"\npath = "{CTOK}"\n[modes]\nn = [2]\nm_max = 4\n'
+        f'[plasma]\nion_mass = 2.0\n[run]\ntask = "{task}"\noutput = "out"\nntheta = 16\nnzeta = 16\n'
+    )
+    assert main(["run", str(case), "--plot"]) == 0
+    data = np.load(tmp_path / "out" / "results.npz")
+    assert data["frequencies_hz"].shape[-1] == (5 if task == "continuum" else 8)
+    assert (tmp_path / "out" / "continuum.png").exists()
+    assert main(["plot", str(tmp_path / "out")]) == 0
+
+
+def test_circular_geometry_run():
+    out = fax.run({"run": {"ntheta": 8, "nzeta": 4}}, save=False)
+    assert out["frequencies_hz"].shape == (24, 9)
+    with pytest.raises(ValueError):
+        fax.run({"run": {"task": "nope"}}, save=False)
