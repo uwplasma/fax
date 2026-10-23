@@ -8,6 +8,7 @@ converged equilibrium rather than of a truncated solver trajectory.
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass, field, replace
 from pathlib import Path
 from typing import Any
@@ -48,7 +49,9 @@ def compression_harmonics(geo: Geometry, ntheta: int = 32, nzeta: int = 64) -> t
     """Complex harmonics of ``eps = |grad s|^2 / <|grad s|^2> - 1`` (Paul et al. 2025, eq. 4.28).
 
     ``eps = sum c[:, i, j] exp(i (dm[i] theta - n[j] zeta))`` in Boozer angles, with
-    ``<.>`` the angle average and ``n`` the full toroidal mode number (``N_P dn``).
+    ``<.>`` the angle average and ``n`` the full toroidal mode number (``N_P dn``). The harmonic
+    ``(dm, n)`` opens a gap at ``w0 = |iota dm - n| w_A / 2`` of **full width** ``2 w0 |c|`` (edge to edge;
+    ``c`` and its conjugate ``(-dm, -n)`` together make the real amplitude ``2 |c|``).
     """
     g = surface_grid(geo, ntheta, nzeta).grad_s2
     c = jnp.fft.fft2(g / jnp.mean(g, axis=(1, 2), keepdims=True) - 1.0) / (ntheta * nzeta)
@@ -58,8 +61,9 @@ def compression_harmonics(geo: Geometry, ntheta: int = 32, nzeta: int = 64) -> t
 def continuum_cost(geo: Geometry, helicity: tuple[int, int] = (1, 1), ntheta: int = 32, nzeta: int = 64) -> jax.Array:
     """Paul et al. (2025) eq. 7.4: ``sum_s sum |eps_{dm,n}|^2 (iota dm - n)^2`` over ``|iota dm - n| > |iota M - N N_P|``.
 
-    Each term is the squared width of the gap that ``(dm, n)`` opens at ``w / w_A = |iota dm - n| / 2``,
-    so the cost narrows every gap above the frequency of the quasisymmetry helicity ``(M, N)``.
+    Each term is the squared full width ``(2 w0 |c| / w_A)^2 = |c|^2 (iota dm - n)^2`` of the gap that ``(dm, n)``
+    opens at ``w0 / w_A = |iota dm - n| / 2``, so the cost narrows every gap above the frequency of the
+    quasisymmetry helicity ``(M, N)``.
     """
     c, dm, n = compression_harmonics(geo, ntheta, nzeta)
     k = geo.iota[:, None, None] * dm[:, None] - n
@@ -68,6 +72,17 @@ def continuum_cost(geo: Geometry, helicity: tuple[int, int] = (1, 1), ntheta: in
 
 
 _BOUNDARY = {"rc": "rbc", "rs": "rbs", "zc": "zbc", "zs": "zbs"}
+
+
+def _slot(parameter: str | tuple[str, int, int], ntor: int) -> tuple[str, int, int]:
+    """``(field, row, m)`` of a boundary coefficient given as ``("rc", m, n)`` or ``"rc" + m + n`` (single digits, ``n`` signed)."""
+    if isinstance(parameter, str):
+        found = re.fullmatch(r"([rz][cs])(\d)(-?\d)", parameter)
+        if found is None:
+            raise ValueError(f"cannot read {parameter!r}: use 'rc01' (one digit each) or the tuple ('rc', m, n) for multi-digit modes")
+        parameter = (found[1], int(found[2]), int(found[3]))
+    name, m, n = parameter
+    return _BOUNDARY[name], n + ntor, m
 
 
 @dataclass(frozen=True)
@@ -89,7 +104,7 @@ def prepare_design(
     *,
     harmonics: Any,
     density: float,
-    parameters: tuple[str, ...] = ("rc01",),
+    parameters: tuple[str | tuple[str, int, int], ...] = ("rc01",),
     nodes: int = 24,
     mboz: int = 3,
     nboz: int = 3,
@@ -98,7 +113,8 @@ def prepare_design(
     max_iter: int = 5000,
     **options: Any,
 ) -> Design:
-    """Prepare a design: parameters are boundary names ``rc|rs|zc|zs`` + ``m`` + ``n`` (e.g. ``"zs11"``).
+    """Prepare a design: parameters are boundary names ``rc|rs|zc|zs`` + ``m`` + ``n`` (e.g. ``"zs11"``, one digit each,
+    ``n`` signed) or tuples ``("zs", m, n)``, which are required for multi-digit modes.
 
     The equilibrium (``ns``, ``ftol``) is transformed on the half-mesh rows ``j >= 2`` and
     interpolated linearly in ``s`` onto ``nodes`` uniform interior finite-element
@@ -116,7 +132,7 @@ def prepare_design(
     inp = VmecInput.from_file(path)
     config = implicit.make_config(inp, ns=ns, ftol=ftol, max_iterations=max_iter)
     params = implicit.params_from_input(inp)
-    slots = tuple((_BOUNDARY[name[:2]], int(name[3:]) + int(inp.ntor), int(name[2])) for name in parameters)
+    slots = tuple(_slot(name, int(inp.ntor)) for name in parameters)
     s_full = np.asarray(implicit.runtime_from_params(params, config).setup.s_full)
     modes: dict[str, np.ndarray] = {}
 
@@ -131,7 +147,9 @@ def prepare_design(
     )
     s = jnp.asarray(0.5 * (s_full[1:-1] + s_full[2:]))  # half rows j >= 2: vmex <= 0.11.11 divides odd-m R, Z by sqrt(0) on j = 1
     cache = dict(config=config, params=params, s=s, constants=constants, grids=grids, nfp=int(inp.nfp), **modes)
-    return Design(path, tuple(parameters), slots, jnp.asarray(harmonics, dtype=float), float(density), int(nodes), dict(options), cache)
+    return Design(
+        path, tuple(map(str, parameters)), slots, jnp.asarray(harmonics, dtype=float), float(density), int(nodes), dict(options), cache
+    )
 
 
 def design_params(offsets: Any, design: Design) -> Any:

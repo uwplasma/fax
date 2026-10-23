@@ -153,14 +153,14 @@ def run(case, ns, nodes, nfev, drive=False):
 
 
 def gap_table(geo, helicity, count=6):
-    """Paul's perturbative gaps of the largest f_cont terms: ``(dm, n, w0 / w_A, width / w_A)``, surface-averaged.
+    """Paul's perturbative gaps of the largest f_cont terms: ``(dm, n, w0 / w_A, full width / w_A)``, surface-averaged.
 
-    ``w0 = |iota dm - n| / 2`` is the gap centre and ``w0 |eps_{dm,n}|`` its width (Paul et al. 2025, eqs. 4.5, 4.16).
+    ``w0 = |iota dm - n| / 2`` is the gap centre and ``2 w0 |c_{dm,n}|`` its full (edge to edge) width (Paul et al. 2025, eqs. 4.5, 4.16).
     """
     c, dm, n = (np.asarray(x) for x in fax.compression_harmonics(geo))
     w0 = 0.5 * np.abs(np.asarray(geo.iota)[:, None, None] * dm[:, None] - n)
     cut = 0.5 * np.abs(np.asarray(geo.iota) * helicity[0] - helicity[1] * geo.nfp)[:, None, None]
-    width = np.where(w0 > cut, w0 * np.abs(c), 0.0).mean(0)
+    width = np.where(w0 > cut, 2 * w0 * np.abs(c), 0.0).mean(0)
     keep = [(i, j) for i, j in zip(*np.unravel_index(np.argsort(-width.ravel()), width.shape), strict=True) if (dm[i], n[j]) > (0, 0)]
     return [(int(dm[i]), int(n[j]), w0[:, i, j].mean(), width[i, j]) for i, j in keep[:count]]
 

@@ -131,7 +131,8 @@ $(\Delta m, \Delta n N_{fp})$ splits the crossing into a gap:
 
 To first order the gap is centred on the crossing frequency with full width
 $2\omega_0|\epsilon_{\Delta m,\Delta n}|$, where $\epsilon$ is the
-relative Fourier amplitude of the coupling coefficient (Paul et al. 2025,
+complex Fourier coefficient of the relative coupling coefficient
+(half its cosine amplitude) (Paul et al. 2025,
 eqs. 4.5 and 4.8; Kolesnichenko et al. 2001, eq. 38). {func}`fax.gap_location`
 returns $(\iota, \omega R/v_A)$ of {eq}`gap-location`; {func}`fax.gaps` returns
 the centre and width of the widest gap between adjacent sorted branches on
@@ -492,7 +493,8 @@ $$
 $$ (gamma-zow)
 
 $\hat\omega_\zeta = \omega_\zeta/v$. Numerics: Gauss–Legendre (`nodes = 32`) in
-$\lambda$ up to a smooth (log-sum-exp) upper bound of $B_\max$, the
+$\lambda$ up to $1/B_\max$ (the exact sample maximum, so duplicated
+toroidal samples change nothing), the
 `ntheta` × `nzeta` Boozer grid of {func}`fax.surface_grid`, central
 differences in $s$, the trapezoidal rule in $s$ with $\phi = 0$ at the ends.
 There is no artificial broadening, so $\gamma$ is smooth in the geometry, the
@@ -509,9 +511,13 @@ implementation within 4% ({doc}`validation`).
 
 **Distributions.** {class}`fax.FastIons` is isotropic: a Maxwellian
 ($F \propto e^{-E/T}$, so $\partial_EF = -F/T$) or a slowing-down
-$F \propto 1/(v^3 + v_c^3)$ below the birth speed $v_b$, normalized by
-$3/(4\pi\ln(1 + v_b^3/v_c^3))$, with the birth edge smoothed by
-$\tfrac12\operatorname{erfc}((v - v_b)/0.02v_b)$ so it stays differentiable.
+$F \propto 1/(v^3 + v_c^3)$ below the birth speed $v_b$, with the birth edge
+smoothed by $\tfrac12\operatorname{erfc}((v - v_b)/0.02v_b)$ so it stays
+differentiable ($\partial_EF$ includes the smoothed edge). $F$ is normalized to
+$\int F\,d^3v = 1$ with that edge: integrating by parts, the constant is
+$3/(4\pi\,\mathbb E[\ln(1 + v^3/v_c^3)])$ with $v \sim \mathcal N(v_b, (0.02v_b)^2/2)$,
+done with 24-point Gauss–Hermite.
+Any other `kind` raises `ValueError`.
 The density may be a profile on $s$; with $\iota\psi' > 0$ an
 outward-decreasing density drives $n > 0$, and $\partial_EF < 0$ damps.
 
@@ -560,10 +566,10 @@ in Boozer angles, with $\langle\cdot\rangle$ the angle average and $n$ the full
 toroidal number ($N_P\,\delta n$ in the paper). {func}`fax.compression_harmonics`
 takes $|\nabla s|^2$ from {func}`fax.surface_grid` and returns $\epsilon_{\delta m,n}$
 from one 2-D FFT per surface. The harmonic $(\delta m, n)$ opens a gap centred at
-$\omega^{(0)}/\omega_A = |\iota\,\delta m - n|/2$ of width
-$\omega^{(0)}|\epsilon_{\delta m,n}|$ (eqs. 4.5, 4.16). Gaps above the
+$\omega^{(0)}/\omega_A = |\iota\,\delta m - n|/2$ of full (edge to edge) width
+$2\omega^{(0)}|\epsilon_{\delta m,n}|$ (eqs. 4.5, 4.16; the conjugate $(-\delta m, -n)$ makes the real amplitude $2|\epsilon|$). Gaps above the
 quasisymmetry-helicity gap are the ones passing fast ions near birth energy can
-resonate with, so Paul's eq. 7.4 penalizes the squared widths of those:
+resonate with, so Paul's eq. 7.4 penalizes the squared full widths $(2\omega^{(0)}|\epsilon|/\omega_A)^2 = |\epsilon|^2(\iota\delta m - n)^2$ of those:
 
 $$
 f_\mathrm{cont} = \sum_s \sum_{|\iota\delta m - n| > |\iota M - N N_P|}
@@ -573,8 +579,8 @@ $$
 {func}`fax.continuum_cost`, with helicity $(M, N)$: $(1, 0)$ for QA and
 $(1, \pm1)$ for QH (the sign follows the Boozer $|B|$ spectrum: LP-QH with
 $\iota < 0$ has $|B| \sim \cos(\theta + 4\zeta)$, i.e. $(1, -1)$). Each term is
-the square of a width times a frequency, so wide high-frequency gaps
-dominate. The sum runs over both $\pm(\delta m, n)$; the cut is a hard mask
+the square of a full gap width, which grows with the gap frequency, so wide
+high-frequency gaps dominate. The sum runs over both $\pm(\delta m, n)$; the cut is a hard mask
 (smooth almost everywhere: a term only enters or leaves when $\iota$ crosses
 a threshold). The full objective of Paul's eq. 7.1,
 

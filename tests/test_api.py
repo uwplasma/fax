@@ -35,6 +35,15 @@ def test_continuum_cost_of_an_elliptic_torus():
     assert jax.grad(cost)(1.5) == pytest.approx((cost(1.5 + 1e-5) - cost(1.5 - 1e-5)) / 2e-5, rel=1e-7)
 
 
+def test_boundary_parameters_accept_tuples_and_reject_ambiguous_strings():
+    slot = lambda p: fax.objectives._slot(p, 3)  # noqa: E731
+    assert slot("rc01") == ("rbc", 4, 0) and slot("zs1-2") == ("zbs", 1, 1) and slot(("zs", 12, -2)) == ("zbs", 1, 12)
+    assert slot(("rc", 10, 11)) == ("rbc", 14, 10)
+    for bad in ("rc101", "rc1-12", "rc1", "xc01"):
+        with pytest.raises(ValueError, match="cannot read"):
+            slot(bad)
+
+
 def test_load_rejects_unknown_keys():
     with pytest.raises(ValueError):
         fax.load({"run": {"tsk": "continuum"}})
