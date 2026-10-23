@@ -10,7 +10,7 @@ import pytest
 
 import fax
 from fax.continuum import MU0, generalized_eigh
-from fax.eigen import dense, equilibrium_currents, global_matrices
+from fax.eigen import Blocks, block_factor, block_solve, dense, equilibrium_currents, global_matrices, targeted_eigenvalues
 from fax.geometry import surface_grid
 
 DATA = Path(__file__).parent / "data"
@@ -192,3 +192,72 @@ def test_cylinder_newcomb_m1_and_suydam_threshold():
         geo = fax.circular_torus(s=s, major_radius=10.0, B0=3.0, iota=1 / (1.71 + 0.16 * s), pressure=[p0, -p0])
         lowest[N, p0] = float(fax.eigenmodes(geo, [[11.0, 6.0]], rho, ntheta=8, nzeta=4, finite_beta=True).omega2[0])
     assert 12 < lowest[400, 1e4] / lowest[1600, 1e4] < 20 and lowest[1600, 2e4] / lowest[400, 2e4] == pytest.approx(1, abs=0.05)
+
+
+def test_unstable_omega2_is_signed_with_finite_gradients():
+    """Suydam-unstable cylinder (p0 = 2e4 Pa): omega^2 < 0 is kept, with the growth rate and stable frequency separate."""
+    rho, s = fax.mass_density(2e19, 1.0), (jnp.arange(400) + 0.5) / 400
+
+    def modes(r, **kw):
+        geo = fax.circular_torus(s=s, major_radius=10.0, B0=3.0, iota=1 / (1.71 + 0.16 * s), pressure=[2e4, -2e4])
+        return fax.eigenmodes(geo, [[11.0, 6.0]], r, ntheta=8, nzeta=4, finite_beta=True, **kw)
+
+    ev = modes(rho)
+    assert ev.omega2[0] < 0 and ev.frequencies_hz[0] == 0
+    assert ev.growth_rate[0] == pytest.approx(float(jnp.sqrt(-ev.omega2[0])))
+
+    def f(r, **kw):
+        geo = fax.circular_torus(s=s, major_radius=10.0, B0=3.0, iota=1 / (1.71 + 0.16 * s), pressure=[2e4, -2e4])
+        return fax.frequency_hz(geo, [[11.0, 6.0]], r, ntheta=8, nzeta=4, finite_beta=True, **kw)
+
+    assert float(jax.grad(f)(rho)) == 0.0  # stable frequency of an unstable mode: finite, flat
+    gamma = f(rho, growth=True)
+    assert gamma == pytest.approx(float(ev.growth_rate[0]), rel=1e-10)
+    assert jax.grad(f)(rho, growth=True) == pytest.approx(-0.5 * gamma / rho, rel=1e-8)  # gamma ~ rho^(-1/2)
+    omega2 = lambda x: jnp.stack([fax.eigen._hz(x), fax.eigen._growth(x)])  # noqa: E731
+    for x in (-4.0, 4.0, 0.0):
+        assert jnp.isfinite(jax.jacfwd(omega2)(x)).all() and jnp.isfinite(jax.jacrev(omega2)(x)).all()
+
+
+def test_block_solve_survives_zero_pivot():
+    """The invertible [[0, 1], [1, 0]] has a zero first Schur pivot: dense fallback, also under jit and with 2x2 blocks."""
+    A = Blocks(jnp.zeros((2, 1, 1)), jnp.ones((1, 1, 1)))
+    solve = jax.jit(lambda A, b: block_solve(block_factor(A), b))
+    np.testing.assert_allclose(solve(A, jnp.ones((2, 1, 1))), 1.0)
+    d = jnp.array([[[0.0, 0.0], [0.0, 0.0]], [[2.0, 0.5], [0.5, 1.0]], [[3.0, 0.0], [0.0, 4.0]]])
+    B = Blocks(d, jnp.array([[[1.0, 0.2], [0.3, 1.0]], [[0.4, 0.0], [0.1, 0.6]]]))
+    b = jnp.arange(12.0).reshape(3, 2, 2)
+    np.testing.assert_allclose(solve(B, b), jnp.linalg.solve(dense(B), b.reshape(6, 2)).reshape(3, 2, 2), atol=1e-12)
+    assert not block_factor(A)[3] and block_factor(Blocks(jnp.ones((2, 1, 1)) * 3, A.upper))[3]
+
+
+def test_shift_invert_status_and_rejection_of_unconverged_gradients():
+    h, rho = fax.mode_family(6, 13, 9), fax.mass_density(2e19, 1.0)
+    options = dict(target_hz=6.46e4, count=4, ntheta=16, nzeta=4)
+    good, poor = (fax.eigenmodes(konies(40), h, rho, iters=iters, **options) for iters in (40, 3))
+    assert good.status.converged and good.status.residual < 1e-12 and good.status.orthogonality < 1e-10 and good.status.iterations == 40
+    assert not poor.status.converged and poor.status.residual > 1e-6 and poor.status.iterations == 3
+    full = fax.eigenmodes(konies(40), h, rho, ntheta=16, nzeta=4)
+    assert full.status.converged and full.status.iterations == 0 and full.status.residual < 1e-12
+
+    F, G = global_matrices(konies(40), h, rho, 16, 4)
+    target = float((2 * np.pi * 6.46e4) ** 2)
+    assert jnp.isfinite(targeted_eigenvalues(F, G, target, 4, 40)).all()
+    assert jnp.isnan(targeted_eigenvalues(F, G, target, 4, 3)).all()
+    jvp = jax.jvp(lambda f: targeted_eigenvalues(Blocks(f, F.upper), G, target, 4, 3), (F.diag,), (jnp.ones_like(F.diag),))
+    assert jnp.isnan(jvp[1]).all()
+    run = lambda iters: fax.frequency_hz(konies(40), h, rho, 0, 1, iters=iters, **options)  # noqa: E731
+    assert jnp.isfinite(run(40)) and jnp.isnan(run(3))
+
+
+def test_cluster_mean_first_derivative_at_degeneracy():
+    """Mean of a repeated pair: d/dt is the projected trace; only first order is supported there (the
+    second derivative is NaN whenever the spectrum has a repeated eigenvalue)."""
+    K, M = jnp.diag(jnp.array([1.0, 1.0, 3.0])), jnp.eye(3)
+    D = jnp.array([[1.0, 0.5, 0.2], [0.5, 2.0, 0.1], [0.2, 0.1, 0.0]])
+    mean = lambda t, a=0, b=2: fax.eigenvalue_mean(K + t * D, M, a, b)  # noqa: E731
+    assert jax.grad(mean)(0.0) == pytest.approx(1.5, rel=1e-12)  # (D00 + D11) / 2
+    assert jax.grad(mean)(0.0) == pytest.approx((mean(1e-6) - mean(-1e-6)) / 2e-6, rel=1e-6)
+    mean = lambda t: fax.eigenvalue_mean(jnp.diag(jnp.array([1.0, 1.1, 3.0])) + t * D, M, 0, 2)  # noqa: E731
+    fd = (mean(1e-3) - 2 * mean(0.0) + mean(-1e-3)) / 1e-6  # no repeated eigenvalue anywhere: second order works
+    assert jax.grad(jax.grad(mean))(0.0) == pytest.approx(fd, rel=1e-4)
