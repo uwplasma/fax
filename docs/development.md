@@ -25,9 +25,8 @@ sphinx-build -W -b html docs docs/_build/html
 ```
 
 CI runs the suite on Python 3.10–3.13, on the oldest supported JAX (0.4.38 on
-Python 3.10, the SOLVAX floor), and the vmex path, lint, coverage and docs on Python 3.12. SOLVAX is
-installed from a pinned git commit in CI until release 0.32.0 (see `SOLVAX_GIT` in `tests.yml`); locally,
-`pip install "solvax @ git+https://github.com/uwplasma/SOLVAX@907f4d95f3e117e6bd29b508d093de84bf873861"`. Keep
+Python 3.10, the SOLVAX floor), and the vmex path, lint, coverage and docs on Python 3.12. SOLVAX comes
+from PyPI (0.32 or newer). Keep
 Python 3.10 working (the `tomli` fallback, no newer-JAX-only functions).
 
 Coverage is measured with branches on the full suite (fast and slow tests,
