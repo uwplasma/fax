@@ -130,6 +130,8 @@ A and B start now. C runs in parallel with A/B. D needs C. E needs B and D. F ca
 
 **Gate:** a new user can install, run, interpret, reproduce and cite the qualified model.
 
+**Open performance item (from the G benchmark).** At fixed accuracy the shift-invert iteration count grows with radial resolution (Könies: 17, 33, 112, 310 iterations at N = 200, 400, 800, 1600; above 1000 at 3200), so the targeted solve scales about as N^2.3 instead of N. The continuum crowds the target as N grows. Try a block Krylov/Lanczos method or a deflated/polynomial-filtered subspace in SOLVAX, and measure at equal residual.
+
 ### H. Extensions after 1.0
 
 | Extension | Entry requirement | Acceptance |
