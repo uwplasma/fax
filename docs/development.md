@@ -19,8 +19,8 @@ Three tiers, selected by two markers (`slow`, `scheduled`) and the workflow that
 
 | Tier | Contents | Runs |
 |---|---|---|
-| PR | analytic and contract tests (unmarked) in the Python 3.10–3.13 matrix; `slow` (vmex solves, 64-harmonic AE3D band) added in the coverage job; the installed-wheel smoke test; lint, coverage ≥ 95% (statements and branches, `-m 'not scheduled'`), docs, CITATION.cff | every PR and push (`tests.yml`) |
-| Scheduled | `scheduled`: frozen-path gradients, resolution budgets, gauge floors; the minimum stack (Python 3.10, JAX 0.4.38, SOLVAX 0.32.1), the minimum vmex stack (Python 3.11, vmex 0.11.10, JAX 0.9.2) and the latest stack (Python 3.13, everything upgraded) | weekly and on demand (`scheduled.yml`) |
+| PR | analytic and contract tests (unmarked) in the Python 3.10–3.13 matrix and on the oldest stack (Python 3.10, JAX 0.4.38, SOLVAX 0.32.1); `slow` (vmex solves, 64-harmonic AE3D band) added in the coverage job; the installed-wheel smoke test; lint, coverage ≥ 95% (statements and branches, `-m 'not scheduled'`), docs, CITATION.cff | every PR and push (`tests.yml`) |
+| Scheduled | `scheduled`: frozen-path gradients, resolution budgets, gauge floors; the same minimum stack with the `slow` tests, the minimum vmex stack (Python 3.11, vmex 0.11.10, JAX 0.9.2) and the latest stack (Python 3.13, everything upgraded) | weekly and on demand (`scheduled.yml`) |
 | Release | external comparisons and high-resolution runs; see the checklist below | by hand before a tag |
 
 ```console
@@ -34,13 +34,14 @@ sphinx-build -W -b html docs docs/_build/html
 ```
 
 The installed-wheel smoke test builds the wheel, installs it into a fresh virtual environment in a temporary directory (no
-`tests/`, no `examples/`) and runs `tests/install_smoke.py` there: the uniform-field continuum against $k_\parallel v_A$, a
+`tests/`, no `examples/`) and runs `examples/quickstart.py` and `tests/install_smoke.py` there: the uniform-field continuum against $k_\parallel v_A$, a
 global eigenmode and an eigenvalue gradient on `fax.circular_torus`. It also fails if the wheel holds anything but
 `fax/*.py` and its metadata (36 kB). Locally:
 
 ```console
 python -m build --outdir /tmp/dist && python -m venv /tmp/venv && /tmp/venv/bin/pip install /tmp/dist/*.whl
-cd /tmp && cp <checkout>/tests/install_smoke.py . && venv/bin/python -I install_smoke.py
+cd /tmp && cp <checkout>/tests/install_smoke.py <checkout>/examples/quickstart.py .
+venv/bin/python -I install_smoke.py && venv/bin/python -I quickstart.py
 ```
 
 Release tier, to be run and recorded in the release notes before every tag (not automated):
