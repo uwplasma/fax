@@ -457,8 +457,8 @@ $$
 (\iota\partial_\theta + \partial_\zeta)\chi = h/\langle h\rangle - 1,
 $$
 
-solved by FFT on the angle grid (a $10^{-2}$ guard on the small divisors
-$\iota k_\theta + k_\zeta$). Decomposing the work in $(\vartheta, \varphi)$, the
+solved by FFT on the angle grid (`guard` on the small divisors
+$\iota k_\theta + k_\zeta$, below). Decomposing the work in $(\vartheta, \varphi)$, the
 component $e^{i(j\vartheta - k\varphi)}$ resonates at
 
 $$
@@ -476,30 +476,84 @@ $$
 C_{h,jk} = \frac{\langle h\,w_h\,e^{-i(j\vartheta - k\varphi)}\rangle}{\langle h\rangle}.
 $$
 
-**Power transfer.** At ZOW, $P_\zeta = m v_\parallel G/B - Ze\psi_p$ with
-$\psi_p' = \iota\psi'$ and $\psi' = \langle\sqrt g\,B^2\rangle/(G + \iota I)$
-($\psi$ the toroidal flux over $2\pi$). With $E_\parallel = 0$ the radial
-$E\times B$ and $v_\parallel\delta B_r$ drifts combine into $-\partial_\zeta\phi$, so
-each harmonic carries its own
+**Invariants and the drive operator.** The growth rate needs the change of the
+distribution's arguments along the perturbed orbit, so the question is which
+quantities the unperturbed orbit conserves.
 
-$$
-Q_hF = \frac{\partial F}{\partial E} + \frac{n_h}{\omega Ze\,\iota\psi'}\frac{\partial F}{\partial s}
-$$
+1. *Hamiltonian.* In Boozer coordinates the low-$\beta$ guiding-centre motion
+   ($B_s$ dropped) is canonical in $(\theta, \zeta; P_\theta, P_\zeta)$ with
+   $P_\theta = Ze\psi + I u$, $P_\zeta = Gu - Ze\psi_p$, $u = mv_\parallel/B$,
+   $\psi_p' = \iota\psi'$, and $H_0 = \tfrac12mv_\parallel^2 + \mu B$. $H_0$ depends on
+   both angles through $B$, so $P_\zeta$ is conserved only when
+   $\partial_\zeta B = 0$. With a helical symmetry $B(\theta - N\zeta)$ the
+   conserved momentum is $P_\zeta + NP_\theta$ and nothing is conserved without
+   symmetry.
+2. *Zero-orbit-width passing orbits* wind the nested tori $\bar\psi = \text{const}$
+   quasi-periodically, with uniform angles $(\vartheta, \varphi)$ (above),
+   frequencies $\Omega_\vartheta = \iota\Omega_\varphi$ and actions
+   $J_\vartheta = Ze\bar\psi + \langle uI\rangle - D\langle u\,\partial_\vartheta\chi\rangle$,
+   $D = G + \iota I$: the mean toroidal flux of the orbit up to $O(I/G)$ and
+   $O(\varepsilon^2)$ terms that are dropped (they multiply $\omega\,\partial_EJ_\vartheta$
+   below, itself $O((j\iota - k)/j)$). $J_\varphi$ is the other action; neither $J_\vartheta$ nor $J_\varphi$ equals $P_\zeta$ in 3-D.
+3. *Perturbation.* For an ideal mode ($E_\parallel = 0$, low $\beta$, no $\delta B_\parallel$) the
+   perturbed Hamiltonian $H_1 = \sum H_{jk}(J)e^{i(j\vartheta - k\varphi - \omega t)}$ changes the energy at
+   $\dot E = \partial_tH_1 = -i\omega H_1$ and the actions at $\dot J_\vartheta = -\partial_\vartheta H_1 = -ijH_1$,
+   $\dot J_\varphi = ikH_1$. The harmonic of $\dot E$ is the work $Ze\mathbf v_d\cdot\delta\mathbf E$ computed
+   above, $C_{jk} = \sum_hC_{h,jk}$. Hence
+   $\dot J_\vartheta = (j/\omega)\dot E$ and $\dot J_\varphi = -(k/\omega)\dot E$.
+4. *Distribution.* The ZOW distribution is a function of the invariants,
+   $F_0(E, \mu, \bar\psi)$ with the flux label $s$, $\bar\psi = J_\vartheta/Ze$, the choice
+   of the benchmark ("a function of the flux label $s$", Könies et al. 2018, section 4.4.1).
+   Linearizing along the orbit,
+   $\delta\dot F_{jk} + i(j\Omega_\vartheta - k\Omega_\varphi - \omega)\delta F_{jk}$ equals
+   minus the change of $F_0$ along the perturbation, which is
+   $\dot E\,\partial_EF_0 + \dot{\bar\psi}\,\partial_{\bar\psi}F_0 = \dot E\,Q_{jk}F_0$, with
 
-(for one $n$ this is $\partial_EF - (n/\omega)\partial_{P_\zeta}F$). Linearizing
-along unperturbed orbits, the Landau prescription
-$\operatorname{Re}[1/(0^+ - i\Delta)] = \pi\delta(\Delta)$, the phase-space
-measure $d^3x\,d^3v = d\psi\,d\theta\,d\zeta\,\sum_\sigma\pi v^2dv\,d\lambda\,(G + \iota I)/(|\xi|B)$
+   $$
+   Q_{jk}F = \frac{\partial F}{\partial E} + \frac{j}{\omega Ze\,\psi'}\frac{\partial F}{\partial s}
+   $$ (q-operator)
+
+   and $\psi' = \langle\sqrt g\,B^2\rangle/(G + \iota I)$ the toroidal-flux derivative
+   (signed with the Jacobian handedness). The Landau prescription
+   $\operatorname{Re}[1/(0^+ - i\Delta)] = \pi\delta(\Delta)$ gives the power below.
+
+Consequences, all tested:
+
+- $k$ enters only through the resonance $\omega = (j\iota - k)\Omega_\varphi$, not through $Q$: the
+  gradient term follows the *orbit's* poloidal harmonic $j$ and is the same for every
+  mode harmonic $h$ contributing to $C_{jk}$. The previous form, $Q_h F = \partial_EF + n_h\partial_sF/(\omega Ze\,\iota\psi')$
+  per mode harmonic, used the mode's $n_h$ and is only valid when all $n_h$ are equal (an
+  axisymmetric field).
+- *Axisymmetry.* $k = n$ and $\omega = (j\iota - n)\Omega_\varphi$, so $j/\psi' = (n/\iota\psi')[1 + \omega/(n\Omega_\varphi)]$ and {eq}`q-operator`
+  differs from the tokamak form $\partial_EF - (n/\omega)\partial_{P_\zeta}F$ by $O(\omega/n\Omega_\varphi)$. That is
+  the difference between labelling $F$ by the mean flux $\bar\psi$ and by the $P_\zeta$ surface (a shift of order
+  $G\rho/\iota$ in the label), the ordering ambiguity of any ZOW drive, and not a numerical error. It lowers the Könies
+  TAE ($n = 6$) by 1.3–1.7% and the CTOK TAE ($n = 2$) by 23% (25 keV) and 7% (50 keV).
+- *Quasisymmetric helical relabelling* $\theta' = \theta - N\zeta$: $\iota' = \iota - N$, $G' = G + NI$,
+  $j' = j$, $k' = k - jN$, $J_\vartheta' = J_\vartheta$, $J_\varphi' = J_\varphi + NJ_\vartheta$, so $\omega$, $C_{jk}$ and
+  $\psi'$ are unchanged and so is {eq}`q-operator`. The $n_h/\iota$ form is not (17–20% in the
+  test); $P_\zeta + NP_\theta$ is the toroidal momentum of the relabelled tokamak. In a generic stellarator
+  there is no such frame, and $j$ with the flux label is the only choice that does not depend on one.
+- *Mirrors.* $\theta\to-\theta$ ($\iota\to-\iota$, $m\to-m$, $I\to-I$; $j\to-j$ with $\psi'\to-\psi'$) and
+  $\zeta\to-\zeta$ ($\iota\to-\iota$, $n\to-n$, $I\to-I$; $k\to-k$, which swaps co- and counter-passing resonances)
+  leave $\gamma$ unchanged to rounding, as do the amplitude and the global phase of $\phi$. A uniform
+  distribution has $Q_{jk}F = \partial_EF < 0$: passive.
+
+Not derived: the $O(\omega/n\Omega_\varphi)$ labelling and the dropped $I/G$ and $\varepsilon^2$ terms of $J_\vartheta$, the
+reduction from the full guiding-centre phase space to the passing tori (no trapped, no orbit width), and $\delta B_\parallel$.
+
+Linearizing along unperturbed orbits, the phase-space measure
+$d^3x\,d^3v = d\psi\,d\theta\,d\zeta\,\sum_\sigma\pi v^2dv\,d\lambda\,(G + \iota I)/(|\xi|B)$
 and the delta function integrated exactly over speed at each pitch give
 
 $$
 \gamma = \frac{\pi^2\mu_0m_f^2}{2\,y^\dagger Gy}\int|\psi'|\,ds\int d\lambda
-  \sum_{jk}\frac{v^6\operatorname{Re}\big[\bar C\,\textstyle\sum_hQ_hF\,C_h\big]}{|j\iota - k|\,\hat\omega_\zeta^2}\Big|_{v = v_{jk}},\qquad
-\bar C = \sum_hC_h,\quad v_{jk} = \frac{\omega}{|j\iota - k|\,\hat\omega_\zeta},
+  \sum_{jk}\frac{v^6\,Q_{jk}F\,|C_{jk}|^2}{|j\iota - k|\,\hat\omega_\zeta^2}\Big|_{v = v_{jk}},\qquad
+C_{jk} = \sum_hC_{h,jk},\quad v_{jk} = \frac{\omega}{|j\iota - k|\,\hat\omega_\zeta},
 $$ (gamma-zow)
 
-$\hat\omega_\zeta = \omega_\zeta/v$. Numerics: Gauss–Legendre (`nodes = 32`) in
-$\lambda$ up to $1/B_\max$ (the exact sample maximum, so duplicated
+$\hat\omega_\zeta = \omega_\zeta/v$ ($Q_{jk}F$ with $F$ the distribution times the density). Numerics: Gauss–Legendre (`nodes = 32`) in
+$\lambda$ up to $(1 - \texttt{boundary})/B_\max$ (the exact sample maximum, so duplicated
 toroidal samples change nothing), the
 `ntheta` × `nzeta` Boozer grid of {func}`fax.surface_grid`, central
 differences in $s$, the trapezoidal rule in $s$ with $\phi = 0$ at the ends.
@@ -507,13 +561,23 @@ There is no artificial broadening, so $\gamma$ is smooth in the geometry, the
 mode, $\omega$ and the distribution. In an axisymmetric geometry with
 `helical = 0` one toroidal grid point (`nzeta = 1`) is exact.
 
-**Reduction to the circular model.** For {func}`fax.circular_torus`
-($G = B_0R_0$, $I = 0$, $B = B_0(1 - \varepsilon\cos\theta)$) $w_h$ becomes the
-vertical drift $(1 - \lambda B/2)[\sin\theta\,\phi_h' + \cos\theta\,\partial_\theta\phi_h/r]/R$,
-$\omega_\zeta/\iota$ the poloidal transit frequency and $Q_hF$ the familiar
-$\partial_EF - nq\,\partial_rF/(\omega ZeB_0r)$ (with $n \to -n$ for the mode
-convention). The Könies TAE then reproduces the earlier large-aspect-ratio
-implementation within 4% ({doc}`validation`).
+**Regularizations** are explicit parameters, and $\gamma$ converges as each goes to 0
+(`tests/test_drive.py`):
+
+| Parameter | Default | What it regularizes | Convergence of $\gamma$ |
+|---|---|---|---|
+| `boundary` | 0 | the log-singular trapped–passing edge $\lambda\to1/B_\max$ ($h\sim\xi^{-1}$): pitches stop at $(1-\texttt{boundary})/B_\max$ | first order up to a logarithm: relative error 0.145, 0.018, 1.0e-3, 2e-6 at 0.1, 0.01, 1e-3, 1e-4 (Könies-like, 64 nodes) |
+| `nodes` | 32 | Gauss–Legendre pitches | 3.5e-3, 9e-4, 3.5e-4, 2e-5 at 8, 16, 32, 64 |
+| `FastIons.birth_width` | 0.02 | the slowing-down birth edge, $\tfrac12\operatorname{erfc}((v-v_b)/(w v_b))$ | $O(w^2)$ (difference ratios 5.0, 4.7 per halving) once $\texttt{nodes}\gtrsim 2/w$ resolves the edge; with too few nodes the edge falls between pitches and the result is silently wrong |
+| `guard` | 0.01 | $\kappa\to\kappa/(\kappa^2 + \texttt{guard}^2)$ in the small-divisor inversion of $(\iota\partial_\theta + \partial_\zeta)\chi$; the resonance divisor $|j\iota - k|\hat\omega_\zeta$ has only a $10^{-12}$ floor | no effect in axisymmetry; away from low-order rationals 6e-3, 8e-5, 1e-7 at 0.1, 0.01, 1e-3 |
+
+*Near rational surfaces.* On a surface with $\iota = p/q$ the Boozer-angle average of a
+non-axisymmetric field is not the field-line average and the inversion has a true
+singularity (islands); `guard` then selects a smoothed value. For $\iota = \tfrac12$ crossed with shear 0.3
+($\gamma$ converged to 2e-4 at `guard` 0.01, 1e-5 at 1e-3) the effect is small, but with $\iota$ within
+$10^{-3}$ of $\tfrac12$ over the whole mode the error against `guard = 1e-6` is 1–3% and non-monotone down to
+`guard` $10^{-3}$ (2e-3 at $10^{-4}$): the drive of a mode sitting on a low-order rational of a 3-D equilibrium is
+sensitive to this regularization at the percent level, and `guard` should be refined there.
 
 **Distributions.** {class}`fax.FastIons` is isotropic: a Maxwellian
 ($F \propto e^{-E/T}$, so $\partial_EF = -F/T$) or a slowing-down
