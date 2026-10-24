@@ -747,9 +747,22 @@ $$
 $(1, \pm1)$ for QH (the sign follows the Boozer $|B|$ spectrum: LP-QH with
 $\iota < 0$ has $|B| \sim \cos(\theta + 4\zeta)$, i.e. $(1, -1)$). Each term is
 the square of a full gap width, which grows with the gap frequency, so wide
-high-frequency gaps dominate. The sum runs over both $\pm(\delta m, n)$; the cut is a hard mask
-(smooth almost everywhere: a term only enters or leaves when $\iota$ crosses
-a threshold). The full objective of Paul's eq. 7.1,
+high-frequency gaps dominate. The sum runs over both $\pm(\delta m, n)$. Paul's cut is a hard mask, which
+adds or removes a whole term $|\epsilon|^2k^2$ when $\iota$ moves a harmonic across
+$|k| = |\iota M - N N_P|$ (LP-QA, helicity $(1, 0)$, $N_P = 2$, at $\iota = 0.42$:
+$(\delta m, n) = (4, 2)$ at $\iota = 0.4$, $(3, 2)$ at $\iota = 0.5$), so the cost jumps there.
+{func}`fax.continuum_cost` uses the $C^1$ smoothstep
+
+$$
+f_\mathrm{cont} = \sum_s \sum_{\delta m,\,n} m(t)\,|\epsilon_{\delta m,n}|^2 k^2,\qquad
+m = 3t^2 - 2t^3,\quad t = \mathrm{clip}\Big(\frac{|k| - |\iota M - N N_P|}{\lambda}, 0, 1\Big),
+$$
+
+with $k = \iota\,\delta m - n$ and the stated sharpness $\lambda$ = `softness`
+(default 0.05, in units of $|k| = 2\omega^{(0)}/\omega_A$). The membership is 0 up to the cut, so the
+helicity harmonic itself ($|k|$ equal to the cut) stays out, and exactly 1 from
+$\lambda$ above it. The cost and its derivative are continuous in $\iota$; the
+limit $\lambda \to 0$ is the paper's hard cost. The full objective of Paul's eq. 7.1,
 
 $$
 f = (A - A^*)^2 + f_{QS} + f_\iota + f_\mathrm{cont},\qquad
@@ -760,6 +773,49 @@ takes $A$ and $f_{QS}$ from vmex (`implicit.aspect_ratio`,
 `QuasisymmetryRatioResidual.total_state`) on the same implicit state:
 {func}`fax.design_state` returns `(state, runtime)` and
 {func}`fax.state_geometry` the Boozer geometry, so one adjoint covers every
-term. For the global spectrum, {func}`fax.window_risk` of
+term. For the global spectrum, {func}`fax.window_risk` of the frequencies of
 {func}`fax.geometry_frequencies` moves targeted modes out of a frequency window
 instead (section 9).
+
+### Smooth widest gap
+
+{func}`fax.gap_closure` (section 9) replaces the `argmax` over the gaps of a surface by a
+softmax-weighted mean. With $w_k$ the widths of the adjacent sorted branches and
+$\Delta$ = `scale_hz` (default $10^4$ Hz),
+
+$$
+\bar w = \sum_k p_k w_k,\quad p_k = \frac{e^{w_k/\Delta}}{\sum_j e^{w_j/\Delta}},\qquad
+\max_k w_k - \Delta\log K \le \bar w \le \max_k w_k,
+$$
+
+and the penalty is $\mathrm{mean}_s\,\mathrm{softplus}(-\bar w_s/\Delta)$. The hard widest gap has a
+gradient jump where two gaps trade places; $\bar w$ does not. Smoothing only removes the
+selection switch: the sorted branches still cross at a degeneracy, so the gradient is first order there.
+
+### Which modes an objective may act on
+
+A frequency window acts on whatever modes lie in it, and a continuum-like mode is not a property of the
+geometry that survives refinement: it is a discrete sample of a branch at the radius where the branch
+meets its frequency. {func}`fax.classify_modes` therefore decides, for each selected mode, from three
+independent tests on a refinement $N \to 2N + 1$ of the radial grid (nested nodes, $L^2$-prolonged):
+
+1. **Refinement.** The relative frequency shift to the best-matching refined mode and their nodal $L^2$ overlap.
+   (The $G$ overlap is dominated by the singular $\phi'$ of a resonant tail and is not used.)
+2. **Gap membership.** At the radius $s_\mathrm{peak}$ of the largest $|\phi|^2$, the distance
+   $\min(f - f_\mathrm{lo}, f_\mathrm{hi} - f)/f$ to the adjacent branches of the local continuum
+   ({func}`fax.continuum`). A continuum-like mode peaks where its frequency meets a branch, so the margin is one cell of
+   $\mathrm{d}f/\mathrm{d}s$ at most; a gap mode peaks inside a gap.
+3. **Localization.** The growth of the derivative-jump participation count $(\sum_i J_i)^2/\sum_i J_i^2$,
+   $J_i = \sum_h|\Delta\phi_{i,h}|^2$, under the refinement: about 1 for a mode pinned to a fixed number of cells (the
+   mechanism of the uniform-field spectrum, section 4), about 2 for fixed radial width. It is reported, not tested: a
+   gap mode with a weak resonant tail (the CTOK TAE) has a jump count that is dominated by the tail.
+
+A mode is isolated when both solves converged, the shift is below `shift_tol` (1%), the overlap above `overlap_tol` (0.9) and the margin above
+`margin_tol` (5%). Only the margin separates the classes on the cases below; the refinement test guards against unconverged or
+unresolved modes (a continuum mode converges in $L^2$ trivially, with shift below 1% and overlap above 0.95).
+
+{func}`fax.geometry_frequencies`, {func}`fax.design_frequencies` and {func}`fax.geometry_growth_rates` are
+**first order** in the geometry (rule 5 of the plan): they return the solver `Status` and are NaN, values and derivatives, unless the solve
+converged and its selection does not split a tied set ($\mathrm{gap} > 10^{-8}\max|\omega^2|$). The classification is a separate, non-differentiable
+check that the selected modes are the ones the objective is meant to move.
+

@@ -5,12 +5,15 @@ with an exact Jacobian (one vmex + FAX forward, one adjoint per residual row):
 
 * ``qh``: Paul et al. (2025) eq. 7.1 on the Landreman-Paul QH deck,
   ``(A - A*)^2 + f_QS + f_iota + f_cont`` with ``f_cont`` = :func:`fax.continuum_cost`.
-* ``qa``: Landreman-Paul QA with the lowest global n = 0 frequencies pushed out of a
-  window (:func:`fax.window_risk`) at fixed QS and aspect ratio; with ``--drive`` instead
-  the fast-ion growth rates of the four n = 1 modes nearest 104 kHz are lowered
+* ``qa``: Landreman-Paul QA with two global modes pushed out of a frequency window
+  (:func:`fax.window_risk`) at fixed QS and aspect ratio. ``--modes gap`` (default) takes the two n = 1 modes nearest
+  103 kHz, which :func:`fax.classify_modes` finds to be isolated gap modes; ``--modes continuum`` takes the lowest
+  n = 0 modes, which it finds to be continuum-like (each sits on the continuum minimum at its own radius).
+  The modes are classified before and after, and the first-order prediction ``J dp`` is compared with the re-solved
+  change. With ``--drive`` instead the fast-ion growth rates of the four n = 1 modes nearest 104 kHz are lowered
   (:func:`fax.drive_risk` of :func:`fax.geometry_growth_rates`, 150 keV Maxwellian deuterons).
 
-Run: python examples/optimize_alfven.py [--case qh|qa|both] [--drive] [--ns 16] [--nfev 8] [--nodes 24]
+Run: python examples/optimize_alfven.py [--case qh|qa|both] [--modes gap|continuum] [--drive] [--ns 16] [--nfev 8] [--nodes 24]
 (needs ``pip install "uwplasma-fax[vmex]"``; a few minutes per case on a laptop CPU).
 """
 
@@ -43,16 +46,19 @@ CASES = {
         iota_floor=0.38,
         parameters=("rc11", "zs11", "rc12", "zs12"),
         qs_weight=1.0,
-        harmonics=fax.mode_family(0, 3, 1),  # the n = 0 family of the global modes
     ),
+}
+MODES = {  # the global modes of QA: the n = 1 gap modes (102-104 kHz in the 96-142 kHz gap) or the n = 0 continuum minima
+    "gap": dict(harmonics=fax.mode_family((1, -1, 3), 5), ntheta=16, nzeta=16, target_hz=103e3, count=2),
+    "continuum": dict(harmonics=fax.mode_family(0, 3, 1), ntheta=8, nzeta=8),
 }
 DENSITY = {"qh": fax.mass_density(1e20), "qa": 3.4e-8}  # QA: the P3 test density (a few hundred kHz on the 1 m device)
 DRIVE = dict(harmonics=fax.mode_family((1, -1, 3), 5), density=DENSITY["qa"], ntheta=16, nzeta=16, target_hz=104e3, count=4)
 
 
-def setup(case, ns, nodes, drive=False):
+def setup(case, ns, nodes, drive=False, modes="gap"):
     c = CASES[case]
-    eig = dict(harmonics=[[1.0, 0.0], [2.0, 0.0], [3.0, 0.0]], density=DENSITY["qa"], ntheta=8, nzeta=8) if case == "qa" else {}
+    eig = dict(density=DENSITY["qa"], **MODES[modes]) if case == "qa" else {}
     eig = DRIVE if drive else eig
     ions = fax.FastIons(density=1e15 * (1.0 - jnp.arange(1, nodes + 1) / (nodes + 1)) ** 2, temperature_ev=150e3)
     design = fax.prepare_design(
@@ -77,12 +83,17 @@ def setup(case, ns, nodes, drive=False):
         )
         out["iota_pen"] = jnp.sum(jnp.minimum(jnp.abs(geo.iota) - c["iota_floor"], 0.0) ** 2)
         if case == "qa":
-            out["freq"] = fax.geometry_frequencies(geo, design, 4 if drive else 3)
+            out["freq"] = fax.geometry_frequencies(geo, design, 4 if drive else 2 if modes == "gap" else 3)[0]
         if drive:
             out["gamma"] = fax.geometry_growth_rates(geo, design, ions, 4, ntheta=32, nzeta=32)
         return out
 
     return design, terms
+
+
+def softness(t0):
+    """0.34% of the mode frequency: 1 kHz at the 294 kHz continuum minima, 0.35 kHz at the 103 kHz gap modes."""
+    return 3.4e-3 * float(np.mean(t0["freq"]))
 
 
 def residual_fn(case, t0, window):
@@ -94,7 +105,7 @@ def residual_fn(case, t0, window):
         elif case == "qh":
             alfven = jnp.sqrt(t["cont"] / t0["cont"])
         else:
-            alfven = 30.0 * jnp.sqrt(fax.window_risk(t["freq"], window, 1e3))
+            alfven = 30.0 * jnp.sqrt(fax.window_risk(t["freq"], window, softness(t0)))
         return jnp.stack(
             [
                 10.0 * (t["aspect"] / t0["aspect"] - 1.0),
@@ -107,14 +118,14 @@ def residual_fn(case, t0, window):
     return rows
 
 
-def run(case, ns, nodes, nfev, drive=False):
-    design, terms = setup(case, ns, nodes, drive)
+def run(case, ns, nodes, nfev, drive=False, modes="gap"):
+    design, terms = setup(case, ns, nodes, drive, modes)
     p0 = jnp.zeros(len(design.names))
     t0 = jax.tree_util.tree_map(np.asarray, terms(p0))
     window = None
     if case == "qa" and not drive:
         f0 = np.asarray(t0["freq"])
-        window = (float(f0.min()) - 1e3, float(f0.max()) + 20e3)  # modes sit just inside the lower edge
+        window = (float(f0.min()) - softness(t0), float(f0.max()) + 20 * softness(t0))  # modes sit just inside the lower edge
     rows = residual_fn(case, t0, window)
     history, cache = [], {}
 
@@ -178,7 +189,7 @@ def report(case, design, p0, p1, t0, t1, history, window, out):
     rho = DENSITY[case] * (1.0 - 0.5 * s) if case == "qh" else DENSITY[case]  # QH: a peaked profile, so branches sweep
     for ax, p, t, label in ((axes[0], p0, t0, "initial"), (axes[1], p1, t1, "optimized")):
         geo = fax.design_geometry(p, design).interpolate(s)
-        f = np.asarray(fax.continuum(geo, c["harmonics"], rho, 32, 64))
+        f = np.asarray(fax.continuum(geo, np.asarray(design.harmonics) if case == "qa" else c["harmonics"], rho, 32, 64))
         ax.plot(s, f / 1e3, ".", ms=1.5, color="0.3")
         if case == "qa" and window is None:
             top = 2.0 * max(t["freq"])
@@ -225,6 +236,22 @@ def report(case, design, p0, p1, t0, t1, history, window, out):
     for k in ("aspect", "iota", "qs", "cont", *(("freq",) if case == "qa" else ()), *(("gamma",) if "gamma" in t0 else ())):
         print(f"  {k:7s} {np.round(np.asarray(t0[k]), 6)} -> {np.round(np.asarray(t1[k]), 6)}")
     print(f"  offsets {np.round(np.asarray(p1), 5)} ({', '.join(design.names)}); wrote {path}")
+    if case == "qa":
+        classify(design, p0, p1, t0["freq"], t1["freq"])
+
+
+def classify(design, p0, p1, f0, f1):
+    """Are the selected modes gap modes? Class of each mode at both ends, and the first-order contract ``J dp`` against the re-solve."""
+    for label, p in (("initial", p0), ("optimized", p1)):
+        geo = fax.design_geometry(p, design)
+        r = fax.classify_modes(geo, design.harmonics, design.density, nodes=design.nodes, **design.options)
+        print(f"  {label} modes: f (kHz), peak s, shift, overlap, margin, localization, isolated")
+        for row in zip(*r, strict=True):
+            print(f"    {row[0] / 1e3:8.3f} {row[1]:6.3f} {row[2]:9.1e} {row[3]:6.3f} {row[4]:6.3f} {row[5]:6.2f}  {bool(row[6])}")
+    jac = jax.jacrev(lambda q: fax.design_frequencies(q, design, len(f0))[0])(p0)
+    predicted, actual = np.asarray(jac @ (p1 - p0)), np.asarray(f1) - np.asarray(f0)
+    k = lambda a: np.round(a / 1e3, 4)  # noqa: E731
+    print(f"  first order: J dp = {k(predicted)} kHz, re-solved df = {k(actual)} kHz, remainder {k(actual - predicted)} kHz")
 
 
 if __name__ == "__main__":
@@ -235,9 +262,10 @@ if __name__ == "__main__":
     parser.add_argument("--nfev", type=int, default=16)
     parser.add_argument("--out", type=Path, default=Path("."))
     parser.add_argument("--drive", action="store_true", help="QA: lower the fast-ion growth rates instead of the window")
+    parser.add_argument("--modes", choices=tuple(MODES), default="gap", help="QA window: the n = 1 gap modes or the n = 0 continuum minima")
     args = parser.parse_args()
     for case in ("qh", "qa") if args.case == "both" else (args.case,):
         start = time.perf_counter()
         print(f"{case.upper()}:")
-        report(case, *run(case, args.ns, args.nodes, args.nfev, args.drive and case == "qa"), args.out)
+        report(case, *run(case, args.ns, args.nodes, args.nfev, args.drive and case == "qa", args.modes), args.out)
         print(f"  {time.perf_counter() - start:.0f} s")

@@ -42,6 +42,12 @@ logbook (`plan.md`, section 6).
 | Compression harmonics of an elliptic torus, $\epsilon_{\pm2,0} = (\kappa^2-1)/2(\kappa^2+1)$ | `test_continuum_cost_of_an_elliptic_torus` | exact to 1e-12; $f_\mathrm{cont}$ analytic; AD vs FD 1e-7 |
 | $f_\mathrm{cont}$ descent step through vmex | `test_continuum_cost_gradient_step_and_vmex_terms` | decreases; vmex aspect on the same state |
 | Boundary gradient and FE radial refinement | `test_boundary_gradient_and_radial_refinement` | AD vs FD 1e-4 at 16, 32, 64 nodes; first-order convergence |
+| Mode classification: CTOK TAE gap modes isolated, modes at $s > 0.6$ continuum-like; uniform field all continuum-like | `test_classification_separates_gap_modes_from_the_continuum_on_ctok`, `test_uniform_field_modes_are_all_continuum_like` | gap modes margin > 0.1 at $s = 0.45$; the rest < 0.03; uniform field < 0.01 |
+| Smooth `gap_closure` and `continuum_cost` | `test_gap_closure_is_smooth_where_the_widest_gap_changes`, `test_continuum_cost_is_continuous_across_the_helicity_cut` | gradient jump of the hard forms removed; AD vs FD on both sides 1e-5 |
+| Status-gated frequencies | `test_selected_frequencies_carry_status_and_unconverged_solves_are_rejected` | NaN value and tangent if unconverged or tied |
+| Fixed-geometry derivative, asymmetric tangent, step sweep | `test_fixed_geometry_derivative_has_a_step_size_plateau` | $h^2$ then floor below 1e-6 over four decades-steps (about 1e-9 at best), dense and shift-invert |
+| Re-solved equilibrium derivative, gauge floor | `test_resolved_equilibrium_derivative_has_a_gauge_floor`, `test_m1_gauge_floor_and_stellarator_asymmetric_direction` | flat remainder 4.6e-4 (`zs01`); see Gradients |
+| Resolution budget of the gap-mode objective | `test_resolution_budget_of_the_gap_mode_frequency_and_gradient` (scheduled) | table in Gradients |
 
 ## Continuum
 
@@ -297,6 +303,57 @@ blocks (plan, B). `finite_beta` terms are off, as in the archive.
   $m = 1$ gauge drift of the re-solves ({ref}`vmex-gradients`), which is
   2.7e-3 for `zs11`.
 
+**Derivative contract (first order).** Derivatives are promised to first order in the boundary offsets (and the
+geometry leaves), through the Hellmann–Feynman eigenvalue rule and the vmex implicit adjoint; static choices (FE nodes,
+harmonics, angle grid, `ns`, `mboz`) are not differentiated; the frequencies and their tangents are NaN unless the
+solve converged and the selection does not split a tied set. Each route is tested on its own:
+
+- **Fixed geometry** (`test_fixed_geometry_derivative_has_a_step_size_plateau`). A tilted torus with every
+  stellarator-asymmetric harmonic (`rmns`, `zmnc`, `bmns`, `gmns`) and $\iota$, $B$ moved together; dense and
+  shift-invert. Relative error of AD against central FD at $h = 10^{-1}, \dots, 10^{-9}$:
+
+  | route | $10^{-1}$ | $10^{-2}$ | $10^{-3}$ | $10^{-4}$ | $10^{-5}$ | $10^{-6}$ | $10^{-7}$ | $10^{-8}$ |
+  |---|---|---|---|---|---|---|---|---|
+  | dense (`eigenvalue_mean`) | 1.2e-3 | 1.2e-5 | 1.2e-7 | 1.2e-9 | 7e-11 | 7e-9 | 5e-8 | 2e-6 |
+  | shift-invert (SOLVAX) | 2e-7 | 2e-9 | 1e-10 | 1e-9 | 6e-9 | 1e-7 | 2e-6 | 5e-6 |
+
+  Truncation falls as $h^2$, then a floor of 1e-10 to 1e-9 spans $10^{-3}$–$10^{-5}$, then roundoff grows as $1/h$:
+  the test requires at least four steps below 1e-6.
+- **Re-solved equilibrium** (LP-QA, the gap mode of the next section; tilted tokamak for `lasym`). Remainder of the
+  re-solve FD against the adjoint at $h = 10^{-4}$ and $10^{-5}$:
+
+  | direction | remainder (both steps) | reading |
+  |---|---|---|
+  | `zs01` (LP-QA) | 4.6e-4 | flat, so not truncation or noise |
+  | `zs11` (LP-QA, $m = 1$) | 1.14e-2 | flat: the $m = 1$ $Z_\mathrm{sin}$ gauge |
+  | `zc20` (tilted tokamak, asymmetric, $m = 2$) | 1.2e-4 | flat |
+  | `rs20` (same, asymmetric) | 2.8e-4 | flat |
+
+  The remainder does not move with the step, so it is a systematic difference between the re-solve and the adjoint,
+  which the plan attributes to the released $m = 1$ gauge (the adjoint holds it fixed, each re-solve lets it
+  drift; 4.4e-4 for $\iota$ on `zs01`). **Not closed:** vmex's gauge-free reference `frozen_path_directional_fd`
+  did not run on these decks. Along `zs11` its Newton iteration diverges (the residual grows from 2e-3 to 67 in two
+  steps), and along `zs01` it reaches a non-finite state after 10 steps. The `zs11` and `zs01` sensitivities
+  are therefore verified to the floors above and not to 1e-5, and `plan.md` keeps that item open.
+
+**Resolution budget of the real objective.** The lowest of the two $n = 1$ gap modes of LP-QA (102 kHz, next section) and
+its gradient in the four coefficients of the QA example (`rc11, zs11, rc12, zs12`). Base: 24 FE nodes, $n_s = 16$,
+`mboz = nboz = 6`, $16 \times 16$ angles, $m \le 5$ ($f$ = 101.8964 kHz). One resolution is refined at a time
+(`test_resolution_budget_of_the_gap_mode_frequency_and_gradient`, scheduled tier); the change is between the two finest
+levels, which for a first-order discretization is also the size of the remaining error:
+
+| refined | levels | $f$ at finest (kHz) | $\lvert\Delta f/f\rvert$ | $\lVert\Delta\nabla f\rVert/\lVert\nabla f\rVert$ |
+|---|---|---|---|---|
+| FE nodes | 24, 48, 96 | 102.1833 | 1.1e-3 | 2.4e-3 |
+| VMEC `ns` | 16, 24, 32 | 102.0752 | 5.6e-4 | 1.4e-3 |
+| Boozer `mboz = nboz` | 4, 6, 8 | 101.8934 | 3.0e-5 | 9.4e-4 |
+| angle grid | 16², 24², 32² | 101.8965 | 2e-10 | 7.6e-9 |
+| harmonics $m \le M$ | 5, 7, 9 | 101.7096 | 1.3e-4 | 4.2e-4 |
+
+Added in quadrature the budget is 1.2e-3 for $f$ (0.13 kHz) and 3.0e-3 for the gradient, plus the 1.1e-2 gauge floor of
+the `zs11` component. The FE-node level matters most: 24 nodes sit 0.28% below 96 nodes (the same bias in the
+before and after values of an optimization). The angle grid is exact once it resolves the harmonic products.
+
 ## Optimization
 
 `examples/optimize_alfven.py` ({doc}`tutorials`, section 6), $n_s = 16$,
@@ -330,6 +387,16 @@ aspect ratio and $\iota$ hold. The reduction is smaller than Paul's
 60 evaluations, and the dominant (3, −8) gap barely moved, since closing it
 costs QS on this precise-QS start (QS row weight 0.1).
 
+**QA: which modes did the earlier example move?** `fax.classify_modes` on the initial geometry (LP-QA, $n_s = 16$,
+`mboz = 6`, 24 nodes, `count = 6`) shows that the three lowest $n = 0$ global modes of the example below are
+**continuum-like**, not gap modes. Their frequencies 293.96–296.38 kHz sit on the $n = 0$ continuum minimum (the
+branch at 294–304 kHz over $s$), each peaks at its own radius ($s$ = 0.96, 0.92, 0.88, 0.84, 0.80, 0.76), the margin
+to the local branch is 0.000 for all, and none is isolated. Their frequency is $\min_s f_{m=1}(s) \propto |\iota m - n|$:
+the earlier run moved the continuum minimum (mainly through $\iota$, −0.8%), and its "global modes leave the window"
+is a statement about that branch, not about a mode that a fast ion could resonate with. The result stays valid as a
+test of the gradient chain (it is what the gradient tests above differentiate for the continuum minimum), and is kept in
+the example as `--modes continuum`.
+
 **QA: global modes out of a window.** The three lowest $n = 0$ global modes
 ($m = 1$–3, 24 nodes) start at 294.10–294.92 kHz inside
 [293.10, 314.92] kHz; 4 coefficients (`rc11, zs11, rc12, zs12`),
@@ -346,6 +413,40 @@ costs QS on this precise-QS start (QS row weight 0.1).
 All three modes leave the window (2.4 kHz below its edge, 2.4 softness
 widths) with QS still at the 4e-6 level; the shift comes mainly from
 $\iota$ (−0.8%), as $f \propto |\iota m - n|$ near the continuum minimum.
+
+**QA with classified gap modes (the 3-D boundary objective of work package E).** The two $n = 1$ modes
+($m = 0$–5, $n \in \{-1, 1, 3\}$, $16 \times 16$ angles) nearest 103 kHz, `python examples/optimize_alfven.py --case qa
+--modes gap --nfev 8` (8 evaluations, 8 min on a CPU; 24 FE nodes), window $[f_\mathrm{min} - s, f_\mathrm{max} + 20 s]$,
+$s$ = 0.35 kHz. In the 96–142 kHz gap of the $n = 1$ continuum, `classify_modes` (24 and 49 nodes) finds both isolated:
+
+| mode | $f$ refined (kHz) | peak $s$ | shift | overlap | margin | isolated |
+|---|---|---|---|---|---|---|
+| 1, initial | 102.074 | 0.580 | 1.7e-3 | 0.995 | 0.079 | yes |
+| 2, initial | 103.859 | 0.020 | 5.6e-3 | 0.980 | 0.119 | yes |
+| 1, optimized | 98.080 | 0.580 | 1.7e-3 | 0.994 | 0.080 | yes |
+| 2, optimized | 99.515 | 0.020 | 5.7e-3 | 0.982 | 0.120 | yes |
+
+(The other modes in the window, 94.5–96.1 kHz, are continuum-like: margin 0.000, one per radius from $s$ = 0.68 to 0.96.
+The `--drive` selection of the four modes nearest 104 kHz includes two of them.) The optimizer moves both modes out of the
+window through its lower edge and they remain isolated gap modes at the same radii:
+
+| | initial | optimized |
+|---|---|---|
+| modes at 24 nodes (kHz) | 101.896, 104.441 | 97.909, 100.086 |
+| $J\,\delta p$ (kHz), first order | | −3.941, −4.364 |
+| re-solved $\delta f$ (kHz) | | −3.988, −4.355 |
+| remainder (second order) | | −0.046, +0.008 kHz (1.2%, 0.2%) |
+| QS total | 1.09e-6 | 7.4e-6 |
+| aspect ratio | 6.0000 | 6.0134 |
+| mean $\iota$ | 0.4191 | 0.4227 |
+
+The contract: the shift of 4 kHz is predicted to 0.05 kHz by the adjoint Jacobian (first order), and the numerical error
+budget of each value is 0.13 kHz (resolution table in Gradients, 1.2e-3), plus a 1.1e-2 gauge floor in the `zs11`
+component of the gradient; the 4 kHz change exceeds the budget by a factor 30. The coarse 24-node value of mode 2 is 0.6 kHz
+above the 49-node one (it is axis-localized, `shift` 5.6e-3): the before and after values carry the same bias.
+The $f_\mathrm{cont}$ row of the example (11.1 before, 11.09 after) is printed for reference and is not optimized here.
+The $f_\mathrm{cont}$ values of the QH run above used Paul's hard mask; the smoothed mask of
+{func}`fax.continuum_cost` (softness 0.05) differs from it only for harmonics within 0.05 of the cut.
 
 ## Fast-ion drive
 

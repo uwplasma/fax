@@ -19,6 +19,7 @@
 pip install -e ".[dev,vmex]"
 python -m pytest -q                                  # fast suite, about 1 min on CPU
 python -m pytest -q -m slow                          # vmex end-to-end tests, several minutes
+python -m pytest -q -m scheduled -s                  # resolution budget and gauge floors (about 30 min); weekly workflow
 ruff check . && ruff format --check .
 python -m coverage run --branch --source=src/fax -m pytest -q -m '' && python -m coverage report -m
 sphinx-build -W -b html docs docs/_build/html
