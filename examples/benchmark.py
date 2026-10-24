@@ -66,5 +66,5 @@ if "--design" in sys.argv:
         ntheta=8,
         nzeta=8,
     )
-    step = jax.jit(jax.value_and_grad(lambda p: fax.window_risk(fax.design_frequencies(p, design), (50e3, 500e3), 25e3)))
+    step = jax.jit(jax.value_and_grad(lambda p: fax.window_risk(fax.design_frequencies(p, design)[0], (50e3, 500e3), 25e3)))
     print(f"LP-QA    16   2 design grad        {timed(step, jnp.zeros(2))}")

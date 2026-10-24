@@ -46,7 +46,7 @@ jobs:
           python-version: "3.12"
       - run: python -m pip install -e ".[dev,vmex]"
       - run: ruff check . && ruff format --check .
-      - run: python -m coverage run --branch --source=src/fax -m pytest -q -m ''
+      - run: python -m coverage run --branch --source=src/fax -m pytest -q -m 'not scheduled'
       - run: python -m coverage report -m
       - run: |
           python -m coverage json -q

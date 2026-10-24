@@ -142,7 +142,8 @@ Jacobian: one vmex + FAX forward pass and one adjoint per row
 
 ```console
 python examples/optimize_alfven.py --case qh    # Paul's f_cont on LP-QH, about 3 min
-python examples/optimize_alfven.py --case qa    # LP-QA global modes out of a window, about 3 min
+python examples/optimize_alfven.py --case qa    # LP-QA n = 1 gap modes out of a window, about 8 min
+python examples/optimize_alfven.py --case qa --modes continuum    # the earlier n = 0 selection (continuum-like modes)
 python examples/optimize_alfven.py --nfev 60 --ns 25    # longer, finer
 python examples/optimize_alfven.py --case qa --drive    # LP-QA fast-ion growth rates down at fixed QS
 ```
@@ -150,10 +151,14 @@ python examples/optimize_alfven.py --case qa --drive    # LP-QA fast-ion growth 
 - **QH** (Paul et al. 2025, eq. 7.1): 34 coefficients with $m \le 3$, $|n| \le 2$;
   rows $10(A/A_0 - 1)$, $0.1\sqrt{f_{QS}/f_{QS,0}}$, $10\sqrt{f_\iota}$ with
   $|\iota| \ge 1.03$, and $\sqrt{f_\mathrm{cont}/f_{\mathrm{cont},0}}$.
-- **QA**: the three lowest $n = 0$ global modes ($m = 1$–3, 24 FE nodes) sit
-  just inside the lower edge of a window $[f_\mathrm{min} - 1, f_\mathrm{max} + 20]$ kHz;
-  the Alfvén row is $30\sqrt{\text{window\_risk}}$ (1 kHz softness) at fixed
-  aspect ratio and QS.
+- **QA**: two global modes pushed out of a window at fixed aspect ratio and QS (24 FE nodes). `--modes gap`
+  (default) takes the two $n = 1$ modes nearest 103 kHz ($m = 0$–5, $n \in \{-1, 1, 3\}$), which
+  {func}`fax.classify_modes` finds to be isolated gap modes in the 96–142 kHz gap (102.1 and 103.9 kHz); the window is
+  $[f_\mathrm{min} - s, f_\mathrm{max} + 20 s]$ with $s$ = 0.34% of the mean frequency (0.35 kHz) and the Alfvén row is
+  $30\sqrt{\text{window\_risk}}$. `--modes continuum` takes the three lowest $n = 0$ modes ($m = 1$–3), which the
+  classifier finds to be continuum-like: each sits on the continuum minimum at its own radius, so moving them moves the
+  branch minimum ($\propto |\iota m - n|$), not a mode of the geometry. The script prints the classification of the
+  selected modes before and after, and the first-order prediction $J\,\delta p$ against the re-solved change.
 - **QA, `--drive`**: the Alfvén row is
   $\text{drive\_risk}/\text{drive\_risk}_0$ of the growth rates of the four $n = 1$
   modes ($m = 0$–5, $n \in \{-1, 1, 3\}$) nearest 104 kHz, driven by 150 keV
@@ -170,5 +175,5 @@ lists the numbers.
 ```
 
 ```{image} _static/optimize_alfven_qa.png
-:alt: LP-QA continuum and global modes before and after moving them out of a window
+:alt: LP-QA n = 1 continuum branches, the two gap modes before and after moving them out of a window, and the objective history
 ```
