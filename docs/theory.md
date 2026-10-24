@@ -422,9 +422,8 @@ iterations, `converged` and the selection `gap` (distance to the target of the
 nearest excluded eigenvalue minus that of the farthest selected one; 0 means the
 selection splits a tied set). Without a target, `eigenmodes` assembles the dense
 matrices and solves all $NH$ modes (SOLVAX has no all-modes dense route, so
-`eigenvalue_mean` stays dense). A test checks both solvers agree to 1e-10. The
-CTOK case ($N = 99$, $H = 13$) assembles in 0.024 s and the six-mode solve takes
-0.047 s once compiled; the dense solve takes 0.9 s.
+`eigenvalue_mean` stays dense). A test checks both solvers agree to 1e-10. Timings of
+both solvers at equal accuracy are in {ref}`performance <performance>`.
 
 ## 6. Eigenvalue derivatives (Hellmann–Feynman)
 

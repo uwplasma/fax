@@ -66,26 +66,102 @@ $|n - m\iota|\,v_A/R_0$ to 1e-9.
 STELLGAP labels its full-mesh surface $k$ as $k/(n_s - 1)$ instead of
 $(k - 1)/(n_s - 1)$ (`rho = nsurf/nsurf_max` in `stellgap_serial_ver5.f`), so
 the test shifts its labels by one cell; a scan of the offset has its minimum
-there. The compiled CTOK continuum takes 0.03 s on a laptop CPU (STELLGAP 0.8 s);
-`python examples/benchmark.py` prints the timings of every hot path.
+there. Timings of the eigensolvers, at equal accuracy, are in the {ref}`performance <performance>` section.
 
 (performance)=
-### Performance note: SOLVAX eigensolver
+### Performance at equal accuracy
 
-FAX's own block Thomas shift-invert (a fixed 40 iterations at `tol = 1e-6`) was replaced by
-{func}`solvax.generalized_eigenpairs` (stops at `tol = 1e-10`). Eigenvalues, gradients and the CTOK, Könies and
-drive references are unchanged to 1e-9 relative. One CPU core, float64, JAX 0.12; cold is compile plus first call,
-warm the median of five (seconds, before / after; forward is `eigenmodes` including assembly, 0.024, 0.039 and 0.079 s,
-gradient is `jax.grad` of `frequency_hz`). Iterations: 40 / 40 / 40 before, 11 / 17 / 33 after.
+`python examples/benchmark.py` solves one assembled pencil $F y = \lambda G y$ three ways and checks every answer
+before comparing speed: `targeted` is `fax.eigenmodes(target_hz, count)` (SOLVAX shift-invert, `tol = 1e-10`),
+`dense-jax` is `fax.eigenmodes()` (FAX's jitted dense generalized solve of all $NH$ modes) and `dense-scipy` is
+`scipy.linalg.eigh(F, G)`, the reference. Each (case, method) runs in a fresh process: cold is compile plus first call,
+warm is the median of five `block_until_ready` calls (two for the slow dense rows), forward includes assembly, and the
+gradient is `jax.grad` of `frequency_hz` (mean of the requested modes) with respect to every geometry array. $\eta$ is
+the largest $\|Fy-\lambda Gy\|/((\|F\|+|\lambda|\|G\|)\|y\|)$ of the requested modes (infinity norm of the matrices),
+recomputed from the returned vectors; err is the largest relative eigenvalue difference from `dense-scipy`. Speed-ups
+are quoted only where both methods reach $\eta \le 10^{-10}$.
 
-| case | $N$, $H$ | forward cold | forward warm | gradient cold | gradient warm |
-|---|---|---|---|---|---|
-| CTOK, 6 modes, 384 kHz | 98, 13 | 0.70 / 0.85 | 0.076 / 0.047 | 1.76 / 1.93 | 0.115 / 0.074 |
-| Könies, 3 modes, 64.6 kHz | 200, 12 | 0.89 / 1.04 | 0.110 / 0.088 | 1.78 / 2.07 | 0.171 / 0.134 |
-| Könies, 3 modes, 64.6 kHz | 400, 12 | 1.11 / 1.25 | 0.220 / 0.236 | 2.10 / 2.20 | 0.324 / 0.324 |
+**Conditions.** Apple M4 (10 cores, 24 GB), macOS 26.6, CPU only, float64, Python 3.12.13, FAX 0.1.0 (`a6364cc`),
+SOLVAX 0.32.1, JAX and jaxlib 0.12.0.1, NumPy 2.5.4, SciPy 1.18.1. BLAS/LAPACK pinned to one thread; XLA's own
+dots are not (the assembly used about two cores, the Knyazev assembly about five; `eigh` and the shift-invert are single-thread).
+The 1-minute load before each of the 27 runs was 2.8-5.4 (median 3.8, 26 below 4; the Könies $N=400$ `targeted` run
+had 5.4). Peak RSS is above a 267 MB post-import baseline and includes compilation. The office GPUs were busy
+(load 41, both at 100%), so there is no GPU column.
 
-Warm times are equal or better, cold compile about 0.15 s longer, and the iteration count now adapts to the accuracy
-rather than being fixed. Timings on a shared laptop vary by about 10%.
+| case ($N$, $H$, modes) | method | $\eta$ | err | fwd cold (s) | fwd warm (s) | grad cold (s) | grad warm (s) | peak RSS fwd / grad (MB) |
+|---|---|---|---|---|---|---|---|---|
+| CTOK $n=2$ (98, 13, 6) | `dense-scipy` | 1.6e-16 | 0 | 1.64 | 1.14 | | | 436 / |
+| | `dense-jax` | 1.8e-16 | 1.2e-14 | 1.90 | 1.35 | 2.58 | 1.16 | 493 / 717 |
+| | `targeted` | 4.2e-11 | 1.9e-14 | 1.01 | 0.048 | 2.11 | 0.081 | 329 / 627 |
+| Könies (200, 12, 3) | `dense-scipy` | 4.1e-16 | 0 | 8.76 | 8.29 | | | 1012 / |
+| | `dense-jax` | 4.2e-16 | 1.7e-14 | 10.2 | 9.75 | 9.63 | 8.46 | 1230 / 1444 |
+| | `targeted` | 1.2e-11 | 8.8e-14 | 1.44 | 0.102 | 2.69 | 0.155 | 385 / 725 |
+| Könies (400, 12, 3) | `dense-scipy` | 4.9e-16 | 0 | 78.2 | 73.9 | | | 2908 / |
+| | `dense-jax` | 5.3e-16 | 3.0e-14 | 87.0 | 89.4 | 83.7 | 92.0 | 4190 / 4190 |
+| | `targeted` | 7.0e-11 | 3.3e-13 | 1.56 | 0.264 | 2.83 | 0.367 | 518 / 1090 |
+| Knyazev QA (49, 64, 6) | `dense-scipy` | 3.1e-16 | 0 | 24.2 | 24.1 | | | 6095 / |
+| | `dense-jax` | 3.1e-16 | 2.7e-14 | 23.6 | 23.9 | 26.1 | 24.6 | 6877 / 11393 |
+| | `targeted` | 4.3e-12 | 2.2e-14 | 2.48 | 1.38 | 7.86 | 4.09 | 5039 / 11112 |
+
+Angle grids: $32 \times 4$ (CTOK, Könies) and $64 \times 48$ (Knyazev: the 64 AE3D harmonics of largest band energy, kept
+complex, $\iota$ and $B$ of the precise-QA fixture, flat $\rho = 1.88\times10^{-6}$ kg/m³, target 30.3 kHz). Warm
+forward of `targeted` at equal accuracy against `dense-scipy` / `dense-jax`: 24x / 28x (CTOK), 81x / 96x (Könies 200),
+280x / 339x (Könies 400), 17x / 17x (Knyazev); warm gradient against `dense-jax`: 14x, 55x, 250x, 6.0x. The gradients of
+`targeted` and `dense-jax` agree to a relative L2 difference of 8.6e-9, 3.9e-8, 2.2e-7 and 1.1e-8 over all geometry
+arrays. The Knyazev dense spectrum is a continuum band, so six modes is only a timing case, not a mode identification
+(see the Knyazev paragraph above). Dense cost grows as $(NH)^3$ (9.2x for $N$ doubled, $\eta$ and err unchanged);
+the dense warm time is the cost of every call, including the first derivative.
+
+**Scaling** (`targeted`, from Könies $N=200$, $H=12$, 3 modes; one of $N$, $H$, modes changed at a time; the 1000-iteration
+cap is raised from SOLVAX's default of 100 so that every point can reach $\eta$; factor is one block-Thomas factorization of
+$F-\sigma G$, solve is the whole `generalized_eigenpairs` call on assembled blocks, and the two MB columns are the factor's
+output size and XLA's static temporary buffers for the solve):
+
+| varied | $N$ | $H$ | modes | $\eta$ | iterations | factor (ms) | solve (s) | fwd warm (s) | grad warm (s) | factor MB | solve MB |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| $N$ | 200 | 12 | 3 | 1.2e-11 | 17 | 1.9 | 0.060 | 0.107 | 0.161 | 1.39 | 10.3 |
+| | 400 | 12 | 3 | 7.0e-11 | 33 | 1.7 | 0.167 | 0.258 | 0.367 | 2.78 | 20.6 |
+| | 800 | 12 | 3 | 9.0e-11 | 112 | 3.1 | 1.08 | 1.19 | 1.36 | 5.57 | 41.2 |
+| | 1600 | 12 | 3 | 9.9e-11 | 310 | 6.1 | 5.97 | 5.82 | 5.97 | 11.1 | 82.4 |
+| | 3200 | 12 | 3 | **2.8e-10** | 1000 (cap) | 22.5 | 40.1 | 45.8 | 46.0 | 22.3 | 165 |
+| $H$ | 200 | 12 | 3 | 1.2e-11 | 17 | 0.63 | 0.043 | 0.087 | 0.140 | 1.39 | 10.3 |
+| | 200 | 16 | 3 | 3.0e-11 | 17 | 1.0 | 0.058 | 0.187 | 0.369 | 2.47 | 16.4 |
+| | 200 | 24 | 3 | 1.6e-11 | 15 | 3.4 | 0.106 | 0.221 | 0.464 | 5.55 | 32.5 |
+| | 200 | 32 | 3 | 5.6e-11 | 13 | 6.3 | 0.135 | 0.348 | 0.785 | 9.86 | 54.0 |
+| | 200 | 48 | 3 | 2.7e-11 | 13 | 13.9 | 0.274 | 0.690 | 1.66 | 22.2 | 111 |
+| modes | 200 | 12 | 1 | 1.2e-17 | 22 | 0.63 | 0.038 | 0.085 | 0.148 | 1.39 | 9.1 |
+| | 200 | 12 | 3 | 1.2e-11 | 17 | 0.62 | 0.043 | 0.088 | 0.135 | 1.39 | 10.3 |
+| | 200 | 12 | 6 | 1.4e-16 | 55 | 0.62 | 0.170 | 0.218 | 0.288 | 1.39 | 12.4 |
+| | 200 | 12 | 12 | 9.7e-12 | 28 | 0.63 | 0.164 | 0.206 | 0.268 | 1.39 | 16.1 |
+| | 200 | 12 | 24 | 1.8e-13 | 44 | 0.63 | 0.557 | 0.603 | 0.664 | 1.39 | 24.4 |
+
+Observed log-log exponents (points with $\eta \le 10^{-10}$ only; the $N=3200$ row is excluded). Expected: factorization
+work $O(N H^3)$, factor storage $O(N H^2)$.
+
+| varied | factor time | factor MB | solve MB | solve time | forward | gradient |
+|---|---|---|---|---|---|---|
+| $N$ (expected 1) | 0.59 (0.9-1.2 above $N = 400$) | 1.00 | 1.00 | 2.26 | 1.95 | 1.75 |
+| $H$ (expected 3 and 2) | 2.32 (2.0 from 24 to 48) | 2.00 | 1.72 | 1.32 | 1.36 | 1.63 |
+| modes (expected 0) | 0.00 | 0.00 | 0.30 | 0.85 | 0.60 | 0.46 |
+
+Storage follows the model exactly: the factors are $N H^2$ complex numbers (1.00 in $N$, 2.00 in $H$). The factorization
+time is not yet in its asymptotic regime: at 1-14 ms it is dominated by the sequential scan over the $N$ blocks and small-block
+overhead, and from $H = 24$ to $48$ it grows as $H^{2.0}$, not $H^3$. Two things the model does not capture dominate the
+solve: it is iteration-bound, not factorization-bound (the factor is at most 3% of the solve time at $H = 12$), and the iteration
+count at fixed $\eta$ is not constant. For the Könies TAE it rises with $N$ (17, 33, 112, 310, more than 1000 iterations at
+$N$ = 200 ... 3200) as the continuum accumulates around the gap, so the solve time grows faster than linearly in $N$ (about
+$N^{2.3}$) while the dense cost $(NH)^3$ stays 100x-1000x larger at these sizes; it also varies non-monotonically with the
+number of modes (22, 17, 55, 28, 44). The $N = 3200$ solve stopped at the iteration cap with $\eta = 2.8\times10^{-10}$ and
+is not a valid equal-accuracy point. SOLVAX's dense pivoted fallback is compiled in only for $NH \le 2048$ (`dense_limit`),
+which is why the CTOK static buffers (84 MB) are larger than the factor alone would need and why the sweeps start above that size.
+
+**Replaced claims.** The previous table compared a fixed 40 iterations at `tol = 1e-6` with `generalized_eigenpairs` at
+`tol = 1e-10`, so its two columns were not at equal accuracy, and the dense timing in `benchmark.py` was `eigvalsh(F)`,
+a standard eigenproblem with no eigenvectors rather than $F y = \lambda G y$. Both are removed, as are the unmeasured
+"STELLGAP 0.8 s" and "dense 0.9 s" statements; STELLGAP was not re-timed, and a continuum scan is a different computation from a
+targeted global solve. The machine is shared: the identical configuration ($N=200$, $H=12$, 3 modes) gave solve times of 0.060, 0.043 and
+0.043 s in three runs of one benchmark, and a complete earlier run changed the fast warm times by up to 15%, so
+differences below about 40% on the 40 ms rows are not significant and the exponents carry that uncertainty.
 
 ## Global operator
 
