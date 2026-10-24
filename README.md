@@ -43,7 +43,7 @@ ITPA TAE against the published zero-Larmor-radius band.*
 
 ## Install
 
-Python 3.10 or newer (JAX 0.4.38 or newer, SOLVAX 0.32 or newer).
+Python 3.10 or newer (JAX 0.4.38 or newer, SOLVAX 0.32.1 or newer).
 
 ```bash
 pip install uwplasma-fax              # core
