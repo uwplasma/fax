@@ -23,13 +23,17 @@ logbook (`plan.md`, section 6).
 | Könies 2018 ITPA TAE frequency | `test_konies_tae_frequency_and_convergence` | 4.0610e5 rad/s, $N_s$-converged to 1e-4 |
 | Shift-invert (SOLVAX) vs dense | `test_shift_invert_matches_dense_and_gradients_match_finite_differences` | 1e-10 |
 | Eigenvalue gradients vs finite differences | same | 1e-5 (cluster mean and shift-invert) |
-| Fu–Van Dam Maxwellian scaling and closed-form ZOW coefficient (weak toroidicity) | `test_fu_van_dam_maxwellian_scaling` | 1e-3 |
+| Fu–Van Dam Maxwellian scaling and closed-form ZOW coefficient (weak toroidicity), flat and with a density gradient (the gradient term carries $j$ = 11, 10) | `test_fu_van_dam_maxwellian_scaling` | 1e-3 |
 | Slowing-down $\int F\,d^3v = 1$ with the smoothed edge; duplicated toroidal samples | `test_slowing_down_is_normalized_with_its_smoothed_edge`, `test_duplicated_toroidal_samples_leave_the_drive_unchanged` | 1e-6; 1e-10 |
 | Elliptic two-mode gap, full width $2f_0\lvert c\rvert$ | `test_elliptic_two_mode_gap_has_full_width_two_f0_c` | 1e-6 |
-| Drive vs Könies 2018 (Boozer form of the circular model) | `test_koenies_2018_tae_growth_rates` | old circular model within 3%; 300 keV within 20% of Könies, 100, 200 keV about 40% low |
+| Drive vs Könies 2018 (Boozer form of the circular model) | `test_koenies_2018_tae_growth_rates` | 4.26, 16.27, 32.48, 64.02 ×10³ s⁻¹ (pinned 1e-3); old circular model within 4% |
+| 3-D structure: helical relabelling of an axisymmetric torus (with and without $I$), axisymmetric limit of a 3-period description | `test_quasi_helical_relabelling_leaves_the_drive_unchanged`, `test_axisymmetric_limit_ignores_toroidal_sidebands` | 1e-4 (4e-5 measured, FFT wrap); 1e-9; the previous $n_h/\iota$ form is 17–20% off |
+| Negative $\iota$ ($\theta$-mirror), $n$-reversal ($\zeta$-mirror, co ↔ counter), amplitude and global phase, density scaling, passivity of a uniform distribution | `test_negative_iota_and_n_reversal_describe_the_same_device`, `test_amplitude_phase_density_and_passivity` | 1e-12; $\gamma < 0$ at every $\omega$ |
+| Regularizations: `boundary`, `nodes`, `FastIons.birth_width`, `guard` | `test_passing_boundary_and_node_regularizations_converge`, `test_birth_edge_smoothing_converges_quadratically`, `test_small_divisor_guard_converges_and_is_sensitive_near_rational_surfaces` | see the table below |
+| ITPA rung 2: passing-only drive vs the CAS3D-K (ZOW) curve | `test_zow_curve_is_bracketed_by_the_passing_only_drive` | ratio 0.58–0.60, 82–191 keV; unmatched content, not a validation |
 | Drive sign rules | `test_drive_sign_and_flat_profile` | flat, peaked, hollow, $\pm n$ |
 | Drive gradients vs finite differences | `test_gradients_match_finite_differences`, `test_geometry_and_mode_gradients` | 1e-5 (density, $T_f$, $\omega$, every geometry leaf and the mode) |
-| CTOK global TAE driven | `test_ctok_global_tae_drive` | 272.8 kHz mode, $\gamma/\omega$ = 9.2e-4, 3.6e-3 at 25, 50 keV |
+| CTOK global TAE driven | `test_ctok_global_tae_drive` | 272.8 kHz mode, $\gamma/\omega$ = 7.0e-4, 3.3e-3 at 25, 50 keV (9.2e-4, 3.6e-3 with the $n/\iota$ form) |
 | LP-QA drive: helical sidebands, gradient through vmex geometry | `test_stellarator_drive_gradient_and_sidebands` | $k \ne n$ resonances present; FAX chain AD vs FD ≤ 1e-4 |
 | vmex → booz_xform_jax → FAX continuum | `test_vmec_input_to_continuum` | runs, finite |
 | Compression harmonics of an elliptic torus, $\epsilon_{\pm2,0} = (\kappa^2-1)/2(\kappa^2+1)$ | `test_continuum_cost_of_an_elliptic_torus` | exact to 1e-12; $f_\mathrm{cont}$ analytic; AD vs FD 1e-7 |
@@ -268,27 +272,68 @@ tokamak gates use {func}`fax.circular_torus`, axisymmetric (`helical = 0`,
 
   | $T_f$ (keV) | 100 | 200 | 300 | 400 |
   |---|---|---|---|---|
-  | FAX, Boozer geometry (10³ s⁻¹) | 4.33 | 16.52 | 32.94 | 64.85 |
+  | FAX, Boozer geometry, $j$-form (10³ s⁻¹) | 4.26 | 16.27 | 32.48 | 64.02 |
+  | FAX, Boozer geometry, previous $n_h/\iota$ form | 4.33 | 16.52 | 32.94 | 64.85 |
   | FAX, previous circular large-aspect-ratio model | 4.4 | 16.6 | 33.1 | 65 |
   | Könies ZLR band (10³ s⁻¹) | 8–10 | 25–33 | 38–43 | |
 
-  The geometric path and the circular model differ only in $O(\varepsilon)$
-  terms ($dl/d\zeta = G/B$ instead of $R_0$, the Boozer angle, the exact
-  $\nabla B$); at the same 0.5 cm radial resolution they agree within 4%.
-  300 keV is within 20% of Könies; 100 and 200 keV are about 40% low.
-  Candidate causes are trapped particles and orbit non-uniformity near the
-  trapped–passing boundary, the missing $\delta B_\parallel$, and the model
-  eigenfunction. Above 300 keV the published finite-orbit-width results roll
-  over and FAX (ZOW) keeps growing.
+  The geometric path and the circular model differ in $O(\varepsilon)$ terms
+  ($dl/d\zeta = G/B$ instead of $R_0$, the Boozer angle, the exact $\nabla B$) and in the
+  label of the gradient term ({doc}`theory`, section 8: $-1.3$ to $-1.7\%$); they agree within 4%. The pooled ZLR band mixes codes with
+  trapped particles, FOW-free but FLR-free kinetics and different damping, and is **not** the comparison used
+  here (rule 2: no fitting to the pooled band).
+- **ITPA ladder, rung 2 (fixed-mode ZOW).** Könies et al. (2018) fig. 1a has one zero-orbit-width curve, CAS3D-K (ZOW), valid at small
+  $T_f$ (table 1: no FOW, no FLR). The paper does not say whether it contains trapped particles, and FAX is passing-only,
+  so the content is **not matched**. The dotted curve read off the vector figure (the points between 100 and 135 keV are hidden
+  behind other markers) and FAX (same mode, $\omega = 4.0\cdot10^5$ rad/s, eq. 1 density, Maxwellian):
+
+  | $T_f$ (keV) | 82 | 139 | 163 | 191 |
+  |---|---|---|---|---|
+  | CAS3D-K ZOW (10³ s⁻¹) | 4.26 | 14.60 | 19.98 | 25.17 |
+  | FAX, passing only (10³ s⁻¹) | 2.47 | 8.72 | 11.63 | 15.12 |
+  | ratio | 0.58 | 0.60 | 0.58 | 0.60 |
+  | $\gamma/\omega$ | 0.006 | 0.022 | 0.029 | 0.038 |
+
+  FAX is a constant 0.58–0.60 of the ZOW curve over a factor 2.3 in $T_f$, which is what a missing trapped contribution of
+  about 40% would look like; that attribution is not established and needs either a passing-only CAS3D-K ZOW run (Könies and
+  Kleiber 2012, not in the reference folder) or trapped particles in FAX. Missing damping is unknown, not zero: the paper
+  subtracts each code's damping so that $\gamma(T_f = 0) = 0$, FAX has no continuum, electron or ion Landau damping of the
+  mode ($\gamma_d$ would be subtracted). Frozen-mode validity: $\gamma/\omega$ stays below 5% up to 200 keV and reaches 8% and 16%
+  at 300 and 400 keV, where the perturbative picture also loses the frequency shift of fig. 2 and finite orbit width. Rungs 3–5
+  (FOW/ZLR, FLR, damping) are not started.
 - **Signs.** A flat profile gives equal damping for $(m, n)$ and $(-m, -n)$;
   a peaked profile drives $n > 0$ and damps $n < 0$ ($\iota\psi' > 0$); a
   hollow profile damps; bulk-ion Landau damping is positive.
 - **Gradients.** `jax.grad` with respect to every {class}`fax.Geometry` leaf and
   the mode, along a random direction, matches central differences to 1e-5.
+- **3-D structure** ({doc}`theory`, section 8). The gradient term is $j\,\partial_sF/(\omega Ze\psi')$ with the orbit's poloidal harmonic $j$,
+  not the mode's $n_h/\iota$. (i) A tokamak (with and without $I$) and its helical relabelling $\theta' = \theta - N\zeta$
+  ($N$ = 2, 4; $\iota \to \iota + N$, $n \to n + mN$) have the same $\gamma$ to 4e-5 (the old form: 17–20%).
+  (ii) Weak-toroidicity closed form with a density tilt: the gradient term, 27% of the profile factor at $x = 1$, is
+  reproduced with $j = 11, 10$ to 1e-3 (the $n/\iota$ form is 1–2% off). (iii) $\theta$- and $\zeta$-mirrors
+  ($\iota \to -\iota$ with $m \to -m$, or $n \to -n$, $I \to -I$) agree to 1e-12 and the second maps each $(j, k)$ to $(j, -k)$ with
+  the same $\gamma_{jk}$, so co- and counter-passing resonances both carry drive. (iv) Amplitude and global phase of $\phi$,
+  and density scaling, exact to 1e-12; a uniform Maxwellian or slowing-down distribution has $\gamma < 0$ at every $\omega$.
+  The model uncertainty of the label ($F$ of the mean flux versus of the $P_\zeta$ surface) is $O(\omega/n\Omega_\varphi)$: 1.5% for $n = 6$, 23% and 7% at 25 and 50 keV for the CTOK
+  $n = 2$ mode.
+- **Regularizations** (explicit arguments, defaults in brackets; relative error against the converged value):
+
+  | Parameter | 0.1 | 0.01 | 0.001 | 1e-4 | note |
+  |---|---|---|---|---|---|
+  | `boundary` [0] | 1.5e-1 | 1.8e-2 | 1.0e-3 | 2e-6 | first order up to a log; Könies-like torus |
+  | `guard` [0.01], away from rationals | 6e-3 | 8e-5 | 1e-7 | 1e-8 | helical test torus, $\iota \in [0.43, 0.46]$ |
+  | `guard`, $\iota = 1/2$ crossed (shear 0.3) | 5e-3 | 2e-4 | 1e-5 | 1e-7 | |
+  | `guard`, $\iota \approx 1/2$ on the whole mode (shear 0.02) | 1.7e-2 | 1.1e-2 | 3.1e-2 | 2e-3 | not converged above 1e-4 |
+
+  `FastIons.birth_width` [0.02] converges as $O(w^2)$ (1865.6, 1848.6, 1845.0 s⁻¹ at 0.04, 0.02, 0.01;
+  difference ratios 5.0 and 4.7 per halving) provided the pitch nodes resolve the edge ($\gtrsim 2/w$); at 32 nodes and $w \le 10^{-3}$ the
+  edge falls between nodes and its share of $\gamma$ (about 9% in that case) is lost without any warning. `nodes` [32]: 3.5e-3, 9e-4, 3.5e-4, 2e-5 at 8, 16, 32, 64.
+  Near a rational surface of a 3-D equilibrium $\gamma$ depends on `guard` at the percent level (a true singularity, not
+  noise): refine it there.
 - **CTOK.** The FAX TAE of the CTOK `boozmn` (272.8 kHz, $n = 2$, $m = 0..12$,
   D at 10¹⁹ m⁻³) from the shift-invert solve, driven by deuterons with
-  $n_f = 10^{17}(1 - s)^2$ m⁻³: $\gamma/\omega$ = 9.2e-4 (25 keV), 3.6e-3
-  (50 keV), 1.6e-2 (100 keV); bulk-ion Landau damping at 1 keV is 2.6 s⁻¹.
+  $n_f = 10^{17}(1 - s)^2$ m⁻³: $\gamma/\omega$ = 7.0e-4 (25 keV), 3.3e-3
+  (50 keV), 1.57e-2 (100 keV); 9.2e-4, 3.6e-3, 1.6e-2 with the previous $n_h/\iota$ form; bulk-ion Landau damping at 1 keV is 2.6 s⁻¹.
 - **Stellarators.** LP-QA (ns 16, 16 FE nodes, $n = 1$ family $m = 0..5$,
   $n \in \{-1, 1, 3\}$, the four modes nearest 104 kHz, 150 keV Maxwellian
   deuterons, $n_f = 10^{15}(1 - s)^2$): resonances with $k \ne 1$ carry a

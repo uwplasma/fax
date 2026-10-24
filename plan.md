@@ -114,9 +114,9 @@ A and B start now. C runs in parallel with A/B. D needs C. E needs B and D. F ca
 
 ### F. Independent 3-D and kinetic validation (FAX)
 - [ ] Reduce one QA or QH case of the Knyazev et al. 2026 dataset (DOI 10.5281/zenodo.21299907; AE3D kink term off) to an offline fixture with a provenance manifest. Compare the continuum, isolated frequencies, eigenfunctions/subspaces and convergence.
-- [ ] Derive the 3-D passing source from a guiding-centre Lagrangian or linear drift-kinetic equation; the toroidal-momentum argument alone is insufficient. Test axisymmetric, QS-relabelled, ±passing, negative-ι and n-reversal limits.
-- [ ] Make the passing-boundary, birth-edge and small-divisor regularizations explicit parameters with convergence demonstrated.
-- [ ] Matched ITPA ladder: analytic limit → fixed-mode ZOW with matched passing/trapped content → FOW/ZLR → FLR → damping. No fitting to the pooled band. Report `|γ|/ω` and frozen-mode validity.
+- [x] Derive the 3-D passing source from a guiding-centre Lagrangian or linear drift-kinetic equation; the toroidal-momentum argument alone is insufficient. Test axisymmetric, QS-relabelled, ±passing, negative-ι and n-reversal limits. Done (theory §8): each resonance `(j, k)` carries `Q F = ∂_E F + j ∂_s F / (ω Z e ψ')` (orbit's poloidal harmonic, mean-flux label), not the mode's `n_h/ι`; the old form failed helical relabelling by 17–20%. Könies 4.33/16.52/32.94/64.85 → 4.26/16.27/32.48/64.02 ×10³ s⁻¹. Open: the `O(ω/nΩ)` labelling (F of mean flux vs of the P_ζ surface, 1.5% at n = 6, 23% at CTOK n = 2), I/G and ε² terms of J_ϑ.
+- [x] Make the passing-boundary, birth-edge and small-divisor regularizations explicit parameters with convergence demonstrated. Done: `boundary`, `FastIons.birth_width`, `guard` (and `nodes`); sensitivity near rational surfaces reported in validation.
+- [ ] Matched ITPA ladder: analytic limit → fixed-mode ZOW with matched passing/trapped content → FOW/ZLR → FLR → damping. No fitting to the pooled band. Report `|γ|/ω` and frozen-mode validity. Rung 1 done (Fu–Van Dam closed form, flat and with a density gradient). Rung 2 is **unmatched**: FAX (passing only) is 0.58–0.60 of the Könies CAS3D-K (ZOW) curve at 82–191 keV, whose trapped content the paper does not state; `|γ|/ω` ≤ 4% to 200 keV, 16% at 400 keV. Open: a passing-only or trapped-resolved ZOW reference (Könies and Kleiber 2012), then FOW/ZLR, FLR, damping.
 
 **Gate:** one independent 3-D spectrum and one matched nonzero kinetic response.
 
