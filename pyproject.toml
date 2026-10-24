@@ -12,7 +12,7 @@ authors = [{ name = "UWPlasma contributors" }]
 license = "MIT"
 dependencies = [
   "jax>=0.4.38",
-  "solvax>=0.32.0",
+  "solvax>=0.32.1",
   "numpy",
   "netCDF4",
   "tomli; python_version < '3.11'",

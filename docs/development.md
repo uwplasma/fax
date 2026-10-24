@@ -26,7 +26,7 @@ sphinx-build -W -b html docs docs/_build/html
 
 CI runs the suite on Python 3.10–3.13, on the oldest supported JAX (0.4.38 on
 Python 3.10, the SOLVAX floor), and the vmex path, lint, coverage and docs on Python 3.12. SOLVAX comes
-from PyPI (0.32 or newer). Keep
+from PyPI (0.32.1 or newer). Keep
 Python 3.10 working (the `tomli` fallback, no newer-JAX-only functions).
 
 Coverage is measured with branches on the full suite (fast and slow tests,
