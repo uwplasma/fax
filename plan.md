@@ -121,12 +121,12 @@ A and B start now. C runs in parallel with A/B. D needs C. E needs B and D. F ca
 **Gate:** one independent 3-D spectrum and one matched nonzero kinetic response.
 
 ### G. Release 1.0 (FAX)
-- [ ] Coverage ≥ 95/95. Three test tiers: PR (analytic and contracts), scheduled (VMEX gradients, 3-D references, min/max dependency stacks), release (external comparisons, CPU/GPU).
-- [ ] One fixture provenance manifest (identifier, hash, model switches, units, license, command, tolerance). Add `CITATION.cff`.
+- [x] Coverage ≥ 95/95. Three test tiers: PR (analytic and contracts), scheduled (VMEX gradients, 3-D references, min/max dependency stacks), release (external comparisons, CPU/GPU). Done: markers `slow`/`scheduled` only; PR matrix and coverage job (`-m 'not scheduled'`, 100/100); `scheduled.yml` adds the minimum (3.10, JAX 0.4.38, SOLVAX 0.32.1), minimum-vmex (3.11, vmex 0.11.10, JAX 0.9.2) and latest (3.13) stacks; the release checklist is in `docs/development.md`.
+- [x] One fixture provenance manifest (identifier, hash, model switches, units, license, command, tolerance). Add `CITATION.cff`. Done: `tests/data/PROVENANCE.md` covers all 9 fixtures in `tests/data` and `examples/data`, `tests/test_provenance.py` checks sizes and SHA-256, `make_ctok_fixtures.py` rebuilds the CTOK `.npz` bit for bit; `CITATION.cff` validates with cffconvert.
 - [x] README of 600–900 words with scope and unsupported physics stated next to supported physics. Fix the AE3D and drive-band wording. The installed-wheel quickstart runs outside a checkout. Done: 824 words; the quickstart (`examples/quickstart.py`, Könies torus, TAE 4.0610e5 rad/s) was run from the built wheel in an isolated interpreter; the drive is compared with the unmatched CAS3D-K ZOW curve, not the pooled ZLR band.
 - [x] Docs and examples pass (rule 10). Done: `docs/api.md` derivative contract per function (differentiable inputs, static arguments, transforms, first order, `Status`/NaN behaviour, pinned by `test_documented_transforms_and_failure_behaviour`) and an equation → function → test map; scientific examples are top-level scripts with editable settings and no `argparse`; tutorials `literalinclude` the sources; the CLI section lists what is Python-only.
 - [ ] Correct the generalized dense benchmark (`eigh(F, G)`, not `eigvalsh(F)`) and publish a performance table at equal accuracy.
-- [ ] Make the repo public and do the trusted PyPI release (needs owner approval).
+- [~] Make the repo public and do the trusted PyPI release (needs owner approval). Prepared: `publish.yml` runs on a `v*` tag with trusted publishing and a tag-equals-version check, metadata is release-ready, nothing is bumped or tagged.
 
 **Gate:** a new user can install, run, interpret, reproduce and cite the qualified model.
 

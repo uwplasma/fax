@@ -1,15 +1,16 @@
 [build-system]
-requires = ["setuptools", "wheel"]
+requires = ["setuptools>=77", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "uwplasma-fax"
 version = "0.1.0"
 description = "Differentiable JAX code for Alfvén eigenmodes and fast-ion physics in stellarators."
-readme = "README.md"
+readme = { file = "README.md", content-type = "text/markdown" }
 requires-python = ">=3.10"
-authors = [{ name = "UWPlasma contributors" }]
+authors = [{ name = "Rogerio Jorge", email = "rogerio.jorge@wisc.edu" }]
 license = "MIT"
+license-files = ["LICENSE"]
 dependencies = [
   "jax>=0.4.38",
   "solvax>=0.32.1",
@@ -22,6 +23,7 @@ classifiers = [
   "Intended Audience :: Science/Research",
   "Operating System :: OS Independent",
   "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3 :: Only",
   "Programming Language :: Python :: 3.10",
   "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
@@ -53,7 +55,7 @@ where = ["src"]
 testpaths = ["tests"]
 addopts = "-m 'not slow and not scheduled'"
 markers = [
-  "slow: end-to-end vmex runs (minutes); run with -m slow or -m ''",
+  "slow: minutes-long tests (vmex solves, 64-harmonic AE3D band); the PR coverage job runs them, the per-Python matrix does not",
   "scheduled: frozen-path gradients and resolution sweeps (tens of minutes); the weekly workflow runs -m scheduled",
 ]
 

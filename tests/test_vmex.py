@@ -69,6 +69,7 @@ def test_boundary_gradient_and_radial_refinement():
     np.testing.assert_allclose([v, t], [values[1], grads[1]], rtol=1e-8)
 
 
+@pytest.mark.slow
 def test_continuum_cost_gradient_step_and_vmex_terms():
     """One descent step on Paul's ``f_cont`` through vmex lowers it; the vmex QS/aspect terms share the state."""
     design = fax.prepare_design(INPUT, harmonics=[[1.0, 0.0]], density=1.0, parameters=("rc11", "zs11"), nodes=8)
