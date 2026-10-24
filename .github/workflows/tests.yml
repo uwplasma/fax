@@ -25,16 +25,27 @@ jobs:
       - run: python -m pip install -e ".[test]"
       - run: python -m pytest -q
 
-  oldest-jax:
-    name: Python 3.10, JAX 0.4.38
+  wheel:
+    name: Installed wheel
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-python@v6
         with:
           python-version: "3.10"
-      - run: python -m pip install -e ".[test]" "jax==0.4.38" "jaxlib==0.4.38" "numpy<2"
-      - run: python -m pytest -q
+      - name: Build, check and inspect the wheel
+        run: |
+          python -m pip install build twine
+          python -m build --outdir "$RUNNER_TEMP/dist"
+          twine check "$RUNNER_TEMP"/dist/*
+          extra=$(unzip -Z1 "$RUNNER_TEMP"/dist/*.whl | grep -Ev '^(fax/[a-z_]+\.py|uwplasma_fax-[^/]+\.dist-info/.*)$' || true)
+          test -z "$extra" || { echo "unexpected files in the wheel: $extra"; exit 1; }
+      - name: Run an analytic case from the installed wheel, outside the checkout
+        run: |
+          python -m venv "$RUNNER_TEMP/venv"
+          "$RUNNER_TEMP/venv/bin/pip" install "$RUNNER_TEMP"/dist/*.whl
+          cp tests/install_smoke.py "$RUNNER_TEMP"
+          cd "$RUNNER_TEMP" && venv/bin/python -I install_smoke.py && venv/bin/fax --help
 
   full:
     name: Lint, vmex path and coverage
@@ -46,6 +57,7 @@ jobs:
           python-version: "3.12"
       - run: python -m pip install -e ".[dev,vmex]"
       - run: ruff check . && ruff format --check .
+      - run: pipx run cffconvert --validate
       - run: python -m coverage run --branch --source=src/fax -m pytest -q -m 'not scheduled'
       - run: python -m coverage report -m
       - run: |
