@@ -210,10 +210,11 @@ def targeted_eigenpairs(
 
     Eigenvectors have shape ``(N, H, count)`` and are ``G``-normalized; ``iters`` bounds the shift-invert
     applications and ``tol`` is the relative residual (see :class:`Status`). First derivatives of values and
-    vectors are implicit; their tangents are NaN unless the solve ``converged`` and ``gap > 0``.
+    vectors are implicit; their tangents are NaN unless the solve ``converged`` and ``gap > 1e-8 max|lam|``
+    (smaller gaps are ties).
     """
     r = solvax.generalized_eigenpairs(band(F), band(G), target, count, tol, iters)
-    ok = r.converged & (r.gap > 0)
+    ok = r.converged & (r.gap > 1e-8 * jnp.max(jnp.abs(r.values)))  # a gap of a few ulps is a tie
     status = Status(r.residuals.max(), r.orthogonality, r.iterations, r.converged, r.gap, r.fallback)
     return _certified(r.values, ok), _certified(r.vectors, ok), status
 
