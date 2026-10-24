@@ -2,6 +2,7 @@
 
 import itertools
 from pathlib import Path
+from types import SimpleNamespace
 
 import jax
 import jax.numpy as jnp
@@ -10,8 +11,20 @@ import pytest
 
 import fax
 from fax.continuum import MU0, generalized_eigh
-from fax.eigen import Blocks, _certified, dense, equilibrium_currents, global_matrices, targeted_eigenpairs, targeted_eigenvalues
-from fax.geometry import surface_grid
+from fax.eigen import (
+    Blocks,
+    _assemble,
+    _certified,
+    _coefficients,
+    _modes,
+    dense,
+    equilibrium_currents,
+    force_balance_residual,
+    global_matrices,
+    targeted_eigenpairs,
+    targeted_eigenvalues,
+)
+from fax.geometry import jacobian_check, surface_grid
 
 DATA = Path(__file__).parent / "data"
 
@@ -52,8 +65,101 @@ def test_ae3d_ctok_parity():
     rel = khz[best] / ref["khz"] - 1
     np.testing.assert_array_less(np.abs(rel[1:]), 0.015)  # six global modes, overlap > 0.9
     assert overlap[np.arange(len(best)), best].min() > 0.9
-    tae = v[0]  # AE3D's 337.9 kHz TAE: FAX 272.8; AE3D's inter-surface iota' terms are wrong (plan.md section 6)
+    tae = v[0]  # AE3D's 337.9 kHz TAE: FAX 272.8; AE3D's iota' blocks differ from the energy (test_ae3d_v31_blocks...)
     assert np.sqrt((tae @ F @ tae).real / (tae @ G @ tae).real) / 2e3 / np.pi == pytest.approx(ref["khz"][0], rel=0.03)
+
+
+def _ae3d_blocks(field, prof, h, shear=True, metric_mask=None, iota_only=False):
+    """FAX coefficient blocks ``(A, B, D)`` of the bending and the inertia form from AE3D's ``ae_metric.dat`` data.
+
+    ``field`` is ``(surfaces, theta, 11)`` (columns of ``ae_metric.dat``; the axisymmetric CTOK data do not depend on zeta) and
+    ``prof`` ``(surfaces, 8)`` (``iota``, ``iota'``, ``jpol = G``, ``jpol'``, ``jtor = -I``, ``jtor'``, ...). ``metric_mask``
+    keeps only the listed contravariant ``g^ij`` components; ``iota_only`` keeps ``c_s = i iota' m B / D`` alone.
+    """
+    S, T, nz = field.shape[0], field.shape[1], 4
+    rj, B, gss, gtt, gzz, gst, gsz, gtz, Bs, Bt, Bz = (np.broadcast_to(field[:, :, i, None], (S, T, nz)).astype(float) for i in range(11))
+    iota, iota_s, G, G_s, I, I_s = (prof[:, i] for i in range(6))
+    D, D_s = G - iota * I, G_s - iota_s * I - iota * I_s  # G + iota I with I = -jtor
+    metric = np.stack([np.stack([gss, gst, gsz], -1), np.stack([gst, gtt, gtz], -1), np.stack([gsz, gtz, gzz], -1)], -2)
+    if metric_mask is not None:
+        metric = metric * np.array(metric_mask, float)
+    theta, zeta = np.meshgrid(2 * np.pi * np.arange(T) / T, 2 * np.pi * np.arange(nz) / nz, indexing="ij")
+    dB = np.stack([0 * Bs if iota_only else Bs, Bt, Bz], -1)
+    g = SimpleNamespace(theta=theta, zeta=zeta, B=B, dB=dB, sqrt_g=rj, metric=metric)
+    inertia, bending = _modes(g, iota, iota_s if shear else 0 * iota_s, D, 0 * D_s if iota_only else D_s, h)
+    w, rho = jnp.abs(rj), 2 * 1.67e-27 * 1e19
+    return _coefficients(metric, w, *bending), _coefficients(metric, MU0 * rho * w / B**2, *inertia)
+
+
+def test_ae3d_v31_blocks_and_energy_on_identical_inputs():
+    """Pinned AE3D v31 comparison for the CTOK TAE (docs/validation.md): bending, shear and inertia blocks.
+
+    ``tests/data/ae3d_v31_ctok.npz`` holds AE3D's own metric input (``ae_metric.dat``) and the blocks and assembled
+    bending matrix of the pinned build (commit 383d327, gfortran 15.2.0, instrumented by ``ae3d_v31_instrumentation.patch`` to
+    write its blocks, with the current and pressure terms off). Fed the same input, FAX reproduces AE3D's inertia blocks, its
+    ``f'f'`` and ``ff`` bending blocks without shear, and the symmetric part of its ``iota'`` coupling. AE3D's antisymmetric
+    ``iota'`` ``f'f`` coupling has the opposite sign, and its ``iota'`` ``ff`` block omits the ``a' iota'`` cross term and has the
+    ``g^{s theta} iota'`` terms with the opposite sign. A real-space quadrature of ``int |grad u|^2`` on the same input agrees
+    with FAX's assembled ``F`` (not with AE3D's).
+    """
+    ref = np.load(DATA / "ae3d_v31_ctok.npz")
+    h = jnp.asarray([[m, 2.0] for m in range(13)])
+    real = lambda x: np.asarray(x).real  # noqa: E731
+    sym = lambda x: 0.5 * (x + x.swapaxes(1, 2))  # noqa: E731
+    asym = lambda x: 0.5 * (x - x.swapaxes(1, 2))  # noqa: E731
+    rel = lambda x, y: np.linalg.norm(x - y) / np.linalg.norm(y)  # noqa: E731
+    (A0, B0, D0), (Ai, Bi, Di) = (
+        tuple(map(real, blocks)) for blocks in _ae3d_blocks(ref["field_pair"], ref["profiles_pair"], h, shear=False)
+    )
+    (A1, B1, D1), _ = _ae3d_blocks(ref["field_pair"], ref["profiles_pair"], h)
+    A1, B1, D1 = map(real, (A1, B1, D1))
+    c = (ref["ae_a"] * Ai).sum() / (Ai * Ai).sum()  # AE3D's units: kHz^2 and its inertia scale
+    cF = c / (2e3 * np.pi) ** 2
+    assert rel(ref["ae_a"], c * Ai) < 1e-9 and rel(ref["ae_d"], c * Di) < 1e-9
+    assert rel(ref["ae_b"], c * Bi.swapaxes(1, 2)) < 1e-9  # AE3D's b(i, j) is the coefficient of f_i f_j'
+    assert rel(ref["ae_aa"], cF * A0) < 1e-5 and rel(ref["ae_dd0"], cF * D0) < 1e-5
+    dbb, dB = ref["ae_bbS"] - ref["ae_bb0"], B1 - B0
+    assert rel(sym(dbb), cF * sym(dB)) < 1e-4  # the symmetric iota' part agrees
+    assert rel(asym(dbb), cF * asym(dB)) < 1e-3 and rel(asym(dbb), -cF * asym(dB)) > 1.9  # the antisymmetric part: opposite sign
+    mask = lambda *ij: [[1.0 if (a, b) in ij or (b, a) in ij else 0.0 for b in range(3)] for a in range(3)]  # noqa: E731
+    D_ss = _ae3d_blocks(ref["field_pair"], ref["profiles_pair"], h, metric_mask=mask((0, 0)), iota_only=True)[0][2]
+    D_st = [real(_ae3d_blocks(ref["field_pair"], ref["profiles_pair"], h, shear, mask((0, 1)))[0][2]) for shear in (True, False)]
+    dD = ref["ae_ddS"] - ref["ae_dd0"]
+    assert rel(sym(dD), cF * (real(D_ss) - (D_st[0] - D_st[1]))) < 1e-4  # AE3D: iota'^2 g^ss, no cross term, -g^st iota'
+    assert rel(sym(dD), cF * (D1 - D0)) > 0.1  # the energy functional has the cross term and +g^st iota'
+
+    field, prof, s = ref["field_all"], ref["profiles_all"], ref["s"]
+    (A, B, D), _ = _ae3d_blocks(field, prof, h)
+    F_fax = dense(_assemble(jnp.asarray(s), jnp.arange(13) == 0, A, B, D)).real
+    diag, upper = ref["ae_F_diag"].astype(float), ref["ae_F_upper"].astype(float)
+    F_ae3d = np.zeros((99 * 13, 99 * 13))
+    for k in range(99):
+        F_ae3d[13 * k : 13 * k + 13, 13 * k : 13 * k + 13] = diag[k]
+        if k < 98:
+            F_ae3d[13 * k : 13 * k + 13, 13 * k + 13 : 13 * k + 26] = upper[k]
+            F_ae3d[13 * k + 13 : 13 * k + 26, 13 * k : 13 * k + 13] = upper[k].T
+    T = field.shape[1]
+    th, ze = np.meshgrid(2 * np.pi * np.arange(T) / T, 2 * np.pi * np.arange(T) / T, indexing="ij")
+    rj, Bf, *gs, Bs, Bt, Bz = (field[:, :, i, None] * np.ones(T) for i in range(11))
+    metric = np.stack([np.stack([gs[0], gs[3], gs[4]], -1), np.stack([gs[3], gs[1], gs[5]], -1), np.stack([gs[4], gs[5], gs[2]], -1)], -2)
+    iota, Dtot = prof[:, 0], prof[:, 2] - prof[:, 0] * prof[:, 4]
+    k = np.fft.fftfreq(T, 1 / T)
+    d_ang = lambda f, a: np.fft.ifft(1j * k.reshape(-1 if a == 1 else 1, -1 if a == 2 else 1) * np.fft.fft(f, axis=a), axis=a).real  # noqa: E731
+    rng = np.random.default_rng(1)
+    x = 2 * s - 1
+    errors = {"FAX": [], "AE3D": []}
+    for _ in range(5):  # smooth potentials: five Chebyshev modes per harmonic, vanishing at the axis and the edge
+        y = np.zeros((99, 13))
+        for j in (2, 3, 4, 5):
+            y[:, j] = (s * (1 - s)) ** 4 * np.polynomial.chebyshev.chebval(x, rng.normal(size=4))
+        phi = (y[:, :, None, None] * np.cos(np.arange(13)[None, :, None, None] * th - 2 * ze)).sum(1)
+        u = (Bf / Dtot[:, None, None]) * (iota[:, None, None] * d_ang(phi, 1) + d_ang(phi, 2))
+        grad = np.stack([np.gradient(u, s, axis=0, edge_order=2), d_ang(u, 1), d_ang(u, 2)], -1)
+        density = (np.einsum("...i,...ij,...j", grad, metric, grad) * np.abs(rj)).mean((1, 2))
+        energy = ((density[1:] + density[:-1]) * np.diff(s)).sum() / 2
+        errors["FAX"].append(0.5 * (y.ravel() @ F_fax @ y.ravel()) / energy - 1)
+        errors["AE3D"].append(0.5 * (y.ravel() @ F_ae3d @ y.ravel()) / cF / energy - 1)
+    assert np.abs(errors["FAX"]).max() < 5e-3 and np.abs(errors["AE3D"]).max() > 0.05 and np.abs(errors["AE3D"]).min() > 5e-3
 
 
 def test_konies_tae_frequency_and_convergence():
@@ -167,6 +273,101 @@ def test_finite_beta_terms_match_real_space_quadrature(case):
     F0, F1 = (np.asarray(dense(global_matrices(geo, fax.mode_family(2, 4), rho, 32, 4, finite_beta=x)[0])) for x in (False, True))
     assert 0.5 * (y @ (F1 - F0) @ y).real == pytest.approx(kink + pres, rel=5e-3)
     assert abs(pres) < 1e-4 * abs(kink) if case == "ctok" else abs(pres) > 0.1 * abs(kink)
+    # The del-sigma form plus the omitted curl(b) term equal the direct form (docs/theory.md, section 4; FD-limited to 1%).
+    vol, gphi = np.abs(sg), up(dphi)
+    ksig = integral(-u * (Bc * np.cross(dphi, grad(sigma))).sum(-1) / B * np.sign(sg))
+    omitted = integral(-u * sigma * (sigma * (b * gphi).sum(-1) + (np.cross(b, kappa) * gphi).sum(-1)) * vol)
+    assert kink == pytest.approx(ksig + omitted, rel=1e-2)
+    if case == "ctok":  # next order, as fractions of the bending energy: the two forms, the kappa terms of the bending energy
+        quad = lambda a, c: np.einsum("...i,...ij,...j", a, gi, c) * vol  # noqa: E731
+        kcov = np.einsum("...ic,...c->...i", e, kappa) * u[..., None]
+        bend = integral(quad(du, du))
+        assert (kink - ksig) / bend == pytest.approx(-0.0069, abs=1e-3) and omitted / bend == pytest.approx(-0.0073, abs=1e-3)
+        assert integral(quad(du - kcov, du - kcov) - quad(du, du)) / bend == pytest.approx(7e-4, abs=3e-4)
+        assert kink / bend == pytest.approx(-0.2265, abs=5e-3)
+
+
+def test_kink_forms_differ_by_the_curl_b_term():
+    """Periodic NumPy checks of the two forms of the kink term (docs/theory.md, section 4), no FAX code.
+
+    ``K = int sigma b.(grad phi~* x grad u)`` equals ``-int u b.(grad phi~* x grad sigma)`` only with the extra term
+    ``-int u sigma (curl b).grad phi~*``: for ``b = (cos z, sin z, 0)``, ``sigma = -1``, ``phi = sin x`` they are -1/4 and 0.
+    With the full ``Q = curl(A b)`` (``grad u -> grad u - kappa u``, ``kappa = b.grad b``) the kappa terms cancel:
+    ``K_full = K_gradsigma - int sigma^2 u u~*``. Spectral derivatives on a smooth random unit ``b`` (``sigma = b.curl b``).
+    """
+    n = 16
+    x, z = (2 * np.pi * np.arange(n) / n).reshape(-1, 1), (2 * np.pi * np.arange(n) / n).reshape(1, -1)
+    b = np.stack([np.cos(z) + 0 * x, np.sin(z) + 0 * x, 0 * x + 0 * z], -1)
+    gphi, gu = (
+        np.stack([np.cos(x) + 0 * z, 0 * x + 0 * z, 0 * x + 0 * z], -1),
+        np.stack([-np.cos(z) * np.sin(x), 0 * x + 0 * z, -np.sin(z) * np.cos(x)], -1),
+    )
+    u = np.cos(z) * np.cos(x)  # b.grad(phi)
+    assert (-np.sum(b * np.cross(gphi, gu), -1)).mean() == pytest.approx(-0.25, abs=1e-14)
+    assert (u * np.sum(b * gphi, -1) * -1.0).mean() == pytest.approx(-0.25, abs=1e-14)  # -u sigma (curl b).grad(phi) with curl b = -b
+
+    N, rng = 32, np.random.default_rng(3)
+    X = np.meshgrid(*3 * [2 * np.pi * np.arange(N) / N], indexing="ij")
+    k = np.fft.fftfreq(N, 1 / N)
+
+    def grad(f):
+        d = np.stack([np.fft.ifftn(1j * k.reshape(np.roll([-1, 1, 1], a)) * np.fft.fftn(f)) for a in range(3)], -1)
+        return d if np.iscomplexobj(f) else d.real
+
+    def wave(modes, real=False):  # random sum of plane waves with random phases
+        phase = lambda c: sum(q * x for q, x in zip(c, X, strict=True)) + rng.uniform(0, 6)  # noqa: E731
+        return sum(rng.normal() * (np.cos(phase(c)) if real else np.exp(1j * phase(c))) for c in modes)
+
+    v = 1 + 0.06 * np.stack([wave(itertools.product((-1, 0, 1), repeat=3), real=True) for _ in range(3)], -1)
+    b = v / np.linalg.norm(v, axis=-1, keepdims=True)
+    Jb = np.stack([sum(b[..., j] * grad(b[..., i])[..., j] for j in range(3)) for i in range(3)], -1)  # kappa
+    gb = [grad(b[..., i]) for i in range(3)]
+    curl = np.stack([gb[2][..., 1] - gb[1][..., 2], gb[0][..., 2] - gb[2][..., 0], gb[1][..., 0] - gb[0][..., 1]], -1)
+    sigma = np.sum(b * curl, -1)
+    modes = list(itertools.product(range(-2, 3), repeat=3))
+    phi, phit = wave(modes), wave(modes)
+    u, ut = np.sum(b * grad(phi), -1), np.sum(b * grad(phit), -1)
+    gpc, mean = np.conj(grad(phit)), lambda a: a.mean()  # noqa: E731
+    direct = mean(sigma * np.sum(b * np.cross(gpc, grad(u)), -1))
+    gradsigma = mean(-u * np.sum(b * np.cross(gpc, grad(sigma)), -1))
+    omitted = mean(-u * sigma * np.sum(curl * gpc, -1))
+    assert direct == pytest.approx(gradsigma + omitted, abs=2e-6 * abs(direct))
+    full = mean(sigma * np.sum(b * np.cross(gpc, grad(u) - Jb * u[..., None]), -1))
+    assert full == pytest.approx(gradsigma - mean(sigma**2 * u * np.conj(ut)), abs=2e-6 * abs(full))
+    assert abs(omitted) > 0.05 * abs(direct)  # not a small correction for this field
+
+
+def test_conventions_and_geometry_diagnostics_on_ctok():
+    """Section 1 of docs/theory.md pinned on the CTOK embedding: orientation, ``G``, ``I``, ``iota`` and ``k_par`` in real space
+    and in the assembled mode vectors, the flux factor ``psi' = Phi_edge / 2 pi`` and the force-balance residual.
+
+    ``psi'`` is the input's ``PHIEDGE / 2 pi`` (AE3D ``phipf``, 0.0450886). The first surface (``s = 0.005``) is 15% low: the
+    radial finite difference of ``R ~ sqrt(s)`` at the axis.
+    """
+    geo = fax.read_boozmn(DATA / "boozmn_ctok.nc")
+    g = surface_grid(geo, 32, 32)
+    D = geo.G + geo.iota * geo.I
+    assert jnp.all(g.sqrt_g < 0) and jnp.all(geo.G > 0) and jnp.all(geo.iota > 0) and jnp.all(D > 0)  # (s, theta, zeta) left-handed
+    psi, spread = jacobian_check(geo)
+    np.testing.assert_allclose(psi[5:], 0.0450886, rtol=5e-3)
+    assert spread[5:].max() < 1e-4 and spread.max() < 1e-3 and psi[0] < 0.88 * 0.0450886
+    assert force_balance_residual(geo)[5:].max() < 1e-4 and force_balance_residual(geo).max() < 1e-3
+
+    grad, e, gij, iota, B, Bz, phi, u, y, integral = _embedding(geo)  # Bz = B^zeta from B^theta = iota B^zeta
+    cov = np.einsum("...ij,...j->...i", gij, np.stack([0 * Bz, iota * Bz, Bz], -1))  # (B_s, B_theta, B_zeta) of the embedding
+    G, I, D = (np.asarray(a)[:, None, None] for a in (geo.G, geo.I, D))
+    np.testing.assert_allclose(cov[..., 2], np.broadcast_to(G, B.shape), rtol=2e-3)
+    np.testing.assert_allclose(cov[..., 1], np.broadcast_to(I, B.shape), atol=2e-3)
+    np.testing.assert_allclose(Bz, B**2 / D, rtol=2e-3)  # B^zeta = B.grad(zeta) = B^2 / (G + iota I) > 0
+    h = fax.mode_family(2, 4)  # exp(i(m theta - n zeta)): (B.grad e) / (i B e) = (iota m - n) B / (G + iota I)
+    zeros = jnp.zeros_like(geo.s)
+    bending = _modes(g, geo.iota, zeros, jnp.asarray(D[:, 0, 0]), zeros, h)[1][0]  # f' part of grad(u_j), s component: c_j e_j
+    c = np.asarray(bending[..., 0] / jnp.exp(1j * (h[:, 0, None, None] * g.theta - h[:, 1, None, None] * g.zeta)))
+    kpar = (
+        np.asarray(geo.iota)[:, None, None, None] * np.asarray(h[:, 0])[None, :, None, None] - np.asarray(h[:, 1])[None, :, None, None]
+    ) * (Bz / B)[:, None]
+    np.testing.assert_allclose(c, 1j * kpar, rtol=2e-3, atol=1e-6)
+    assert kpar[40, 1].mean() < 0 < kpar[40, 4].mean()  # sign of iota m - n: m = 1 against m = 4 at n = 2, iota ~ 0.8 at s ~ 0.4
 
 
 def test_cylinder_newcomb_m1_and_suydam_threshold():

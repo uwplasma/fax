@@ -5,8 +5,8 @@ electrostatic potential ``phi`` is::
 
     w^2 int mu0 rho / B^2 grad(phi~)* . grad(phi) dV = int grad(u~)* . grad(u) dV,   u = B.grad(phi) / B,
 
-without the pressure-gradient and parallel-current (kink) terms, which are
-small for TAE-type modes at low beta. With ``phi = sum_j f_k(s) e_j``, linear
+without the pressure-gradient and parallel-current (kink) terms (``finite_beta``, restricted and experimental:
+``docs/theory.md``, section 4, derives them and the order at which they are retained). With ``phi = sum_j f_k(s) e_j``, linear
 radial hat functions ``f_k`` on the geometry surfaces and
 ``e_j = exp(i(m_j theta - n_j zeta))``, the Galerkin matrices ``F y = w^2 G y``
 are Hermitian block tridiagonal with ``H x H`` blocks. ``phi = 0`` at ``s = 1``
@@ -81,25 +81,16 @@ def global_matrices(
 ) -> tuple[Blocks, Blocks]:
     """Bending ``F`` and inertia ``G`` (``w^2`` in rad^2/s^2); surfaces must lie strictly inside ``(0, 1)``.
 
-    ``finite_beta`` adds the Hermitian parts of the ``J_par`` (kink) and pressure-curvature terms of
-    ``delta W`` (see :func:`equilibrium_currents`)::
+    ``finite_beta`` (restricted, experimental: no sound or full-MHD claim) adds the Hermitian parts of the ``J_par`` (kink)
+    and pressure-curvature terms of ``delta W`` (see :func:`equilibrium_currents` and ``docs/theory.md``, section 4)::
 
         int sigma b.(grad phi~* x grad u) dV - 2 mu0 int (b x grad phi.grad p)(b x grad phi~*.kappa) / B^2 dV.
     """
     h = jnp.asarray(harmonics, dtype=float)
-    m, n = h[:, 0, None, None], h[:, 1, None, None]
     g = surface_grid(geo, ntheta, nzeta)
-    e = jnp.exp(1j * (m * g.theta - n * g.zeta))
-    zero = jnp.zeros_like(e)
     D, (iota_s, D_s) = geo.G + geo.iota * geo.I, _d_ds(jnp.stack([geo.iota, geo.G + geo.iota * geo.I], 1), geo.s).T
+    inertia, bending = _modes(g, geo.iota, iota_s, D, D_s, h)
     r = lambda a: a[:, None, None, None]  # noqa: E731 - per-surface value -> (S, H, T, Z)
-    k = r(geo.iota) * m - n
-    c = 1j * k * g.B[:, None] / r(D)  # u_j = c_j e_j f_j
-    c_s = 1j * (r(iota_s) * m * g.B[:, None] + k * (g.dB[:, None, ..., 0] - g.B[:, None] * r(D_s / D))) / r(D)
-    c_t, c_z = 1j * k * g.dB[:, None, ..., 1] / r(D), 1j * k * g.dB[:, None, ..., 2] / r(D)
-    # Covariant components on (grad s, grad theta, grad zeta) of the f' and f parts of each gradient.
-    inertia = jnp.stack([e, zero, zero], -1), 1j * jnp.stack([zero, m * e, -n * e], -1)
-    bending = jnp.stack([c * e, 0 * c, 0 * c], -1), jnp.stack([c_s, c_t + 1j * m * c, c_z - 1j * n * c], -1) * e[..., None]
     rho = jnp.broadcast_to(jnp.asarray(density, dtype=float), geo.s.shape)
     volume = jnp.abs(g.sqrt_g)
     pairs = ((volume, bending), (r(MU0 * rho)[:, 0] * volume / g.B**2, inertia))
@@ -124,6 +115,23 @@ def global_matrices(
     return F, G
 
 
+def _modes(g: Any, iota: jax.Array, iota_s: jax.Array, D: jax.Array, D_s: jax.Array, h: jax.Array) -> tuple[tuple, tuple]:
+    """Covariant ``(s, theta, zeta)`` components, as ``(f' part, f part)``, of ``grad(f e_j)`` (inertia) and ``grad(u_j)``
+    (bending) for every harmonic. ``g`` is a :class:`~fax.geometry.SurfaceGrid`; ``D = G + iota I`` and ``iota``, ``D`` are
+    per surface with radial derivatives ``iota_s``, ``D_s``; ``u_j = c_j e_j f`` with ``c_j = i (iota m - n) B / D``."""
+    m, n = h[:, 0, None, None], h[:, 1, None, None]
+    e = jnp.exp(1j * (m * g.theta - n * g.zeta))
+    zero = jnp.zeros_like(e)
+    r = lambda a: a[:, None, None, None]  # noqa: E731 - per-surface value -> (S, H, T, Z)
+    k = r(iota) * m - n
+    c = 1j * k * g.B[:, None] / r(D)
+    c_s = 1j * (r(iota_s) * m * g.B[:, None] + k * (g.dB[:, None, ..., 0] - g.B[:, None] * r(D_s / D))) / r(D)
+    c_t, c_z = 1j * k * g.dB[:, None, ..., 1] / r(D), 1j * k * g.dB[:, None, ..., 2] / r(D)
+    inertia = jnp.stack([e, zero, zero], -1), 1j * jnp.stack([zero, m * e, -n * e], -1)
+    bending = jnp.stack([c * e, 0 * c, 0 * c], -1), jnp.stack([c_s, c_t + 1j * m * c, c_z - 1j * n * c], -1) * e[..., None]
+    return inertia, bending
+
+
 def equilibrium_currents(geo: Geometry, g: Any) -> tuple[jax.Array, jax.Array, jax.Array]:
     """``mu0 dp/ds``, covariant ``B_s`` and ``sigma = mu0 J.B / B^2`` from Boozer force balance.
 
@@ -144,6 +152,19 @@ def equilibrium_currents(geo: Geometry, g: Any) -> tuple[jax.Array, jax.Array, j
     B_s, Bt, Bz = (jnp.fft.ifft2(a * hat).real for a in (1, 1j * k, 1j * l))
     sigma = (r(geo.I) * (Bz - r(G_s)) - r(geo.G) * (Bt - r(I_s))) * w / g.sqrt_g
     return p_s, B_s, sigma
+
+
+def force_balance_residual(geo: Geometry, ntheta: int = 32, nzeta: int = 32) -> jax.Array:
+    """Per surface, the rms difference between ``B_s`` from :func:`equilibrium_currents` (Boozer force balance, before the
+    Hermitian symmetrization of the assembled terms) and the covariant radial field of the embedding,
+    ``B.r_s = B^zeta (iota g_{s theta} + g_{s zeta})`` with ``B^theta = iota B^zeta``, over the rms of ``|B|``."""
+    g = surface_grid(geo, ntheta, nzeta)
+    B_s = equilibrium_currents(geo, g)[1]
+    cov = jnp.linalg.inv(g.metric)
+    iota = geo.iota[:, None, None]
+    B_zeta = g.B / jnp.sqrt(iota**2 * cov[..., 1, 1] + 2 * iota * cov[..., 1, 2] + cov[..., 2, 2])
+    embedded = B_zeta * (iota * cov[..., 0, 1] + cov[..., 0, 2])
+    return jnp.sqrt(((B_s - embedded) ** 2).mean((1, 2)) / (g.B**2).mean((1, 2)))
 
 
 def _coefficients(metric: jax.Array, w: jax.Array, X0: Any, X1: Any, Y0: Any = None, Y1: Any = None) -> tuple[jax.Array, ...]:

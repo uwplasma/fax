@@ -82,11 +82,11 @@ A and B start now. C runs in parallel with A/B. D needs C. E needs B and D. F ca
 **Gate:** every reproduced defect has a test that fails at `2f7228f` and passes after its fix; CTOK, Könies and drive references stay within their stated budgets.
 
 ### B. Qualify the reduced model (FAX)
-- [ ] Convention table: `s` and the flux `2π` factor, signs and handedness, full-torus `n`, `nfp`, `G`/`I`, units, the `exp[i(mθ−nζ−ωt)]` phase, and normalization. Use it in theory, code, exports and tests.
-- [ ] Re-derive bending, current and pressure terms from the ideal-MHD energy at one consistent reduced ordering, including the `σ(∇×b)·∇φ*` term and boundary and axis terms. Fix the docs' equivalence statement.
-- [ ] Check Jacobian (embedding vs Boozer identity) and force-balance residuals before symmetrization.
-- [ ] CTOK discrepancy: pin AE3D v31 source, compiler, input and grids; compare the bending, shear, current and pressure blocks separately, then eigenvectors. Until then, docs and README say "unresolved".
-- [ ] `finite_beta=True` stays labelled restricted/experimental. No sound or full-MHD claim.
+- [x] Convention table: `docs/theory.md` section 1. Pinned by `test_conventions_and_geometry_diagnostics_on_ctok`: orientation ($\sqrt g < 0$), $G$, $I$, $\iota$, $B^\zeta$, $k_\parallel = (\iota m - n)B/(G + \iota I)$ in real space and in the assembled mode vectors, and $\psi' = \Phi_\mathrm{edge}/2\pi$.
+- [x] Re-derived from $\delta W$ (`docs/theory.md` section 4, `test_kink_forms_differ_by_the_curl_b_term`): the direct kink form is the energy term at the retained order $O(\delta^2)$; it differs from the $\nabla\sigma$ form by $-\int u\sigma(\nabla\times\mathbf b)\cdot\nabla\phi^*$ (exact, $O(\delta^3)$), the complete $\mathbf Q_\perp$ gives $K_{\nabla\sigma} - \int\sigma^2|u|^2$ together with a bending correction, 1% of the bending energy on CTOK. No code change; Könies with $p$ stays 3.948e5 rad/s, CTOK `finite_beta` keeps its near-axis instability. Docs equivalence statement corrected, boundary and axis terms stated.
+- [x] Jacobian and force-balance residuals: `jacobian_check`, `force_balance_residual`. CTOK $\psi'$ 0.4% and spread 5e-5 for $s \ge 0.05$ (first surface 15% low: radial finite difference of $R \sim \sqrt s$), $B_s$ vs embedding 1e-5; ITPA $\psi'$ 0.3%, spread 3e-4, $B_s$ 8e-5, $\mu_0p'$ vs `AM` 0.15%.
+- [x] CTOK discrepancy: AE3D v31 pinned (commit 383d327, gfortran 15.2.0, unmodified build reproduces the shipped answers; instrumented patch and fixture in `tests/data`). Blocks compared separately: inertia and base bending agree (1e-9 to 2e-6); three $\iota'$ terms of AE3D's bending blocks differ from the energy (antisymmetric $f'f$ sign, missing $a'\iota'$ cross term, $g^{s\theta}\iota'$ sign); correcting them in AE3D's own Fortran moves its localized gap modes from 240.9, 244.9, 338.2, 355.6 to 258.9, 264.9, 266.4 kHz (FAX 268.5, 270.1, 279.1). Quadrature on AE3D's input: FAX 0.1-0.3%, AE3D 2-37%. The $J_\parallel$ blocks still disagree (cause open; the TAE does not depend on it). Docs and README state this; not reported upstream.
+- [x] `finite_beta=True` labelled restricted/experimental in the docstring, theory, validation and README. No sound or full-MHD claim.
 
 **Gate:** equations, code, quadrature and one matched external calculation describe the same model.
 

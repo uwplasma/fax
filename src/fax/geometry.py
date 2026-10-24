@@ -3,6 +3,8 @@
 Harmonics use ``cos(m theta - n zeta)`` / ``sin(m theta - n zeta)`` with arrays
 shaped ``(surfaces, modes)``. Stellarator-asymmetric arrays are stored as
 zeros when absent, so every geometry has the same pytree structure.
+The conventions (flux normalization, handedness, ``n`` versus ``nfp``, units, phase) are
+tabulated in ``docs/theory.md``, section 1.
 """
 
 from __future__ import annotations
@@ -23,7 +25,8 @@ class Geometry:
     """Boozer harmonics on a set of flux surfaces ``s`` (normalized toroidal flux).
 
     ``G`` and ``I`` are the Boozer covariant components, ``B = G grad(zeta) +
-    I grad(theta) + K grad(psi)``, so the Jacobian is ``(G + iota I) / B^2``.
+    I grad(theta) + K grad(psi)``, so the Boozer Jacobian is ``(G + iota I) / B^2``
+    and the embedding Jacobian ``psi' (G + iota I) / B^2`` (see :func:`jacobian_check`).
     """
 
     s: jax.Array
@@ -287,6 +290,19 @@ def surface_grid(geo: Geometry, ntheta: int = 32, nzeta: int = 32) -> SurfaceGri
     metric = jnp.linalg.inv(basis @ jnp.swapaxes(basis, -1, -2))
     dB = jnp.stack([Bs, Bt, Bz], axis=-1)
     return SurfaceGrid(theta=theta, zeta=zeta, B=B, jacobian=jac, grad_s2=metric[..., 0, 0], dB=dB, sqrt_g=sqrt_g, metric=metric)
+
+
+def jacobian_check(geo: Geometry, ntheta: int = 32, nzeta: int = 32) -> tuple[jax.Array, jax.Array]:
+    """Embedding Jacobian against the Boozer identity ``|sqrt g| = psi' (G + iota I) / B^2``, per surface.
+
+    ``psi' = Phi_edge / 2 pi`` is the toroidal flux over ``2 pi`` per unit ``s``. Returns its surface mean (from the
+    embedding ``r(s, theta, zeta)``) and the relative angular standard deviation, which is 0 when the embedding and the
+    identity agree; compare the mean with the flux normalization of the equilibrium (``PHIEDGE / 2 pi`` for VMEC).
+    """
+    g = surface_grid(geo, ntheta, nzeta)
+    psi = jnp.abs(g.sqrt_g) * g.B**2 / (geo.G + geo.iota * geo.I)[:, None, None]
+    mean = psi.mean((1, 2))
+    return mean, psi.std((1, 2)) / mean
 
 
 def _d_ds(a: jax.Array, s: jax.Array) -> jax.Array:

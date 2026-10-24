@@ -9,6 +9,8 @@ import numpy as np
 import pytest
 
 import fax
+from fax.eigen import equilibrium_currents, force_balance_residual
+from fax.geometry import jacobian_check, surface_grid
 
 pytest.importorskip("vmex", exc_type=ImportError)
 INPUT = Path(__file__).parents[1] / "examples" / "data" / "input.LandremanPaul2021_QA_lowres"
@@ -86,6 +88,11 @@ def test_konies_itpa_finite_beta_tae():
     finite-beta terms; CAS3D (compressible) gives 4.01e5.
     """
     geo = fax.from_vmec_input(INPUT.with_name("input.ITPA_Konies2018"), mboz=12, nboz=0, surfaces=tuple(np.arange(1, 50) / 50))
+    psi, spread = jacobian_check(geo)  # PHIEDGE = 3 pi, so psi' = 1.5; the first four surfaces (s < 0.1) are up to 4.5% off
+    np.testing.assert_allclose(psi[4:], 1.5, rtol=5e-3)
+    assert spread.max() < 1e-3 and force_balance_residual(geo).max() < 2e-4
+    mu0_dp = 4e-7 * np.pi * (-6.811e3 - 717.0 * np.asarray(geo.s))  # mu0 dp/ds of AM = 7.17e3 -6.811e3 -3.585e2
+    np.testing.assert_allclose(equilibrium_currents(geo, surface_grid(geo, 32, 32))[0], mu0_dp, rtol=3e-3)
     geo = geo.interpolate((jnp.arange(100) + 0.5) / 100)
     omega = []
     for finite_beta in (False, True):

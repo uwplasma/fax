@@ -15,9 +15,11 @@ logbook (`plan.md`, section 6).
 | Gap formulas | `test_gaps_and_gap_location` | TAE $\iota = 2n/(2m+1)$, MAE $\iota = (2n - N_{fp})/2m$ |
 | Uniform-field global spectrum is a continuum | `test_uniform_field_spectrum_is_a_continuum` | edges within $0.5/N$; mode width ∝ $1/N$ (N = 40, 160) |
 | AE3D CTOK global modes | `test_ae3d_ctok_parity` | 6 modes within 1.4%, overlap > 0.9 |
-| AE3D CTOK TAE | same | not reproduced; AE3D sign error, see below |
+| AE3D CTOK TAE (337.9 kHz) | `test_ae3d_v31_blocks_and_energy_on_identical_inputs` | not reproduced: three $\iota'$ terms of AE3D v31's bending blocks differ from the energy; pinned block comparison below |
 | Independent 3-D spectrum, precise QA of Knyazev et al. 2026 (STELLGAP continuum, AE3D gap band) | `test_stellgap_continuum_parity`, `test_ae3d_gap_band_in_the_sine_basis` | continuum 3.0e-3 mean (gate 4e-3); archived global mode within 2% in energy at 24-64 harmonics, 5.1% at AE3D's 162; no single-mode match (overlap 0.18) |
 | Bending and inertia vs real-space quadrature | `test_ctok_bending_energy_matches_real_space_quadrature` | 0.3% (gate 0.5%) |
+| Conventions ({ref}`conventions`), embedding Jacobian vs the Boozer identity, force balance | `test_conventions_and_geometry_diagnostics_on_ctok`, `test_konies_itpa_finite_beta_tae` | CTOK $\psi'$ = 0.04509 to 0.4% and angular spread $\le$ 5e-5 for $s \ge 0.05$ (first surface 15% low); force-balance $B_s$ vs embedding $\le$ 1e-5 of $\lvert B\rvert$; ITPA ($\psi' = 3\pi/2\pi$): 0.3% for $s \ge 0.1$ (the first four surfaces up to 4.5% off), spread $\le$ 3e-4, force balance $\le$ 8e-5, $\mu_0p'$ vs the input's `AM` to 0.15% |
+| Forms of the kink term ({ref}`finite-beta`) | `test_kink_forms_differ_by_the_curl_b_term` | $K_\mathrm{direct} = K_{\nabla\sigma} - \int u\sigma(\nabla\times\mathbf b)\cdot\nabla\tilde\phi^*$ and $K_\mathrm{full} = K_{\nabla\sigma} - \int\sigma^2u\tilde u^*$ to 2e-6 (random periodic field); counterexample $-1/4$, 0, $-1/4$ |
 | Finite-$\beta$ terms vs real-space quadrature ($\sigma$ from curl $\mathbf B$; CTOK and Könies with $p$) | `test_finite_beta_terms_match_real_space_quadrature` | 0.3% CTOK, 0.2% pressure (gate 0.5%) |
 | Cylinder: Newcomb $m = 1$ cancellation; Suydam threshold | `test_cylinder_newcomb_m1_and_suydam_threshold` | bending + kink = 1e-3 of bending; stable at 1.0e4 Pa, unstable at 2.0e4 (Suydam 1.05e4) |
 | Könies ITPA with $p(s)$, vmex equilibrium | `test_konies_itpa_finite_beta_tae` | 4.127e5 → 3.947e5 rad/s with finite-$\beta$ terms (CAS3D 4.01e5) |
@@ -91,35 +93,52 @@ to AE3D's eigenvectors by overlap > 0.9, agree within 1.4%:
 AE3D's 343.6, 384.1, 685.6, 703.3, 738.2 and 741.2 kHz modes are all
 reproduced within 1.4% (gate 1.5%).
 
-**The CTOK TAE: an AE3D sign error.** AE3D's TAE at 337.9 kHz is not
-reproduced; FAX's best-overlap mode is at 272.8 kHz. The evidence that FAX is
-right:
+**The CTOK TAE: pinned block comparison.** AE3D's TAE at 337.9 kHz is not
+reproduced by FAX. Both operators were fed the same metric input and compared
+block by block.
 
-- The shear term $i\iota' m_jB/(G + \iota I)$ in $\partial_sc_j$
-  ({eq}`shear-term`) follows from $u = \mathbf B\cdot\nabla\phi/B$ and is
-  physical.
-- `test_ctok_bending_energy_matches_real_space_quadrature` builds $u$ from
-  finite differences of a test $\phi$ on the boozmn embedding, with $B^i$
-  constructed from $|B|$, $\iota$ and $g_{ij}$ only, and integrates
-  $\int|\nabla u|^2dV$ and $\int\mu_0\rho|\nabla\phi|^2/B^2dV$ in real space.
-  $F$ and $G$ agree to 0.3%; without the $\iota'$ term $F$ is off by 9–20%.
-- With a finer quadrature (1201 × 64 × 16) the Rayleigh quotient of AE3D's own
-  TAE eigenvector is 329.7 kHz (FAX's operator: 328.5–329.3 kHz; FAX without
-  $\iota'$: 342.4 kHz), not AE3D's eigenvalue 337.9 kHz. The test checks the
-  quotient within 3%.
-- AE3D's matrix matches FAX within 0.3% on same-surface blocks (1.1% Frobenius
-  overall), but its $m = 2/3$ couplings between surfaces 45 and 46
-  ($s \approx 0.46$) are 1.071 and 0.820 against FAX's 0.962 and 0.905. FAX
-  with $-\iota'$ gives 1.066 and 0.806: the $\iota'$ cross term with the wrong
-  sign. Neither a global $-\iota'$ (404.6 kHz) nor swapped $f'f$ blocks
-  (332.1 kHz) reproduce AE3D's eigenvalue, so the defect is confined to its
-  inter-surface $\iota'$ cross terms.
-- The $n = 2$ TAE gap at $s \approx 0.45$ spans 232–396 kHz. Both modes peak
-  there; the 272.8 kHz mode meets the continuum only at $s = 0.85$–$0.94$
-  (1.8% of its norm), AE3D's 337.9 kHz mode at $s = 0.69$–$0.82$ (14%).
+- *Build.* AE3D v31 (`ae_solve_version31.f`, ORNL-Fusion/AE3D commit
+  `383d327c53bf722026d7e432797ea37c50347b68`), gfortran 15.2.0 (Homebrew GCC 15.2.0_1) on arm64 macOS,
+  `-O2 -ffixed-form -ffixed-line-length-none -fallow-argument-mismatch`, LAPACK from Accelerate (`dggev`). Input: the
+  CTOK `ae_metric.dat`, `fourier.dat`, `plasma.dat` of `ae3d_test_problem.tar.gz` ($n_s = 99$, 80 × 80 grid, $n = 2$,
+  $m = 0..12$, deuterium at 10¹⁹ m⁻³, $\rho = k/(n_s + 1)$). The unmodified build reproduces the shipped `a_matrix.dat`,
+  `b_matrix.dat` (identical text) and every eigenvalue of `egn_values.dat` of
+  `ae3d_test_problem_answers.tar.gz`. The instrumented build
+  (`tests/data/ae3d_v31_instrumentation.patch`) zero-initialises `bb1`, `bb2`, `cc`, `cc2` (v31 allocates them without
+  initialising; the result is unchanged), writes the coefficient blocks and matrices in double precision and switches the
+  shear, current and pressure terms from the environment. `tests/data/ae3d_v31_ctok.npz` keeps the blocks of surfaces 45
+  and 46 ($s = 0.45$, $0.46$) and the assembled matrix.
+- *Inertia and base bending agree.* With FAX fed AE3D's own input, the inertia blocks $a$, $b$, $d$ agree to 1e-9 (AE3D's
+  $b(i, j)$ is the coefficient of $f_if_j'$, FAX's $B^T$), and the $f'f'$ and $ff$ bending blocks without shear to 2e-6 and
+  5e-7. The symmetric part of the $\iota'$ $f'f$ block agrees to 3e-6.
+- *Three $\iota'$ terms differ* (AE3D `ae_solve_version31.f` line numbers):
 
-The Könies case is insensitive to $\iota'$ (4.061e5 vs 4.067e5 rad/s without
-it), so only strongly sheared cases such as CTOK separate the two forms.
+  | Term | AE3D v31 | Energy functional (FAX, quadrature) |
+  |---|---|---|
+  | antisymmetric $\iota'$ $f'f$ block, `stell_rfp_specific_term2` (912–913, `bb2`, 935) | $-g^{ss}a^2\iota'\,m_j\kappa_i$: the transposed index pattern of the $f_if_j'$ coefficient that `element` (1430–1436) assumes, so the antisymmetric part has the opposite sign (equal magnitude, 3e-5) | $-g^{ss}a^2\iota'\,m_i\kappa_j$ |
+  | $\iota'$ $ff$ block, `term3` (914–917, `dd1`, 947) | $a'^2\kappa_i\kappa_j + a^2\iota'^2m_im_j$, and $-g^{ss}aa'\iota'(\kappa_im_j - \kappa_jm_i)$ is antisymmetric, so `dd = dd1 + dd2 + dd2^T` and the final symmetrization drop it | adds $g^{ss}aa'\iota'(\kappa_im_j + \kappa_jm_i)$ |
+  | $\iota'g^{s\theta}$ $ff$ terms, `term4`, `term5` (918–921, `dd2`) | opposite sign (least squares over the 99 surfaces: the AE3D increment is $\iota'^2g^{ss} - \iota' g^{s\theta}$ to 5e-6) | $+\iota'g^{s\theta}$ |
+
+  The $\iota'g^{s\zeta}$ terms (`term6`, `term7`, lines 922–925) are computed but commented out of `dd2` (967–968); they are
+  0.1% of the $\iota'$ $ff$ block for CTOK and not examined further. Here $a = B/(G + \iota I)$ and $\kappa = n - \iota m$.
+- *Quadrature.* Using AE3D's own metric input, a real-space quadrature of $\int|\nabla u|^2dV$ ($u$ from $B/(G + \iota I)$,
+  $\iota$, spectral angle derivatives and second-order radial differences, no FAX code) for five smooth potentials
+  ($m = 2..5$, $n = 2$, radial profiles $(s(1-s))^4$ times Chebyshev polynomials) differs from FAX's assembled $F$ by
+  0.13–0.30% and from AE3D's assembled matrix by 1.8–37%.
+- *The TAE.* The Rayleigh quotient of AE3D's 338.2 kHz eigenvector (no current term) is 338.2 kHz in AE3D's blocks and
+  324.2 kHz in FAX's blocks under AE3D's assembly (326.9 kHz under FAX's). Correcting the three terms in AE3D's own Fortran
+  (switches `1`, `2`, `3` of the instrumented build, assembled by AE3D's own routine) removes the localized
+  ($s \approx 0.46$) gap modes at 240.9, 244.9, 338.2 and 355.6 kHz and gives them at 258.9, 264.9 and 266.4 kHz; FAX's blocks
+  assembled by AE3D's `element` give 258.8, 264.7 and 266.3 kHz. Alone, the index swap (`1`) gives localized modes at 298.8, 309.4 and 324.0 kHz, the $g^{s\theta}$ sign (`3`) at 298.2 and 303.3 kHz, and the restored $a'\iota'$ cross term (`2`) leaves them at 241.4, 245.2, 338.1 and 355.4 kHz (a negligible term here). With FAX's own assembly the localized gap modes
+  are 268.5, 270.1 and 279.1 kHz. The 3–4% left between the two assemblies is AE3D's
+  `element`: it uses the node value on the diagonal and `rho_int_1drv_a = rho_int_1drv_b = 0`, so the symmetric part of the
+  $f'f$ coupling contributes nothing, although $\int b\,(f_if_j)'\,ds = -\int b'f_if_j\,ds$ does not vanish; with the
+  corrected blocks it still errs by 4–17% on the smooth potentials above, and by 0.13–0.7% under FAX's element-averaged
+  assembly.
+
+The cause of the CTOK TAE discrepancy is therefore established for the bending blocks: the three $\iota'$ terms above (and,
+at the 3–4% level, AE3D's treatment of the symmetric $f'f$ coupling). It does not follow that AE3D's published results
+change: the Könies case is insensitive to $\iota'$ (4.061e5 vs 4.067e5 rad/s without it). This has not been reported upstream.
 
 **Könies 2018 ITPA TAE.** {func}`fax.circular_torus` with $R_0 = 10$ m,
 $a = 1$ m, $B_0 = 3$ T, $q = 1.71 + 0.16s$, $\epsilon_B = a/R_0$, hydrogen at
@@ -132,7 +151,7 @@ $a = 1$ m, $B_0 = 3$ T, $q = 1.71 + 0.16s$, $\epsilon_B = a/R_0$, hydrogen at
 against CAS3D 4.01e5 (+1.3%, shifted equilibrium) and GYGLES 4.13e5 (−1.7%,
 ad hoc equilibrium as here). The test requires $4.01 < \omega/10^5 < 4.13$.
 
-**Finite-$\beta$ terms.** The $J_\parallel$ term is tested in a cylinder
+**Finite-$\beta$ terms (restricted, experimental; no sound or full-MHD claim).** The $J_\parallel$ term is tested in a cylinder
 ($\epsilon_B = 0$, $q = 0.8 + s$): for an $m = n = 1$ rigid shift inside
 $q = 1$ it cancels the bending energy to 1e-3, Newcomb's $(m^2 - 1)$
 marginality. This also fixes its sign; the opposite sign doubles the energy.
@@ -168,11 +187,27 @@ negative eigenvalues fall as $1/N^2$. Use a real equilibrium with
 On CTOK ($q_0 \approx 0.996$, $\sigma \approx -0.7$ m⁻¹), the $J_\parallel$ term
 is large. It gives a converged near-axis $m = n = 2$ instability
 ($\omega^2 \approx -2.4\cdot10^{10}$ s⁻²), and it moves the AE3D-matched
-modes by 0.1–10% (388 → 428 kHz; overlaps with AE3D fall to 0.72–0.87). The earlier logbook
-statement that AE3D moves its modes by less than 0.1% with these terms
-therefore does not carry over to this form. AE3D has not been rerun with
-its $J_\parallel$ term on to compare; `test_ae3d_ctok_parity` keeps the default
-`finite_beta=False`.
+modes by 0.1–10% (388 → 428 kHz; overlaps with AE3D fall to 0.72–0.87).
+`test_ae3d_ctok_parity` keeps the default `finite_beta=False`.
+
+AE3D's shipped CTOK run already includes its $J_\parallel$ term (`jprl_coef` is nonzero in `ae_metric.dat`). It has five
+unstable near-axis modes (lowest $\omega^2 = -1.9\cdot10^{10}$ s⁻², $-480$ kHz²; one, $-15$ kHz², with the term off), like FAX's, but it moves the
+modes between 100 and 800 kHz by at most 0.39% (median 0.02%; those near 388 kHz by at most 0.06%), whereas FAX's moves them by up to
+10%. The $J_\parallel$ blocks do not agree: AE3D's block (`F(SJPD) - F(SD)` of the instrumented runs, norm 299) against FAX's
+(norm 370 in the same units) differ by a relative 1.2–1.4 for either sign, and by 0.86 even when FAX's $K$ is fed AE3D's own
+$J_\parallel/B$ and $B_\rho$. AE3D's input is itself inconsistent with its embedding: its `brho` has rms 1.3e-2–3.6e-2, while
+$\mathbf B\cdot\mathbf r_s$ of the file's own Boozer embedding is below 1e-5, and its
+$J_\parallel/B$ has a standard deviation of 0.2–0.8 over a surface where the curl of the embedded field is constant to 2e-3
+of $\max|\sigma|$ (`test_finite_beta_terms_match_real_space_quadrature`). The cause of the $J_\parallel$ disagreement is not established, and the
+CTOK TAE does not depend on it (338.18 kHz without, 337.92 kHz with the term).
+
+**Form of the kink term.** FAX assembles the direct form
+$\int\sigma\,\mathbf b\cdot(\nabla\tilde\phi^*\times\nabla u)\,dV$, not AE3D's paper form with $\nabla\sigma$; the two differ by
+$-\int u\sigma(\nabla\times\mathbf b)\cdot\nabla\tilde\phi^*\,dV$ ({doc}`theory`, section 4). On the CTOK test potential of
+`test_finite_beta_terms_match_real_space_quadrature` ($n = 2$, $m = 3$, $4$), as fractions of the bending energy
+(8.34): $K = -0.226$, $K - K_{\nabla\sigma} = -0.0069$, the omitted term $-0.0073$, the $\boldsymbol\kappa$ correction of the
+bending energy $+0.0007$; the identity holds to 0.2% of $K$. The eigenvalues in the table above are unchanged by this
+analysis (no implementation change).
 
 ## Independent 3-D reference: precise QA of Knyazev et al.
 
@@ -415,7 +450,7 @@ tokamak gates use {func}`fax.circular_torus`, axisymmetric (`helical = 0`,
 ## Not done
 
 - **Sound and fast-wave coupling** (no BAE gap; $\gamma p|\nabla\cdot\boldsymbol\xi|^2$
-  dropped), and an AE3D rerun with its $J_\parallel$ term for CTOK.
+  dropped) and the cause of the disagreement between AE3D's and FAX's $J_\parallel$ blocks for CTOK.
 - **Trapped and precessing fast ions** in the drive (bounce-averaged
   precession resonances), and the covariant $B_s$ and $\delta B_\parallel$ in the drift.
 - **Finite orbit width** and finite Larmor radius in the drive.
