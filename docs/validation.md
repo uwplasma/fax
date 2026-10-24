@@ -16,6 +16,7 @@ logbook (`plan.md`, section 6).
 | Uniform-field global spectrum is a continuum | `test_uniform_field_spectrum_is_a_continuum` | edges within $0.5/N$; mode width ∝ $1/N$ (N = 40, 160) |
 | AE3D CTOK global modes | `test_ae3d_ctok_parity` | 6 modes within 1.4%, overlap > 0.9 |
 | AE3D CTOK TAE | same | not reproduced; AE3D sign error, see below |
+| Independent 3-D spectrum, precise QA of Knyazev et al. 2026 (STELLGAP continuum, AE3D gap band) | `test_stellgap_continuum_parity`, `test_ae3d_gap_band_in_the_sine_basis` | continuum 3.0e-3 mean (gate 4e-3); archived global mode within 2% in energy at 24-64 harmonics, 5.1% at AE3D's 162; no single-mode match (overlap 0.18) |
 | Bending and inertia vs real-space quadrature | `test_ctok_bending_energy_matches_real_space_quadrature` | 0.3% (gate 0.5%) |
 | Finite-$\beta$ terms vs real-space quadrature ($\sigma$ from curl $\mathbf B$; CTOK and Könies with $p$) | `test_finite_beta_terms_match_real_space_quadrature` | 0.3% CTOK, 0.2% pressure (gate 0.5%) |
 | Cylinder: Newcomb $m = 1$ cancellation; Suydam threshold | `test_cylinder_newcomb_m1_and_suydam_threshold` | bending + kink = 1e-3 of bending; stable at 1.0e4 Pa, unstable at 2.0e4 (Suydam 1.05e4) |
@@ -172,6 +173,67 @@ statement that AE3D moves its modes by less than 0.1% with these terms
 therefore does not carry over to this form. AE3D has not been rerun with
 its $J_\parallel$ term on to compare; `test_ae3d_ctok_parity` keeps the default
 `finite_beta=False`.
+
+## Independent 3-D reference: precise QA of Knyazev et al.
+
+The archive of Knyazev et al. (2026; Zenodo DOI 10.5281/zenodo.21299907, CC-BY-4.0) holds a precise-QA equilibrium
+(`nfp = 2`, aspect 6, finite-$\beta$ VMEC, `boozmn_betaQA.nc`), its STELLGAP continuum and its AE3D spectrum with the kink
+term removed. `tests/data/knyazev_qa.npz` (0.67 MB) reduces it; `tests/data/PROVENANCE.md` has hashes and switches, and
+`examples/knyazev_qa.py` rebuilds the fixture and reproduces every number below (15 min, 8 GB). FAX runs with
+`finite_beta=False`, a flat density of 1.88e-6 kg/m$^3$ (the decks are not in the archive; the value reproduces the
+continuum), AE3D's 49 nodes $s = 0.02..0.98$ and its 162 harmonics. AE3D's sine basis is FAX's operator on
+$(m, n), (-m, -n)$ restricted to the odd subspace.
+
+```{image} _static/knyazev_qa.png
+:alt: Precise-QA continuum and gap band, the archived global mode in FAX's eigenbasis, convergence with the harmonics
+:width: 100%
+```
+
+**Continuum.** STELLGAP labels surface $k$ one cell (0.02) outward, as for CTOK. On its 98 stored surfaces (162 sorted
+branches each) the relative L2 error is mean 3.0e-3, p95 3.4e-3, max 4.3e-3 in the complex basis of the harmonic list
+(3.5e-3 mean, 4.4e-3 max in the odd sector), unchanged between grids of 48 x 32 and 112 x 72 where unaliased. The branches
+that bracket the archived global mode's gap at $s > 0.25$ agree to 1.0% (the lower, median 0.4%) and 3.0% (the upper, near 35 kHz, median 1%). The
+spectrum of AE3D is dense: only 3 of its 7938 eigenvalues above 5 kHz are 1% from both neighbours, so **no isolated
+frequency exists** in this case, and 56 eigenvalues are negative (AE3D's own, down to $-84$ kHz$^2$); FAX's operator is
+positive by construction.
+
+**The gap band.** The paper follows one radially global mode at 30.309 kHz. It sits in a continuum gap (26-35 kHz at
+mid-radius) that holds 82 AE3D eigenvalues, of which 20 are radially extended (inverse participation ratio of at least 0.3
+of the nodes) and mid-gap (mean position at least 0.25 of the way between the STELLGAP branches that bracket them, radius-weighted).
+FAX is judged on the same rule. $\hat f$ is the Rayleigh quotient of the archived eigenvector in FAX's $F$, $G$;
+"best" is the FAX mode with the largest $G$-overlap with the archived global mode; "contained" is the mean fraction of each
+archived band mode inside FAX's band subspace.
+
+| nodes | harmonics | grid | modes in gap (AE3D 82) | band modes (AE3D 20) | global $\hat f$ shift | best FAX mode kHz (overlap) | band mean $\hat f$ shift | contained |
+|---|---|---|---|---|---|---|---|---|
+| 49 | 24 | 48 x 32 | 73 | 14 | +0.9% | 29.58 (0.14) | +8.6% | 0.22 |
+| 49 | 40 | 48 x 32 | 74 | 22 | -0.0% | 29.79 (0.19) | +3.5% | 0.49 |
+| 49 | 64 | 48 x 32, 64 x 48 | 91 | 21 | -1.1% | 28.58 (0.14) | +1.3% | 0.39 |
+| 49 | 96 | 48 x 32 | 73 | 20 | -4.2% | 27.77 (0.19) | -0.9% | 0.40 |
+| 49 | 162 (AE3D's) | 48 x 32 | 78 | 18 | -5.1% | 27.61 (0.18) | n/a | 0.17 (global mode) |
+| 24 | 40 | 48 x 32 | 39 | 18 | -0.2% | 30.11 (0.33) | +5.1% | 0.44 |
+| 99 | 40 | 48 x 32 | 139 | 29 | -0.5% | 30.35 (0.14) | +2.9% | 0.40 |
+
+Harmonics are the largest by the energy of the archived band. The last 162-harmonic, 49-node row is AE3D's own setting;
+its global-mode quotient is 28.76 kHz against the archived 30.31. The localization of the best FAX mode matches the archived
+one (IPR 32 against 35 nodes, centroid $s$ 0.41 against 0.49).
+
+**Convergence.** The angular grid is converged: 48 x 32 and 64 x 48 give identical numbers to the digits printed, and the band
+subspaces coincide (cosines 1.00). Harmonics and nodes are not: FAX's own band subspace is 0.55 inside itself between 40 and
+64 harmonics, 0.55 between 64 and 96, 0.64 between 24 and 49 nodes and 0.58 between 49 and 99. The number of modes in the gap
+scales with the nodes (39, 74, 139 at 24, 49, 99), so counts compare only at AE3D's 49 nodes; the quotient of the archived
+mode converges only when all of its harmonics are kept (+0.9% to -5.1%).
+
+**Verdict.** What agrees: the continuum (0.3%, gap edges 1-3%), the count (18-22 against 20), frequency range
+(28.4-34.9 against 28.6-33.2 kHz) and localization of the gap band at AE3D's resolution. What does not: the archived global
+mode is not a FAX eigenmode. At matched settings its energy in FAX's operator is 5.1% below its AE3D eigenvalue, and it is
+spread over many FAX modes (27.6-30.7 kHz, largest overlap 0.18 at 27.61 kHz). PR #9 recorded the same from a separate
+assembly: FAX with physical shear indices 27.57 kHz, and a reconstruction of AE3D's public formulas 30.30 kHz (diagnostic
+numbers, not rerun here; its operator is not in this repository). The 27.6 kHz mode is therefore reproducible, but it is
+not unique: in this near-degenerate band the mode-by-mode eigenvectors are ill-conditioned, FAX's own band subspace moves
+by 36-45% under refinement, and the overlap with AE3D (0.4) is of that size. This is consistent with, but does not
+establish, a difference through AE3D's shear cross terms (the CTOK discussion above): that needs a pinned AE3D build and its
+blocks (plan, B). `finite_beta` terms are off, as in the archive.
 
 ## Gradients
 
