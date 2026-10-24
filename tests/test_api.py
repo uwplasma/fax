@@ -101,3 +101,22 @@ def test_toml_reader_falls_back_to_tomli(monkeypatch):
         assert importlib.reload(fax.io).tomllib is fallback
     assert importlib.reload(fax.io).tomllib is not fallback
     assert fax.load({})["modes"]["n"] == [1]
+
+
+def test_documented_transforms_and_failure_behaviour():
+    """The derivative contract of ``docs/api.md``: jit, vmap, NaN on an unconverged solve, NaN propagation and ``kind`` validation."""
+    s = (jnp.arange(24) + 0.5) / 24
+    geo = fax.circular_torus(s=s, major_radius=10.0, minor_radius=1.0, B0=3.0, iota=1 / (1.71 + 0.16 * s), epsilon_B=0.1)
+    h, rho = fax.mode_family(6, 12, 7), fax.mass_density(2e19, 1.0)
+    grid, solve = dict(ntheta=16, nzeta=4), dict(target_hz=6.46e4, count=3)
+    f = lambda r, **kw: fax.frequency_hz(geo, h, r, 2, 3, **solve, **grid, **kw)  # noqa: E731
+    grad = jax.vmap(jax.grad(f))(rho * jnp.array([1.0, 2.0]))  # d f / d rho = -f / 2 rho for f ~ rho^-1/2
+    np.testing.assert_allclose(grad, -jax.vmap(f)(rho * jnp.array([1.0, 2.0])) / (2 * rho * jnp.array([1.0, 2.0])), rtol=1e-6)
+    assert jnp.isnan(f(rho, iters=1)) and jnp.isnan(jax.grad(lambda r: f(r, iters=1))(rho))  # unconverged: value and tangent rejected
+    omega2 = jax.jit(lambda g, r: fax.eigenmodes(g, h, r, **solve, **grid).omega2)(geo, rho)
+    assert omega2.shape == (3,) and (omega2 > 0).all()
+    ions, drive = fax.FastIons(1e17, 2e5), dict(helical=0, nzeta=1, ntheta=16, nodes=8)
+    gamma = lambda phi: fax.growth_rate(4e5, phi, geo, ((10, 6), (11, 6)), ions, rho, **drive)  # noqa: E731
+    assert jnp.isfinite(gamma(jnp.ones((24, 2)))) and jnp.isnan(gamma(jnp.full((24, 2), jnp.nan)))
+    with pytest.raises(ValueError, match="unknown FastIons kind"):
+        fax.FastIons(kind="beam")

@@ -40,6 +40,9 @@
   of gyrokinetic, kinetic MHD and gyrofluid codes for the linear calculation of
   fast particle driven TAE dynamics", *Nucl. Fusion* **58**, 126027 (2018).
   [doi:10.1088/1741-4326/aae4e6](https://doi.org/10.1088/1741-4326/aae4e6)
+- A. Knyazev et al., "On shear Alfvén wave-induced energetic ion transport in optimized stellarators", *J. Plasma Phys.* (2026),
+  arXiv:2603.03118; data archive [doi:10.5281/zenodo.21299907](https://doi.org/10.5281/zenodo.21299907) (CC-BY-4.0): the precise-QA
+  fixture of {doc}`validation`, with its provenance in `tests/data/PROVENANCE.md`.
 - A. Mishchenko, A. Könies and R. Hatzky, "Global particle-in-cell simulations
   of plasma pressure effects on Alfvénic modes", *Phys. Plasmas* **18**, 012504
   (2011). [doi:10.1063/1.3546021](https://doi.org/10.1063/1.3546021)

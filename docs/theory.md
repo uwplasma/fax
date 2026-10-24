@@ -4,6 +4,10 @@ This page derives every equation FAX solves, in the order the code applies
 them, and names the function that implements each one. Units are SI;
 frequencies `ω` are in rad/s and the public functions report `f = ω/2π` in Hz.
 
+**Scope.** The model is the low-β shear-Alfvén ordering of Spong et al.: restricted finite-β terms (section 4, experimental), no
+sound coupling (so no BAE or BAAE), no continuum or electron damping, and a drive for zero orbit width, zero Larmor radius and passing
+ions only (section 8). {doc}`api` maps each equation to its function and test and states the derivative contract of each function.
+
 ## 1. Boozer coordinates and the metric
 
 FAX works on flux surfaces labelled by the normalized toroidal flux
@@ -693,6 +697,10 @@ a flat thermal Maxwellian of the bulk ions, with the sign flipped so that a
 positive number damps (Fu & Van Dam 1989; Betti & Freidberg 1992). Continuum
 damping and electron Landau damping are not computed; subtract them as an
 external $\gamma_d$, $\gamma = \gamma_h - \gamma_d$.
+
+**Scope of the number.** Passing-only and perturbative: against the CAS3D-K zero-orbit-width curve of Könies et al. (2018) the
+Könies-case drive is 0.58–0.60 (82–191 keV), plausibly the missing trapped share (not established; the curve's content is not
+stated), and $\gamma/\omega \le 4\%$ only up to 200 keV ({doc}`validation`).
 
 **Not included.** Trapped and precessing particles (their resonance is
 $\omega = k\langle\omega_d\rangle_b + p\,\omega_b$ with bounce averages; not
