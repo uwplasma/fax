@@ -91,9 +91,9 @@ dfdrho = jax.grad(lambda r: fax.frequency_hz(geo, harmonics, r, 2, 3, target_hz=
 | Uniform field, $\omega = \lvert n-m\iota\rvert v_A/R$ | exact to 1e-9 |
 | STELLGAP CTOK continuum (97 surfaces, n = 2, m = 0–12) | mean 6.3e-3, p95 6.6e-3 relative |
 | Uniform-field global spectrum fills $[\omega_A(0), \omega_A(1)]$ | edges within $0.5/N$, singular modes of width $\propto 1/N$ |
-| AE3D CTOK global modes (n = 2, m = 0–12) | 6 modes within 1.4%; AE3D's TAE is off by its $\iota'$ sign error (checked by real-space quadrature to 0.3%) |
+| AE3D v31 CTOK global modes (n = 2, m = 0–12) | 6 modes within 1.4%. AE3D's 337.9 kHz TAE is not reproduced: on identical input, three $\iota'$ terms of AE3D's bending blocks differ from the energy (real-space quadrature: FAX 0.1–0.3%, AE3D 2–37%); [pinned block comparison](https://fax.readthedocs.io/en/latest/validation.html), not reported upstream |
 | Könies et al. 2018 ITPA TAE (n = 6) | $\omega$ = 4.061e5 rad/s (CAS3D 4.01e5, GYGLES 4.13e5), converged to 1e-4 |
-| Könies ITPA with $p(s)$, vmex equilibrium, `finite_beta=True` | 3.947e5 rad/s (4.127e5 without the $J_\parallel$ and pressure terms) |
+| Könies ITPA with $p(s)$, vmex equilibrium, `finite_beta=True` (restricted, experimental; no sound or full-MHD claim) | 3.947e5 rad/s (4.127e5 without the $J_\parallel$ and pressure terms) |
 | Könies et al. 2018 drive, 100/200/300 keV | 4.33/16.5/32.9 vs 8–10/25–33/38–43 ×10³ s⁻¹ (ZOW, passing only; old circular model within 4%) |
 | Eigenvalue and drive gradients vs finite differences | 1e-5 (drive: profiles, $\omega$, every geometry leaf, the mode) |
 | LP-QA drive through vmex geometry and shift-invert eigenvectors | AD vs FD ≤ 1e-4; helical sidebands present (dominant in LP-QH) |

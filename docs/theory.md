@@ -7,15 +7,18 @@ frequencies `ω` are in rad/s and the public functions report `f = ω/2π` in Hz
 ## 1. Boozer coordinates and the metric
 
 FAX works on flux surfaces labelled by the normalized toroidal flux
-$s \in (0, 1)$, with Boozer angles $(\theta, \zeta)$. The field is
+$s = \Phi_t/\Phi_\mathrm{edge} \in (0, 1)$, with Boozer angles $(\theta, \zeta)$.
+With $\psi = \Phi_t/2\pi$ and $\psi' = d\psi/ds = \Phi_\mathrm{edge}/2\pi$ (VMEC's
+`PHIEDGE`$/2\pi$) the field is
 
 $$
-\mathbf B = \nabla\psi\times\nabla\theta + \iota\,\nabla\zeta\times\nabla\psi
-          = G(s)\,\nabla\zeta + I(s)\,\nabla\theta + K\,\nabla\psi ,
+\mathbf B = \psi'\left(\nabla s\times\nabla\theta + \iota\,\nabla\zeta\times\nabla s\right)
+          = G(s)\,\nabla\zeta + I(s)\,\nabla\theta + B_s\,\nabla s ,
 $$
 
-so the Boozer Jacobian is $\sqrt g_B = (G + \iota I)/B^2$ (up to the flux
-normalization) and the parallel derivative is
+so the embedding Jacobian is $|\sqrt g| = \psi'(G + \iota I)/B^2$ (the Boozer Jacobian
+stored in a `boozmn` file, `gmnc`, is the same without $\psi'$) and the parallel
+derivative is
 
 $$
 \mathbf B\cdot\nabla = \frac{B^2}{G + \iota I}\left(\partial_\zeta + \iota\,\partial_\theta\right).
@@ -27,6 +30,24 @@ angle offset), of the Jacobian (`gmnc`, `gmns`), and the profiles $\iota$,
 $G$ (`bvco`) and $I$ (`buco`). Every harmonic is
 $c\cos(m\theta - n\zeta) + s\sin(m\theta - n\zeta)$ with $n$ in units of the
 full torus (booz_xform convention, $n$ a multiple of $N_{fp}$).
+
+(conventions)=
+### Conventions
+
+One set of conventions governs the code, the tests, the exports and this page.
+
+| Item | Convention |
+|---|---|
+| Radial label | $s = \Phi_t/\Phi_\mathrm{edge}$, toroidal flux with its sign removed; finite-element nodes lie strictly in $(0, 1)$, with the axis and edge added as end nodes |
+| Flux factor | $\psi = \Phi_t/2\pi$, $\psi' = \Phi_\mathrm{edge}/2\pi$ (Wb/rad). {func}`fax.geometry.jacobian_check` returns $\psi'$ from the embedding |
+| Field components | $B_\zeta = G$ (poloidal current, `bvco_b`), $B_\theta = I$ (toroidal current, `buco_b`), both in T m; $G + \iota I > 0$ for the standard orientation, so $B^\zeta = B\cdot\nabla\zeta = B^2/(G + \iota I) > 0$ and $B^\theta = \iota B^\zeta$. AE3D's `jpol` is $G$ and its `jtor` is $-I$ |
+| Handedness | $(s,\theta,\zeta)$ is left-handed against $(R,\phi,Z)$ for VMEC and `booz_xform` input: the embedding $\sqrt g = \mathbf r_s\cdot\mathbf r_\theta\times\mathbf r_\zeta < 0$. Volumes use $\lvert\sqrt g\rvert$; triple products $\mathbf b\cdot(\nabla a\times\nabla c)$ carry $\operatorname{sign}\sqrt g$ |
+| Angles | $\theta$, $\zeta \in [0, 2\pi)$; $\zeta$ spans the full torus and the cylindrical angle is $\phi = \zeta + p(s,\theta,\zeta)$ |
+| Toroidal number | full-torus $n$ (`ixn_b`, a multiple of $N_{fp}$), never $n/N_{fp}$; families are $n_0 + kN_{fp}$ ({func}`fax.mode_family`) |
+| Phase | $\phi \propto e^{i(m\theta - n\zeta - \omega t)}$, so $\mathbf B\cdot\nabla\to i k_\parallel B$ with $k_\parallel = (\iota m - n)B/(G + \iota I)$; $\omega > 0$ and $(m, n)\to(-m, -n)$ is the complex conjugate. The sign matters for the drive ($Q_h$, section 8), not for the Hermitian operators $F$, $G$ |
+| Units | SI. $\omega$ in rad/s and $\lambda = \omega^2$ in rad²/s² inside the solvers; `frequencies_hz` is $\omega/2\pi$; AE3D prints kHz. $\rho$ is the mass density in kg/m³ ({func}`fax.mass_density`), $\sigma$ in 1/m, pressure in Pa, $\mu_0 p'$ in 1/m² |
+| Angle averages | $\langle a\rangle$ is the mean over the grid; the $4\pi^2$ and the common $\psi'$ cancel between $F$ and $G$ |
+| Eigenvectors | $F y = \omega^2 G y$ with $y^\dagger G y = 1$; $y_{kj}$ is the amplitude of harmonic $j$ at node $k$ (potential in V, up to a free complex phase) |
 
 {func}`fax.surface_grid` samples these on a uniform $(\theta,\zeta)$ grid
 covering the whole torus. Angle derivatives are exact (term by term);
@@ -76,7 +97,7 @@ Write $E = \sum_j x_j e_j$ with $e_j = e^{i(m_j\theta - n_j\zeta)}$. By
 {eq}`bdotgrad`, $\mathbf B\cdot\nabla e_j = i\,k_{\parallel j} B\, e_j$ with
 
 $$
-k_{\parallel j} = \frac{(n_j - m_j\iota)\,|B|}{G + \iota I}\quad(\text{up to the sign, which drops out}).
+k_{\parallel j} = \frac{(\iota m_j - n_j)\,B}{G + \iota I}.
 $$
 
 Multiply {eq}`continuum-ode` by $\sqrt g_B\,e_i^*$, average over the surface,
@@ -153,16 +174,100 @@ $$ (weak-form)
 The left side is the inertia (kinetic energy of the $E\times B$ flow), the
 right side the field-line bending energy. The integrals use the full
 contravariant metric, so both sides are coordinate-free. The bracket is
-optional (`finite_beta=True`, off by default).
+optional (`finite_beta=True`: restricted, experimental, off by default; see below).
 
-### Finite-$\beta$ terms
+(finite-beta)=
+### Finite-$\beta$ terms (restricted, experimental)
 
-With $\boldsymbol\xi_\perp = \mathbf b\times\nabla\phi/(-i\omega B)$ and
-$\mathbf Q_\perp = \nabla A_\parallel\times\mathbf b$, $A_\parallel = u/i\omega$,
-the $J_\parallel$ and pressure terms of the ideal-MHD energy,
-$-J_\parallel(\boldsymbol\xi_\perp^*\times\mathbf b)\cdot\mathbf Q_\perp$ and
-$-2(\boldsymbol\xi_\perp\cdot\nabla p)(\boldsymbol\kappa\cdot\boldsymbol\xi_\perp^*)$
-(Freidberg), become, in the units of {eq}`weak-form`,
+`finite_beta=True` adds the $J_\parallel$ (kink) and pressure-curvature terms of the
+ideal-MHD energy for the shear-Alfvén ($E\times B$) displacement. It is a
+restricted, experimental option, off by default: there is no sound or
+compressional coupling and no full-MHD claim, and $\sigma$, $p'$ and $B_s$ are
+reconstructed from $G$, $I$ and $|B|$ alone (below).
+
+**Energy.** The ideal-MHD energy for a displacement $\boldsymbol\xi_\perp$ is
+(Freidberg, with $\mathbf Q = \nabla\times(\boldsymbol\xi\times\mathbf B)$,
+$\mathbf b = \mathbf B/B$, $\boldsymbol\kappa = \mathbf b\cdot\nabla\mathbf b$)
+
+$$
+\delta W = \tfrac12\!\int\!\Big[\frac{|\mathbf Q_\perp|^2}{\mu_0}
+ + \frac{B^2}{\mu_0}\big|\nabla\!\cdot\!\boldsymbol\xi_\perp + 2\boldsymbol\xi_\perp\!\cdot\!\boldsymbol\kappa\big|^2
+ + \gamma p|\nabla\!\cdot\!\boldsymbol\xi|^2
+ - 2(\boldsymbol\xi_\perp\!\cdot\!\nabla p)(\boldsymbol\kappa\!\cdot\!\boldsymbol\xi_\perp^*)
+ - J_\parallel(\boldsymbol\xi_\perp^*\!\times\!\mathbf b)\!\cdot\!\mathbf Q_\perp\Big]dV .
+$$
+
+Take $\boldsymbol\xi_\perp = (i/\omega)\,\mathbf b\times\nabla\phi/B$ and $E_\parallel = 0$, so
+$A_\parallel = u/i\omega$ with $u = \mathbf b\cdot\nabla\phi$ and
+$\mathbf Q = \nabla A_\parallel\times\mathbf b + A_\parallel\nabla\times\mathbf b$. For any unit field
+$\nabla\times\mathbf b = \sigma\mathbf b + \mathbf b\times\boldsymbol\kappa$, where
+$\sigma = \mathbf b\cdot\nabla\times\mathbf b = \mu_0J_\parallel/B$ in an equilibrium, so
+$\mathbf Q_\perp = -\mathbf b\times(\nabla_\perp A_\parallel - \boldsymbol\kappa A_\parallel)$. Multiplying by
+$2\mu_0\omega^2$ and subtracting the kinetic energy,
+
+$$
+\omega^2\!\int\!\frac{\mu_0\rho}{B^2}|\nabla_\perp\phi|^2 =
+\int\Big[\,|\nabla_\perp u - \boldsymbol\kappa u|^2
+ + \sigma\,\mathbf b\cdot\big(\nabla\phi^*\times(\nabla u - \boldsymbol\kappa u)\big)
+ - 2\mu_0\frac{(\mathbf b\times\nabla\phi\cdot\nabla p)(\mathbf b\times\nabla\phi^*\cdot\boldsymbol\kappa)}{B^2}
+ + \Big|\sigma u - \frac{\mu_0(\mathbf b\times\nabla p)\cdot\nabla\phi}{B^2}\Big|^2\Big]dV ,
+$$ (energy-full)
+
+the last term being the compressional energy
+($\nabla\cdot\boldsymbol\xi_\perp + 2\boldsymbol\xi_\perp\cdot\boldsymbol\kappa = (i/\omega)[\sigma u - \mu_0(\mathbf b\times\nabla p)\cdot\nabla\phi/B^2]/B$).
+
+**Retained order.** With $\delta = k_\parallel/k_\perp \sim \sigma/k_\perp \sim \kappa/k_\perp \ll 1$ (the
+$k_\parallel/k_\perp$ ordering of Kruger, Hegna & Callen 1998, used by AE3D) the leading
+terms are $O(\delta^2)$ relative to $k_\perp^4|\phi|^2$: the bending $|\nabla u|^2$, the kink
+term, the inertia and the pressure term (at the ballooning ordering $\mu_0p'\kappa\sim B^2k_\parallel^2$).
+Next come the $\boldsymbol\kappa$ terms ($O(\delta^3)$), then $\sigma^2|u|^2$, $\kappa^2|u|^2$, the parallel part of $\nabla u$ and the
+compressional energy ($O(\delta^4)$). FAX keeps the first group and drops the others, with the
+sound and fast-wave coupling.
+
+**Direct and $\nabla\sigma$ forms.** AE3D's paper (eq. 4, written with $\nabla\zeta$ for $\mathbf b$) has the current term
+$-\int u\,\mathbf b\cdot(\nabla\tilde\phi^*\times\nabla\sigma)\,dV$; FAX assembles the direct form
+$K = \int\sigma\,\mathbf b\cdot(\nabla\tilde\phi^*\times\nabla u)\,dV$ (the source of AE3D version 31 carries
+$J_\parallel/B$ itself, with symmetrized derivative terms, not $\nabla\sigma$). They are not equal. Integrating by parts,
+
+$$
+\int\sigma\,\mathbf b\cdot(\nabla\tilde\phi^*\times\nabla u)\,dV
+= -\!\int u\,\mathbf b\cdot(\nabla\tilde\phi^*\times\nabla\sigma)\,dV
+  - \!\int u\sigma\,(\nabla\times\mathbf b)\cdot\nabla\tilde\phi^*\,dV
+  + \oint u\sigma\,(\mathbf b\times\nabla\tilde\phi^*)\cdot d\mathbf S ,
+$$ (kink-forms)
+
+where $(\nabla\times\mathbf b)\cdot\nabla\tilde\phi^* = \sigma\tilde u^* + (\mathbf b\times\boldsymbol\kappa)\cdot\nabla\tilde\phi^*$. The omitted term
+is not proportional to $\beta$: for the force-free field $\mathbf b = (\cos z, \sin z, 0)$, $\sigma = -1$, $\phi = \sin x$
+the direct average is $-1/4$, the $\nabla\sigma$ form gives 0 and the omitted term is $-1/4$
+(`test_kink_forms_differ_by_the_curl_b_term`; there $k_\parallel\sim k_\perp\sim\sigma$, so the ordering fails, not the identity).
+Boundary terms: at the edge $\tilde\phi = 0$ makes $\nabla\tilde\phi^*\parallel\nabla s$ and
+$(\mathbf b\times\nabla s)\cdot\nabla s = 0$; at the axis the surface shrinks while the $m\ne0$ harmonics vanish and the
+integrand stays bounded, so the surface integral is zero.
+
+**Restoring $A_\parallel\nabla\times\mathbf b$.** The complete $\mathbf Q_\perp$ changes the bending and kink terms together, and
+by {eq}`kink-forms` and $\mathbf b\cdot(\nabla\tilde\phi^*\times\boldsymbol\kappa) = \boldsymbol\kappa\cdot(\mathbf b\times\nabla\tilde\phi^*)$
+
+$$
+\int\sigma\,\mathbf b\cdot\big(\nabla\tilde\phi^*\times(\nabla u - \boldsymbol\kappa u)\big)dV
+= -\!\int u\,\mathbf b\cdot(\nabla\tilde\phi^*\times\nabla\sigma)\,dV - \!\int\sigma^2u\tilde u^*\,dV ,
+$$ (kink-full)
+
+exactly: the $\boldsymbol\kappa$ cross terms cancel (`test_kink_forms_differ_by_the_curl_b_term`, random periodic field,
+1e-6), so AE3D's $\nabla\sigma$ form is the complete kink term up to $\sigma^2|u|^2$, which the compressional energy
+in {eq}`energy-full` cancels at $p' = 0$. The bending term gains $-\int\boldsymbol\kappa\cdot\nabla|u|^2dV + \int\kappa^2|u|^2dV$.
+
+**Verdict.** At the retained order $O(\delta^2)$ the direct form is the energy-principle term, and it agrees with the
+$\nabla\sigma$ form; the two differ at $O(\delta^3)$, where the $\boldsymbol\kappa$ corrections of the bending term enter too. Adding
+only one of them would be inconsistent, so FAX keeps the direct form and no correction. On the CTOK potential of
+`test_finite_beta_terms_match_real_space_quadrature` ($n = 2$, $m = 3, 4$; real-space quadrature) the bending energy is 8.34,
+$K = -1.89$, the $\nabla\sigma$ form $-1.83$, the omitted term $-0.061$, the $\boldsymbol\kappa$ correction of the bending term $+0.006$
+and $\int\sigma^2|u|^2$ $+0.004$: the next order moves the energy by about 1% of the bending energy.
+
+FAX assembles the Hermitian part of $K$ and $P$ (the energy principle's real part); it does not copy
+AE3D's matrix elements. With $\mathbf B = B_s\nabla s + I\nabla\theta + G\nabla\zeta$,
+$\mathbf b\cdot(\nabla a\times\nabla c) = \mathbf B_{\rm cov}\cdot(\partial a\times\partial c)/(B\sqrt g)$
+on covariant components, so both terms are tensor contractions like the
+bending term, with
 
 $$
 K = \int\sigma\,\mathbf b\cdot(\nabla\tilde\phi^*\times\nabla u)\,dV,\qquad
@@ -170,16 +275,7 @@ P = -2\mu_0\int p'\,\frac{(\mathbf b\times\nabla\phi\cdot\nabla s)\,
 (\mathbf b\times\nabla\tilde\phi^*\cdot\boldsymbol\kappa)}{B^2}\,dV,
 $$
 
-with $\sigma = \mu_0\mathbf J\cdot\mathbf B/B^2$ and
-$\boldsymbol\kappa = \nabla_\perp(\mu_0p + B^2/2)/B^2$. Integrating $K$ by
-parts gives AE3D's third term, $-\int u\,\mathbf b\cdot(\nabla\tilde\phi^*\times\nabla\sigma)\,dV$
-(the same term follows from the vorticity equation); the form above needs no
-derivative of $\sigma$. FAX assembles the Hermitian part of $K$ and $P$, as
-AE3D version 30 does with its own symmetrized terms; it does not copy
-AE3D's matrix elements. With $\mathbf B = B_s\nabla s + I\nabla\theta + G\nabla\zeta$,
-$\mathbf b\cdot(\nabla a\times\nabla c) = \mathbf B_{\rm cov}\cdot(\partial a\times\partial c)/(B\sqrt g)$
-on covariant components, so both terms are tensor contractions like the
-bending term.
+$\sigma = \mu_0\mathbf J\cdot\mathbf B/B^2$ and $\boldsymbol\kappa = \nabla_\perp(\mu_0p + B^2/2)/B^2$.
 
 The equilibrium quantities come from $G$, $I$ and $|B|$ alone. The radial
 force balance in Boozer coordinates,
@@ -192,7 +288,8 @@ fixes $\mu_0p'$ by solvability (its surface average) and $B_s$ (the
 Pfirsch–Schlüter part) by dividing by $i(\iota m + n)$ in Fourier space,
 skipping resonant harmonics. Then
 $\sigma = [I(\partial_\zeta B_s - G') - G(\partial_\theta B_s - I')]/(\sqrt g B^2)$.
-Both vanish for a vacuum field ($G$, $I$ constant). {func}`fax.circular_torus`
+Both vanish for a vacuum field ($G$, $I$ constant). {func}`fax.eigen.force_balance_residual` compares $B_s$ with
+the embedding's $\mathbf B\cdot\mathbf r_s$ and {func}`fax.geometry.jacobian_check` the embedding Jacobian with the Boozer identity. {func}`fax.circular_torus`
 has $I = 0$ unless `current=True` ($I = \iota s a^2B_0/R_0$) or a `pressure`
 polynomial is given, which also lowers $G$ so that
 $G' + \iota I' = -\mu_0p'R_0/B_0$.
