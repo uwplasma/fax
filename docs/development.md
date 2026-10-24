@@ -36,6 +36,15 @@ The fast suite alone reaches 94% of statements, because the vmex paths
 (`from_vmec_input`, `prepare_design`, `design_geometry`) run only in the slow
 tests.
 
+## Reference fixtures
+
+`tests/data/PROVENANCE.md` lists every external reference (identifier, URL, SHA-256, model switches, units, license,
+generation command, tolerance). The Knyazev et al. (2026) precise-QA fixture (0.67 MB) is rebuilt from the Zenodo archive
+(DOI 10.5281/zenodo.21299907, 1.1 GB, CC-BY-4.0) by `examples/knyazev_qa.py`: download `Knyazev_JPP2026.zip` from
+zenodo.org, set `ARCHIVE` and `REBUILD = True` at the top of the script and run it. The archive is data, never code: the
+script reads members with `zipfile` and parses them as text. The same script holds the comparison helpers the test uses
+and, with `STUDY = True`, regenerates the tables and the figure of {doc}`validation`.
+
 ## Contributing
 
 - Keep the code small: add physics to the existing modules rather than new
