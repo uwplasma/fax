@@ -13,11 +13,10 @@ with an exact Jacobian (one vmex + FAX forward, one adjoint per residual row):
   change. With ``--drive`` instead the fast-ion growth rates of the four n = 1 modes nearest 104 kHz are lowered
   (:func:`fax.drive_risk` of :func:`fax.geometry_growth_rates`, 150 keV Maxwellian deuterons).
 
-Run: python examples/optimize_alfven.py [--case qh|qa|both] [--modes gap|continuum] [--drive] [--ns 16] [--nfev 8] [--nodes 24]
-(needs ``pip install "uwplasma-fax[vmex]"``; a few minutes per case on a laptop CPU).
+Run: python examples/optimize_alfven.py, after editing the settings below (needs ``pip install "uwplasma-fax[vmex,plot]"``;
+a few minutes per case on a laptop CPU).
 """
 
-import argparse
 import time
 from pathlib import Path
 
@@ -29,6 +28,13 @@ from vmex.core import implicit
 from vmex.core.optimize import QuasisymmetryRatioResidual
 
 import fax
+
+# settings
+CASE = "both"  # "qh", "qa" or "both"
+MODES_KIND = "gap"  # QA window: "gap" (the n = 1 gap modes) or "continuum" (the n = 0 continuum minima)
+DRIVE = False  # QA: lower the fast-ion growth rates instead of moving modes out of the window
+NS, NODES, NFEV = 16, 24, 16  # VMEC surfaces, FE nodes, least-squares evaluations
+OUT = Path(".")  # figure folder
 
 DATA = Path(__file__).parent / "data"
 CASES = {
@@ -53,13 +59,13 @@ MODES = {  # the global modes of QA: the n = 1 gap modes (102-104 kHz in the 96-
     "continuum": dict(harmonics=fax.mode_family(0, 3, 1), ntheta=8, nzeta=8),
 }
 DENSITY = {"qh": fax.mass_density(1e20), "qa": 3.4e-8}  # QA: the P3 test density (a few hundred kHz on the 1 m device)
-DRIVE = dict(harmonics=fax.mode_family((1, -1, 3), 5), density=DENSITY["qa"], ntheta=16, nzeta=16, target_hz=104e3, count=4)
+DRIVE_MODES = dict(harmonics=fax.mode_family((1, -1, 3), 5), density=DENSITY["qa"], ntheta=16, nzeta=16, target_hz=104e3, count=4)
 
 
 def setup(case, ns, nodes, drive=False, modes="gap"):
     c = CASES[case]
     eig = dict(density=DENSITY["qa"], **MODES[modes]) if case == "qa" else {}
-    eig = DRIVE if drive else eig
+    eig = DRIVE_MODES if drive else eig
     ions = fax.FastIons(density=1e15 * (1.0 - jnp.arange(1, nodes + 1) / (nodes + 1)) ** 2, temperature_ev=150e3)
     design = fax.prepare_design(
         DATA / c["deck"],
@@ -254,18 +260,8 @@ def classify(design, p0, p1, f0, f1):
     print(f"  first order: J dp = {k(predicted)} kHz, re-solved df = {k(actual)} kHz, remainder {k(actual - predicted)} kHz")
 
 
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--case", choices=("qh", "qa", "both"), default="both")
-    parser.add_argument("--ns", type=int, default=16)
-    parser.add_argument("--nodes", type=int, default=24)
-    parser.add_argument("--nfev", type=int, default=16)
-    parser.add_argument("--out", type=Path, default=Path("."))
-    parser.add_argument("--drive", action="store_true", help="QA: lower the fast-ion growth rates instead of the window")
-    parser.add_argument("--modes", choices=tuple(MODES), default="gap", help="QA window: the n = 1 gap modes or the n = 0 continuum minima")
-    args = parser.parse_args()
-    for case in ("qh", "qa") if args.case == "both" else (args.case,):
-        start = time.perf_counter()
-        print(f"{case.upper()}:")
-        report(case, *run(case, args.ns, args.nodes, args.nfev, args.drive and case == "qa", args.modes), args.out)
-        print(f"  {time.perf_counter() - start:.0f} s")
+for case in ("qh", "qa") if CASE == "both" else (CASE,):
+    start = time.perf_counter()
+    print(f"{case.upper()}:")
+    report(case, *run(case, NS, NODES, NFEV, DRIVE and case == "qa", MODES_KIND), OUT)
+    print(f"  {time.perf_counter() - start:.0f} s")

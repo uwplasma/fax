@@ -123,7 +123,8 @@ A and B start now. C runs in parallel with A/B. D needs C. E needs B and D. F ca
 ### G. Release 1.0 (FAX)
 - [ ] Coverage ≥ 95/95. Three test tiers: PR (analytic and contracts), scheduled (VMEX gradients, 3-D references, min/max dependency stacks), release (external comparisons, CPU/GPU).
 - [ ] One fixture provenance manifest (identifier, hash, model switches, units, license, command, tolerance). Add `CITATION.cff`.
-- [ ] README of 600–900 words with scope and unsupported physics stated next to supported physics. Fix the AE3D and drive-band wording. The installed-wheel quickstart runs outside a checkout.
+- [x] README of 600–900 words with scope and unsupported physics stated next to supported physics. Fix the AE3D and drive-band wording. The installed-wheel quickstart runs outside a checkout. Done: 824 words; the quickstart (`examples/quickstart.py`, Könies torus, TAE 4.0610e5 rad/s) was run from the built wheel in an isolated interpreter; the drive is compared with the unmatched CAS3D-K ZOW curve, not the pooled ZLR band.
+- [x] Docs and examples pass (rule 10). Done: `docs/api.md` derivative contract per function (differentiable inputs, static arguments, transforms, first order, `Status`/NaN behaviour, pinned by `test_documented_transforms_and_failure_behaviour`) and an equation → function → test map; scientific examples are top-level scripts with editable settings and no `argparse`; tutorials `literalinclude` the sources; the CLI section lists what is Python-only.
 - [ ] Correct the generalized dense benchmark (`eigh(F, G)`, not `eigvalsh(F)`) and publish a performance table at equal accuracy.
 - [ ] Make the repo public and do the trusted PyPI release (needs owner approval).
 

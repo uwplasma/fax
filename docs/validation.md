@@ -2,8 +2,12 @@
 
 Every physics claim in FAX is a test in `tests/`, tied to an analytic result
 or a published number. CI runs them on Python 3.10–3.13 in float64. The numbers
-below are the test thresholds and the measured values from the development
-logbook (`plan.md`, section 6).
+below are the test thresholds and the measured values of the tests named here.
+
+**Scope.** FAX is a reduced model: restricted finite-$\beta$ terms (experimental), no sound coupling or BAE, no continuum or
+electron damping, no trapped particles, finite orbit width or finite Larmor radius in the drive, which is zero-orbit-width,
+passing-only and perturbative (valid to about 200 keV in the Könies case). Every gate below is a statement inside that scope;
+"Not done" at the end lists the rest. Derivatives are first order ({doc}`api`).
 
 ## Summary
 
@@ -273,8 +277,8 @@ assembly: FAX with physical shear indices 27.57 kHz, and a reconstruction of AE3
 numbers, not rerun here; its operator is not in this repository). The 27.6 kHz mode is therefore reproducible, but it is
 not unique: in this near-degenerate band the mode-by-mode eigenvectors are ill-conditioned, FAX's own band subspace moves
 by 36-45% under refinement, and the overlap with AE3D (0.4) is of that size. This is consistent with, but does not
-establish, a difference through AE3D's shear cross terms (the CTOK discussion above): that needs a pinned AE3D build and its
-blocks (plan, B). `finite_beta` terms are off, as in the archive.
+establish, a difference through AE3D's shear cross terms (the CTOK discussion above): the pinned AE3D v31 build exists, but the
+QA deck has not been run through its blocks here, so the cause is unresolved. `finite_beta` terms are off, as in the archive.
 
 ## Gradients
 
@@ -356,8 +360,11 @@ before and after values of an optimization). The angle grid is exact once it res
 
 ## Optimization
 
-`examples/optimize_alfven.py` ({doc}`tutorials`, section 6), $n_s = 16$,
-`mboz = nboz = 6`, office CPU (`JAX_PLATFORMS=cpu`).
+`examples/optimize_alfven.py` ({doc}`tutorials`, section 7), $n_s = 16$,
+`mboz = nboz = 6`, office CPU (`JAX_PLATFORMS=cpu`). These runs are **exploratory**: the QH run lowers a geometric proxy
+($f_\mathrm{cont}$), the QA runs move selected modes, and the drive run changes a passing-only growth rate by an amount not bounded by
+an error budget. None is an independent demonstration that the optimized device has fewer Alfvén eigenmodes or lower fast-ion
+transport.
 
 **QH: Paul et al. (2025) eq. 7.1 on LP-QH** (reactor scale, $N_P = 4$, helicity
 $(1, -1)$, cut $|\iota + 4|$), 34 coefficients, 60 evaluations, 31 min:
@@ -380,8 +387,8 @@ $2\omega^{(0)}|\epsilon|/\omega_A$ (full width, surface-averaged):
 | (0, 8) MAE | 4.00 | 0.138 | 0.098 |
 | (3, −12) HAE | 4.14 | 0.132 | 0.116 |
 
-The trend of Paul's figures 8–9 is reproduced: the high-frequency gaps
-narrow (up to 29%) while QS degrades moderately (×4.3, still 5.7e-4) and
+The high-frequency gaps
+narrow (up to 29%, the direction of Paul's figures 8–9) while QS degrades moderately (×4.3, still 5.7e-4) and
 aspect ratio and $\iota$ hold. The reduction is smaller than Paul's
 (Wistell-A start, many more evaluations): the cost was still falling at
 60 evaluations, and the dominant (3, −8) gap barely moved, since closing it
@@ -473,7 +480,7 @@ tokamak gates use {func}`fax.circular_torus`, axisymmetric (`helical = 0`,
   | FAX, Boozer geometry, $j$-form (10³ s⁻¹) | 4.26 | 16.27 | 32.48 | 64.02 |
   | FAX, Boozer geometry, previous $n_h/\iota$ form | 4.33 | 16.52 | 32.94 | 64.85 |
   | FAX, previous circular large-aspect-ratio model | 4.4 | 16.6 | 33.1 | 65 |
-  | Könies ZLR band (10³ s⁻¹) | 8–10 | 25–33 | 38–43 | |
+  | Könies pooled ZLR band (not a reference) (10³ s⁻¹) | 8–10 | 25–33 | 38–43 | |
 
   The geometric path and the circular model differ in $O(\varepsilon)$ terms
   ($dl/d\zeta = G/B$ instead of $R_0$, the Boozer angle, the exact $\nabla B$) and in the
@@ -559,7 +566,7 @@ tokamak gates use {func}`fax.circular_torus`, axisymmetric (`helical = 0`,
   external $\gamma_d$).
 - **AE3D LHD (37, 73.7 kHz) and QPS (149 kHz)** published frequencies need
   their equilibria; Mishchenko et al. (2011) is not yet a gate.
-- **P5 open items**: HSX optimization (the HSX fixed-boundary decks are
+- **Optimization**: HSX optimization (the HSX fixed-boundary decks are
   mpol 18, ntor 24, and were not reduced or run); a larger $\gamma_\mathrm{max}$ reduction (the 4-coefficient LP-QA
   `--drive` run lowers it by only 4.4%, 8500 → 8123 s⁻¹, at QS 1.1e-6 → 1.6e-6); a
   fast-ion resonance-band term; higher resolution ($n_s \ge 25$) and longer
