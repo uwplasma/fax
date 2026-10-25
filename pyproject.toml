@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "uwplasma-fax"
-version = "0.1.0"
+version = "1.0.0"
 description = "Differentiable JAX code for Alfvén eigenmodes and fast-ion physics in stellarators."
 readme = { file = "README.md", content-type = "text/markdown" }
 requires-python = ">=3.10"
@@ -19,7 +19,7 @@ dependencies = [
   "tomli; python_version < '3.11'",
 ]
 classifiers = [
-  "Development Status :: 3 - Alpha",
+  "Development Status :: 4 - Beta",
   "Intended Audience :: Science/Research",
   "Operating System :: OS Independent",
   "Programming Language :: Python :: 3",
