@@ -49,7 +49,7 @@ jobs:
           python -m pip install build twine
           python -m build --outdir "$RUNNER_TEMP/dist"
           twine check "$RUNNER_TEMP"/dist/*
-          extra=$(unzip -Z1 "$RUNNER_TEMP"/dist/*.whl | grep -Ev '^(fax/[a-z_]+\.py|uwplasma_fax-[^/]+\.dist-info/.*)$' || true)
+          extra=$(unzip -Z1 "$RUNNER_TEMP"/dist/*.whl | grep -Ev '^(fax/[a-z_]+\.py|alfvex-[^/]+\.dist-info/.*)$' || true)
           test -z "$extra" || { echo "unexpected files in the wheel: $extra"; exit 1; }
       - name: Run an analytic case from the installed wheel, outside the checkout
         run: |

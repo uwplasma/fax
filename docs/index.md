@@ -23,7 +23,7 @@ established), and is perturbative: $\gamma/\omega \le 4\%$ up to 200 keV in that
 unless the eigensolve converged and its selection is not a tie ({doc}`api`). {doc}`validation` lists every gate and what is open.
 
 ```console
-pip install .                       # no PyPI release yet
+pip install alfvex                  # PyPI name; imported as fax (FAX will soon be renamed ALFVEX)
 python examples/quickstart.py       # continuum, global TAE and a gradient, no data files
 fax run examples/ctok_continuum.toml --plot
 ```

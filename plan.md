@@ -4,7 +4,7 @@ Revised 2026-10-23 after an independent review of snapshot `2f7228f` (main befor
 
 ## Goal
 
-A small, validated, end-to-end differentiable JAX code for **stable shear-Alfvén spectra and their energetic-particle response in 3-D stellarators**, usable inside VMEX boundary optimization and installable with `pip install uwplasma-fax`. The scientific targets:
+A small, validated, end-to-end differentiable JAX code for **stable shear-Alfvén spectra and their energetic-particle response in 3-D stellarators**, usable inside VMEX boundary optimization and installable with `pip install alfvex` (PyPI name; FAX will be renamed ALFVEX). The scientific targets:
 
 1. **Methods.** Accurate boundary-to-spectrum sensitivities for 3-D Alfvén modes and spectral observables, including internal crossings, at a cost comparable to one forward solve.
 2. **Physics.** Test whether a cheap differentiated spectral or kinetic objective reduces independently computed wave-induced fast-ion transport without degrading QS or confinement.

@@ -3,8 +3,8 @@ requires = ["setuptools>=77", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "uwplasma-fax"
-version = "1.0.0"
+name = "alfvex"
+version = "1.0.1"
 description = "Differentiable JAX code for Alfvén eigenmodes and fast-ion physics in stellarators."
 readme = { file = "README.md", content-type = "text/markdown" }
 requires-python = ">=3.10"
@@ -46,7 +46,7 @@ plot = ["matplotlib"]
 vmex = ["vmex>=0.11.10; python_version >= '3.11'"]
 test = ["pytest", "coverage", "matplotlib"]
 docs = ["sphinx", "furo", "myst-parser"]
-dev = ["uwplasma-fax[test,docs]", "ruff", "build", "twine"]
+dev = ["alfvex[test,docs]", "ruff", "build", "twine"]
 
 [tool.setuptools.packages.find]
 where = ["src"]
