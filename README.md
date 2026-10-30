@@ -29,13 +29,16 @@ are NaN unless the eigensolve converged and its selection is not a tie.
 
 ## Install
 
-Python 3.10 or newer, JAX 0.4.38 or newer, `solvax>=0.32.1`. There is no PyPI release yet: install from a clone, with `pip install uwplasma-fax` to follow.
+Python 3.10 or newer, JAX 0.4.38 or newer, `solvax>=0.32.1`. FAX is on PyPI as **`alfvex`**; the code is imported as `fax`.
+FAX will soon be renamed ALFVEX everywhere (repository, import and command line). Do not `pip install fax`: that is an unrelated package.
 
 ```bash
-pip install .            # core
-pip install ".[vmex]"    # VMEC solves and boundary gradients (Python >= 3.11)
-pip install ".[plot]"    # matplotlib, for the figure examples
+pip install alfvex            # core
+pip install "alfvex[vmex]"    # VMEC solves and boundary gradients (Python >= 3.11)
+pip install "alfvex[plot]"    # matplotlib, for the figure examples
 ```
+
+From a clone, `pip install .` (with the same extras) installs the development version.
 
 ## Quickstart
 

@@ -1,6 +1,6 @@
 """Gradient of global Alfvén frequencies with respect to VMEC boundary coefficients.
 
-Run: python examples/boundary_gradient.py   (needs ``pip install "uwplasma-fax[vmex]"``)
+Run: python examples/boundary_gradient.py   (needs ``pip install "alfvex[vmex]"``)
 """
 
 from pathlib import Path

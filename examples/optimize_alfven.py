@@ -13,7 +13,7 @@ with an exact Jacobian (one vmex + FAX forward, one adjoint per residual row):
   change. With ``--drive`` instead the fast-ion growth rates of the four n = 1 modes nearest 104 kHz are lowered
   (:func:`fax.drive_risk` of :func:`fax.geometry_growth_rates`, 150 keV Maxwellian deuterons).
 
-Run: python examples/optimize_alfven.py, after editing the settings below (needs ``pip install "uwplasma-fax[vmex,plot]"``;
+Run: python examples/optimize_alfven.py, after editing the settings below (needs ``pip install "alfvex[vmex,plot]"``;
 a few minutes per case on a laptop CPU).
 """
 

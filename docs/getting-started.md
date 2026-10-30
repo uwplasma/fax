@@ -2,8 +2,9 @@
 
 ## Install
 
-FAX needs Python 3.10 or newer, JAX 0.4.38 or newer and `solvax>=0.32.1`. There is no PyPI release yet: install from a clone
-(`pip install uwplasma-fax` will follow the first release).
+FAX needs Python 3.10 or newer, JAX 0.4.38 or newer and `solvax>=0.32.1`. FAX is on PyPI as
+`alfvex` (`pip install alfvex`, extras as below) and is imported as `fax`; it will soon be renamed ALFVEX everywhere. Do not
+`pip install fax`, an unrelated package. From a clone, the commands below install the development version.
 
 ```console
 pip install .              # core: JAX, SOLVAX, NumPy, netCDF4

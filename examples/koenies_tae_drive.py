@@ -1,6 +1,6 @@
 """Koenies et al. (2018) ITPA TAE: zero-orbit-width, passing-only growth rate vs fast-ion temperature.
 
-Needs the plot extra: pip install "uwplasma-fax[plot]".  Run: python examples/koenies_tae_drive.py  (about 10 s).
+Needs the plot extra: pip install "alfvex[plot]".  Run: python examples/koenies_tae_drive.py  (about 10 s).
 The CAS3D-K (ZOW) points of fig. 1a are plotted for orientation only: whether that curve holds trapped particles is not stated, so the
 comparison is unmatched (docs/validation.md, ITPA ladder rung 2). The pooled ZLR band is not a reference.
 """
